@@ -1,0 +1,38 @@
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(9,11,16,.97); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  height: 54px; display: flex; align-items: center;
+  justify-content: space-between; padding: 0 1.5rem; gap: 1rem;
+}
+
+.logo {
+  font-family: 'Cinzel', serif; font-size: 1.25rem; font-weight: 700;
+  color: var(--gold); letter-spacing: .08em;
+  display: flex; align-items: center; gap: .45rem; flex-shrink: 0;
+}
+.gem {
+  width: 18px; height: 18px; border: 1.5px solid var(--gold-d);
+  transform: rotate(45deg); position: relative; flex-shrink: 0;
+}
+.gem::before {
+  content: ''; position: absolute; inset: 3px; background: var(--gold);
+}
+
+.nav { display: flex; align-items: center; gap: .3rem; flex: 1; justify-content: center; }
+.navLink {
+  font-family: 'Cinzel', serif; font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--text2); padding: .35rem .75rem;
+  border-radius: 2px; transition: all .2s; display: flex; align-items: center; gap: .3rem;
+}
+.navLink:hover { color: var(--gold); background: rgba(200,168,75,.06); }
+.navIcon  { font-size: .75rem; opacity: .7; }
+.navAdmin { color: var(--gold-d); }
+
+.right { display: flex; align-items: center; gap: .7rem; flex-shrink: 0; }
+.userName { font-size: .74rem; color: var(--text2); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 600px) {
+  .nav { display: none; }
+  .userName { display: none; }
+}

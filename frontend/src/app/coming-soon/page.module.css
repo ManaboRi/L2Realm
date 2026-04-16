@@ -1,0 +1,42 @@
+.page { min-height: 100vh; }
+
+.hero { text-align: center; padding: 2.2rem 1.5rem 1.8rem; border-bottom: 1px solid var(--border); }
+.heroEye   { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; margin-bottom: .5rem; }
+.heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.3rem, 2.5vw, 2rem); font-weight: 700; color: #F0E8C8; margin-bottom: .4rem; }
+.heroTitle em { color: var(--gold); font-style: normal; }
+.heroSub   { font-family: 'Almendra', serif; font-size: .9rem; color: var(--text2); font-style: italic; }
+
+.wrap { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 2rem; }
+
+.loadWrap { display: flex; align-items: center; gap: .6rem; color: var(--text3); font-family: 'Almendra', serif; font-style: italic; padding: 3rem 0; justify-content: center; }
+
+.empty       { text-align: center; padding: 4rem 1.5rem; }
+.emptyIcon   { font-size: 3rem; margin-bottom: 1rem; }
+.emptyTitle  { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--text); margin-bottom: .5rem; }
+.emptySub    { font-family: 'Almendra', serif; font-size: .88rem; color: var(--text2); font-style: italic; }
+
+.group      { display: flex; flex-direction: column; gap: .6rem; }
+.groupTitle { font-family: 'Cinzel', serif; font-size: .72rem; text-transform: uppercase; letter-spacing: .2em; color: var(--gold-d); display: flex; align-items: center; gap: .5rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border); }
+.groupCount { margin-left: auto; background: rgba(200,168,75,.1); border: 1px solid rgba(200,168,75,.2); color: var(--gold-d); font-size: .6rem; padding: .05rem .4rem; border-radius: 2px; }
+
+.cards { display: flex; flex-direction: column; gap: .4rem; }
+
+.card        { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: .9rem 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; transition: all .18s; }
+.card:hover  { border-color: var(--border2); background: var(--bg3); }
+
+.cardLeft    { display: flex; align-items: center; gap: .85rem; flex: 1; min-width: 0; }
+.icon        { width: 38px; height: 38px; border-radius: 4px; object-fit: cover; flex-shrink: 0; }
+.iconFallback { width: 38px; height: 38px; border-radius: 4px; background: var(--bg3); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-family: 'Cinzel', serif; font-size: .7rem; color: var(--gold-d); flex-shrink: 0; }
+
+.cardName    { font-family: 'Cinzel', serif; font-size: .88rem; font-weight: 600; color: #E8DDBA; margin-bottom: .3rem; }
+.cardMeta    { display: flex; gap: .3rem; flex-wrap: wrap; }
+.cardDesc    { font-size: .76rem; color: var(--text2); margin-top: .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 380px; }
+
+.cardRight   { text-align: right; flex-shrink: 0; }
+.countdown   { font-family: 'Cinzel', serif; font-size: .82rem; color: var(--gold); font-weight: 600; }
+.openDate    { font-size: .7rem; color: var(--text3); margin-top: .2rem; }
+
+@media (max-width: 600px) {
+  .cardDesc  { display: none; }
+  .card      { padding: .7rem .85rem; }
+}

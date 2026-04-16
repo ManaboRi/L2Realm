@@ -1,0 +1,57 @@
+'use client';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { User } from '@/lib/types';
+
+interface AuthState {
+  user:    User | null;
+  token:   string | null;
+  loading: boolean;
+  login:   (token: string, user: User) => void;
+  logout:  () => void;
+  isAdmin: boolean;
+}
+
+const AuthContext = createContext<AuthState>({
+  user: null, token: null, loading: true,
+  login: () => {}, logout: () => {}, isAdmin: false,
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user,    setUser]    = useState<User | null>(null);
+  const [token,   setToken]   = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = localStorage.getItem('l2r_token');
+    const u = localStorage.getItem('l2r_user');
+    if (t && u) {
+      try {
+        setToken(t);
+        setUser(JSON.parse(u));
+      } catch {}
+    }
+    setLoading(false);
+  }, []);
+
+  const login = useCallback((t: string, u: User) => {
+    setToken(t);
+    setUser(u);
+    localStorage.setItem('l2r_token', t);
+    localStorage.setItem('l2r_user', JSON.stringify(u));
+  }, []);
+
+  const logout = useCallback(() => {
+    setToken(null);
+    setUser(null);
+    localStorage.removeItem('l2r_token');
+    localStorage.removeItem('l2r_user');
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin: user?.role === 'ADMIN' }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export const useAuth = () => useContext(AuthContext);

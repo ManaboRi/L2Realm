@@ -1,0 +1,46 @@
+.page { min-height: 100vh; }
+.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--bg3); border: 1px solid var(--border2); color: var(--text); padding: .75rem 1.2rem; border-radius: 3px; font-size: .84rem; z-index: 99; animation: fadeIn .22s ease; }
+
+.hero { text-align: center; padding: 2.2rem 1.5rem 1.8rem; border-bottom: 1px solid var(--border); }
+.heroEye   { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; margin-bottom: .5rem; }
+.heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.3rem, 2.5vw, 2rem); font-weight: 700; color: #F0E8C8; margin-bottom: .4rem; }
+.heroTitle em { color: var(--gold); font-style: normal; }
+.heroSub   { font-family: 'Almendra', serif; font-size: .9rem; color: var(--text2); font-style: italic; }
+
+.wrap  { max-width: 680px; margin: 2rem auto; padding: 0 1.5rem 4rem; }
+.steps { display: flex; align-items: center; gap: 0; margin-bottom: 1.8rem; }
+.step  { display: flex; align-items: center; gap: .5rem; font-family: 'Cinzel', serif; font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text3); }
+.stepDone { color: var(--gold); }
+.stepNum { width: 22px; height: 22px; border-radius: 50%; border: 1px solid currentColor; display: flex; align-items: center; justify-content: center; font-size: .65rem; flex-shrink: 0; }
+.stepDone .stepNum { background: var(--gold-d); border-color: var(--gold-d); color: #090B10; }
+.stepLine { flex: 1; height: 1px; background: var(--border); margin: 0 .8rem; }
+
+.card     { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 1.8rem; }
+.cardTitle { font-family: 'Cinzel', serif; font-size: .88rem; font-weight: 600; color: #E8DDBA; margin-bottom: .3rem; text-transform: uppercase; letter-spacing: .08em; }
+.cardSub  { font-size: .82rem; color: var(--text2); margin-bottom: 1.4rem; }
+.backBtn  { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: .28rem .65rem; border-radius: 2px; font-size: .76rem; transition: all .18s; margin-bottom: .3rem; }
+.backBtn:hover { border-color: var(--border2); color: var(--text); }
+
+.form  { display: flex; flex-direction: column; gap: .85rem; margin-top: 1.2rem; }
+.row2  { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
+.field { display: flex; flex-direction: column; gap: .28rem; }
+.label { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--text2); text-transform: uppercase; letter-spacing: .14em; }
+
+.tiers { display: flex; flex-direction: column; gap: .45rem; margin: 1.2rem 0 1.4rem; }
+.tier  { background: var(--bg3); border: 1px solid var(--border); border-radius: 3px; padding: .85rem 1.1rem; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: space-between; gap: 1rem; position: relative; overflow: hidden; }
+.tier::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--border2); }
+.tier:hover   { border-color: var(--border2); background: var(--bg4); }
+.tierActive   { border-color: var(--gold-d); background: rgba(200,168,75,.06); }
+.tierActive::before { background: var(--gold); }
+.tierVip      { border-color: rgba(200,168,75,.25); }
+.tierLeft     { flex: 1; }
+.tierName     { font-family: 'Cinzel', serif; font-size: .84rem; font-weight: 600; margin-bottom: .2rem; }
+.tierWhat     { font-size: .76rem; color: var(--text2); }
+.tierPrice    { font-family: 'Cinzel', serif; font-size: .88rem; color: var(--gold); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.vipSlots   { font-size: .7rem; color: var(--text3); margin-top: .25rem; }
+.tierCheck  { position: absolute; right: 3.5rem; font-size: .9rem; color: var(--gold); }
+.tierDisabled { opacity: .4; cursor: not-allowed; }
+.selectedPlan { font-size: .7rem; font-weight: 400; margin-left: .5rem; }
+
+.note { font-size: .74rem; color: var(--text3); text-align: center; margin-top: .8rem; font-family: 'Almendra', serif; font-style: italic; }
+@media (max-width: 500px) { .row2 { grid-template-columns: 1fr; } }

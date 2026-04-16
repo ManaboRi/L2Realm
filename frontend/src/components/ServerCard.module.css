@@ -1,0 +1,83 @@
+.row {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 3px;
+  display: flex; align-items: center; gap: .9rem; padding: .75rem 1rem;
+  cursor: pointer; transition: all .18s; position: relative; overflow: hidden;
+  text-decoration: none; color: inherit;
+}
+.row::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
+  background: transparent; transition: background .2s;
+}
+.row:hover { background: var(--bg3); border-color: var(--border2); }
+.row:hover::before { background: var(--gold-d); }
+/* Тариф Standard — бронзовая акцентная линия */
+.row.planStandard { border-color: rgba(160,100,40,.45); }
+.row.planStandard::before { background: #CD7F32; }
+
+/* Тариф Premium — серебристая обводка */
+.row.planPremium { border-color: rgba(180,185,200,.45); box-shadow: 0 0 10px rgba(180,185,200,.05); }
+.row.planPremium::before { background: #B0B8C8; }
+
+/* Тариф VIP — золотая обводка */
+.row.planVip { border-color: var(--gold-d); box-shadow: 0 0 14px rgba(200,168,75,.08); }
+.row.planVip::before { background: var(--gold-d); }
+
+/* VIP-блок — чуть плотнее */
+.row.vipBlock { background: rgba(200,168,75,.04); }
+
+.row.soon { opacity: .6; }
+
+/* Звёздочки тарифов */
+.starStandard { font-size: .82rem; color: #CD7F32; line-height: 1; flex-shrink: 0; }
+.starPremium  { font-size: .82rem; color: #B0B8C8; line-height: 1; flex-shrink: 0; }
+.starVip      { font-size: .82rem; color: var(--gold); line-height: 1; flex-shrink: 0; }
+
+.icon {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border: 1px solid var(--border2); background: var(--bg4);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-size: .95rem; font-weight: 700;
+  color: var(--gold); overflow: hidden; border-radius: 2px;
+}
+.icon img { width: 100%; height: 100%; object-fit: cover; }
+
+.main { flex: 1; min-width: 0; }
+.top  { display: flex; align-items: center; gap: .5rem; margin-bottom: .28rem; flex-wrap: wrap; }
+.name {
+  font-family: 'Cinzel', serif; font-size: .94rem; font-weight: 600;
+  color: #F0E8C8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fire { font-size: .85rem; line-height: 1; }
+.vipBadge {
+  font-family: 'Cinzel', serif; font-size: .52rem; background: linear-gradient(135deg,var(--gold-d),var(--gold));
+  color: #090B10; padding: .08rem .35rem; border-radius: 2px; letter-spacing: .1em; font-weight: 700;
+}
+.tags   { display: flex; gap: .28rem; flex-wrap: wrap; }
+.soonBadge {
+  font-size: .58rem; background: rgba(200,168,75,.12); color: var(--gold-d);
+  border: 1px solid rgba(200,168,75,.25); padding: .1rem .4rem; border-radius: 2px;
+  font-family: 'Cinzel', serif;
+}
+.desc {
+  font-size: .84rem; color: var(--text2); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+
+.right  { display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; flex-shrink: 0; }
+.date   { font-size: .65rem; color: var(--text3); white-space: nowrap; }
+.meta    { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
+.online  { font-size: .62rem; color: #4AAA70; }
+.offline { font-size: .62rem; color: #CC6060; }
+.rating  { font-size: .62rem; color: var(--gold-d); }
+.btns   { display: flex; gap: .35rem; }
+.btnMore {
+  background: transparent; border: 1px solid var(--border); color: var(--text2);
+  padding: .24rem .65rem; border-radius: 2px; font-size: .7rem; text-transform: uppercase;
+  letter-spacing: .04em; transition: all .18s;
+}
+.btnMore:hover { border-color: var(--border2); color: var(--text); }
+
+@media (max-width: 600px) {
+  .right { display: none; }
+  .main  { min-width: 0; }
+}

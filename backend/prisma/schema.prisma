@@ -1,0 +1,146 @@
+// ══════════════════════════════════════════════
+// L2Realm — Prisma Schema
+// База данных: PostgreSQL
+// ══════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Пользователи ──────────────────────────────
+model User {
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  password           String
+  name               String?
+  role               Role      @default(USER)
+  resetToken         String?
+  resetTokenExpires  DateTime?
+  registrationIp     String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  reviews Review[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ── Серверы ───────────────────────────────────
+model Server {
+  id          String   @id
+  name        String
+  abbr        String?
+  url         String
+  chronicle   String
+  rates       String
+  rateNum     Int      @default(1)
+  donate      String   @default("cosmetic") // free | cosmetic | p2w
+  type        String[] // pvp | pve | new | featured
+  vip         Boolean  @default(false)
+  openedDate  DateTime?
+  country     String   @default("RU")
+  icon        String?
+  banner      String?
+  discord     String?
+  telegram    String?
+  vk          String?
+  youtube     String?
+  site        String?
+  shortDesc   String?
+  fullDesc    String?
+  rating      Float    @default(0)
+  ratingCount Int      @default(0)
+  online      Int?     // текущий онлайн (из мониторинга)
+  status      String   @default("online") // online | offline | unknown
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  reviews      Review[]
+  subscription Subscription?
+  news         News[]
+  monitorLogs  MonitorLog[]
+}
+
+// ── Подписки / Тарифы ─────────────────────────
+model Subscription {
+  id         String           @id @default(cuid())
+  serverId   String           @unique
+  server     Server           @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  plan       SubscriptionPlan @default(FREE)
+  startDate  DateTime         @default(now())
+  endDate    DateTime
+  paid       Boolean          @default(false)
+  paymentId  String?
+  autoRenew  Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
+
+enum SubscriptionPlan {
+  FREE      // 0₽ — просто в списке
+  STANDARD  // 500-1500₽/мес — выделение
+  PREMIUM   // 2000-5000₽/мес — закреп
+  VIP       // 5000-15000₽/мес — отдельный блок
+}
+
+// ── Отзывы ────────────────────────────────────
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int      // 1-5
+  text      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, serverId]) // один отзыв на пользователя на сервер
+}
+
+// ── Новости ───────────────────────────────────
+model News {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  source    String   @default("manual") // manual | telegram
+  date      DateTime @default(now())
+}
+
+// ── Логи мониторинга ──────────────────────────
+model MonitorLog {
+  id        String   @id @default(cuid())
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  online    Boolean
+  ping      Int?     // в миллисекундах
+  players   Int?
+  checkedAt DateTime @default(now())
+
+  @@index([serverId, checkedAt])
+}
+
+// ── Заявки на добавление (до оплаты) ─────────
+model ServerRequest {
+  id          String   @id @default(cuid())
+  name        String
+  chronicle   String
+  rates       String
+  url         String
+  icon        String?
+  description String?
+  plan        String   @default("free")
+  email       String?
+  status      String   @default("pending") // pending | approved | rejected
+  createdAt   DateTime @default(now())
+}

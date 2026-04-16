@@ -1,0 +1,25 @@
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  max-width: 380px; width: 100%; padding: 2rem; position: relative;
+  animation: fadeIn .22s ease;
+}
+.close {
+  position: absolute; top: .9rem; right: 1rem;
+  background: none; border: none; color: var(--text3); font-size: 1.1rem; transition: color .2s;
+}
+.close:hover { color: var(--text); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.4rem; }
+.tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  color: var(--text2); padding: .5rem 1rem; font-family: 'Cinzel', serif;
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .1em;
+  transition: all .18s; margin-bottom: -1px;
+}
+.tab:hover  { color: var(--text); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.form  { display: flex; flex-direction: column; gap: .75rem; }
+.error { font-size: .78rem; color: #CC6060; background: rgba(196,64,64,.1); border: 1px solid rgba(196,64,64,.3); padding: .4rem .7rem; border-radius: 2px; }

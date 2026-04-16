@@ -1,0 +1,197 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { PrismaService } from '../prisma/prisma.service';
+import * as https from 'https';
+import * as http  from 'http';
+
+@Injectable()
+export class MonitoringService {
+  private readonly logger = new Logger(MonitoringService.name);
+
+  constructor(private prisma: PrismaService) {}
+
+  // ── Получить статус сервера ──────────────────
+  async getStatus(serverId: string) {
+    const server = await this.prisma.server.findUnique({ where: { id: serverId } });
+    if (!server) return null;
+
+    const last = await this.prisma.monitorLog.findFirst({
+      where: { serverId },
+      orderBy: { checkedAt: 'desc' },
+    });
+
+    const history = await this.prisma.monitorLog.findMany({
+      where: { serverId },
+      orderBy: { checkedAt: 'desc' },
+      take: 24,
+    });
+
+    return {
+      serverId,
+      status:  server.status,
+      online:  server.online,
+      last,
+      uptime:  this.calcUptime(history),
+      history: history.reverse(),
+    };
+  }
+
+  // ── Проверить один сервер ────────────────────
+  async checkServer(serverId: string): Promise<boolean> {
+    const server = await this.prisma.server.findUnique({ where: { id: serverId } });
+    if (!server) return false;
+
+    const url    = server.url || server.site;
+    const start  = Date.now();
+    const online = await this.pingUrl(url);
+    const ping   = Date.now() - start;
+
+    await this.prisma.monitorLog.create({
+      data: { serverId, online, ping: online ? ping : null },
+    });
+
+    await this.prisma.server.update({
+      where: { id: serverId },
+      data:  { status: online ? 'online' : 'offline' },
+    });
+
+    if (!online) {
+      this.logger.warn(`OFFLINE: сервер ${serverId} недоступен`);
+    }
+
+    return online;
+  }
+
+  // ── Авто-проверка каждые 5 минут ────────────
+  @Cron('*/5 * * * *')
+  async checkAllServers() {
+    const servers = await this.prisma.server.findMany({ select: { id: true, url: true, site: true } });
+    this.logger.log(`Мониторинг: проверяем ${servers.length} серверов`);
+
+    for (const s of servers) {
+      try { await this.checkServer(s.id); } catch {}
+    }
+  }
+
+  // ── Сброс истёкших тарифов — раз в час ──────
+  @Cron(CronExpression.EVERY_HOUR)
+  async resetExpiredSubscriptions() {
+    const now     = new Date();
+    const expired = await this.prisma.subscription.findMany({
+      where: { plan: { not: 'FREE' }, endDate: { lt: now } },
+    });
+
+    for (const sub of expired) {
+      const freeEnd = new Date();
+      freeEnd.setFullYear(freeEnd.getFullYear() + 1);
+
+      await this.prisma.subscription.update({
+        where: { id: sub.id },
+        data:  { plan: 'FREE', paid: false, endDate: freeEnd },
+      });
+      await this.prisma.server.update({
+        where: { id: sub.serverId },
+        data:  { vip: false },
+      });
+
+      this.logger.log(`Тариф сервера ${sub.serverId} сброшен на FREE (истёк ${sub.endDate.toISOString()})`);
+    }
+
+    if (expired.length > 0) {
+      this.logger.log(`Сброшено истёкших тарифов: ${expired.length}`);
+    }
+  }
+
+  // ── Статистика аптайма за N дней ────────────
+  async getUptimeStats(serverId: string, days = 7) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+
+    const logs = await this.prisma.monitorLog.findMany({
+      where: { serverId, checkedAt: { gte: since } },
+      orderBy: { checkedAt: 'asc' },
+    });
+
+    return {
+      total:   logs.length,
+      online:  logs.filter(l => l.online).length,
+      offline: logs.filter(l => !l.online).length,
+      uptime:  this.calcUptime(logs),
+      logs,
+    };
+  }
+
+  // ── Дневная статистика для графика ──────────
+  async getDailyStats(serverId: string, days = 30) {
+    const since = new Date();
+    since.setDate(since.getDate() - days);
+    since.setHours(0, 0, 0, 0);
+
+    const logs = await this.prisma.monitorLog.findMany({
+      where: { serverId, checkedAt: { gte: since } },
+      orderBy: { checkedAt: 'asc' },
+    });
+
+    // Группируем по дням
+    const byDay: Record<string, { online: number; total: number; pings: number[] }> = {};
+    for (const log of logs) {
+      const day = log.checkedAt.toISOString().slice(0, 10);
+      if (!byDay[day]) byDay[day] = { online: 0, total: 0, pings: [] };
+      byDay[day].total++;
+      if (log.online) byDay[day].online++;
+      if (log.ping)   byDay[day].pings.push(log.ping);
+    }
+
+    // Массив из N дней (включая дни без данных)
+    const today  = new Date();
+    const result = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const d   = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      const day = byDay[key];
+      result.push({
+        date:    key,
+        uptime:  day ? Math.round((day.online / day.total) * 100) : null,
+        avgPing: day?.pings.length
+          ? Math.round(day.pings.reduce((a, b) => a + b, 0) / day.pings.length)
+          : null,
+        total: day?.total ?? 0,
+      });
+    }
+
+    // Общие метрики за период
+    const allPings    = logs.filter(l => l.ping != null).map(l => l.ping as number);
+    const avgResponse = allPings.length
+      ? Math.round(allPings.reduce((a, b) => a + b, 0) / allPings.length)
+      : null;
+    const uptime30 = logs.length
+      ? Math.round((logs.filter(l => l.online).length / logs.length) * 100)
+      : null;
+
+    return { days: result, uptime30, avgResponse };
+  }
+
+  // ── Утилиты ──────────────────────────────────
+  private calcUptime(logs: { online: boolean }[]): number {
+    if (!logs.length) return 0;
+    return Math.round((logs.filter(l => l.online).length / logs.length) * 100);
+  }
+
+  private pingUrl(url: string): Promise<boolean> {
+    return new Promise(resolve => {
+      try {
+        const parsed = new URL(url);
+        const mod    = parsed.protocol === 'https:' ? https : http;
+        const req    = mod.get({ hostname: parsed.hostname, path: '/', timeout: 5000 }, res => {
+          resolve(res.statusCode < 500);
+          res.destroy();
+        });
+        req.on('error',   () => resolve(false));
+        req.on('timeout', () => { req.destroy(); resolve(false); });
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+}

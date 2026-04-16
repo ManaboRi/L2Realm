@@ -1,0 +1,133 @@
+.page { min-height: 100vh; }
+
+/* Общий контейнер, выравнивает hero по ширине layout */
+.pageInner { max-width: 1300px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 0; }
+
+/* Hero — карточка с рамкой, скруглённые верхние углы */
+.hero {
+  position: relative;
+  padding: 1.1rem 2rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg2);
+  overflow: hidden;
+  margin-bottom: .9rem;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.heroLeft  { position: relative; display: flex; flex-direction: column; gap: .7rem; }
+
+.heroEye   { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; }
+.heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 2.6vw, 2.2rem); font-weight: 700; color: #F0E8C8; line-height: 1.15; }
+.heroTitle em { color: var(--gold); font-style: normal; }
+
+/* Метрики в маленькой рамке */
+.heroStats {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: var(--bg3);
+  overflow: hidden;
+  align-self: flex-start;
+}
+.statItem  { display: flex; flex-direction: row; align-items: baseline; gap: .35rem; padding: .3rem .75rem; }
+.statDivider { width: 1px; background: var(--border); align-self: stretch; flex-shrink: 0; }
+.statNum   { font-family: 'Cinzel', serif; font-size: .88rem; font-weight: 600; color: var(--gold); line-height: 1; }
+.statLbl   { font-size: .65rem; color: var(--text2); white-space: nowrap; }
+
+.heroSub   { font-family: 'Almendra', serif; font-size: .88rem; color: var(--text2); line-height: 1.65; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 900px) { .heroSub { white-space: normal; } }
+
+/* Layout — две независимые колонки */
+.layout { display: grid; grid-template-columns: 230px 1fr; gap: .9rem; align-items: start; }
+
+/* Сайдбар — отдельная карточка */
+.sidebar   { border: 1px solid var(--border); border-radius: 4px; padding: 1.2rem 1rem; position: sticky; top: 62px; max-height: calc(100vh - 72px); overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; background: var(--bg2); }
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.sidebarHead { padding-bottom: .4rem; border-bottom: 1px solid var(--border2); }
+.sideLabel   { font-family: 'Cinzel', serif; font-size: .66rem; color: var(--gold); text-transform: uppercase; letter-spacing: .28em; }
+
+.filterGroup  { display: flex; flex-direction: column; gap: .4rem; }
+.filterLabel  { font-family: 'Cinzel', serif; font-size: .58rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .22em; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
+.chips        { display: flex; flex-direction: column; gap: .18rem; }
+.chip         { background: transparent; border: 1px solid transparent; color: var(--text2); padding: .34rem .65rem; border-radius: 2px; font-size: .82rem; text-align: left; width: 100%; display: flex; align-items: center; gap: .42rem; transition: all .15s; }
+.chip:hover   { background: var(--bg3); color: var(--text); }
+.chipActive   { background: rgba(200,168,75,.1); border-color: var(--gold-d); color: var(--gold); }
+.chipDot      { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; flex-shrink: 0; transition: opacity .15s; }
+.chipActive .chipDot { opacity: 1; }
+.chipCount    { margin-left: auto; font-size: .64rem; color: var(--text3); background: var(--bg3); border: 1px solid var(--border); border-radius: 2px; padding: 0 .3rem; line-height: 1.5; }
+.clearBtn     { font-size: .74rem; color: var(--red); background: transparent; border: 1px solid rgba(196,64,64,.25); padding: .3rem .6rem; border-radius: 2px; text-align: left; transition: all .18s; }
+.clearBtn:hover { background: rgba(196,64,64,.08); }
+
+/* Правая панель — контент без рамки */
+.content      { padding: 0; display: flex; flex-direction: column; gap: .9rem; min-width: 0; }
+
+.searchBar    { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: .7rem 1rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.searchWrap   { flex: 1; min-width: 180px; display: flex; align-items: center; gap: .4rem; background: var(--bg3); border: 1px solid var(--border); border-radius: 2px; padding: .3rem .7rem; transition: border-color .2s; }
+.searchWrap:focus-within { border-color: var(--border2); }
+.searchIcon   { color: var(--text3); font-size: .95rem; flex-shrink: 0; }
+.searchInput  { background: none; border: none; outline: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .84rem; flex: 1; min-width: 0; }
+.searchInput::placeholder { color: var(--text3); }
+.searchClear  { background: none; border: none; color: var(--text3); font-size: .8rem; transition: color .15s; }
+.searchClear:hover { color: var(--text); }
+.sortWrap     { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.sortLabel    { font-family: 'Cinzel', serif; font-size: .58rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .18em; white-space: nowrap; }
+
+/* VIP-блок */
+.vipSection { display: flex; flex-direction: column; gap: .4rem; }
+.vipHeader  {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .75rem;
+  background: rgba(200,168,75,.06);
+  border: 1px solid rgba(200,168,75,.25);
+  border-radius: 3px;
+}
+.vipHeaderStar  { color: var(--gold); font-size: .85rem; }
+.vipHeaderTitle { font-family: 'Cinzel', serif; font-size: .65rem; color: var(--gold); text-transform: uppercase; letter-spacing: .2em; }
+.vipHeaderSlots { margin-left: auto; font-size: .62rem; color: var(--text3); }
+
+.vipSlot {
+  display: flex; align-items: center; gap: .8rem;
+  background: rgba(200,168,75,.03);
+  border: 1px dashed rgba(200,168,75,.2);
+  border-radius: 3px; padding: .65rem 1rem;
+  text-decoration: none; transition: all .18s;
+}
+.vipSlot:hover { background: rgba(200,168,75,.07); border-color: rgba(200,168,75,.4); }
+.vipSlotPlus  { width: 26px; height: 26px; border-radius: 50%; border: 1px dashed rgba(200,168,75,.35); display: flex; align-items: center; justify-content: center; font-size: 1rem; color: rgba(200,168,75,.5); flex-shrink: 0; }
+.vipSlotText  { font-size: .82rem; color: var(--text3); flex: 1; }
+.vipSlotBtn   { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .15em; white-space: nowrap; }
+
+.resultsCount { font-size: .72rem; color: var(--text3); }
+.loadWrap     { display: flex; align-items: center; gap: .6rem; color: var(--text3); font-family: 'Almendra', serif; font-style: italic; padding: 2rem 0; }
+.empty        { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 3rem; text-align: center; color: var(--text3); font-family: 'Almendra', serif; font-style: italic; }
+.list         { display: flex; flex-direction: column; gap: 4px; }
+
+.pagination   { display: flex; gap: .3rem; flex-wrap: wrap; }
+.pageBtn      { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: .3rem .65rem; border-radius: 2px; font-size: .76rem; transition: all .15s; }
+.pageBtn:hover { border-color: var(--border2); color: var(--text); }
+.pageBtnActive { background: rgba(200,168,75,.12); border-color: var(--gold-d); color: var(--gold); }
+
+@media (max-width: 900px) { .layout { grid-template-columns: 190px 1fr; } }
+@media (max-width: 660px) {
+  .pageInner { padding: .8rem .8rem 3rem; }
+  .hero { padding: 1rem 1rem 1rem; }
+  .heroSub { white-space: normal; }
+  .heroStats { align-self: stretch; justify-content: space-around; }
+  .layout { grid-template-columns: 1fr; gap: .6rem; }
+  .sidebar { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; gap: .8rem; padding: .9rem; }
+  .filterGroup { min-width: 130px; flex: 1; }
+  .chips { flex-direction: row; flex-wrap: wrap; }
+  .chip  { width: auto; }
+  .searchBar { flex-direction: column; align-items: stretch; }
+  .sortWrap  { justify-content: space-between; }
+}
