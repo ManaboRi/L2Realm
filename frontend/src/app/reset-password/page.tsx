@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const params  = useSearchParams();
   const router  = useRouter();
   const token   = params.get('token') ?? '';
@@ -89,5 +89,13 @@ export default function ResetPasswordPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'60vh' }}>Загрузка...</div>}>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
