@@ -4,7 +4,7 @@
 import type { Server, ServersResponse, Stats, Review } from './types';
 
 const BASE = typeof window !== 'undefined'
-  ? '/backend/api'
+  ? '/api/proxy'
   : (process.env.BACKEND_URL ? `${process.env.BACKEND_URL}/api` : 'http://localhost:4000/api');
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
