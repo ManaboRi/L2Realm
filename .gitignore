@@ -28,3 +28,6 @@ Thumbs.db
 
 # Prisma
 backend/prisma/migrations/*.lock
+
+# Let's Encrypt certs (создаются на сервере)
+certbot/
