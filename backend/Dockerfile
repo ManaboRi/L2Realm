@@ -1,6 +1,9 @@
 FROM node:18-slim
 WORKDIR /app
 
+# Замена Debian mirror на Яндекс (deb.debian.org недоступен из РФ)
+RUN sed -i 's|http://deb.debian.org|http://mirror.yandex.ru|g; s|http://security.debian.org|http://mirror.yandex.ru|g' /etc/apt/sources.list.d/debian.sources
+
 # Устанавливаем OpenSSL — нужен для Prisma binary engine на Debian slim
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
