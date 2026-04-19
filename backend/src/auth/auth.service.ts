@@ -78,6 +78,22 @@ export class AuthService {
     return { ok: true };
   }
 
+  // ── Смена пароля для залогиненного ───────────
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException();
+
+    const valid = await bcrypt.compare(oldPassword, user.password);
+    if (!valid) throw new BadRequestException('Неверный текущий пароль');
+
+    const hash = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data:  { password: hash },
+    });
+    return { ok: true };
+  }
+
   // ── Сброс пароля по токену ───────────────────
   async resetPassword(token: string, newPassword: string) {
     const user = await this.prisma.user.findFirst({

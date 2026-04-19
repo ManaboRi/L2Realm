@@ -16,6 +16,13 @@ export class ReviewsController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
+  @Get('my')
+  findMine(@Request() req: { user: { id: string } }) {
+    return this.reviews.findMine(req.user.id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @Post('server/:serverId')
   create(
     @Param('serverId') serverId: string,

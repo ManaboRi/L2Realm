@@ -13,6 +13,14 @@ export class ReviewsService {
     });
   }
 
+  async findMine(userId: string) {
+    return this.prisma.review.findMany({
+      where: { userId },
+      include: { server: { select: { id: true, name: true, icon: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   // 1 аккаунт = 1 отзыв на сервер; повторный вызов редактирует существующий
   async create(userId: string, serverId: string, rating: number, text: string) {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });

@@ -32,7 +32,9 @@ export function Header() {
         <div className={styles.right}>
           {user ? (
             <>
-              <span className={styles.userName}>{user.email}</span>
+              <Link href="/profile" className={styles.userName} style={{ textDecoration: 'none' }}>
+                {user.email}
+              </Link>
               <button className="btn-ghost" onClick={logout}>Выйти</button>
             </>
           ) : (

@@ -49,6 +49,8 @@ export const api = {
   // ── Отзывы ────────────────────────────────────
   reviews: {
     byServer: (serverId: string) => request<Review[]>(`/reviews/server/${serverId}`),
+    my: (token: string) =>
+      request<any[]>('/reviews/my', { headers: { Authorization: `Bearer ${token}` } }),
     create: (serverId: string, data: { rating: number; text: string }, token: string) =>
       request<Review>(`/reviews/server/${serverId}`, { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     pending: (token: string) =>
@@ -93,5 +95,11 @@ export const api = {
       request<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
     resetPassword: (token: string, password: string) =>
       request<any>('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
+    changePassword: (oldPassword: string, newPassword: string, token: string) =>
+      request<any>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ oldPassword, newPassword }),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
   },
 };

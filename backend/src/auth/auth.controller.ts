@@ -2,7 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request, Ip } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -34,5 +34,12 @@ export class AuthController {
   @Post('reset-password')
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.auth.resetPassword(dto.token, dto.password);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Post('change-password')
+  changePassword(@Body() dto: ChangePasswordDto, @Request() req: { user: { id: string } }) {
+    return this.auth.changePassword(req.user.id, dto.oldPassword, dto.newPassword);
   }
 }

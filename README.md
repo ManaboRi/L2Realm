@@ -5,13 +5,14 @@
 ## Стек
 | Слой | Технология |
 |------|-----------|
-| Frontend | Next.js 15 (App Router, TypeScript) |
+| Frontend | Next.js 16 (App Router, TypeScript) |
 | Backend | NestJS 10 (TypeScript) |
 | База данных | PostgreSQL 16 + Prisma ORM |
 | Аутентификация | JWT (passport-jwt) |
 | Оплата | ЮКасса |
 | Email | Nodemailer (SMTP) |
-| Хостинг | Vercel (frontend) + VPS (backend) |
+| Деплой | Docker Compose (frontend + backend + postgres + nginx) |
+| SSL | Let's Encrypt |
 
 ## Запуск локально
 
@@ -105,3 +106,14 @@ SMTP_PASS=your_app_password
 - Максимум 2 аккаунта с одного IP при регистрации
 - 1 аккаунт = 1 отзыв на сервер (редактирование разрешено)
 - Роль ADMIN: полный доступ к управлению
+
+## Деплой
+Прод крутится на VPS через Docker Compose: `postgres` + `backend` + `frontend` + `nginx`.
+Подробности и креды — в приватной заметке (не в репозитории).
+
+Обновление прода:
+```bash
+git pull
+docker compose build <service>
+docker compose up -d <service>
+```
