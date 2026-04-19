@@ -8,7 +8,9 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const target = `${BACKEND}/api/${path.join('/')}${url.search}`;
 
   const headers = new Headers(req.headers);
-  headers.delete('host');
+  for (const h of ['host', 'connection', 'keep-alive', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'content-length']) {
+    headers.delete(h);
+  }
 
   const init: RequestInit = { method: req.method, headers };
   if (req.method !== 'GET' && req.method !== 'HEAD') {
