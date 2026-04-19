@@ -101,5 +101,11 @@ export const api = {
         body: JSON.stringify({ oldPassword, newPassword }),
         headers: { Authorization: `Bearer ${token}` },
       }),
+    sendCode: (email: string) =>
+      request<{ ok: boolean }>('/auth/send-code', { method: 'POST', body: JSON.stringify({ email }) }),
+    verifyCode: (email: string, code: string) =>
+      request<{ access_token: string; user: any }>('/auth/verify-code', {
+        method: 'POST', body: JSON.stringify({ email, code }),
+      }),
   },
 };

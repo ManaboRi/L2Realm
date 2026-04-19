@@ -55,4 +55,32 @@ export class EmailService {
     });
     this.logger.log(`Письмо восстановления отправлено на ${email}`);
   }
+
+  async sendLoginCode(email: string, code: string) {
+    const html = `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#1a1a1a;color:#e8e8e8;padding:2rem;border-radius:8px;border:1px solid #333;">
+        <h2 style="color:#C9A227;margin-top:0;">Код входа L2Realm</h2>
+        <p>Твой код для входа на сайт:</p>
+        <div style="font-size:2rem;letter-spacing:.5rem;font-weight:700;background:#0c0c0c;border:1px solid #C9A227;color:#C9A227;padding:1rem;text-align:center;border-radius:6px;margin:1.5rem 0;">
+          ${code}
+        </div>
+        <p style="color:#888;font-size:.85rem;">Код действует <strong>10 минут</strong>.</p>
+        <hr style="border-color:#333;margin:1.5rem 0 1rem;"/>
+        <p style="color:#666;font-size:.8rem;">Если ты не запрашивал код — просто проигнорируй это письмо.</p>
+      </div>
+    `;
+
+    if (!this.transporter) {
+      this.logger.warn(`[DEV EMAIL] Код входа для ${email}: ${code}`);
+      return;
+    }
+
+    await this.transporter.sendMail({
+      from:    this.config.get('SMTP_FROM') || 'L2Realm <noreply@l2realm.ru>',
+      to:      email,
+      subject: `Код входа L2Realm: ${code}`,
+      html,
+    });
+    this.logger.log(`Код входа отправлен на ${email}`);
+  }
 }

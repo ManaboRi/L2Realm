@@ -17,9 +17,12 @@ datasource db {
 model User {
   id                 String    @id @default(cuid())
   email              String    @unique
-  password           String
+  password           String?
   name               String?
   role               Role      @default(USER)
+  emailVerified      Boolean   @default(false)
+  emailCode          String?
+  emailCodeExpires   DateTime?
   resetToken         String?
   resetTokenExpires  DateTime?
   registrationIp     String?

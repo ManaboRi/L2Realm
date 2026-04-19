@@ -44,10 +44,59 @@ export class AuthService {
   // ── Вход ─────────────────────────────────────
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('Неверный email или пароль');
+    if (!user || !user.password) throw new UnauthorizedException('Неверный email или пароль');
 
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Неверный email или пароль');
+
+    return this.signToken(user.id, user.email, user.role);
+  }
+
+  // ── Отправка кода входа на email ─────────────
+  async sendEmailCode(email: string, ip?: string) {
+    const code    = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 минут
+
+    let user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Защита от накрутки при автосоздании юзера через код
+      if (ip) {
+        const ipCount = await this.prisma.user.count({ where: { registrationIp: ip } });
+        if (ipCount >= 2) {
+          throw new ForbiddenException('С этого IP уже зарегистрировано максимальное количество аккаунтов');
+        }
+      }
+      user = await this.prisma.user.create({
+        data: { email, registrationIp: ip, emailCode: code, emailCodeExpires: expires },
+      });
+    } else {
+      await this.prisma.user.update({
+        where: { email },
+        data:  { emailCode: code, emailCodeExpires: expires },
+      });
+    }
+
+    await this.email.sendLoginCode(email, code);
+    return { ok: true };
+  }
+
+  // ── Проверка кода и вход ─────────────────────
+  async verifyEmailCode(email: string, code: string) {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.emailCode || !user.emailCodeExpires) {
+      throw new BadRequestException('Код не запрашивался');
+    }
+    if (user.emailCodeExpires < new Date()) {
+      throw new BadRequestException('Срок действия кода истёк');
+    }
+    if (user.emailCode !== code) {
+      throw new BadRequestException('Неверный код');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data:  { emailCode: null, emailCodeExpires: null, emailVerified: true },
+    });
 
     return this.signToken(user.id, user.email, user.role);
   }
