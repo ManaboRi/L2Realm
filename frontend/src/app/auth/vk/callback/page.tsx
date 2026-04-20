@@ -1,11 +1,11 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { readVkPkce, clearVkPkce } from '@/lib/vkAuth';
 
-export default function VkCallbackPage() {
+function VkCallbackInner() {
   const router = useRouter();
   const search = useSearchParams();
   const { login } = useAuth();
@@ -65,5 +65,17 @@ export default function VkCallbackPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function VkCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ maxWidth: 440, margin: '4rem auto', padding: '2rem', textAlign: 'center' }}>
+        <span className="spin" style={{ width: 28, height: 28 }} />
+      </div>
+    }>
+      <VkCallbackInner />
+    </Suspense>
   );
 }
