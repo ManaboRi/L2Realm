@@ -10,6 +10,7 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
+import { VkService } from './vk.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwt: JwtService,
     private email: EmailService,
+    private vk: VkService,
   ) {}
 
   // ── Регистрация ──────────────────────────────
@@ -97,6 +99,57 @@ export class AuthService {
       where: { id: user.id },
       data:  { emailCode: null, emailCodeExpires: null, emailVerified: true },
     });
+
+    return this.signToken(user.id, user.email, user.role);
+  }
+
+  // ── Вход через VK ID ─────────────────────────
+  async loginWithVk(params: {
+    code: string;
+    deviceId: string;
+    codeVerifier: string;
+    redirectUri: string;
+    state: string;
+    ip?: string;
+  }) {
+    const { accessToken } = await this.vk.exchangeCode({
+      code:         params.code,
+      deviceId:     params.deviceId,
+      codeVerifier: params.codeVerifier,
+      redirectUri:  params.redirectUri,
+      state:        params.state,
+    });
+    const info = await this.vk.fetchUserInfo(accessToken);
+
+    // 1. ищем по vkId
+    let user = await this.prisma.user.findUnique({ where: { vkId: info.vkId } });
+
+    // 2. если нет — пробуем привязать по email
+    if (!user && info.email) {
+      const byEmail = await this.prisma.user.findUnique({ where: { email: info.email } });
+      if (byEmail) {
+        user = await this.prisma.user.update({
+          where: { id: byEmail.id },
+          data:  { vkId: info.vkId, emailVerified: true, avatar: byEmail.avatar || info.avatar },
+        });
+      }
+    }
+
+    // 3. создаём нового
+    if (!user) {
+      const email = info.email || `vk${info.vkId}@vk.l2realm.ru`;
+      const name  = [info.firstName, info.lastName].filter(Boolean).join(' ') || null;
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          name,
+          vkId:          info.vkId,
+          avatar:        info.avatar,
+          emailVerified: !!info.email,
+          registrationIp: params.ip,
+        },
+      });
+    }
 
     return this.signToken(user.id, user.email, user.role);
   }

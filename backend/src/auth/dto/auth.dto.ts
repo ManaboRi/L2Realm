@@ -69,3 +69,25 @@ export class VerifyCodeDto {
   @IsString()
   code: string;
 }
+
+export class VkCallbackDto {
+  @ApiProperty()
+  @IsString()
+  code: string;
+
+  @ApiProperty()
+  @IsString()
+  deviceId: string;
+
+  @ApiProperty()
+  @IsString()
+  codeVerifier: string;
+
+  @ApiProperty()
+  @IsString()
+  redirectUri: string;
+
+  @ApiProperty()
+  @IsString()
+  state: string;
+}

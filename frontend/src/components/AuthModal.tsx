@@ -1,79 +1,23 @@
 'use client';
-import React, { useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
+import { useState } from 'react';
 import styles from './AuthModal.module.css';
+import { startVkLogin } from '@/lib/vkAuth';
 
 interface Props { open: boolean; onClose: () => void; }
 
-type Tab = 'login' | 'register' | 'code';
-
 export function AuthModal({ open, onClose }: Props) {
-  const { login } = useAuth();
-  const [tab,   setTab]   = useState<Tab>('login');
-  const [email, setEmail] = useState('');
-  const [pass,  setPass]  = useState('');
-  const [name,  setName]  = useState('');
-  const [code,  setCode]  = useState('');
-  const [codeSent, setCodeSent] = useState(false);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   if (!open) return null;
 
-  function reset() {
-    setError('');
-    setPass('');
-    setCode('');
-    setCodeSent(false);
-  }
-
-  function switchTab(next: Tab) {
-    setTab(next);
-    reset();
-  }
-
-  async function submitPassword(e: React.FormEvent) {
-    e.preventDefault();
+  async function loginVk() {
     setError('');
     setLoading(true);
     try {
-      const res = tab === 'login'
-        ? await api.auth.login(email, pass)
-        : await api.auth.register({ email, password: pass, name });
-      login(res.access_token, res.user);
-      onClose();
+      await startVkLogin();
     } catch (e: any) {
-      setError(e.message || 'Ошибка. Попробуйте снова.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function sendCode() {
-    setError('');
-    setLoading(true);
-    try {
-      await api.auth.sendCode(email);
-      setCodeSent(true);
-    } catch (e: any) {
-      setError(e.message || 'Не удалось отправить код');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function verifyCode(e: React.FormEvent) {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    try {
-      const res = await api.auth.verifyCode(email, code);
-      login(res.access_token, res.user);
-      onClose();
-    } catch (e: any) {
-      setError(e.message || 'Неверный код');
-    } finally {
+      setError(e.message || 'Не удалось начать вход через VK');
       setLoading(false);
     }
   }
@@ -82,69 +26,24 @@ export function AuthModal({ open, onClose }: Props) {
     <div className={styles.overlay} onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal}>
         <button className={styles.close} onClick={onClose}>✕</button>
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab === 'login' ? styles.active : ''}`} onClick={() => switchTab('login')}>Войти</button>
-          <button className={`${styles.tab} ${tab === 'register' ? styles.active : ''}`} onClick={() => switchTab('register')}>Регистрация</button>
-          <button className={`${styles.tab} ${tab === 'code' ? styles.active : ''}`} onClick={() => switchTab('code')}>По коду</button>
-        </div>
-
-        {tab === 'code' ? (
-          <form onSubmit={codeSent ? verifyCode : (e) => { e.preventDefault(); sendCode(); }} className={styles.form}>
-            <input
-              className="input"
-              type="email"
-              placeholder="Email"
-              required
-              disabled={codeSent}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-            />
-            {codeSent && (
-              <input
-                className="input"
-                type="text"
-                inputMode="numeric"
-                maxLength={6}
-                placeholder="Код из письма (6 цифр)"
-                required
-                value={code}
-                onChange={e => setCode(e.target.value.replace(/\D/g, ''))}
-                autoFocus
-              />
-            )}
-            {error && <p className={styles.error}>{error}</p>}
-            {codeSent && (
-              <p style={{ fontSize: '.8rem', color: 'var(--text3)', margin: 0 }}>
-                Код отправлен на <strong>{email}</strong>. Проверь почту (и папку «Спам»).
-              </p>
-            )}
-            <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '.5rem' }}>
-              {loading ? <span className="spin" /> : codeSent ? 'Войти' : 'Получить код'}
-            </button>
-            {codeSent && (
-              <button
-                type="button"
-                className="btn-ghost"
-                onClick={() => { setCodeSent(false); setCode(''); setError(''); }}
-                style={{ width: '100%', padding: '.4rem', fontSize: '.8rem' }}
-              >
-                Изменить email
-              </button>
-            )}
-          </form>
-        ) : (
-          <form onSubmit={submitPassword} className={styles.form}>
-            {tab === 'register' && (
-              <input className="input" placeholder="Имя (необязательно)" value={name} onChange={e => setName(e.target.value)} />
-            )}
-            <input className="input" type="email" placeholder="Email" required value={email} onChange={e => setEmail(e.target.value)} />
-            <input className="input" type="password" placeholder="Пароль" required minLength={6} value={pass} onChange={e => setPass(e.target.value)} />
-            {error && <p className={styles.error}>{error}</p>}
-            <button className="btn-primary" type="submit" disabled={loading} style={{ width: '100%', padding: '.5rem' }}>
-              {loading ? <span className="spin" /> : tab === 'login' ? 'Войти' : 'Зарегистрироваться'}
-            </button>
-          </form>
-        )}
+        <h2 style={{ fontFamily: "'Cinzel', serif", fontSize: '1rem', letterSpacing: '.15em', textTransform: 'uppercase', color: 'var(--gold)', textAlign: 'center', margin: '0 0 1.4rem' }}>
+          Вход
+        </h2>
+        <button
+          className={styles.vkBtn}
+          type="button"
+          onClick={loginVk}
+          disabled={loading}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <path d="M12.785 16.241s.288-.032.435-.193c.136-.148.131-.426.131-.426s-.019-1.294.574-1.483c.584-.185 1.334 1.237 2.129 1.784.601.413 1.058.322 1.058.322l2.127-.03s1.112-.069.585-.952c-.043-.072-.306-.652-1.578-1.839-1.332-1.24-1.154-1.039.451-3.187.978-1.309 1.369-2.11 1.247-2.454-.116-.328-.84-.241-.84-.241l-2.41.015s-.179-.025-.311.054c-.129.077-.212.257-.212.257s-.379 1.015-.883 1.879c-1.063 1.821-1.489 1.917-1.662 1.804-.404-.264-.303-1.059-.303-1.624 0-1.764.266-2.5-.517-2.69-.26-.064-.451-.106-1.115-.113-.853-.009-1.575.003-1.984.203-.272.134-.482.432-.354.449.158.021.515.096.704.355.244.334.236 1.084.236 1.084s.14 2.062-.328 2.317c-.321.175-.761-.182-1.711-1.836-.487-.847-.854-1.784-.854-1.784s-.071-.173-.197-.266c-.154-.113-.369-.149-.369-.149l-2.29.015s-.344.01-.47.16c-.112.133-.009.407-.009.407s1.794 4.198 3.826 6.314c1.863 1.938 3.979 1.811 3.979 1.811h.957z"/>
+          </svg>
+          {loading ? <span className="spin" /> : 'Войти через VK'}
+        </button>
+        {error && <p className={styles.error} style={{ marginTop: '.9rem' }}>{error}</p>}
+        <p style={{ fontSize: '.72rem', color: 'var(--text3)', textAlign: 'center', marginTop: '1.2rem', lineHeight: 1.5 }}>
+          Нажимая «Войти через VK», вы соглашаетесь с правилами сайта. Мы получим только ваш ID, имя и email.
+        </p>
       </div>
     </div>
   );

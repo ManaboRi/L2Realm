@@ -2,7 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request, Ip } from '@nestjs/com
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, SendCodeDto, VerifyCodeDto } from './dto/auth.dto';
+import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, SendCodeDto, VerifyCodeDto, VkCallbackDto } from './dto/auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -27,6 +27,11 @@ export class AuthController {
   @Post('verify-code')
   verifyCode(@Body() dto: VerifyCodeDto) {
     return this.auth.verifyEmailCode(dto.email, dto.code);
+  }
+
+  @Post('vk/callback')
+  vkCallback(@Body() dto: VkCallbackDto, @Ip() ip: string) {
+    return this.auth.loginWithVk({ ...dto, ip });
   }
 
   @ApiBearerAuth()

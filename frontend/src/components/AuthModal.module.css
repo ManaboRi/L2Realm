@@ -23,3 +23,23 @@
 .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
 .form  { display: flex; flex-direction: column; gap: .75rem; }
 .error { font-size: .78rem; color: #CC6060; background: rgba(196,64,64,.1); border: 1px solid rgba(196,64,64,.3); padding: .4rem .7rem; border-radius: 2px; }
+.vkBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  padding: .7rem 1rem;
+  background: #0077FF;
+  color: #fff;
+  border: none;
+  font-family: 'Cinzel', serif;
+  font-size: .82rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .18s, transform .1s;
+}
+.vkBtn:hover:not(:disabled)  { background: #1e85ff; }
+.vkBtn:active:not(:disabled) { transform: translateY(1px); }
+.vkBtn:disabled              { opacity: .6; cursor: wait; }

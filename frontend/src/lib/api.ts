@@ -107,5 +107,9 @@ export const api = {
       request<{ access_token: string; user: any }>('/auth/verify-code', {
         method: 'POST', body: JSON.stringify({ email, code }),
       }),
+    vkCallback: (data: { code: string; deviceId: string; codeVerifier: string; redirectUri: string; state: string }) =>
+      request<{ access_token: string; user: any }>('/auth/vk/callback', {
+        method: 'POST', body: JSON.stringify(data),
+      }),
   },
 };
