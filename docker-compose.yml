@@ -66,6 +66,8 @@ services:
 
 networks:
   l2realm-net:
+    driver_opts:
+      com.docker.network.driver.mtu: 1450
 
 volumes:
   postgres_data:
