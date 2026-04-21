@@ -121,8 +121,17 @@ export class AuthService {
     });
     const info = await this.vk.fetchUserInfo(accessToken);
 
-    // 1. ищем по vkId
+    // 1. ищем по vkId — на каждом логине освежаем аватар и имя из VK
     let user = await this.prisma.user.findUnique({ where: { vkId: info.vkId } });
+    if (user) {
+      const name = [info.firstName, info.lastName].filter(Boolean).join(' ') || user.name;
+      if (info.avatar !== user.avatar || name !== user.name) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data:  { avatar: info.avatar ?? user.avatar, name },
+        });
+      }
+    }
 
     // 2. если нет — пробуем привязать по email
     if (!user && info.email) {
@@ -130,7 +139,7 @@ export class AuthService {
       if (byEmail) {
         user = await this.prisma.user.update({
           where: { id: byEmail.id },
-          data:  { vkId: info.vkId, emailVerified: true, avatar: byEmail.avatar || info.avatar },
+          data:  { vkId: info.vkId, emailVerified: true, avatar: info.avatar ?? byEmail.avatar },
         });
       }
     }

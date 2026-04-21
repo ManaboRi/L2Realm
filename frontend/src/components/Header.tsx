@@ -1,13 +1,16 @@
 'use client';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
 
 export function Header() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+
+  const displayName = user?.nickname || user?.name || user?.email || '';
+  const initial = displayName[0]?.toUpperCase() || '?';
 
   return (
     <>
@@ -31,12 +34,14 @@ export function Header() {
 
         <div className={styles.right}>
           {user ? (
-            <>
-              <Link href="/profile" className={styles.userName} style={{ textDecoration: 'none' }}>
-                {user.nickname || user.name || user.email}
-              </Link>
-              <button className="btn-ghost" onClick={logout}>Выйти</button>
-            </>
+            <Link href="/profile" className={styles.profileChip} title="Личный кабинет">
+              {user.avatar ? (
+                <img src={user.avatar} alt="" className={styles.profileAvatar} />
+              ) : (
+                <span className={styles.profileAvatarFallback}>{initial}</span>
+              )}
+              <span className={styles.profileName}>{displayName}</span>
+            </Link>
           ) : (
             <button className="btn-ghost" onClick={() => setAuthOpen(true)}>Войти</button>
           )}
