@@ -17,7 +17,7 @@ export function Header() {
       <header className={styles.header}>
         <Link href="/" className={styles.logo}>
           <span className={styles.gem} />
-          L2Realm
+          <span className={styles.logoText}>L2Realm</span>
         </Link>
 
         <nav className={styles.nav}>
@@ -45,7 +45,8 @@ export function Header() {
           ) : (
             <button className="btn-ghost" onClick={() => setAuthOpen(true)}>Войти</button>
           )}
-          <Link href="/add" className="btn-primary">+ Добавить сервер</Link>
+          <Link href="/add" className={`btn-primary ${styles.addBtn}`}>+ Добавить сервер</Link>
+          <Link href="/add" className={`btn-primary ${styles.addBtnShort}`} title="Добавить сервер">+</Link>
         </div>
       </header>
 

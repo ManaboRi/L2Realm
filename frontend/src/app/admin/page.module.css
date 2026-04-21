@@ -49,3 +49,12 @@
 .checkRow { display: flex; gap: 1rem; flex-wrap: wrap; }
 .checkLabel { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text2); cursor: pointer; }
 .checkLabel input { accent-color: var(--gold-d); }
+
+@media (max-width: 600px) {
+  .hero { padding: 1.2rem .8rem 1rem; }
+  .wrap { padding: 1rem .8rem 3rem; }
+  .tab { padding: .5rem .7rem; font-size: .62rem; }
+  .addForm { padding: 1rem .9rem; }
+  .formGrid { grid-template-columns: 1fr; }
+  .toast { bottom: .8rem; right: .8rem; left: .8rem; text-align: center; }
+}

@@ -117,17 +117,43 @@
 .pageBtn:hover { border-color: var(--border2); color: var(--text); }
 .pageBtnActive { background: rgba(200,168,75,.12); border-color: var(--gold-d); color: var(--gold); }
 
+.filtersToggle {
+  display: none;
+  background: var(--bg2); border: 1px solid var(--border); color: var(--text);
+  padding: .55rem .9rem; border-radius: 3px; font-size: .82rem;
+  text-align: left; align-items: center; gap: .5rem;
+  margin-bottom: .6rem;
+}
+.filtersToggle:hover  { border-color: var(--border2); }
+.filtersToggleIcon   { font-size: .72rem; color: var(--gold-d); transition: transform .2s; }
+.filtersToggleOpen .filtersToggleIcon { transform: rotate(180deg); }
+.filtersCount {
+  margin-left: auto; font-size: .68rem; color: var(--gold);
+  background: rgba(200,168,75,.1); border: 1px solid var(--border2);
+  border-radius: 999px; padding: 0 .5rem; line-height: 1.6;
+}
+
 @media (max-width: 900px) { .layout { grid-template-columns: 190px 1fr; } }
 @media (max-width: 660px) {
   .pageInner { padding: .8rem .8rem 3rem; }
   .hero { padding: 1rem 1rem 1rem; }
-  .heroSub { white-space: normal; }
+  .heroTitle { font-size: clamp(1.3rem, 6vw, 1.8rem); }
+  .heroSub { white-space: normal; font-size: .82rem; }
   .heroStats { align-self: stretch; justify-content: space-around; }
   .layout { grid-template-columns: 1fr; gap: .6rem; }
-  .sidebar { position: static; max-height: none; flex-direction: row; flex-wrap: wrap; gap: .8rem; padding: .9rem; }
-  .filterGroup { min-width: 130px; flex: 1; }
+
+  .filtersToggle { display: flex; }
+  .sidebar { display: none; }
+  .sidebar.sidebarOpen {
+    display: flex;
+    position: static; max-height: none;
+    flex-direction: column; gap: .8rem; padding: .9rem;
+    animation: fadeIn .22s ease;
+  }
+  .filterGroup { min-width: 0; flex: 1; }
   .chips { flex-direction: row; flex-wrap: wrap; }
   .chip  { width: auto; }
-  .searchBar { flex-direction: column; align-items: stretch; }
+
+  .searchBar { flex-direction: column; align-items: stretch; padding: .6rem .7rem; }
   .sortWrap  { justify-content: space-between; }
 }

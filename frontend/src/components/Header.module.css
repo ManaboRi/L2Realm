@@ -11,6 +11,10 @@
   color: var(--gold); letter-spacing: .08em;
   display: flex; align-items: center; gap: .45rem; flex-shrink: 0;
 }
+.logoText { display: inline; }
+
+.addBtn { display: inline-block; }
+.addBtnShort { display: none; padding: .38rem .65rem; }
 .gem {
   width: 18px; height: 18px; border: 1.5px solid var(--gold-d);
   transform: rotate(45deg); position: relative; flex-shrink: 0;
@@ -74,7 +78,13 @@
 }
 
 @media (max-width: 600px) {
+  .header { padding: 0 .8rem; gap: .5rem; }
   .nav { display: none; }
   .profileName { display: none; }
   .profileChip { padding: .25rem; }
+  .addBtn { display: none; }
+  .addBtnShort { display: inline-block; }
+}
+@media (max-width: 380px) {
+  .logoText { display: none; }
 }

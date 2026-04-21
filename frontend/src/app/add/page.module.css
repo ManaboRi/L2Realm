@@ -43,4 +43,16 @@
 .selectedPlan { font-size: .7rem; font-weight: 400; margin-left: .5rem; }
 
 .note { font-size: .74rem; color: var(--text3); text-align: center; margin-top: .8rem; font-family: 'Almendra', serif; font-style: italic; }
+@media (max-width: 600px) {
+  .hero { padding: 1.4rem .8rem 1.2rem; }
+  .wrap { margin: 1.2rem auto; padding: 0 .8rem 3rem; }
+  .card { padding: 1.1rem 1rem; }
+  .steps { margin-bottom: 1.2rem; }
+  .stepLine { margin: 0 .4rem; }
+  .step { font-size: .58rem; gap: .3rem; }
+  .stepNum { width: 19px; height: 19px; font-size: .58rem; }
+  .tier { padding: .7rem .9rem; gap: .6rem; flex-wrap: wrap; }
+  .tierCheck { position: static; margin-left: .3rem; }
+  .toast { bottom: .8rem; right: .8rem; left: .8rem; text-align: center; }
+}
 @media (max-width: 500px) { .row2 { grid-template-columns: 1fr; } }

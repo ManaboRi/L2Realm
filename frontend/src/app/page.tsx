@@ -24,8 +24,11 @@ export default function HomePage() {
   const [sort,     setSort]     = useState('opened');
   const [filters,  setFilters]  = useState<Record<string, string>>({});
   const [page,     setPage]     = useState(1);
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [pages,    setPages]    = useState(1);
+
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,10 +79,21 @@ export default function HomePage() {
         </div>
       </section>
 
+      <button
+        type="button"
+        className={`${styles.filtersToggle} ${mobileFiltersOpen ? styles.filtersToggleOpen : ''}`}
+        onClick={() => setMobileFiltersOpen(v => !v)}
+        aria-expanded={mobileFiltersOpen}
+      >
+        <span>Фильтры</span>
+        {activeFiltersCount > 0 && <span className={styles.filtersCount}>{activeFiltersCount}</span>}
+        <span className={styles.filtersToggleIcon} style={{ marginLeft: activeFiltersCount > 0 ? 0 : 'auto' }}>▾</span>
+      </button>
+
       <div className={styles.layout}>
 
         {/* Сайдбар фильтров */}
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${mobileFiltersOpen ? styles.sidebarOpen : ''}`}>
           <div className={styles.sidebarHead}><span className={styles.sideLabel}>Фильтры</span></div>
 
           <FilterGroup label="Хроника">

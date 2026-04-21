@@ -29,7 +29,7 @@ const cardStyle: React.CSSProperties = {
   background: 'var(--bg2)',
   border: '1px solid var(--border)',
   borderRadius: '.8rem',
-  padding: '2rem',
+  padding: 'clamp(1rem, 4vw, 2rem)',
 };
 
 const sectionTitleStyle: React.CSSProperties = {
@@ -117,30 +117,30 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ maxWidth: '780px', margin: '0 auto', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ maxWidth: '780px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 2rem) clamp(.7rem, 2vw, 1rem)', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
 
       {/* ── Карточка профиля ─────────────────────── */}
       <section style={cardStyle}>
         <div style={sectionTitleStyle}>Личный кабинет</div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', marginBottom: '1.4rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(.8rem, 2.5vw, 1.2rem)', marginBottom: '1.4rem', flexWrap: 'wrap' }}>
           {user.avatar ? (
             <img
               src={user.avatar}
               alt=""
-              style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border2)' }}
+              style={{ width: 'clamp(56px, 14vw, 72px)', height: 'clamp(56px, 14vw, 72px)', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border2)', flexShrink: 0 }}
             />
           ) : (
             <div style={{
-              width: 72, height: 72, borderRadius: '50%',
+              width: 'clamp(56px, 14vw, 72px)', height: 'clamp(56px, 14vw, 72px)', borderRadius: '50%',
               background: 'var(--bg1)', border: '1px solid var(--border2)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: "'Cinzel',serif", fontSize: '1.6rem', color: 'var(--gold)',
+              fontFamily: "'Cinzel',serif", fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', color: 'var(--gold)', flexShrink: 0,
             }}>
               {(user.nickname || user.name || user.email)[0]?.toUpperCase()}
             </div>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.25rem', minWidth: 0, flex: 1, wordBreak: 'break-word' }}>
             <div style={{ fontFamily: "'Cinzel',serif", fontSize: '1.1rem', color: 'var(--text1)' }}>
               {user.nickname || user.name || 'Без ника'}
             </div>
