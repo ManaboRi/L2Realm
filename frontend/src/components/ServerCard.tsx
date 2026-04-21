@@ -13,19 +13,24 @@ function fmtDate(s?: string | null) {
 
 interface Props { server: Server; vipBlock?: boolean; }
 
-const PLAN_STAR: Record<string, { cls: string; icon: string }> = {
-  VIP:      { cls: 'planVip',      icon: '★' },
-  PREMIUM:  { cls: 'planPremium',  icon: '★' },
-  STANDARD: { cls: 'planStandard', icon: '★' },
-};
-
 export function ServerCard({ server: s, vipBlock }: Props) {
-  const isSoon = s.openedDate ? new Date(s.openedDate) > new Date() : false;
-  const plan   = s.subscription?.plan ?? 'FREE';
-  const star   = PLAN_STAR[plan];
+  const isSoon    = s.openedDate ? new Date(s.openedDate) > new Date() : false;
+  const plan      = s.subscription?.plan ?? 'FREE';
+  const isVip     = plan === 'VIP';
+  const isBoosted = !!s._isBoosted;
+  const isSod     = !!s._isSod;
+
+  const rowClass = [
+    styles.row,
+    isVip ? styles.planVip : '',
+    isBoosted ? styles.boosted : '',
+    isSod ? styles.sod : '',
+    isSoon ? styles.soon : '',
+    vipBlock ? styles.vipBlock : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <div className={[styles.row, star ? styles[star.cls] : '', isSoon ? styles.soon : '', vipBlock ? styles.vipBlock : ''].filter(Boolean).join(' ')}>
+    <div className={rowClass}>
 
       {/* Иконка */}
       <div className={styles.icon}>
@@ -38,9 +43,10 @@ export function ServerCard({ server: s, vipBlock }: Props) {
       <Link href={`/servers/${s.id}`} className={styles.main}>
         <div className={styles.top}>
           <span className={styles.name}>{s.name}</span>
-          {star && <span className={styles[`star${plan.charAt(0) + plan.slice(1).toLowerCase()}`]}>★</span>}
-          {s.type.includes('featured') && <span className={styles.fire}>🔥</span>}
-          {plan === 'VIP' && <span className={styles.vipBadge}>VIP</span>}
+          {isVip && <span className={styles.starVip} title="VIP">★</span>}
+          {isBoosted && <span className={styles.fire} title="В огне — буст активен">🔥</span>}
+          {isSod && <span className={styles.sodBadge} title="Сервер дня">★ Сервер дня</span>}
+          {isVip && <span className={styles.vipBadge}>VIP</span>}
           <div className={styles.tags}>
             <span className="tag tc">{s.chronicle}</span>
             <span className="tag tr">{s.rates}</span>

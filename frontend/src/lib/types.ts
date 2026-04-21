@@ -29,17 +29,43 @@ export interface Server {
   online?:     number;
   status?:     'online' | 'offline' | 'unknown';
   subscription?: Subscription;
+  boost?:      Boost | null;
   reviews?:    Review[];
   news?:       NewsItem[];
+  _isVip?:     boolean;
+  _isBoosted?: boolean;
+  _isSod?:     boolean;
+  _boostEnd?:  string | null;
 }
 
 export interface Subscription {
   id:        string;
   serverId:  string;
-  plan:      'FREE' | 'STANDARD' | 'PREMIUM' | 'VIP';
+  plan:      'FREE' | 'VIP';
   startDate: string;
   endDate:   string;
   paid:      boolean;
+}
+
+export interface Boost {
+  id:        string;
+  serverId:  string;
+  startDate: string;
+  endDate:   string;
+  paid:      boolean;
+}
+
+export interface VipStatus {
+  taken:      number;
+  free:       number;
+  max:        number;
+  nextFreeAt: string | null;
+  slots: Array<{
+    id: string;
+    serverId: string;
+    endDate: string;
+    server: { id: string; name: string; icon: string | null };
+  }>;
 }
 
 export interface Review {
@@ -100,11 +126,10 @@ export interface Stats {
   reviewCount: number;
 }
 
-export type SubscriptionPlan = 'free' | 'standard' | 'premium' | 'vip';
+export type SubscriptionPlan = 'free' | 'vip';
 
-export const PLAN_INFO: Record<SubscriptionPlan, { name: string; what: string; price: string; color: string; slots?: number }> = {
-  free:     { name: 'Бесплатное', what: 'Просто попасть в список',                  price: '0 ₽',         color: 'var(--text2)' },
-  standard: { name: 'Стандарт',   what: 'Выделение в списке',                       price: '500 ₽/мес',   color: '#5A8FC8' },
-  premium:  { name: '👑 Премиум', what: 'Закрепление вверху списка',                price: '2 000 ₽/мес', color: 'var(--gold)' },
-  vip:      { name: '◆ VIP',      what: 'Отдельный блок на главной + баннер',       price: '5 000 ₽/мес', color: 'var(--gold)', slots: 3 },
-};
+export const VIP_PRICE   = 5000;
+export const VIP_DAYS    = 31;
+export const VIP_MAX     = 3;
+export const BOOST_PRICE = 250;
+export const BOOST_DAYS  = 7;

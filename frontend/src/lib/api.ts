@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, Review, FavoriteServer, User } from './types';
+import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -70,13 +70,26 @@ export const api = {
 
   // ── Оплата ────────────────────────────────────
   payments: {
-    create: (data: { serverId: string; plan: string; returnUrl: string }) =>
-      request<any>('/payments/create', { method: 'POST', body: JSON.stringify(data) }),
-    subscription: (serverId: string) => request<any>(`/payments/subscription/${serverId}`),
-    activate: (data: { serverId: string; plan: string }, token: string) =>
-      request<any>('/payments/activate', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
-    all: (token: string) =>
+    // Покупка VIP или буста (ЮКасса). В dev-mode возвращает { dev: true, activated: true }.
+    purchase: (data: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string }) =>
+      request<{ dev?: boolean; activated?: boolean; paymentId?: string; confirmationUrl?: string }>(
+        '/payments/purchase', { method: 'POST', body: JSON.stringify(data) },
+      ),
+    vipStatus: () => request<VipStatus>('/payments/vip/status'),
+    subscription: (serverId: string) => request<Subscription | null>(`/payments/subscription/${serverId}`),
+    boost: (serverId: string) => request<Boost | null>(`/payments/boost/${serverId}`),
+    allSubs: (token: string) =>
       request<any[]>('/payments/all', { headers: { Authorization: `Bearer ${token}` } }),
+    allBoosts: (token: string) =>
+      request<any[]>('/payments/boosts/all', { headers: { Authorization: `Bearer ${token}` } }),
+    grantVip: (serverId: string, token: string) =>
+      request<any>(`/payments/vip/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+    revokeVip: (serverId: string, token: string) =>
+      request<any>(`/payments/vip/${serverId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+    grantBoost: (serverId: string, token: string) =>
+      request<any>(`/payments/boost/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+    revokeBoost: (serverId: string, token: string) =>
+      request<any>(`/payments/boost/${serverId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   },
 
   // ── Auth ──────────────────────────────────────

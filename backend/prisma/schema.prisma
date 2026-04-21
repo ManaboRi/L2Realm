@@ -76,6 +76,7 @@ model Server {
   news         News[]
   monitorLogs  MonitorLog[]
   favorites    Favorite[]
+  boosts       Boost[]
 }
 
 // ── Избранное / Watchlist ─────────────────────
@@ -108,9 +109,22 @@ model Subscription {
 
 enum SubscriptionPlan {
   FREE      // 0₽ — просто в списке
-  STANDARD  // 500-1500₽/мес — выделение
-  PREMIUM   // 2000-5000₽/мес — закреп
-  VIP       // 5000-15000₽/мес — отдельный блок
+  VIP       // 5000₽/мес — отдельный блок (3 места)
+}
+
+// ── Буст «Огонёк» (250₽ / 7 дней) ─────────────
+model Boost {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  startDate  DateTime @default(now())
+  endDate    DateTime
+  paid       Boolean  @default(false)
+  paymentId  String?
+  createdAt  DateTime @default(now())
+
+  @@index([serverId, endDate])
+  @@index([endDate])
 }
 
 // ── Отзывы ────────────────────────────────────

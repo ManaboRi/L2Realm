@@ -10,6 +10,14 @@ function rateRange(n: number): string {
   return 'ultra';
 }
 
+function todaySeed(): number {
+  const d = new Date();
+  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
 @Injectable()
 export class ServersService {
   constructor(
@@ -47,17 +55,49 @@ export class ServersService {
       ? allServers.filter(s => rateRange(s.rateNum) === rate)
       : allServers;
 
-    // Сортировка по тарифу: VIP > PREMIUM > STANDARD > FREE
-    const planOrder: Record<string, number> = { VIP: 4, PREMIUM: 3, STANDARD: 2, FREE: 1 };
-    filtered.sort((a, b) => {
-      const aP = planOrder[(a.subscription as any)?.plan ?? 'FREE'] ?? 1;
-      const bP = planOrder[(b.subscription as any)?.plan ?? 'FREE'] ?? 1;
-      return bP - aP;
+    // Активные бусты (endDate > now) — словарь serverId → endDate
+    const now = new Date();
+    const boosts = await this.prisma.boost.findMany({
+      where: { endDate: { gt: now } },
+      select: { serverId: true, endDate: true },
+    });
+    const boostMap = new Map(boosts.map(b => [b.serverId, b.endDate]));
+
+    // Сервер дня: детерминированный рандом (сид = UTC дата), из пула не-VIP, не-бустовых
+    const eligibleSod = filtered.filter(s => {
+      const plan = (s.subscription as any)?.plan ?? 'FREE';
+      const subActive = s.subscription?.endDate && s.subscription.endDate > now;
+      const isVip = plan === 'VIP' && subActive;
+      return !isVip && !boostMap.has(s.id);
+    });
+    const sodId = eligibleSod.length
+      ? eligibleSod[todaySeed() % eligibleSod.length].id
+      : null;
+
+    // Приклеиваем флаги и сортируем: VIP → Boosted (по endDate DESC) → Сервер дня → остальные
+    const decorated = filtered.map(s => {
+      const plan = (s.subscription as any)?.plan ?? 'FREE';
+      const subActive = s.subscription?.endDate && s.subscription.endDate > now;
+      const isVip  = plan === 'VIP' && subActive;
+      const boostEnd = boostMap.get(s.id) ?? null;
+      const isBoosted = !!boostEnd;
+      const isSod    = s.id === sodId;
+      return { ...s, _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
     });
 
-    const total = filtered.length;
+    decorated.sort((a, b) => {
+      if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
+      if (a._isBoosted !== b._isBoosted) return a._isBoosted ? -1 : 1;
+      if (a._isBoosted && b._isBoosted) {
+        return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
+      }
+      if (a._isSod !== b._isSod) return a._isSod ? -1 : 1;
+      return 0; // стабильно: сохраняем исходный user-sort
+    });
+
+    const total = decorated.length;
     const start = (page - 1) * limit;
-    const data  = filtered.slice(start, start + limit);
+    const data  = decorated.slice(start, start + limit);
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
@@ -78,7 +118,11 @@ export class ServersService {
       },
     });
     if (!server) throw new NotFoundException('Сервер не найден');
-    return server;
+    const boost = await this.prisma.boost.findFirst({
+      where: { serverId: id, endDate: { gt: new Date() } },
+      orderBy: { endDate: 'desc' },
+    });
+    return { ...server, boost };
   }
 
   // ── Создать (только admin) ───────────────────

@@ -1,0 +1,89 @@
+.page { min-height: 100vh; }
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--bg3); border: 1px solid var(--border2);
+  color: var(--text); padding: .75rem 1.2rem; border-radius: 3px;
+  font-size: .84rem; z-index: 99; animation: fadeIn .22s ease;
+}
+
+.hero { text-align: center; padding: 2.4rem 1.5rem 1.8rem; border-bottom: 1px solid var(--border); max-width: 920px; margin: 0 auto; }
+.heroEye   { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; margin-bottom: .5rem; }
+.heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 700; color: #F0E8C8; margin-bottom: .5rem; }
+.heroTitle em { color: var(--gold); font-style: normal; }
+.heroSub   { font-family: 'Almendra', serif; font-size: .98rem; color: var(--text2); font-style: italic; max-width: 620px; margin: 0 auto; }
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 1.6rem; }
+
+.serverPick {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1.2rem 1.4rem; display: flex; flex-direction: column; gap: .5rem;
+}
+.pickLabel { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .18em; }
+.pickHint { font-size: .78rem; color: var(--text3); margin: 0; }
+
+.tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+
+.tier {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1.4rem 1.5rem;
+  display: flex; flex-direction: column; gap: .8rem;
+  position: relative; overflow: hidden;
+}
+.tierVip   { border-color: var(--gold-d); box-shadow: 0 0 18px rgba(200,168,75,.08); }
+.tierBoost { border-color: rgba(240,140,70,.4); }
+.tierSod   { border-color: rgba(90,180,130,.35); }
+
+.tierHead { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
+.tierBadge {
+  font-family: 'Cinzel', serif; font-size: .68rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-d), var(--gold));
+  color: #090B10; padding: .18rem .6rem; border-radius: 2px;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.badgeBoost { background: linear-gradient(135deg, #F08C46, #CC4A2A); color: #fff; }
+.badgeSod   { background: linear-gradient(135deg, #5AB482, #2D8A58); color: #fff; }
+.tierPrice { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); font-weight: 600; white-space: nowrap; }
+.priceSub  { font-size: .7rem; color: var(--text3); font-weight: 400; }
+
+.tierTitle { font-family: 'Cinzel', serif; font-size: 1.02rem; font-weight: 600; color: #F0E8C8; margin: 0; }
+.tierDesc  { font-size: .9rem; color: var(--text2); line-height: 1.55; margin: 0; }
+
+.tierList { list-style: none; padding: 0; margin: .2rem 0; display: flex; flex-direction: column; gap: .4rem; }
+.tierList li { position: relative; padding-left: 1.1rem; font-size: .86rem; color: var(--text2); line-height: 1.5; }
+.tierList li::before { content: '◆'; position: absolute; left: 0; top: 0; color: var(--gold-d); font-size: .5rem; line-height: 1.5; }
+
+.slotsBox {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 3px;
+  padding: .8rem 1rem; display: flex; flex-direction: column; gap: .35rem;
+  font-size: .86rem;
+}
+.slotsLine { display: flex; justify-content: space-between; gap: .6rem; color: var(--text2); }
+.slotsFree { color: #5AB482; }
+.slotsFull { color: #CC6060; }
+.slotsHint { font-size: .78rem; color: var(--text3); }
+
+.faq {
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1.4rem 1.6rem; display: flex; flex-direction: column; gap: .5rem;
+}
+.faqTitle {
+  font-family: 'Cinzel', serif; font-size: .88rem; color: var(--gold);
+  text-transform: uppercase; letter-spacing: .14em;
+  padding-bottom: .6rem; border-bottom: 1px solid var(--border); margin: 0 0 .4rem;
+}
+.faqItem { padding: .5rem 0; border-bottom: 1px dashed var(--border); }
+.faqItem:last-child { border-bottom: none; }
+.faqItem summary {
+  cursor: pointer; font-family: 'Cinzel', serif; font-size: .84rem;
+  color: var(--text1); padding: .2rem 0; transition: color .15s;
+}
+.faqItem summary:hover { color: var(--gold); }
+.faqItem p { font-size: .88rem; color: var(--text2); line-height: 1.6; margin: .5rem 0 .2rem; }
+
+@media (max-width: 600px) {
+  .hero { padding: 1.4rem .8rem 1.2rem; }
+  .wrap { padding: 1.2rem .8rem 3rem; gap: 1rem; }
+  .tier { padding: 1.1rem 1rem; }
+  .faq { padding: 1.1rem 1rem; }
+  .toast { bottom: .8rem; right: .8rem; left: .8rem; text-align: center; }
+}

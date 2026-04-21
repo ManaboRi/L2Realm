@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Review } from '@/lib/types';
+import { BOOST_PRICE, BOOST_DAYS } from '@/lib/types';
 import styles from './page.module.css';
 
 function dlbl(d: string) { return { free: 'Без доната', cosmetic: 'Косметика', p2w: 'Pay-to-win' }[d] ?? d; }
@@ -71,6 +72,7 @@ export default function ServerPage() {
   const [toast,    setToast]    = useState('');
   const [isFav,    setIsFav]    = useState(false);
   const [favBusy,  setFavBusy]  = useState(false);
+  const [boostBusy, setBoostBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -107,6 +109,29 @@ export default function ServerPage() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  }
+
+  async function buyBoost() {
+    setBoostBusy(true);
+    try {
+      const res = await api.payments.purchase({
+        kind: 'boost',
+        serverId: id,
+        returnUrl: window.location.href,
+      });
+      if (res.confirmationUrl) {
+        window.location.href = res.confirmationUrl;
+        return;
+      }
+      if (res.activated) {
+        showToast('🔥 Буст активирован!');
+        const fresh = await api.servers.get(id);
+        setServer(fresh);
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Ошибка оплаты');
+    }
+    setBoostBusy(false);
   }
 
   async function submitReview(e: { preventDefault(): void }) {
@@ -162,7 +187,12 @@ export default function ServerPage() {
                 : <span>{server.abbr ?? server.name.slice(0,2)}</span>}
             </div>
             <div>
-              <div className={styles.serverName}>{server.name} {server.type.includes('featured') && '🔥'}</div>
+              <div className={styles.serverName}>
+                {server.name}{' '}
+                {server.boost && new Date(server.boost.endDate) > new Date() && (
+                  <span title="Буст активен" style={{ filter: 'drop-shadow(0 0 4px rgba(240,140,70,.6))' }}>🔥</span>
+                )}
+              </div>
               <div className={styles.headerTags}>
                 <span className="tag tc">{server.chronicle}</span>
                 <span className="tag tr">{server.rates}</span>
@@ -296,6 +326,13 @@ export default function ServerPage() {
             </div>
           )}
 
+          {/* Буст «Огонёк» */}
+          <BoostBlock
+            activeUntil={server.boost?.endDate ?? null}
+            busy={boostBusy}
+            onBuy={buyBoost}
+          />
+
           {/* Форма отзыва */}
           <div className={styles.dblock}>
             <div className={styles.dblockTitle}>Оставить отзыв</div>
@@ -363,6 +400,55 @@ export default function ServerPage() {
           </div>
 
         </div>
+      </div>
+    </div>
+  );
+}
+
+function BoostBlock({ activeUntil, busy, onBuy }: { activeUntil: string | null; busy: boolean; onBuy: () => void }) {
+  const active = activeUntil && new Date(activeUntil) > new Date();
+  return (
+    <div className={styles.dblock}>
+      <div className={styles.dblockTitle}>Поднять в топ 🔥</div>
+      <div className={styles.dblockBody}>
+        {active ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            <p style={{ margin: 0, color: 'var(--text1)', fontSize: '.92rem' }}>
+              🔥 <strong>В огне</strong> до{' '}
+              <strong style={{ color: 'var(--gold)' }}>
+                {new Date(activeUntil!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </strong>
+            </p>
+            <p style={{ margin: 0, color: 'var(--text2)', fontSize: '.84rem' }}>
+              Сервер закреплён выше обычных в каталоге и помечен огоньком. Продлить на ещё {BOOST_DAYS} дней — {BOOST_PRICE} ₽.
+            </p>
+            <button
+              className="btn-primary"
+              style={{ alignSelf: 'flex-start', padding: '.5rem 1.2rem' }}
+              onClick={onBuy}
+              disabled={busy}
+            >
+              {busy ? <span className="spin" /> : `Продлить буст на ${BOOST_DAYS} дней — ${BOOST_PRICE} ₽`}
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+            <p style={{ margin: 0, color: 'var(--text1)', fontSize: '.92rem' }}>
+              Поднять сервер выше обычных на <strong>{BOOST_DAYS} дней</strong>. В каталоге — метка 🔥 и подсветка.
+            </p>
+            <p style={{ margin: 0, color: 'var(--text2)', fontSize: '.84rem' }}>
+              Быстрая точечная реклама без долгих подписок.
+            </p>
+            <button
+              className="btn-primary"
+              style={{ alignSelf: 'flex-start', padding: '.5rem 1.2rem' }}
+              onClick={onBuy}
+              disabled={busy}
+            >
+              {busy ? <span className="spin" /> : `Купить буст — ${BOOST_PRICE} ₽`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
