@@ -3,17 +3,18 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { User } from '@/lib/types';
 
 interface AuthState {
-  user:    User | null;
-  token:   string | null;
-  loading: boolean;
-  login:   (token: string, user: User) => void;
-  logout:  () => void;
-  isAdmin: boolean;
+  user:       User | null;
+  token:      string | null;
+  loading:    boolean;
+  login:      (token: string, user: User) => void;
+  logout:     () => void;
+  updateUser: (user: User) => void;
+  isAdmin:    boolean;
 }
 
 const AuthContext = createContext<AuthState>({
   user: null, token: null, loading: true,
-  login: () => {}, logout: () => {}, isAdmin: false,
+  login: () => {}, logout: () => {}, updateUser: () => {}, isAdmin: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -47,8 +48,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('l2r_user');
   }, []);
 
+  const updateUser = useCallback((u: User) => {
+    setUser(u);
+    localStorage.setItem('l2r_user', JSON.stringify(u));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin: user?.role === 'ADMIN' }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, updateUser, isAdmin: user?.role === 'ADMIN' }}>
       {children}
     </AuthContext.Provider>
   );

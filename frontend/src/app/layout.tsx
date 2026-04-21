@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
+import { NicknamePrompt } from '@/components/NicknamePrompt';
 import { AuthProvider } from '@/context/AuthContext';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <Header />
           <main>{children}</main>
+          <NicknamePrompt />
         </AuthProvider>
       </body>
     </html>

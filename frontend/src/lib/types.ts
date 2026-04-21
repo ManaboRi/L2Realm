@@ -47,7 +47,7 @@ export interface Review {
   rating:    number;
   text:      string;
   createdAt: string;
-  user:      { id: string; name?: string };
+  user:      { id: string; name?: string; nickname?: string; avatar?: string };
 }
 
 export interface NewsItem {
@@ -59,11 +59,30 @@ export interface NewsItem {
 }
 
 export interface User {
-  id:     string;
-  email:  string;
-  name?:  string;
-  avatar?: string;
-  role:   'USER' | 'ADMIN';
+  id:        string;
+  email:     string;
+  name?:     string;
+  nickname?: string;
+  avatar?:   string;
+  vkId?:     string;
+  role:      'USER' | 'ADMIN';
+}
+
+export interface FavoriteServer {
+  id:          string;
+  createdAt:   string;
+  server: {
+    id:          string;
+    name:        string;
+    icon:        string | null;
+    chronicle:   string;
+    rates:       string;
+    rating:      number;
+    ratingCount: number;
+    status:      'online' | 'offline' | 'unknown';
+    online:      number | null;
+    openedDate:  string | null;
+  };
 }
 
 export interface ServersResponse {

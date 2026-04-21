@@ -91,3 +91,10 @@ export class VkCallbackDto {
   @IsString()
   state: string;
 }
+
+export class UpdateNicknameDto {
+  @ApiProperty({ example: 'Dragonslayer' })
+  @IsString()
+  @MinLength(3)
+  nickname: string;
+}

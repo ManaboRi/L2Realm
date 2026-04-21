@@ -19,6 +19,7 @@ model User {
   email              String    @unique
   password           String?
   name               String?
+  nickname           String?   @unique
   avatar             String?
   role               Role      @default(USER)
   emailVerified      Boolean   @default(false)
@@ -31,7 +32,8 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  reviews Review[]
+  reviews   Review[]
+  favorites Favorite[]
 }
 
 enum Role {
@@ -73,6 +75,20 @@ model Server {
   subscription Subscription?
   news         News[]
   monitorLogs  MonitorLog[]
+  favorites    Favorite[]
+}
+
+// ── Избранное / Watchlist ─────────────────────
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, serverId])
+  @@index([userId])
 }
 
 // ── Подписки / Тарифы ─────────────────────────

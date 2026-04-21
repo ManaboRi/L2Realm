@@ -69,6 +69,8 @@ export default function ServerPage() {
   const [reviewRating, setReviewRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [toast,    setToast]    = useState('');
+  const [isFav,    setIsFav]    = useState(false);
+  const [favBusy,  setFavBusy]  = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -77,6 +79,30 @@ export default function ServerPage() {
     api.monitoring.status(id).then(setStatus).catch(() => {});
     api.monitoring.daily(id, 30).then(setDaily).catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    if (!token || !id) { setIsFav(false); return; }
+    api.favorites.ids(token).then(ids => setIsFav(ids.includes(id))).catch(() => {});
+  }, [token, id]);
+
+  async function toggleFavorite() {
+    if (!token) return showToast('Войдите, чтобы добавить в избранное');
+    setFavBusy(true);
+    try {
+      if (isFav) {
+        await api.favorites.remove(id, token);
+        setIsFav(false);
+        showToast('Убрано из избранного');
+      } else {
+        await api.favorites.add(id, token);
+        setIsFav(true);
+        showToast('Добавлено в избранное');
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Ошибка');
+    }
+    setFavBusy(false);
+  }
 
   function showToast(msg: string) {
     setToast(msg);
@@ -154,7 +180,20 @@ export default function ServerPage() {
             </div>
           </div>
           <div className={styles.headerRight}>
-            <button className="btn-primary" style={{ padding: '.5rem 1.3rem' }} onClick={submitReview as any}>✦ Оставить отзыв</button>
+            <button
+              type="button"
+              className="btn-ghost"
+              style={{
+                padding: '.5rem 1rem',
+                color: isFav ? 'var(--gold)' : undefined,
+                borderColor: isFav ? 'var(--gold)' : undefined,
+              }}
+              onClick={toggleFavorite}
+              disabled={favBusy}
+              title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+            >
+              {isFav ? '★ В избранном' : '⚔ В избранное'}
+            </button>
             <a href={server.url} target="_blank" rel="noopener" className={styles.btnSite}>Перейти на сервер →</a>
           </div>
         </div>
@@ -339,10 +378,20 @@ function SocialLink({ ico, name, href }: { ico: string; name: string; href: stri
   );
 }
 function ReviewCard({ review: r }: { review: Review }) {
+  const displayName = r.user.nickname ?? r.user.name ?? 'Игрок';
   return (
     <div className={styles.reviewCard}>
       <div className={styles.reviewHead}>
-        <span className={styles.reviewUser}>{r.user.name ?? 'Игрок'}</span>
+        <span className={styles.reviewUser} style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem' }}>
+          {r.user.avatar && (
+            <img
+              src={r.user.avatar}
+              alt=""
+              style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
+            />
+          )}
+          {displayName}
+        </span>
         <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
       </div>
       <div className={styles.reviewStars}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>

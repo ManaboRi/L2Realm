@@ -33,7 +33,7 @@ export function Header() {
           {user ? (
             <>
               <Link href="/profile" className={styles.userName} style={{ textDecoration: 'none' }}>
-                {user.email}
+                {user.nickname || user.name || user.email}
               </Link>
               <button className="btn-ghost" onClick={logout}>Выйти</button>
             </>

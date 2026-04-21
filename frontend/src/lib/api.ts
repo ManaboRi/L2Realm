@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, Review } from './types';
+import type { Server, ServersResponse, Stats, Review, FavoriteServer, User } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -111,5 +111,23 @@ export const api = {
       request<{ access_token: string; user: any }>('/auth/vk/callback', {
         method: 'POST', body: JSON.stringify(data),
       }),
+    updateNickname: (nickname: string, token: string) =>
+      request<User>('/auth/nickname', {
+        method: 'PATCH',
+        body: JSON.stringify({ nickname }),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  // ── Избранное ─────────────────────────────────
+  favorites: {
+    list: (token: string) =>
+      request<FavoriteServer[]>('/favorites', { headers: { Authorization: `Bearer ${token}` } }),
+    ids: (token: string) =>
+      request<string[]>('/favorites/ids', { headers: { Authorization: `Bearer ${token}` } }),
+    add: (serverId: string, token: string) =>
+      request<any>(`/favorites/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
+    remove: (serverId: string, token: string) =>
+      request<any>(`/favorites/${serverId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   },
 };

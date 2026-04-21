@@ -139,10 +139,12 @@ export class AuthService {
     if (!user) {
       const email = info.email || `vk${info.vkId}@vk.l2realm.ru`;
       const name  = [info.firstName, info.lastName].filter(Boolean).join(' ') || null;
+      const nickname = await this.generateUniqueNickname();
       user = await this.prisma.user.create({
         data: {
           email,
           name,
+          nickname,
           vkId:          info.vkId,
           avatar:        info.avatar,
           emailVerified: !!info.email,
@@ -154,11 +156,40 @@ export class AuthService {
     return this.signToken(user.id, user.email, user.role);
   }
 
+  // ── Смена никнейма ───────────────────────────
+  async updateNickname(userId: string, nickname: string) {
+    const trimmed = nickname.trim();
+    if (!/^[a-zA-Zа-яА-ЯёЁ0-9_\-]{3,16}$/.test(trimmed)) {
+      throw new BadRequestException('Никнейм: 3-16 символов, только буквы/цифры/_-');
+    }
+    const exists = await this.prisma.user.findFirst({
+      where: { nickname: { equals: trimmed, mode: 'insensitive' }, NOT: { id: userId } },
+    });
+    if (exists) throw new ConflictException('Этот никнейм уже занят');
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data:  { nickname: trimmed },
+      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true },
+    });
+    return user;
+  }
+
+  // Генерим уникальный "User_12345"
+  private async generateUniqueNickname(): Promise<string> {
+    for (let i = 0; i < 10; i++) {
+      const candidate = `User_${Math.floor(10000 + Math.random() * 90000)}`;
+      const exists = await this.prisma.user.findUnique({ where: { nickname: candidate } });
+      if (!exists) return candidate;
+    }
+    return `User_${Date.now().toString(36)}`;
+  }
+
   // ── Текущий пользователь ─────────────────────
   async getMe(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, role: true, createdAt: true },
+      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true, vkId: true, createdAt: true },
     });
   }
 
@@ -216,10 +247,14 @@ export class AuthService {
   }
 
   // ── Подписать JWT ────────────────────────────
-  private signToken(sub: string, email: string, role: string) {
+  private async signToken(sub: string, email: string, role: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: sub },
+      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true },
+    });
     return {
       access_token: this.jwt.sign({ sub, email, role }),
-      user: { id: sub, email, role },
+      user,
     };
   }
 }

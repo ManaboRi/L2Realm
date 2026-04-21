@@ -16,15 +16,25 @@
 ### Пользователи и вход
 - [x] Регистрация/вход через **VK ID** (OAuth 2.1 + PKCE) — единственный способ авторизации
 - [x] JWT 7 дней, автовход по localStorage
-- [x] Страница профиля: email, имя, аватар, «мои отзывы»
+- [x] Никнейм: при первом входе модалка выбора, авто-`User_12345` fallback, уникальный (case-insensitive), 3–16 символов
+- [x] «Личный кабинет»: аватар/инициал, ник, VK ID, роль, смена ника, избранное, мои отзывы
+- [x] Ник и аватар показываются в шапке, отзывах и профиле (email — только как «VK ID»)
 - [x] Роли: `USER` / `ADMIN`
+- [ ] Загрузка кастомного аватара (пока только из VK)
 - [ ] Yandex ID (в планах)
+
+### Избранное (watchlist)
+- [x] Кнопка «⚔ В избранное / ★ В избранном» на странице сервера
+- [x] Список избранных серверов в профиле (иконка, название, хроника/рейты, статус онлайн, убрать)
+- [x] Backend: модель Favorite, endpoints `GET /api/favorites`, `GET /api/favorites/ids`, `POST/DELETE /api/favorites/:serverId`
 
 ### Отзывы
 - [x] 1 аккаунт = 1 отзыв на сервер (редактирование разрешено)
 - [x] Модерация: новый отзыв ждёт одобрения админа
 - [x] Рейтинг 1-5 звёзд + текст
+- [x] Отзывы подписаны никнеймом + аватаром автора
 - [x] Просмотр своих отзывов в профиле
+- [ ] Черновики отзывов (в планах)
 
 ### Мониторинг
 - [x] Пинг серверов каждые 5 минут (MonitoringService)
@@ -188,10 +198,15 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 - `POST /api/auth/vk/callback` — обмен VK-кода на JWT
 
 ### Требует JWT
-- `GET  /api/auth/me` — текущий пользователь
-- `GET  /api/reviews/my` — мои отзывы
-- `POST /api/reviews/server/:id` — оставить отзыв
-- `POST /api/payments/create` — создать платёж
+- `GET   /api/auth/me` — текущий пользователь
+- `PATCH /api/auth/nickname` — сменить никнейм
+- `GET   /api/reviews/my` — мои отзывы
+- `POST  /api/reviews/server/:id` — оставить отзыв
+- `GET   /api/favorites` — мои избранные серверы (полные карточки)
+- `GET   /api/favorites/ids` — только id (для быстрой проверки)
+- `POST  /api/favorites/:serverId` — добавить в избранное
+- `DELETE /api/favorites/:serverId` — убрать из избранного
+- `POST  /api/payments/create` — создать платёж
 
 ### Admin (JWT + role=ADMIN)
 - `POST /api/servers` / `PUT /api/servers/:id` / `DELETE /api/servers/:id`
