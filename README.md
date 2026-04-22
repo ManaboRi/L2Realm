@@ -266,16 +266,23 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 
 **После одобрения** в ЛК ЮКассы:
 1. **Настройки → API-ключи** → создать боевой ключ, скопировать `shopId` и `secretKey` (`live_...`)
-2. В `/opt/l2realm/backend/.env` прописать:
+2. В `/opt/l2realm/.env` (корневой, рядом с `docker-compose.yml` — **не в `backend/.env`!**) прописать:
    ```env
-   YOOKASSA_SHOP_ID="123456"
-   YOOKASSA_SECRET_KEY="live_..."
-   NODE_ENV="production"
-   JWT_SECRET="..."      # openssl rand -base64 48 (>=32 символа, backend упадёт если короче)
+   YOOKASSA_SHOP_ID=123456
+   YOOKASSA_SECRET_KEY=live_...
+   JWT_SECRET=...        # openssl rand -base64 48 (>=32 символа, backend упадёт если короче)
+   POSTGRES_PASSWORD=...
+   FRONTEND_URL=https://l2realm.ru
+   VK_CLIENT_ID=...
+   VK_CLIENT_SECRET=...
+   VK_REDIRECT_URI=https://l2realm.ru/auth/vk/callback
    ```
-3. `docker compose up -d --build --force-recreate backend frontend`
-4. **Настройки → HTTP-уведомления** → URL: **`https://l2realm.ru/yookassa-webhook`** (отдельный nginx-location прямо на backend, минуя Next.js). События: `payment.succeeded`, опционально `payment.canceled`, `refund.succeeded`
-5. **Чеки** → подключить интеграцию с «Мой налог» (для самозанятого — автоматическая отправка чеков в ФНС)
+   Docker Compose читает переменные отсюда и пробрасывает их в контейнер backend через блок `environment:` в `docker-compose.yml`. `backend/.env` внутри контейнера не существует — у него другой WORKDIR.
+3. `chmod 600 /opt/l2realm/.env`
+4. `docker compose up -d --force-recreate backend` — `--force-recreate` обязателен, без него контейнер не подхватит новые переменные
+5. Проверка: `docker compose logs backend --tail 20` — не должно быть "ЮКасса не настроена"
+6. **Настройки → HTTP-уведомления** в ЮКассе → URL: **`https://l2realm.ru/yookassa-webhook`** (отдельный nginx-location прямо на backend, минуя Next.js). События: `payment.succeeded`, опционально `payment.canceled`, `refund.succeeded`
+7. **Чеки** → подключить интеграцию с «Мой налог» (для самозанятого — автоматическая отправка чеков в ФНС)
 
 **Как работает:**
 - Юзер логинится (VK ID) → на `/pricing` выбирает сервер → «Купить»
@@ -333,12 +340,12 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 - SSH-keys only, fail2ban на VPS
 
 ### Что НЕ должно попадать в git
-- `backend/.env` и `frontend/.env.local` — `.gitignore` их ловит, но перепроверяй перед `git add -A`
-- `YOOKASSA_SECRET_KEY`, `JWT_SECRET`, `VK_CLIENT_SECRET`, `ADMIN_PASS` — только в `.env` на VPS
+- `/opt/l2realm/.env` (корневой, для docker-compose), `backend/.env`, `frontend/.env.local` — `.gitignore` их ловит, но перепроверяй перед `git add -A`
+- `YOOKASSA_SECRET_KEY`, `JWT_SECRET`, `VK_CLIENT_SECRET`, `ADMIN_PASS` — только в `/opt/l2realm/.env` на VPS
 - Дампы БД (`*.sql`, `*.dump`) и бэкапы — только локально и на VPS в `backups/`
 
 ### Чек-лист хардeнинга VPS (разовая настройка)
-- [ ] `chmod 600 /opt/l2realm/backend/.env` — никто кроме владельца не читает
+- [ ] `chmod 600 /opt/l2realm/.env` — никто кроме владельца не читает
 - [ ] `ufw`: открыть только 22, 80, 443. PostgreSQL 5432 **не** наружу (только внутри Docker-сети)
 - [ ] SSH: отключить вход по паролю (`PasswordAuthentication no`), только ключи
 - [ ] `fail2ban` для SSH + nginx (уже описан в разделе VPS)
