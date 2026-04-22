@@ -265,42 +265,85 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 В поле «Ссылка на страницу с реквизитами» → `https://l2realm.ru/legal`.
 
 **После одобрения** в ЛК ЮКассы:
-1. **Настройки → API** → скопировать `shopId` и `secretKey` (`live_...`)
+1. **Настройки → API-ключи** → создать боевой ключ, скопировать `shopId` и `secretKey` (`live_...`)
 2. В `/opt/l2realm/backend/.env` прописать:
    ```env
    YOOKASSA_SHOP_ID="123456"
    YOOKASSA_SECRET_KEY="live_..."
    NODE_ENV="production"
+   JWT_SECRET="..."      # openssl rand -base64 48 (>=32 символа, backend упадёт если короче)
    ```
-3. `docker compose restart backend`
-4. **Настройки → HTTP-уведомления** → URL: `https://l2realm.ru/api/proxy/payments/webhook`, событие `payment.succeeded` (+ опционально `payment.canceled`, `refund.succeeded`)
-5. **Чеки** → включить фискализацию через интеграцию с «Мой налог» (для самозанятого)
+3. `docker compose up -d --build --force-recreate backend frontend`
+4. **Настройки → HTTP-уведомления** → URL: **`https://l2realm.ru/yookassa-webhook`** (отдельный nginx-location прямо на backend, минуя Next.js). События: `payment.succeeded`, опционально `payment.canceled`, `refund.succeeded`
+5. **Чеки** → подключить интеграцию с «Мой налог» (для самозанятого — автоматическая отправка чеков в ФНС)
 
 **Как работает:**
-- Юзер логинится (VK ID) → на `/pricing` выбирает сервер → нажимает «Купить»
-- Фронт шлёт `POST /api/payments/purchase` с JWT → бэк вытаскивает email из токена, создаёт платёж в ЮКассе с `receipt` (обязательно для 54-ФЗ)
-- ЮКасса возвращает `confirmationUrl` → фронт редиректит на страницу оплаты
-- После успеха ЮКасса шлёт webhook на `/payments/webhook` → бэк проверяет source IP, активирует VIP/буст
+- Юзер логинится (VK ID) → на `/pricing` выбирает сервер → «Купить»
+- Фронт шлёт `POST /api/payments/purchase` с JWT → бэк берёт email из токена, создаёт платёж в ЮКассе с обязательным `receipt` (54-ФЗ)
+- ЮКасса возвращает `confirmationUrl` → фронт редиректит
+- После успеха ЮКасса бьёт webhook на `/yookassa-webhook` (nginx → backend напрямую):
+  1. Проверка source IP по whitelist ЮКассы ([`payments.service.ts`](backend/src/payments/payments.service.ts) `YOOKASSA_IP_RANGES`)
+  2. **Не доверяем телу** — делаем `GET https://api.yookassa.ru/v3/payments/{id}` сами, сверяем статус + сумму + metadata
+  3. Идемпотентность — если `paymentId` уже сохранён в БД, повторный webhook игнорируется
+  4. Только после всех проверок → активация VIP/буста
 
-**IP-whitelist ЮКассы** зашит в [`payments.service.ts`](backend/src/payments/payments.service.ts) (`YOOKASSA_IP_RANGES`). Если ЮКасса добавит новые — [обновить список](https://yookassa.ru/developers/using-api/webhooks#ip).
+**Webhook через `/api/proxy/payments/webhook` заблокирован** ([`route.ts`](frontend/src/app/api/proxy/[...path]/route.ts)) — чтобы X-Forwarded-For нельзя было спуфить со стороны публичного интерфейса.
+
+**IP-whitelist ЮКассы** — актуальный список: https://yookassa.ru/developers/using-api/webhooks#ip
 
 ---
 
 ## Безопасность
 
+### Аутентификация
 - JWT 7 дней, bcrypt 12 rounds (для унаследованных пароль-аккаунтов)
-- Новый вход — только через VK ID (PKCE, state-проверка)
+- `JWT_SECRET` ≥ 32 символов — backend падает на старте, если не задан или короткий
+- Новый вход — через VK ID (PKCE, state-проверка)
 - Максимум 2 аккаунта с одного IP при регистрации
-- Админ-эндпоинты — через `@UseGuards(AuthGuard('jwt'))` + проверка роли
-- `/payments/purchase` — за JWT (email из токена уходит в чек, плательщик всегда идентифицирован)
-- `/payments/webhook` — IP-whitelist ЮКассы; без ключей ЮКассы в проде активация запрещена
-- Валидация DTO (class-validator, whitelist: true)
-- SSL, SSH-keys only, fail2ban на VPS
+
+### Rate limit ([`auth.controller.ts`](backend/src/auth/auth.controller.ts))
+Глобальный: 120 req/min с одного IP. Строгие лимиты на критичные endpoints:
+- `/auth/login` — 10 попыток / 15 минут (анти-брутфорс)
+- `/auth/register` — 5 / час
+- `/auth/send-code` — 5 / час (анти-email-бомба)
+- `/auth/verify-code` — 10 / 15 минут
+- `/auth/vk/callback` — 20 / час
+- `/auth/forgot-password` — 3 / час
+- `/auth/reset-password` — 5 / час
+- `/payments/purchase` — 20 / час
+- `/payments/webhook` — без лимита (ЮКасса ретраит)
+
+### Платежи ([`payments.service.ts`](backend/src/payments/payments.service.ts))
+- `/payments/purchase` — за JWT (email плательщика из токена уходит в чек)
+- **Webhook не доверяет телу** — после получения делает `GET /v3/payments/{id}` у ЮКассы и сверяет статус + сумму + metadata
+- Идемпотентность — повторный webhook с тем же `paymentId` игнорируется
+- IP-whitelist ЮКассы (CIDR-проверка)
+- В `NODE_ENV=production` без ключей ЮКассы активация запрещена (никаких "dev auto-activate")
+
+### HTTP-заголовки и транспорт
+- **Backend**: `helmet` (HSTS, X-Content-Type-Options, X-Frame-Options), `trust proxy: 1`, `x-powered-by` отключён, Swagger `/api/docs` только в dev
+- **Frontend** ([`next.config.ts`](frontend/next.config.ts)): HSTS, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy`, `dangerouslyAllowSVG: false`, `poweredByHeader: false`
+- **Nginx** ([`nginx/conf.d/default.conf`](nginx/conf.d/default.conf)): HTTPS-редирект, TLS 1.2/1.3, `X-Forwarded-For` **перезаписывается** (`$remote_addr`, не `$proxy_add_x_forwarded_for` — нельзя спуфить), `client_max_body_size 2m`
+- Webhook идёт через отдельный `location = /yookassa-webhook` → backend, минуя Next.js
+
+### Прочее
+- Валидация DTO: `class-validator`, `whitelist: true`, `forbidNonWhitelisted: true`
+- CORS — только явно разрешённые origin (`FRONTEND_URL`)
+- Админ-эндпоинты — `@UseGuards(AuthGuard('jwt'), RolesGuard)` + `@Roles('ADMIN')`
+- SSH-keys only, fail2ban на VPS
 
 ### Что НЕ должно попадать в git
-- `backend/.env` и `frontend/.env.local` — `.gitignore` их ловит, но всегда перепроверяй перед `git add -A`
+- `backend/.env` и `frontend/.env.local` — `.gitignore` их ловит, но перепроверяй перед `git add -A`
 - `YOOKASSA_SECRET_KEY`, `JWT_SECRET`, `VK_CLIENT_SECRET`, `ADMIN_PASS` — только в `.env` на VPS
 - Дампы БД (`*.sql`, `*.dump`) и бэкапы — только локально и на VPS в `backups/`
+
+### Чек-лист хардeнинга VPS (разовая настройка)
+- [ ] `chmod 600 /opt/l2realm/backend/.env` — никто кроме владельца не читает
+- [ ] `ufw`: открыть только 22, 80, 443. PostgreSQL 5432 **не** наружу (только внутри Docker-сети)
+- [ ] SSH: отключить вход по паролю (`PasswordAuthentication no`), только ключи
+- [ ] `fail2ban` для SSH + nginx (уже описан в разделе VPS)
+- [ ] `unattended-upgrades` для security-патчей Debian/Ubuntu
+- [ ] Бэкапы БД в `/opt/l2realm/backups/` + скопировать ключ от VK, ЮКассы и `JWT_SECRET` в безопасное место (1Password / bitwarden) — без них восстановить продакшн невозможно
 
 ---
 

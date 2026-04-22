@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Req, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Req, ForbiddenException } from '@nestjs/common';
 import type { Request as ExpressRequest } from 'express';
 import { AuthGuard } from '@nestjs/passport';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { Roles, RolesGuard } from '../auth/roles.guard';
@@ -10,7 +11,8 @@ import { Roles, RolesGuard } from '../auth/roles.guard';
 export class PaymentsController {
   constructor(private payments: PaymentsService) {}
 
-  // Создать покупку: kind=vip | boost
+  // Создать покупку: kind=vip | boost. Лимит 20 попыток/час с аккаунта
+  @Throttle({ default: { ttl: 3_600_000, limit: 20 } })
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
   @Post('purchase')
@@ -21,15 +23,23 @@ export class PaymentsController {
     return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email);
   }
 
-  // Webhook от ЮКассы: проверяем source IP (whitelist ЮКассы)
-  // https://yookassa.ru/developers/using-api/webhooks#ip
+  // Webhook от ЮКассы:
+  //   1. проверяем source IP (whitelist ЮКассы, https://yookassa.ru/developers/using-api/webhooks#ip)
+  //   2. внутри handleWebhook — делаем GET /v3/payments/{id} и сверяем статус + сумму
+  //
+  // ВАЖНО: webhook должен приходить прямо на backend через nginx (отдельный location),
+  // а не через frontend proxy — иначе X-Forwarded-For можно спуфить. В frontend proxy
+  // этот путь заблокирован явно (см. frontend/src/app/api/proxy/[...path]/route.ts).
+  //
+  // req.ip — Express при `trust proxy: 1` возвращает реальный IP клиента относительно
+  // первого доверенного прокси (nginx), игнорируя любые заспуфленные X-Forwarded-For до него.
+  @SkipThrottle()
   @Post('webhook')
   webhook(
     @Body() body: any,
     @Req() req: ExpressRequest,
-    @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
-    const ip = (forwardedFor?.split(',')[0].trim()) || req.socket.remoteAddress || '';
+    const ip = req.ip || req.socket.remoteAddress || '';
     if (!this.payments.isYookassaIp(ip)) {
       throw new ForbiddenException(`Webhook отклонён: IP ${ip} не в whitelist ЮКассы`);
     }

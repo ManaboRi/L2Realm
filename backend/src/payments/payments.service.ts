@@ -118,22 +118,94 @@ export class PaymentsService {
   }
 
   // ── Webhook от ЮКассы ────────────────────────
+  // Мы НЕ доверяем body — после уведомления идём в ЮКассу через API и сверяем
+  // статус, сумму, metadata. Это защищает от подмены тела и от повторов.
   async handleWebhook(body: any) {
     const { type, object } = body;
-    if (type !== 'payment.succeeded') return { ok: true };
+    if (type !== 'payment.succeeded' && type !== 'refund.succeeded' && type !== 'payment.canceled') {
+      return { ok: true };
+    }
+    if (type !== 'payment.succeeded') {
+      this.logger.log(`ℹ️ Получено событие ${type} (payment ${object?.id}), игнорируем`);
+      return { ok: true };
+    }
 
-    const { serverId, kind } = object.metadata || {};
-    if (!serverId || !kind) return { ok: true };
+    const paymentId = object?.id;
+    if (!paymentId) return { ok: true };
 
+    // 1. Идемпотентность — если этот paymentId уже обработан, игнорируем
+    const alreadyProcessed = await this.isPaymentProcessed(paymentId);
+    if (alreadyProcessed) {
+      this.logger.log(`ℹ️ Платёж ${paymentId} уже обработан, повторный webhook проигнорирован`);
+      return { ok: true };
+    }
+
+    // 2. Независимая проверка через API ЮКассы (не доверяем body)
+    const verified = await this.fetchPaymentFromYookassa(paymentId);
+    if (!verified) {
+      this.logger.warn(`⚠️ Не удалось получить платёж ${paymentId} из ЮКассы — отклоняем webhook`);
+      return { ok: true };
+    }
+
+    if (verified.status !== 'succeeded' || !verified.paid) {
+      this.logger.warn(`⚠️ Платёж ${paymentId} не в статусе succeeded (${verified.status}) — пропускаем`);
+      return { ok: true };
+    }
+
+    const { serverId, kind } = verified.metadata || {};
+    if (!serverId || (kind !== 'vip' && kind !== 'boost')) {
+      this.logger.warn(`⚠️ Платёж ${paymentId}: отсутствует или некорректна metadata`);
+      return { ok: true };
+    }
+
+    // 3. Проверка суммы — защита от подмены amount
+    const expected = kind === 'vip' ? VIP_PRICE : BOOST_PRICE;
+    const actualRub = parseFloat(verified.amount?.value);
+    if (verified.amount?.currency !== 'RUB' || actualRub !== expected) {
+      this.logger.error(
+        `🚨 Платёж ${paymentId}: сумма не совпала (ожидали ${expected} RUB, пришло ${verified.amount?.value} ${verified.amount?.currency}) — НЕ активируем`,
+      );
+      return { ok: true };
+    }
+
+    // 4. Активация
     if (kind === 'vip') {
-      await this.activateVip(serverId, object.id);
-      this.logger.log(`✅ VIP активирован для ${serverId} (payment ${object.id})`);
-    } else if (kind === 'boost') {
-      await this.activateBoost(serverId, object.id);
-      this.logger.log(`✅ Буст активирован для ${serverId} (payment ${object.id})`);
+      await this.activateVip(serverId, paymentId);
+      this.logger.log(`✅ VIP активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
+    } else {
+      await this.activateBoost(serverId, paymentId);
+      this.logger.log(`✅ Буст активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
     }
 
     return { ok: true };
+  }
+
+  // ── GET /v3/payments/{id} — прямая проверка у ЮКассы ──
+  private async fetchPaymentFromYookassa(paymentId: string) {
+    const shopId    = this.config.get('YOOKASSA_SHOP_ID');
+    const secretKey = this.config.get('YOOKASSA_SECRET_KEY');
+    if (!shopId || !secretKey) return null;
+
+    try {
+      const { data } = await axios.get(
+        `https://api.yookassa.ru/v3/payments/${encodeURIComponent(paymentId)}`,
+        { auth: { username: shopId, password: secretKey }, timeout: 10_000 },
+      );
+      return data;
+    } catch (e: any) {
+      this.logger.error(`Ошибка запроса к ЮКассе для ${paymentId}: ${e.message}`);
+      return null;
+    }
+  }
+
+  // ── Проверка идемпотентности ──────────────────
+  // Если paymentId уже сохранён в Subscription или Boost — значит обработан
+  private async isPaymentProcessed(paymentId: string): Promise<boolean> {
+    const [sub, boost] = await Promise.all([
+      this.prisma.subscription.findFirst({ where: { paymentId } }),
+      this.prisma.boost.findFirst({ where: { paymentId } }),
+    ]);
+    return !!sub || !!boost;
   }
 
   // ── Активация VIP ─────────────────────────────

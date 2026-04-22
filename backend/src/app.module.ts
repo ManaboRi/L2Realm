@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule }    from './prisma/prisma.module';
 import { AuthModule }      from './auth/auth.module';
 import { ServersModule }   from './servers/servers.module';
@@ -13,6 +15,9 @@ import { FavoritesModule } from './favorites/favorites.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
+    // Глобальный базовый лимит: 120 req/min с одного IP
+    // Индивидуальные строгие лимиты — в контроллерах через @Throttle()
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
     PrismaModule,
     AuthModule,
     ServersModule,
@@ -20,6 +25,9 @@ import { FavoritesModule } from './favorites/favorites.module';
     MonitoringModule,
     PaymentsModule,
     FavoritesModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
