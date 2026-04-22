@@ -109,6 +109,11 @@
 .faqItem summary:hover { color: var(--gold); }
 .faqItem p { font-size: .88rem; color: var(--text2); line-height: 1.6; margin: .5rem 0 .2rem; }
 
+.ofertaNote {
+  text-align: center; font-size: .82rem; color: var(--text3);
+  margin: .2rem 0 0; line-height: 1.55;
+}
+
 @media (max-width: 600px) {
   .hero { padding: 1.4rem .8rem 1.2rem; }
   .wrap { padding: 1.2rem .8rem 3rem; gap: 1rem; }

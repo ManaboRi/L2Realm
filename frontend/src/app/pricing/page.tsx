@@ -242,14 +242,24 @@ export default function PricingPage() {
 
           <details className={styles.faqItem}>
             <summary>Как платить?</summary>
-            <p>Через ЮКасса (карта, СБП, кошельки). После подтверждения платежа всё активируется автоматически.</p>
+            <p>Через ЮKassa (карта, СБП, кошельки). После подтверждения платежа всё активируется автоматически — в течение нескольких секунд.</p>
+          </details>
+
+          <details className={styles.faqItem}>
+            <summary>Как получить услугу после оплаты?</summary>
+            <p>Ничего дополнительно делать не нужно. После успешной оплаты сервер автоматически попадает в VIP-блок или получает метку буста. Подтверждение (чек) приходит на email, указанный при оплате.</p>
           </details>
 
           <details className={styles.faqItem}>
             <summary>Есть возврат?</summary>
-            <p>Да, если что-то пошло не так — напишите в <a href="https://t.me/ManaboRi" target="_blank" rel="noopener" style={{ color: 'var(--gold)' }}>Telegram @ManaboRi</a>.</p>
+            <p>Да — условия возврата описаны в <Link href="/legal" style={{ color: 'var(--gold)' }}>публичной оферте</Link>. Для запроса напишите в <a href="https://t.me/ManaboRi" target="_blank" rel="noopener" style={{ color: 'var(--gold)' }}>Telegram @ManaboRi</a>.</p>
           </details>
         </div>
+
+        <p className={styles.ofertaNote}>
+          Оплачивая услугу, вы соглашаетесь с условиями <Link href="/legal" style={{ color: 'var(--gold)' }}>публичной оферты</Link>.
+          Реквизиты исполнителя и порядок возврата — там же.
+        </p>
       </div>
     </div>
   );
