@@ -21,6 +21,35 @@
 .pickLabel { font-family: 'Cinzel', serif; font-size: .6rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .18em; }
 .pickHint { font-size: .78rem; color: var(--text3); margin: 0; }
 
+.picker { position: relative; }
+.pickerInput { width: 100%; padding-right: 2rem; }
+.pickerClear {
+  position: absolute; top: 50%; right: .5rem; transform: translateY(-50%);
+  background: transparent; border: none; color: var(--text3); font-size: 1.2rem;
+  line-height: 1; cursor: pointer; padding: .2rem .4rem; border-radius: 2px;
+  transition: color .15s, background .15s;
+}
+.pickerClear:hover { color: var(--gold); background: var(--bg3); }
+.pickerList {
+  position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20;
+  background: var(--bg2); border: 1px solid var(--border2); border-radius: 3px;
+  max-height: 280px; overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+  display: flex; flex-direction: column;
+}
+.pickerItem {
+  background: transparent; border: none; border-bottom: 1px solid var(--border);
+  text-align: left; padding: .55rem .8rem; cursor: pointer; color: var(--text1);
+  display: flex; flex-direction: column; gap: .15rem;
+  transition: background .12s, color .12s;
+}
+.pickerItem:last-child { border-bottom: none; }
+.pickerItem:hover { background: var(--bg3); color: var(--gold); }
+.pickerItemActive { background: var(--bg3); color: var(--gold); }
+.pickerItemName { font-size: .88rem; font-weight: 500; }
+.pickerItemMeta { font-size: .72rem; color: var(--text3); }
+.pickerEmpty { padding: .7rem .8rem; font-size: .78rem; color: var(--text3); text-align: center; }
+
 .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
 
 .tier {

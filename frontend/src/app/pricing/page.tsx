@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import type { Server, VipStatus } from '@/lib/types';
@@ -11,13 +11,40 @@ export default function PricingPage() {
   const [vipLoading, setVipLoading] = useState(true);
   const [servers, setServers] = useState<Server[]>([]);
   const [sel, setSel] = useState<string>('');
+  const [query, setQuery] = useState('');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     api.payments.vipStatus().then(s => { setVip(s); setVipLoading(false); }).catch(() => setVipLoading(false));
     api.servers.list({ limit: '500' }).then(r => setServers(r.data)).catch(() => {});
   }, []);
+
+  // Закрывать выпадашку при клике снаружи
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function onClick(e: MouseEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [pickerOpen]);
+
+  const selectedServer = servers.find(s => s.id === sel);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return servers.slice(0, 50);
+    return servers.filter(s =>
+      s.name.toLowerCase().includes(q) ||
+      s.chronicle.toLowerCase().includes(q) ||
+      s.rates.toLowerCase().includes(q) ||
+      s.id.toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [servers, query]);
 
   function showToast(msg: string) {
     setToast(msg); setTimeout(() => setToast(''), 3500);
@@ -57,12 +84,45 @@ export default function PricingPage() {
       <div className={styles.wrap}>
         <div className={styles.serverPick}>
           <label className={styles.pickLabel}>Ваш сервер</label>
-          <select className="input" value={sel} onChange={e => setSel(e.target.value)}>
-            <option value="">— Выберите из каталога —</option>
-            {servers.map(s => (
-              <option key={s.id} value={s.id}>{s.name} ({s.chronicle} · {s.rates})</option>
-            ))}
-          </select>
+          <div ref={pickerRef} className={styles.picker}>
+            <input
+              className={`input ${styles.pickerInput}`}
+              value={pickerOpen ? query : (selectedServer ? `${selectedServer.name} (${selectedServer.chronicle} · ${selectedServer.rates})` : '')}
+              onChange={e => { setQuery(e.target.value); setPickerOpen(true); }}
+              onFocus={() => { setQuery(''); setPickerOpen(true); }}
+              placeholder="Начните вводить название, хронику или рейты…"
+            />
+            {sel && (
+              <button
+                type="button"
+                className={styles.pickerClear}
+                onClick={() => { setSel(''); setQuery(''); setPickerOpen(true); }}
+                title="Сбросить выбор"
+              >×</button>
+            )}
+            {pickerOpen && (
+              <div className={styles.pickerList}>
+                {filtered.length === 0 ? (
+                  <div className={styles.pickerEmpty}>Ничего не найдено</div>
+                ) : (
+                  filtered.map(s => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`${styles.pickerItem} ${s.id === sel ? styles.pickerItemActive : ''}`}
+                      onClick={() => { setSel(s.id); setPickerOpen(false); setQuery(''); }}
+                    >
+                      <span className={styles.pickerItemName}>{s.name}</span>
+                      <span className={styles.pickerItemMeta}>{s.chronicle} · {s.rates}</span>
+                    </button>
+                  ))
+                )}
+                {servers.length > filtered.length && !query && (
+                  <div className={styles.pickerEmpty}>Показаны первые {filtered.length} — уточните поиском</div>
+                )}
+              </div>
+            )}
+          </div>
           <p className={styles.pickHint}>
             Сервера нет в списке? Сначала <Link href="/add" style={{ color: 'var(--gold)' }}>подайте заявку</Link> — после одобрения вернитесь сюда.
           </p>

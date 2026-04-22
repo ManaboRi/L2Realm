@@ -9,9 +9,14 @@ const VIP_MAX = 3;
 import styles from './page.module.css';
 
 const CHRONICLES = ['Essence', 'Classic', 'Interlude', 'High Five', 'Gracia'];
-const RATES      = [{ v: 'low', l: 'x1–x5' }, { v: 'mid', l: 'x7–x30' }, { v: 'high', l: 'x50–x100' }, { v: 'ultra', l: 'x100+' }];
-const DONATES    = [{ v: 'free', l: 'Без доната' }, { v: 'cosmetic', l: 'Косметика' }, { v: 'p2w', l: 'Pay-to-win' }];
-const TYPES      = [{ v: 'pvp', l: 'PvP' }, { v: 'pve', l: 'PvE' }, { v: 'featured', l: '🔥 Популярные' }];
+const RATES      = [
+  { v: 'low',   l: 'x1–x5' },
+  { v: 'mid',   l: 'x7–x30' },
+  { v: 'high',  l: 'x50–x100' },
+  { v: 'ultra', l: 'x100–x999' },
+  { v: 'mega',  l: 'x1000+' },
+];
+const TYPES      = [{ v: 'pvp', l: 'PvP' }, { v: 'pve', l: 'PvE' }];
 
 type FilterCounts = { chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> };
 
@@ -37,7 +42,6 @@ export default function HomePage() {
       if (search)         params.search    = search;
       if (filters.chr)    params.chronicle = filters.chr;
       if (filters.rate)   params.rate      = filters.rate;
-      if (filters.donate) params.donate    = filters.donate;
       if (filters.type)   params.type      = filters.type;
 
       const res = await api.servers.list(params);
@@ -101,9 +105,6 @@ export default function HomePage() {
           </FilterGroup>
           <FilterGroup label="Рейты">
             {RATES.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
-          </FilterGroup>
-          <FilterGroup label="Тип доната">
-            {DONATES.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.donate === v} count={counts?.donates[v]} onClick={() => toggleFilter('donate', v)} />)}
           </FilterGroup>
           <FilterGroup label="Тип сервера">
             {TYPES.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.type === v} count={counts?.types[v]} onClick={() => toggleFilter('type', v)} />)}

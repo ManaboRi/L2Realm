@@ -36,8 +36,12 @@ export const api = {
       request<Server>(`/servers/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     delete: (id: string, token: string) =>
       request<void>(`/servers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
-    request: (data: any) =>
-      request<any>('/servers/request', { method: 'POST', body: JSON.stringify(data) }),
+    request: (data: any, token: string) =>
+      request<any>('/servers/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     getRequests: (token: string) =>
       request<any[]>('/servers/admin/requests', { headers: { Authorization: `Bearer ${token}` } }),
     updateRequest: (id: string, status: string, token: string) =>

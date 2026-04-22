@@ -10,6 +10,26 @@ function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
+function relativeOpened(s?: string | null): string {
+  if (!s) return '—';
+  const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
+  if (days < 0) {
+    const u = -days;
+    if (u === 1) return 'Открытие завтра';
+    return `Открытие через ${u} дн.`;
+  }
+  if (days === 0) return 'Открылся сегодня';
+  if (days === 1) return 'Открылся вчера';
+  if (days < 7)   return `Открылся ${days} дн. назад`;
+  const w = Math.floor(days / 7);
+  if (w < 5)      return w === 1 ? 'Открылся неделю назад' : `Открылся ${w} нед. назад`;
+  const m = Math.floor(days / 30);
+  if (m < 12)     return m === 1 ? 'Открылся месяц назад' : `Открылся ${m} мес. назад`;
+  const y = Math.floor(days / 365);
+  if (y === 1)    return 'Открылся год назад';
+  if (y < 5)      return `Открылся ${y} года назад`;
+  return `Открылся ${y} лет назад`;
+}
 
 interface Props { server: Server; vipBlock?: boolean; }
 
@@ -61,7 +81,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
 
       {/* Правая часть */}
       <div className={styles.right}>
-        <span className={styles.date}>{fmtDate(s.openedDate)}</span>
+        <span className={styles.date} title={fmtDate(s.openedDate)}>{relativeOpened(s.openedDate)}</span>
         <div className={styles.meta}>
           {s.status && (
             <span className={s.status === 'online' ? styles.online : styles.offline}>

@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Put, Delete,
-  Param, Body, Query, UseGuards,
+  Param, Body, Query, UseGuards, Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -39,10 +39,12 @@ export class ServersController {
     return this.srv.findOne(id);
   }
 
-  // ── Заявка (любой пользователь) ─────────────
+  // ── Заявка (только авторизованные, 1/24ч) ───
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @Post('request')
-  submitRequest(@Body() body: any) {
-    return this.srv.submitRequest(body);
+  submitRequest(@Body() body: any, @Request() req: { user: { id: string } }) {
+    return this.srv.submitRequest(req.user.id, body);
   }
 
   // ── Admin only ───────────────────────────────

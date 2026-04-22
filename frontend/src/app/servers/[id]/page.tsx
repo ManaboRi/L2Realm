@@ -5,13 +5,32 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Review } from '@/lib/types';
-import { BOOST_PRICE, BOOST_DAYS } from '@/lib/types';
 import styles from './page.module.css';
 
 function dlbl(d: string) { return { free: 'Без доната', cosmetic: 'Косметика', p2w: 'Pay-to-win' }[d] ?? d; }
 function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function relativeOpened(s?: string | null): string {
+  if (!s) return '—';
+  const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
+  if (days < 0) {
+    const u = -days;
+    if (u === 1) return 'Открытие завтра';
+    return `Открытие через ${u} дн.`;
+  }
+  if (days === 0) return 'Сегодня';
+  if (days === 1) return 'Вчера';
+  if (days < 7)   return `${days} дн. назад`;
+  const w = Math.floor(days / 7);
+  if (w < 5)      return w === 1 ? 'Неделю назад' : `${w} нед. назад`;
+  const m = Math.floor(days / 30);
+  if (m < 12)     return m === 1 ? 'Месяц назад' : `${m} мес. назад`;
+  const y = Math.floor(days / 365);
+  if (y === 1)    return 'Год назад';
+  if (y < 5)      return `${y} года назад`;
+  return `${y} лет назад`;
 }
 function flag(c?: string) { return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦' }[c??''] ?? ''; }
 
@@ -72,7 +91,6 @@ export default function ServerPage() {
   const [toast,    setToast]    = useState('');
   const [isFav,    setIsFav]    = useState(false);
   const [favBusy,  setFavBusy]  = useState(false);
-  const [boostBusy, setBoostBusy] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -109,29 +127,6 @@ export default function ServerPage() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
-  }
-
-  async function buyBoost() {
-    setBoostBusy(true);
-    try {
-      const res = await api.payments.purchase({
-        kind: 'boost',
-        serverId: id,
-        returnUrl: window.location.href,
-      });
-      if (res.confirmationUrl) {
-        window.location.href = res.confirmationUrl;
-        return;
-      }
-      if (res.activated) {
-        showToast('🔥 Буст активирован!');
-        const fresh = await api.servers.get(id);
-        setServer(fresh);
-      }
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Ошибка оплаты');
-    }
-    setBoostBusy(false);
   }
 
   async function submitReview(e: { preventDefault(): void }) {
@@ -242,7 +237,7 @@ export default function ServerPage() {
                 ['Рейты',      server.rates],
                 ['Донат',      dlbl(server.donate)],
                 ['Страна',     flag(server.country)],
-                ['Открылся',   fmtDate(server.openedDate)],
+                ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
                 ['Тариф',      server.subscription?.plan ?? 'FREE'],
               ].map(([l, v]) => (
@@ -326,13 +321,6 @@ export default function ServerPage() {
             </div>
           )}
 
-          {/* Буст «Огонёк» */}
-          <BoostBlock
-            activeUntil={server.boost?.endDate ?? null}
-            busy={boostBusy}
-            onBuy={buyBoost}
-          />
-
           {/* Форма отзыва */}
           <div className={styles.dblock}>
             <div className={styles.dblockTitle}>Оставить отзыв</div>
@@ -400,55 +388,6 @@ export default function ServerPage() {
           </div>
 
         </div>
-      </div>
-    </div>
-  );
-}
-
-function BoostBlock({ activeUntil, busy, onBuy }: { activeUntil: string | null; busy: boolean; onBuy: () => void }) {
-  const active = activeUntil && new Date(activeUntil) > new Date();
-  return (
-    <div className={styles.dblock}>
-      <div className={styles.dblockTitle}>Поднять в топ 🔥</div>
-      <div className={styles.dblockBody}>
-        {active ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            <p style={{ margin: 0, color: 'var(--text1)', fontSize: '.92rem' }}>
-              🔥 <strong>В огне</strong> до{' '}
-              <strong style={{ color: 'var(--gold)' }}>
-                {new Date(activeUntil!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-              </strong>
-            </p>
-            <p style={{ margin: 0, color: 'var(--text2)', fontSize: '.84rem' }}>
-              Сервер закреплён выше обычных в каталоге и помечен огоньком. Продлить на ещё {BOOST_DAYS} дней — {BOOST_PRICE} ₽.
-            </p>
-            <button
-              className="btn-primary"
-              style={{ alignSelf: 'flex-start', padding: '.5rem 1.2rem' }}
-              onClick={onBuy}
-              disabled={busy}
-            >
-              {busy ? <span className="spin" /> : `Продлить буст на ${BOOST_DAYS} дней — ${BOOST_PRICE} ₽`}
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            <p style={{ margin: 0, color: 'var(--text1)', fontSize: '.92rem' }}>
-              Поднять сервер выше обычных на <strong>{BOOST_DAYS} дней</strong>. В каталоге — метка 🔥 и подсветка.
-            </p>
-            <p style={{ margin: 0, color: 'var(--text2)', fontSize: '.84rem' }}>
-              Быстрая точечная реклама без долгих подписок.
-            </p>
-            <button
-              className="btn-primary"
-              style={{ alignSelf: 'flex-start', padding: '.5rem 1.2rem' }}
-              onClick={onBuy}
-              disabled={busy}
-            >
-              {busy ? <span className="spin" /> : `Купить буст — ${BOOST_PRICE} ₽`}
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

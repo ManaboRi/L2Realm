@@ -32,8 +32,9 @@ model User {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  reviews   Review[]
-  favorites Favorite[]
+  reviews        Review[]
+  favorites      Favorite[]
+  serverRequests ServerRequest[]
 }
 
 enum Role {
@@ -166,17 +167,18 @@ model MonitorLog {
   @@index([serverId, checkedAt])
 }
 
-// ── Заявки на добавление (до оплаты) ─────────
+// ── Заявки на добавление ──────────────────────
 model ServerRequest {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   name        String
   chronicle   String
   rates       String
   url         String
-  icon        String?
-  description String?
-  plan        String   @default("free")
-  email       String?
-  status      String   @default("pending") // pending | approved | rejected
-  createdAt   DateTime @default(now())
+  openedDate  DateTime?                       // когда открылся / откроется
+  status      String    @default("pending")   // pending | approved | rejected
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }

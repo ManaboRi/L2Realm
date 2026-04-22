@@ -7,7 +7,15 @@ import type { VipStatus } from '@/lib/types';
 import { VIP_MAX } from '@/lib/types';
 import styles from './page.module.css';
 
-type AdminTab = 'servers' | 'reviews' | 'money' | 'add';
+type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
+
+function slugify(s: string) {
+  return s.toLowerCase()
+    .replace(/[^a-z0-9\-\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 40) || 'server-' + Math.random().toString(36).slice(2, 8);
+}
 
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
@@ -17,8 +25,10 @@ export default function AdminPage() {
   const [reviews, setReviews]     = useState<any[]>([]);
   const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
   const [boosts, setBoosts]       = useState<any[]>([]);
+  const [requests, setRequests]   = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
   const [toast, setToast]         = useState('');
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   // Модал редактирования
   const [editServer, setEditServer] = useState<any | null>(null);
@@ -49,6 +59,7 @@ export default function AdminPage() {
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
       if (t === 'reviews')  setReviews(await api.reviews.pending(token));
+      if (t === 'requests') setRequests(await api.servers.getRequests(token));
       if (t === 'money') {
         const [vs, bs, sl] = await Promise.all([
           api.payments.vipStatus(),
@@ -80,6 +91,39 @@ export default function AdminPage() {
   async function rejectReview(id: string) {
     if (!token) return;
     try { await api.reviews.delete(id, token); showToast('Отзыв удалён'); loadTab('reviews'); }
+    catch (e: any) { showToast(e.message); }
+  }
+
+  async function approveRequest(r: any) {
+    setAddForm({
+      id:          slugify(r.name),
+      name:        r.name,
+      abbr:        r.name.slice(0, 3).toUpperCase(),
+      chronicle:   r.chronicle || 'Interlude',
+      rates:       r.rates,
+      rateNum:     String((r.rates?.match(/\d+/) ?? ['1'])[0]),
+      url:         r.url,
+      openedDate:  r.openedDate ? r.openedDate.slice(0, 10) : '',
+      country:     'RU',
+      donate:      'cosmetic',
+      type_pvp: false, type_pve: false, type_new: false, type_featured: false, vip: false,
+      icon:'', banner:'', telegram:'', discord:'', vk:'',
+      shortDesc:'', fullDesc:'',
+    });
+    setApprovingId(r.id);
+    setTab('add');
+    showToast('Заполните детали и сохраните — заявка пометится одобренной');
+  }
+
+  async function rejectRequest(id: string) {
+    if (!token || !confirm('Отклонить заявку?')) return;
+    try { await api.servers.updateRequest(id, 'rejected', token); showToast('Заявка отклонена'); loadTab('requests'); }
+    catch (e: any) { showToast(e.message); }
+  }
+
+  async function deleteRequest(id: string) {
+    if (!token || !confirm('Удалить заявку навсегда?')) return;
+    try { await api.servers.deleteRequest(id, token); showToast('Заявка удалена'); loadTab('requests'); }
     catch (e: any) { showToast(e.message); }
   }
 
@@ -186,6 +230,10 @@ export default function AdminPage() {
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
       }, token);
+      if (approvingId) {
+        try { await api.servers.updateRequest(approvingId, 'approved', token); } catch {}
+        setApprovingId(null);
+      }
       showToast(`✅ Сервер ${addForm.name} добавлен!`);
       setTab('servers');
     } catch (e: any) { showToast(`❌ ${e.message}`); }
@@ -197,11 +245,13 @@ export default function AdminPage() {
     </div>
   );
 
+  const pendingRequests = requests.filter(r => r.status === 'pending').length;
   const TABS: { k: AdminTab; l: string }[] = [
-    { k: 'servers', l: `Серверы (${servers.length})` },
-    { k: 'reviews', l: `Отзывы (${reviews.length})` },
-    { k: 'money',   l: `Монетизация${vipStatus ? ` (${vipStatus.taken}/${vipStatus.max})` : ''}` },
-    { k: 'add',     l: '+ Добавить сервер' },
+    { k: 'servers',  l: `Серверы (${servers.length})` },
+    { k: 'reviews',  l: `Отзывы (${reviews.length})` },
+    { k: 'requests', l: `Заявки${pendingRequests ? ` (${pendingRequests})` : ''}` },
+    { k: 'money',    l: `Монетизация${vipStatus ? ` (${vipStatus.taken}/${vipStatus.max})` : ''}` },
+    { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
   ];
 
   const sodServer = servers.find((s: any) => s._isSod);
@@ -468,10 +518,72 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* Заявки */}
+            {tab === 'requests' && (
+              <div className={styles.section}>
+                <div className={styles.sectionTitle}>Заявки на добавление ({requests.length})</div>
+                {requests.length === 0 ? <p className={styles.empty}>Заявок пока нет</p> : (
+                  <div className={styles.reviewCards}>
+                    {requests.map((r: any) => {
+                      const u = r.user;
+                      const name = u?.nickname ?? u?.name ?? u?.email ?? 'Аноним';
+                      const statusColor = r.status === 'approved' ? '#4AAA70' : r.status === 'rejected' ? '#CC6060' : 'var(--gold-d)';
+                      const statusLbl = r.status === 'approved' ? '✓ Одобрена' : r.status === 'rejected' ? '✕ Отклонена' : '⏳ На модерации';
+                      return (
+                        <div key={r.id} className={styles.reviewCard}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'.6rem', marginBottom:'.5rem', flexWrap:'wrap' }}>
+                            {u?.avatar && <img src={u.avatar} alt="" style={{ width:24, height:24, borderRadius:'50%' }} />}
+                            <strong style={{ color:'var(--text)' }}>{name}</strong>
+                            {u?.vkId && <span style={{ fontSize:'.7rem', color:'var(--text3)' }}>VK {u.vkId}</span>}
+                            <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleString('ru-RU')}</span>
+                            <span style={{ marginLeft:'auto', fontSize:'.7rem', color: statusColor, fontFamily:"'Cinzel',serif", letterSpacing:'.08em', textTransform:'uppercase' }}>{statusLbl}</span>
+                          </div>
+                          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:'.4rem .9rem', fontSize:'.82rem', color:'var(--text2)' }}>
+                            <div><span style={{ color:'var(--text3)' }}>Название: </span><strong style={{ color:'var(--text)' }}>{r.name}</strong></div>
+                            <div><span style={{ color:'var(--text3)' }}>Хроника: </span>{r.chronicle}</div>
+                            <div><span style={{ color:'var(--text3)' }}>Рейты: </span>{r.rates}</div>
+                            <div><span style={{ color:'var(--text3)' }}>Открытие: </span>{r.openedDate ? new Date(r.openedDate).toLocaleDateString('ru-RU') : '—'}</div>
+                            <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>URL: </span><a href={r.url} target="_blank" rel="noopener" style={{ color:'var(--gold)' }}>{r.url}</a></div>
+                          </div>
+                          {r.status === 'pending' && (
+                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem', flexWrap:'wrap' }}>
+                              <button className={`${styles.btnSm} ${styles.btnSuccess}`} onClick={() => approveRequest(r)}>✓ Одобрить → создать сервер</button>
+                              <button className={styles.btnSm} onClick={() => rejectRequest(r.id)}>✕ Отклонить</button>
+                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
+                            </div>
+                          )}
+                          {r.status !== 'pending' && (
+                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem' }}>
+                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Добавить сервер */}
             {tab === 'add' && (
               <div className={styles.section}>
-                <div className={styles.sectionTitle}>Добавить сервер вручную</div>
+                <div className={styles.sectionTitle}>
+                  {approvingId ? 'Одобрение заявки — заполните детали сервера' : 'Добавить сервер вручную'}
+                </div>
+                {approvingId && (
+                  <div style={{ background:'rgba(200,168,75,.08)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.7rem 1rem', display:'flex', gap:'.6rem', alignItems:'center', flexWrap:'wrap' }}>
+                    <span style={{ fontSize:'.82rem', color:'var(--text1)' }}>После сохранения заявка пометится <strong>approved</strong>.</span>
+                    <button
+                      type="button"
+                      className={styles.btnSm}
+                      style={{ marginLeft:'auto' }}
+                      onClick={() => { setApprovingId(null); showToast('Отвязано от заявки'); }}
+                    >
+                      Отвязать от заявки
+                    </button>
+                  </div>
+                )}
                 <form className={styles.addForm} onSubmit={submitAdd}>
                   <div className={styles.formGrid}>
                     {/* Строка 1 */}

@@ -1,13 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
 
 function rateRange(n: number): string {
-  if (n <= 5)   return 'low';
-  if (n <= 49)  return 'mid';
-  if (n <= 100) return 'high';
-  return 'ultra';
+  if (n <= 5)    return 'low';
+  if (n <= 49)   return 'mid';
+  if (n <= 100)  return 'high';
+  if (n <= 999)  return 'ultra';
+  return 'mega';
 }
 
 function todaySeed(): number {
@@ -87,11 +88,11 @@ export class ServersService {
 
     decorated.sort((a, b) => {
       if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
+      if (a._isSod !== b._isSod) return a._isSod ? -1 : 1;
       if (a._isBoosted !== b._isBoosted) return a._isBoosted ? -1 : 1;
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
       }
-      if (a._isSod !== b._isSod) return a._isSod ? -1 : 1;
       return 0; // стабильно: сохраняем исходный user-sort
     });
 
@@ -157,24 +158,55 @@ export class ServersService {
     return this.prisma.server.delete({ where: { id } });
   }
 
-  // ── Заявка на добавление ─────────────────────
-  async submitRequest(data: {
-    name: string; chronicle: string; rates: string; url: string;
-    icon?: string; description?: string; plan: string; email?: string;
+  // ── Заявка на добавление (авторизовано, 1/24ч) ─
+  async submitRequest(userId: string, data: {
+    name: string; chronicle: string; rates: string; url: string; openedDate?: string;
   }) {
+    if (!data.name?.trim() || !data.chronicle?.trim() || !data.rates?.trim() || !data.url?.trim()) {
+      throw new BadRequestException('Заполните название, хронику, рейты и URL');
+    }
+
+    // Rate-limit: не чаще 1 заявки за 24 часа с аккаунта
+    const since = new Date();
+    since.setHours(since.getHours() - 24);
+    const recent = await this.prisma.serverRequest.findFirst({
+      where: { userId, createdAt: { gt: since } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (recent) {
+      const next = new Date(recent.createdAt);
+      next.setHours(next.getHours() + 24);
+      throw new BadRequestException(
+        `Можно подавать не чаще 1 заявки в 24 часа. Следующая — после ${next.toLocaleString('ru-RU')}`,
+      );
+    }
+
     // Антиспам: не принимаем дубли по URL (pending или approved)
     const existing = await this.prisma.serverRequest.findFirst({
       where: { url: data.url, status: { in: ['pending', 'approved'] } },
     });
     if (existing) {
-      throw new Error('Заявка для этого сервера уже существует');
+      throw new BadRequestException('Заявка для этого сервера уже существует');
     }
-    return this.prisma.serverRequest.create({ data });
+
+    return this.prisma.serverRequest.create({
+      data: {
+        userId,
+        name:       data.name.trim(),
+        chronicle:  data.chronicle.trim(),
+        rates:      data.rates.trim(),
+        url:        data.url.trim(),
+        openedDate: data.openedDate ? new Date(data.openedDate) : null,
+      },
+    });
   }
 
   // ── Список заявок (admin) ────────────────────
   async getRequests() {
-    return this.prisma.serverRequest.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.prisma.serverRequest.findMany({
+      include: { user: { select: { id: true, email: true, name: true, nickname: true, avatar: true, vkId: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   // ── Обновить статус заявки (admin) ───────────
@@ -205,7 +237,7 @@ export class ServersService {
     });
 
     const chronicles: Record<string, number> = {};
-    const rates: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0 };
+    const rates: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0, mega: 0 };
     const donates: Record<string, number> = {};
     const types: Record<string, number> = {};
 
