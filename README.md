@@ -48,8 +48,10 @@
 - [x] **Сервер дня ★** — бесплатно. Случайный сервер (детерминированно по дате), подсвечивается изумрудом. В пуле только не-VIP и не-забустенные серверы.
 - [x] Публичная страница `/pricing` (SEO + покупка) + пункт в шапке
 - [x] Размещение в каталоге — всегда бесплатное, с модерацией заявок админом
-- [x] ЮКасса: покупка через `POST /api/payments/purchase` (kind=vip|boost). В dev-mode (без ключей) активируется автоматически.
+- [x] ЮКасса: покупка через `POST /api/payments/purchase` (требует JWT — email идёт в чек по 54-ФЗ). В dev-mode (`NODE_ENV≠production` + пустые ключи) активируется автоматически, в проде — ошибка.
+- [x] Webhook `POST /api/payments/webhook` фильтрует source IP по whitelist ЮКассы
 - [x] Авто-сброс VIP на FREE по истечении (cron)
+- [x] Страница `/legal` — публичная оферта + реквизиты исполнителя (для анкеты ЮКассы)
 
 ### Админ-панель
 - [x] CRUD серверов + статус (VIP/Буст/SoD) прямо в таблице
@@ -218,9 +220,12 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 - `GET   /api/favorites/ids` — только id (для быстрой проверки)
 - `POST  /api/favorites/:serverId` — добавить в избранное
 - `DELETE /api/favorites/:serverId` — убрать из избранного
-- `POST /api/payments/purchase` — купить VIP или буст (`{ kind, serverId, returnUrl }`)
+- `POST /api/payments/purchase` — купить VIP или буст (`{ kind, serverId, returnUrl }`). Email плательщика берётся из JWT и уходит в чек ЮКассы.
 - `GET  /api/payments/vip/status` — занято VIP-мест, ближайшая дата освобождения
 - `GET  /api/payments/boosts/active` — активные бусты (для сортировки клиента при нужде)
+
+### Webhook (без JWT, но с IP-whitelist)
+- `POST /api/payments/webhook` — уведомление от ЮКассы о смене статуса платежа. Source IP проверяется по [списку ЮКассы](https://yookassa.ru/developers/using-api/webhooks#ip); чужие вызовы получают 403.
 
 ### Admin (JWT + role=ADMIN)
 - `POST /api/servers` / `PUT /api/servers/:id` / `DELETE /api/servers/:id`
@@ -247,14 +252,52 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 
 ---
 
+## Подключение ЮКассы
+
+**Анкета магазина ЮКассы** — на сайте нужны:
+- Тарифы с ценами и описанием → [`/pricing`](frontend/src/app/pricing/page.tsx)
+- Оферта + реквизиты (ФИО, ИНН самозанятого, контакты) → [`/legal`](frontend/src/app/legal/page.tsx)
+- Футер со ссылкой на оферту на всех страницах → [`Footer.tsx`](frontend/src/components/Footer.tsx)
+
+В поле «Ссылка на страницу с реквизитами» → `https://l2realm.ru/legal`.
+
+**После одобрения** в ЛК ЮКассы:
+1. **Настройки → API** → скопировать `shopId` и `secretKey` (`live_...`)
+2. В `/opt/l2realm/backend/.env` прописать:
+   ```env
+   YOOKASSA_SHOP_ID="123456"
+   YOOKASSA_SECRET_KEY="live_..."
+   NODE_ENV="production"
+   ```
+3. `docker compose restart backend`
+4. **Настройки → HTTP-уведомления** → URL: `https://l2realm.ru/api/proxy/payments/webhook`, событие `payment.succeeded` (+ опционально `payment.canceled`, `refund.succeeded`)
+5. **Чеки** → включить фискализацию через интеграцию с «Мой налог» (для самозанятого)
+
+**Как работает:**
+- Юзер логинится (VK ID) → на `/pricing` выбирает сервер → нажимает «Купить»
+- Фронт шлёт `POST /api/payments/purchase` с JWT → бэк вытаскивает email из токена, создаёт платёж в ЮКассе с `receipt` (обязательно для 54-ФЗ)
+- ЮКасса возвращает `confirmationUrl` → фронт редиректит на страницу оплаты
+- После успеха ЮКасса шлёт webhook на `/payments/webhook` → бэк проверяет source IP, активирует VIP/буст
+
+**IP-whitelist ЮКассы** зашит в [`payments.service.ts`](backend/src/payments/payments.service.ts) (`YOOKASSA_IP_RANGES`). Если ЮКасса добавит новые — [обновить список](https://yookassa.ru/developers/using-api/webhooks#ip).
+
+---
+
 ## Безопасность
 
 - JWT 7 дней, bcrypt 12 rounds (для унаследованных пароль-аккаунтов)
 - Новый вход — только через VK ID (PKCE, state-проверка)
 - Максимум 2 аккаунта с одного IP при регистрации
 - Админ-эндпоинты — через `@UseGuards(AuthGuard('jwt'))` + проверка роли
+- `/payments/purchase` — за JWT (email из токена уходит в чек, плательщик всегда идентифицирован)
+- `/payments/webhook` — IP-whitelist ЮКассы; без ключей ЮКассы в проде активация запрещена
 - Валидация DTO (class-validator, whitelist: true)
 - SSL, SSH-keys only, fail2ban на VPS
+
+### Что НЕ должно попадать в git
+- `backend/.env` и `frontend/.env.local` — `.gitignore` их ловит, но всегда перепроверяй перед `git add -A`
+- `YOOKASSA_SECRET_KEY`, `JWT_SECRET`, `VK_CLIENT_SECRET`, `ADMIN_PASS` — только в `.env` на VPS
+- Дампы БД (`*.sql`, `*.dump`) и бэкапы — только локально и на VPS в `backups/`
 
 ---
 

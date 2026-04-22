@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request, Req, Headers, ForbiddenException } from '@nestjs/common';
+import type { Request as ExpressRequest } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
@@ -10,14 +11,28 @@ export class PaymentsController {
   constructor(private payments: PaymentsService) {}
 
   // Создать покупку: kind=vip | boost
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
   @Post('purchase')
-  purchase(@Body() body: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string }) {
-    return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl);
+  purchase(
+    @Body() body: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string },
+    @Request() req: { user: { id: string; email: string } },
+  ) {
+    return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email);
   }
 
-  // Webhook от ЮКасса
+  // Webhook от ЮКассы: проверяем source IP (whitelist ЮКассы)
+  // https://yookassa.ru/developers/using-api/webhooks#ip
   @Post('webhook')
-  webhook(@Body() body: any) {
+  webhook(
+    @Body() body: any,
+    @Req() req: ExpressRequest,
+    @Headers('x-forwarded-for') forwardedFor?: string,
+  ) {
+    const ip = (forwardedFor?.split(',')[0].trim()) || req.socket.remoteAddress || '';
+    if (!this.payments.isYookassaIp(ip)) {
+      throw new ForbiddenException(`Webhook отклонён: IP ${ip} не в whitelist ЮКассы`);
+    }
     return this.payments.handleWebhook(body);
   }
 

@@ -2,11 +2,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import type { Server, VipStatus } from '@/lib/types';
 import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS } from '@/lib/types';
 import styles from './page.module.css';
 
 export default function PricingPage() {
+  const { user, token } = useAuth();
   const [vip, setVip] = useState<VipStatus | null>(null);
   const [vipLoading, setVipLoading] = useState(true);
   const [servers, setServers] = useState<Server[]>([]);
@@ -51,10 +53,11 @@ export default function PricingPage() {
   }
 
   async function buy(kind: 'vip' | 'boost') {
+    if (!token || !user) return showToast('Войдите, чтобы совершить покупку (чек придёт на ваш email)');
     if (!sel) return showToast('Выберите сервер');
     setBusy(kind);
     try {
-      const res = await api.payments.purchase({ kind, serverId: sel, returnUrl: window.location.href });
+      const res = await api.payments.purchase({ kind, serverId: sel, returnUrl: window.location.href }, token);
       if (res.confirmationUrl) { window.location.href = res.confirmationUrl; return; }
       if (res.activated) {
         showToast(kind === 'vip' ? '◆ VIP активирован' : '🔥 Буст активирован');

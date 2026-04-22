@@ -74,10 +74,14 @@ export const api = {
 
   // ── Оплата ────────────────────────────────────
   payments: {
-    // Покупка VIP или буста (ЮКасса). В dev-mode возвращает { dev: true, activated: true }.
-    purchase: (data: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string }) =>
+    // Покупка VIP или буста (ЮКасса). Требует JWT — email пользователя уходит в чек.
+    purchase: (data: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string }, token: string) =>
       request<{ dev?: boolean; activated?: boolean; paymentId?: string; confirmationUrl?: string }>(
-        '/payments/purchase', { method: 'POST', body: JSON.stringify(data) },
+        '/payments/purchase', {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: { Authorization: `Bearer ${token}` },
+        },
       ),
     vipStatus: () => request<VipStatus>('/payments/vip/status'),
     subscription: (serverId: string) => request<Subscription | null>(`/payments/subscription/${serverId}`),

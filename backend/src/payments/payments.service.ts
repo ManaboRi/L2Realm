@@ -20,9 +20,10 @@ export class PaymentsService {
   constructor(private prisma: PrismaService, private config: ConfigService) {}
 
   // ── Создать платёж (VIP или буст) ─────────────
-  async createPurchase(kind: PurchaseKind, serverId: string, returnUrl: string) {
+  async createPurchase(kind: PurchaseKind, serverId: string, returnUrl: string, userEmail: string) {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) throw new NotFoundException('Сервер не найден');
+    if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
 
     const amount = kind === 'vip' ? VIP_PRICE : BOOST_PRICE;
 
@@ -42,14 +43,21 @@ export class PaymentsService {
     const shopId    = this.config.get('YOOKASSA_SHOP_ID');
     const secretKey = this.config.get('YOOKASSA_SECRET_KEY');
 
-    // dev-mode без ключей ЮКассы: сразу активируем
     if (!shopId || !secretKey) {
-      this.logger.warn(`ЮКасса не настроена — активируем ${kind} сразу (dev mode)`);
+      // В проде без ключей — ошибка, не халява. В dev — активируем сразу для локальной разработки.
+      if (process.env.NODE_ENV === 'production') {
+        throw new BadRequestException('Платежи временно недоступны. Обратитесь в поддержку.');
+      }
+      this.logger.warn(`ЮКасса не настроена — активируем ${kind} сразу (dev mode, NODE_ENV=${process.env.NODE_ENV})`);
       const result = kind === 'vip'
         ? await this.activateVip(serverId, 'dev-' + uuidv4())
         : await this.activateBoost(serverId, 'dev-' + uuidv4());
       return { dev: true, activated: true, ...result };
     }
+
+    const description = kind === 'vip'
+      ? `L2Realm VIP (${VIP_DAYS} дней) для «${server.name}»`
+      : `L2Realm Буст (${BOOST_DAYS} дней) для «${server.name}»`;
 
     const idempotenceKey = uuidv4();
     const response = await axios.post(
@@ -57,11 +65,21 @@ export class PaymentsService {
       {
         amount:       { value: amount.toFixed(2), currency: 'RUB' },
         confirmation: { type: 'redirect', return_url: returnUrl },
-        description:  kind === 'vip'
-          ? `L2Realm VIP (${VIP_DAYS} дней) для «${server.name}»`
-          : `L2Realm Буст 🔥 (${BOOST_DAYS} дней) для «${server.name}»`,
+        description,
         metadata:     { serverId, kind },
         capture:      true,
+        // Чек по 54-ФЗ — обязательный, ЮКасса передаст его в «Мой налог» для самозанятых
+        receipt: {
+          customer: { email: userEmail },
+          items: [{
+            description,
+            quantity:        '1.00',
+            amount:          { value: amount.toFixed(2), currency: 'RUB' },
+            vat_code:        1,                 // 1 = без НДС (самозанятый)
+            payment_mode:    'full_prepayment',
+            payment_subject: 'service',
+          }],
+        },
       },
       {
         auth:    { username: shopId, password: secretKey },
@@ -76,6 +94,27 @@ export class PaymentsService {
       amount,
       kind,
     };
+  }
+
+  // ── Whitelist IP ЮКассы для webhook ──────────
+  // Актуальный список: https://yookassa.ru/developers/using-api/webhooks#ip
+  private static readonly YOOKASSA_IP_RANGES = [
+    '185.71.76.0/27',
+    '185.71.77.0/27',
+    '77.75.153.0/25',
+    '77.75.154.128/25',
+    '77.75.156.11/32',
+    '77.75.156.35/32',
+  ];
+
+  isYookassaIp(ip: string): boolean {
+    if (!ip) return false;
+    // snake через nginx/traefik приходит как ::ffff:x.x.x.x
+    const addr = ip.replace(/^::ffff:/, '');
+    for (const range of PaymentsService.YOOKASSA_IP_RANGES) {
+      if (ipInCidr(addr, range)) return true;
+    }
+    return false;
   }
 
   // ── Webhook от ЮКассы ────────────────────────
@@ -217,4 +256,20 @@ function farFuture() {
   const d = new Date();
   d.setFullYear(d.getFullYear() + 100);
   return d;
+}
+
+function ipInCidr(ip: string, cidr: string): boolean {
+  const [range, bitsStr] = cidr.split('/');
+  const bits = parseInt(bitsStr, 10);
+  const ipInt    = ipv4ToInt(ip);
+  const rangeInt = ipv4ToInt(range);
+  if (ipInt === null || rangeInt === null) return false;
+  const mask = bits === 0 ? 0 : (~0 << (32 - bits)) >>> 0;
+  return (ipInt & mask) === (rangeInt & mask);
+}
+
+function ipv4ToInt(ip: string): number | null {
+  const parts = ip.split('.').map(Number);
+  if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return null;
+  return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
 }
