@@ -52,6 +52,7 @@
 - [x] Webhook `POST /api/payments/webhook` фильтрует source IP по whitelist ЮКассы
 - [x] Авто-сброс VIP на FREE по истечении (cron)
 - [x] Страница `/legal` — публичная оферта + реквизиты исполнителя (для анкеты ЮКассы)
+- [x] Страница `/privacy` — политика конфиденциальности (152-ФЗ: VK ID, email, IP, JWT, cookies, права субъекта)
 
 ### Админ-панель
 - [x] CRUD серверов + статус (VIP/Буст/SoD) прямо в таблице
@@ -257,7 +258,9 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
 **Анкета магазина ЮКассы** — на сайте нужны:
 - Тарифы с ценами и описанием → [`/pricing`](frontend/src/app/pricing/page.tsx)
 - Оферта + реквизиты (ФИО, ИНН самозанятого, контакты) → [`/legal`](frontend/src/app/legal/page.tsx)
-- Футер со ссылкой на оферту на всех страницах → [`Footer.tsx`](frontend/src/components/Footer.tsx)
+- Политика конфиденциальности (152-ФЗ) → [`/privacy`](frontend/src/app/privacy/page.tsx)
+- Футер со ссылками на оферту и политику на всех страницах → [`Footer.tsx`](frontend/src/components/Footer.tsx)
+- Согласие на обработку ПД в форме входа через VK → [`AuthModal.tsx`](frontend/src/components/AuthModal.tsx)
 
 В поле «Ссылка на страницу с реквизитами» → `https://l2realm.ru/legal`.
 

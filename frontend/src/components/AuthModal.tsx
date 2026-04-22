@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import styles from './AuthModal.module.css';
 import { startVkLogin } from '@/lib/vkAuth';
 
@@ -42,7 +43,10 @@ export function AuthModal({ open, onClose }: Props) {
         </button>
         {error && <p className={styles.error} style={{ marginTop: '.9rem' }}>{error}</p>}
         <p style={{ fontSize: '.72rem', color: 'var(--text3)', textAlign: 'center', marginTop: '1.2rem', lineHeight: 1.5 }}>
-          Нажимая «Войти через VK», вы соглашаетесь с правилами сайта. Мы получим только ваш ID, имя и email.
+          Нажимая «Войти через VK», вы принимаете{' '}
+          <Link href="/legal" style={{ color: 'var(--gold)' }}>оферту</Link> и{' '}
+          <Link href="/privacy" style={{ color: 'var(--gold)' }}>политику конфиденциальности</Link>,
+          а также даёте согласие на обработку вашего VK ID, имени, email и аватара.
         </p>
       </div>
     </div>

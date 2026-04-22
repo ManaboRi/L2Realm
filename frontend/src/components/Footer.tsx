@@ -24,12 +24,16 @@ export function Footer() {
           <div className={styles.colTitle}>Сервис</div>
           <Link href="/pricing" className={styles.link}>Тарифы и продвижение</Link>
           <Link href="/legal" className={styles.link}>Оферта и реквизиты</Link>
+          <Link href="/privacy" className={styles.link}>Политика конфиденциальности</Link>
           <a href="https://t.me/ManaboRi" target="_blank" rel="noopener" className={styles.link}>Поддержка (Telegram)</a>
         </div>
       </div>
       <div className={styles.bottom}>
         <span>© {new Date().getFullYear()} L2Realm</span>
-        <Link href="/legal" className={styles.bottomLink}>Правовая информация</Link>
+        <div style={{ display: 'flex', gap: '1.2rem' }}>
+          <Link href="/legal" className={styles.bottomLink}>Оферта</Link>
+          <Link href="/privacy" className={styles.bottomLink}>Конфиденциальность</Link>
+        </div>
       </div>
     </footer>
   );
