@@ -163,7 +163,7 @@ export default function HomePage() {
                     <div className={styles.list}>
                       {vipServers.map(s => <ServerCard key={s.id} server={s} vipBlock />)}
                       {freeSlots > 0 && Array.from({ length: freeSlots }).map((_, i) => (
-                        <Link key={`slot-${i}`} href="/add" className={styles.vipSlot}>
+                        <Link key={`slot-${i}`} href="/pricing" className={styles.vipSlot}>
                           <span className={styles.vipSlotPlus}>+</span>
                           <span className={styles.vipSlotText}>Свободное VIP место</span>
                           <span className={styles.vipSlotBtn}>Занять место →</span>

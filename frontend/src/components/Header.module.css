@@ -28,10 +28,13 @@
   font-family: 'Cinzel', serif; font-size: .68rem; text-transform: uppercase;
   letter-spacing: .1em; color: var(--text2); padding: .35rem .75rem;
   border-radius: 2px; transition: all .2s; display: flex; align-items: center; gap: .3rem;
+  white-space: nowrap;
 }
 .navLink:hover { color: var(--gold); background: rgba(200,168,75,.06); }
 .navIcon  { font-size: .75rem; opacity: .7; }
 .navAdmin { color: var(--gold-d); }
+.navTextFull { display: inline; }
+.navTextShort { display: none; }
 
 .right { display: flex; align-items: center; gap: .7rem; flex-shrink: 0; }
 
@@ -78,8 +81,13 @@
 }
 
 @media (max-width: 600px) {
-  .header { padding: 0 .8rem; gap: .5rem; }
-  .nav { display: none; }
+  .header { padding: 0 .7rem; gap: .35rem; }
+  .nav { gap: .1rem; flex: none; justify-content: flex-end; }
+  .navLinkHome { display: none; }
+  .navLink { padding: .3rem .5rem; font-size: .6rem; letter-spacing: .05em; gap: .25rem; }
+  .navIcon { display: none; }
+  .navTextFull { display: none; }
+  .navTextShort { display: inline; }
   .profileName { display: none; }
   .profileChip { padding: .25rem; }
   .addBtn { display: none; }
@@ -87,4 +95,5 @@
 }
 @media (max-width: 380px) {
   .logoText { display: none; }
+  .navLink { padding: .3rem .4rem; font-size: .58rem; }
 }

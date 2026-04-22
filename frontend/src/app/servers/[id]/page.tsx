@@ -191,7 +191,7 @@ export default function ServerPage() {
               <div className={styles.headerTags}>
                 <span className="tag tc">{server.chronicle}</span>
                 <span className="tag tr">{server.rates}</span>
-                <span className="tag tg">{dlbl(server.donate)}</span>
+                {server.donate !== 'cosmetic' && <span className="tag tg">{dlbl(server.donate)}</span>}
                 {server.type.includes('pvp') && <span className="tag tp">PvP</span>}
                 {server.type.includes('pve') && <span className="tag tn">PvE</span>}
               </div>

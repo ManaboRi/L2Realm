@@ -21,11 +21,13 @@ export function Header() {
         </Link>
 
         <nav className={styles.nav}>
-          <Link href="/" className={styles.navLink}>
+          <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`}>
             <span className={styles.navIcon}>⚔</span>Все серверы
           </Link>
           <Link href="/coming-soon" className={styles.navLink}>
-            <span className={styles.navIcon}>⏳</span>Скоро открытие
+            <span className={styles.navIcon}>⏳</span>
+            <span className={styles.navTextFull}>Скоро открытие</span>
+            <span className={styles.navTextShort}>Скоро</span>
           </Link>
           <Link href="/pricing" className={styles.navLink}>
             <span className={styles.navIcon}>◆</span>Тарифы

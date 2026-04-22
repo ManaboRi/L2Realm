@@ -70,7 +70,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           <div className={styles.tags}>
             <span className="tag tc">{s.chronicle}</span>
             <span className="tag tr">{s.rates}</span>
-            <span className="tag tg">{dlbl(s.donate)}</span>
+            {s.donate !== 'cosmetic' && <span className="tag tg">{dlbl(s.donate)}</span>}
             {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
             {s.type.includes('pvp') && <span className="tag tp">PvP</span>}
             {s.type.includes('pve') && <span className="tag tn">PvE</span>}
