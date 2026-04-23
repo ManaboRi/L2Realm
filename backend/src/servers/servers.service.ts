@@ -11,9 +11,11 @@ function rateRange(n: number): string {
   return 'mega';
 }
 
-function todaySeed(): number {
+// Сид для «Сервера дня» — меняется раз в 5 часов (окно 0-4, 5-9, 10-14, 15-19, 20-23 UTC).
+function sodSeed(): number {
   const d = new Date();
-  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
+  const window5h = Math.floor(d.getUTCHours() / 5);
+  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}-w${window5h}`;
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h;
@@ -64,15 +66,19 @@ export class ServersService {
     });
     const boostMap = new Map(boosts.map(b => [b.serverId, b.endDate]));
 
-    // Сервер дня: детерминированный рандом (сид = UTC дата), из пула не-VIP, не-бустовых
-    const eligibleSod = filtered.filter(s => {
-      const plan = (s.subscription as any)?.plan ?? 'FREE';
+    // Сервер дня: детерминированный рандом, окно 5 часов. Пул — ВСЯ БД минус VIP/бустовые,
+    // НЕ зависит от поиска/фильтров, чтобы SoD не менялся при вводе в поиск.
+    const poolForSod = await this.prisma.server.findMany({
+      select: { id: true, subscription: { select: { plan: true, endDate: true } } },
+      orderBy: { id: 'asc' }, // стабильный порядок — один и тот же сид даёт один и тот же сервер
+    });
+    const eligibleSod = poolForSod.filter(s => {
       const subActive = s.subscription?.endDate && s.subscription.endDate > now;
-      const isVip = plan === 'VIP' && subActive;
+      const isVip = s.subscription?.plan === 'VIP' && subActive;
       return !isVip && !boostMap.has(s.id);
     });
     const sodId = eligibleSod.length
-      ? eligibleSod[todaySeed() % eligibleSod.length].id
+      ? eligibleSod[sodSeed() % eligibleSod.length].id
       : null;
 
     // Приклеиваем флаги и сортируем: VIP → Boosted (по endDate DESC) → Сервер дня → остальные
@@ -111,7 +117,7 @@ export class ServersService {
         subscription: true,
         reviews: {
           where: { approved: true },
-          include: { user: { select: { id: true, name: true } } },
+          include: { user: { select: { id: true, nickname: true, avatar: true } } },
           orderBy: { createdAt: 'desc' },
           take: 20,
         },

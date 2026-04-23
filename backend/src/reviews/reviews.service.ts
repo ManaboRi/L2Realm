@@ -8,7 +8,8 @@ export class ReviewsService {
   async findByServer(serverId: string) {
     return this.prisma.review.findMany({
       where: { serverId, approved: true },
-      include: { user: { select: { id: true, name: true, nickname: true, avatar: true } } },
+      // name (ФИО из VK) намеренно не отдаём — публичный отзыв идёт по нику
+      include: { user: { select: { id: true, nickname: true, avatar: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -30,7 +31,7 @@ export class ReviewsService {
       where:  { userId_serverId: { userId, serverId } },
       create: { userId, serverId, rating, text, approved: false },
       update: { rating, text, approved: false }, // при редактировании снова на модерацию
-      include: { user: { select: { id: true, name: true, nickname: true, avatar: true } } },
+      include: { user: { select: { id: true, nickname: true, avatar: true } } },
     });
 
     await this.recalcRating(serverId);

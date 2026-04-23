@@ -178,13 +178,27 @@ export class MonitoringService {
     return Math.round((logs.filter(l => l.online).length / logs.length) * 100);
   }
 
+  // Многие сайты на Cloudflare/anti-bot блокируют запросы без UA — классифицируем
+  // их как offline. Отдаём обычный браузерный UA и идём по исходному пути URL.
   private pingUrl(url: string): Promise<boolean> {
     return new Promise(resolve => {
       try {
         const parsed = new URL(url);
         const mod    = parsed.protocol === 'https:' ? https : http;
-        const req    = mod.get({ hostname: parsed.hostname, path: '/', timeout: 5000 }, res => {
-          resolve(res.statusCode < 500);
+        const req    = mod.get({
+          hostname: parsed.hostname,
+          port:     parsed.port || undefined,
+          path:     (parsed.pathname || '/') + (parsed.search || ''),
+          timeout:  7000,
+          headers: {
+            'User-Agent':      'Mozilla/5.0 (compatible; L2RealmMonitor/1.0; +https://l2realm.ru)',
+            'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Language': 'ru,en;q=0.5',
+          },
+        }, res => {
+          const code = res.statusCode ?? 0;
+          // 2xx/3xx/4xx = сервер отвечает; 5xx = реально упал
+          resolve(code > 0 && code < 500);
           res.destroy();
         });
         req.on('error',   () => resolve(false));

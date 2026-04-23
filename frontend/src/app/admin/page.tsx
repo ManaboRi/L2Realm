@@ -38,8 +38,8 @@ export default function AdminPage() {
   // Форма добавления
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
-    url:'', openedDate:'', country:'RU', donate:'cosmetic',
-    type_pvp: false, type_pve: false, type_new: false, type_featured: false, vip: false,
+    url:'', openedDate:'', country:'RU',
+    type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
   });
@@ -114,8 +114,7 @@ export default function AdminPage() {
       url:         r.url,
       openedDate:  r.openedDate ? r.openedDate.slice(0, 10) : '',
       country:     'RU',
-      donate:      'cosmetic',
-      type_pvp: false, type_pve: false, type_new: false, type_featured: false, vip: false,
+      type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
     });
@@ -168,9 +167,6 @@ export default function AdminPage() {
       url:         s.url         ?? '',
       openedDate:  s.openedDate  ? s.openedDate.slice(0, 10) : '',
       country:     s.country     ?? 'RU',
-      donate:      s.donate      ?? 'cosmetic',
-      type_pvp:    s.type?.includes('pvp')      ?? false,
-      type_pve:    s.type?.includes('pve')      ?? false,
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
       icon:        s.icon        ?? '',
@@ -188,8 +184,6 @@ export default function AdminPage() {
     if (!token || !editServer) return;
     setEditLoading(true);
     const types: string[] = [];
-    if (editForm.type_pvp)      types.push('pvp');
-    if (editForm.type_pve)      types.push('pve');
     if (editForm.type_new)      types.push('new');
     if (editForm.type_featured) types.push('featured');
     try {
@@ -202,7 +196,6 @@ export default function AdminPage() {
         url:         editForm.url,
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
-        donate:      editForm.donate,
         type:        types,
         icon:        editForm.icon || undefined,
         banner:      editForm.banner || undefined,
@@ -225,15 +218,13 @@ export default function AdminPage() {
     e.preventDefault();
     if (!token) return;
     const types: string[] = [];
-    if (addForm.type_pvp)      types.push('pvp');
-    if (addForm.type_pve)      types.push('pve');
     if (addForm.type_new)      types.push('new');
     if (addForm.type_featured) types.push('featured');
     try {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
         url: addForm.url, chronicle: addForm.chronicle, rates: addForm.rates, rateNum: Number(addForm.rateNum),
-        donate: addForm.donate as any, type: types, vip: addForm.vip,
+        type: types, vip: addForm.vip,
         openedDate: addForm.openedDate || undefined, country: addForm.country,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
@@ -297,13 +288,6 @@ export default function AdminPage() {
                     {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </AField>
-                <AField label="Донат">
-                  <select className="input" value={editForm.donate} onChange={e => setEditForm((p:any) => ({...p,donate:e.target.value}))}>
-                    <option value="free">Без доната</option>
-                    <option value="cosmetic">Косметика</option>
-                    <option value="p2w">Pay-to-win</option>
-                  </select>
-                </AField>
                 <AField label="Иконка (URL)"><input className="input" type="url" value={editForm.icon} onChange={e => setEditForm((p:any) => ({...p,icon:e.target.value}))} placeholder="https://…" /></AField>
                 <AField label="Баннер (URL)"><input className="input" type="url" value={editForm.banner} onChange={e => setEditForm((p:any) => ({...p,banner:e.target.value}))} placeholder="https://…" /></AField>
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
@@ -312,7 +296,7 @@ export default function AdminPage() {
               </div>
 
               <div className={styles.checkRow}>
-                {([['type_pvp','PvP'],['type_pve','PvE'],['type_new','Новый'],['type_featured','🔥 Популярный']] as const).map(([k,l]) => (
+                {([['type_new','Новый'],['type_featured','🔥 Популярный']] as const).map(([k,l]) => (
                   <label key={k} className={styles.checkLabel}>
                     <input type="checkbox" checked={editForm[k]} onChange={e => setEditForm((p:any) => ({...p,[k]:e.target.checked}))} />
                     {l}
@@ -516,7 +500,7 @@ export default function AdminPage() {
                       <div key={r.id} className={styles.reviewCard}>
                         <div className={styles.reviewMeta}>
                           <strong>{r.server?.name}</strong>
-                          <span>от {r.user?.name ?? r.user?.email}</span>
+                          <span>от {r.user?.nickname ?? r.user?.email}</span>
                           <span>{'★'.repeat(r.rating)}</span>
                           <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
                         </div>
@@ -621,13 +605,6 @@ export default function AdminPage() {
                       </select>
                     </AField>
                     {/* Строка 4 */}
-                    <AField label="Донат">
-                      <select className="input" value={addForm.donate} onChange={e => setAddForm(p => ({...p,donate:e.target.value}))}>
-                        <option value="free">Без доната</option>
-                        <option value="cosmetic">Косметика</option>
-                        <option value="p2w">Pay-to-win</option>
-                      </select>
-                    </AField>
                     <AField label="Иконка (URL)"><input className="input" type="url" value={addForm.icon} onChange={e => setAddForm(p => ({...p,icon:e.target.value}))} placeholder="https://…" /></AField>
                     <AField label="Баннер (URL)"><input className="input" type="url" value={addForm.banner} onChange={e => setAddForm(p => ({...p,banner:e.target.value}))} placeholder="https://…" /></AField>
                     {/* Строка 5 */}
@@ -637,7 +614,7 @@ export default function AdminPage() {
                   </div>
 
                   <div className={styles.checkRow}>
-                    {([['type_pvp','PvP'],['type_pve','PvE'],['type_new','Новый'],['type_featured','🔥 Популярный'],['vip','⭐ VIP']] as const).map(([k,l]) => (
+                    {([['type_new','Новый'],['type_featured','🔥 Популярный'],['vip','⭐ VIP']] as const).map(([k,l]) => (
                       <label key={k} className={styles.checkLabel}>
                         <input type="checkbox" checked={(addForm as any)[k]} onChange={e => setAddForm(p => ({...p,[k]:e.target.checked}))} />
                         {l}

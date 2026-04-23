@@ -7,7 +7,6 @@ import { useAuth } from '@/context/AuthContext';
 import type { Server, Review } from '@/lib/types';
 import styles from './page.module.css';
 
-function dlbl(d: string) { return { free: 'Без доната', cosmetic: 'Косметика', p2w: 'Pay-to-win' }[d] ?? d; }
 function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -204,9 +203,6 @@ export function ServerDetailClient() {
               <div className={styles.headerTags}>
                 <span className="tag tc">{server.chronicle}</span>
                 <span className="tag tr">{server.rates}</span>
-                {server.donate !== 'cosmetic' && <span className="tag tg">{dlbl(server.donate)}</span>}
-                {server.type.includes('pvp') && <span className="tag tp">PvP</span>}
-                {server.type.includes('pve') && <span className="tag tn">PvE</span>}
               </div>
               <div className={styles.statusRow}>
                 <span className={isOnline ? styles.dotOnline : styles.dotOffline} />
@@ -248,7 +244,6 @@ export function ServerDetailClient() {
               {[
                 ['Хроника',    server.chronicle],
                 ['Рейты',      server.rates],
-                ['Донат',      dlbl(server.donate)],
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
@@ -431,7 +426,8 @@ function ReviewCard({
   canDelete?: boolean;
   onDelete?: () => void;
 }) {
-  const displayName = r.user.nickname ?? r.user.name ?? 'Игрок';
+  // Только никнейм — ФИО из VK не светим
+  const displayName = r.user.nickname || 'Игрок';
   return (
     <div className={styles.reviewCard}>
       <div className={styles.reviewHead}>

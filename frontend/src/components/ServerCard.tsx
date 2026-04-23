@@ -3,9 +3,6 @@ import Link from 'next/link';
 import type { Server } from '@/lib/types';
 import styles from './ServerCard.module.css';
 
-function dlbl(d: string) {
-  return { free: 'Без доната', cosmetic: 'Косметика', p2w: 'Pay-to-win' }[d] ?? d;
-}
 function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -70,10 +67,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           <div className={styles.tags}>
             <span className="tag tc">{s.chronicle}</span>
             <span className="tag tr">{s.rates}</span>
-            {s.donate !== 'cosmetic' && <span className="tag tg">{dlbl(s.donate)}</span>}
             {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
-            {s.type.includes('pvp') && <span className="tag tp">PvP</span>}
-            {s.type.includes('pve') && <span className="tag tn">PvE</span>}
           </div>
         </div>
         <div className={styles.desc}>{s.shortDesc}</div>
