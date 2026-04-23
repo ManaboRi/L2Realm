@@ -1,6 +1,11 @@
 import type { MetadataRoute } from 'next';
 import type { ServersResponse } from '@/lib/types';
 
+// ISR: sitemap регенерируется на первый запрос после деплоя и далее раз в 10 минут.
+// Без этого флага Next.js пытается построить sitemap на этапе `next build`, когда
+// контейнер бэкенда ещё не поднят — и кеширует пустой результат навсегда.
+export const revalidate = 600;
+
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 
