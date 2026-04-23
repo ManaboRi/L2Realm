@@ -19,6 +19,9 @@ export const metadata: Metadata = {
     locale: 'ru_RU',
     siteName: 'L2Realm',
   },
+  verification: {
+    yandex: 'cef19d9162540d2b',
+  },
 };
 
 export const viewport: Viewport = {
