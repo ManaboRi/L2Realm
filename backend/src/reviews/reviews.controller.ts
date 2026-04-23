@@ -49,11 +49,20 @@ export class ReviewsController {
     return this.reviews.approve(id);
   }
 
+  // Автор отзыва или админ. Роль проверяется в сервисе.
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  remove(@Param('id') id: string, @Request() req: { user: { id: string; role: string } }) {
+    return this.reviews.remove(id, req.user.id, req.user.role);
+  }
+
+  // Пересчёт рейтингов после каскадного удаления юзеров (призрачные счётчики)
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.reviews.remove(id);
+  @Post('recalc-all')
+  recalcAll() {
+    return this.reviews.recalcAllRatings();
   }
 }

@@ -80,7 +80,7 @@ function formatDesc(text: string) {
 
 export function ServerDetailClient() {
   const { id }     = useParams<{ id: string }>();
-  const { user, token } = useAuth();
+  const { user, token, isAdmin } = useAuth();
   const [server,   setServer]   = useState<Server | null>(null);
   const [loading,  setLoading]  = useState(true);
   const [status,   setStatus]   = useState<any>(null);
@@ -127,6 +127,19 @@ export function ServerDetailClient() {
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
+  }
+
+  async function deleteReview(reviewId: string) {
+    if (!token) return;
+    if (!confirm('Удалить этот отзыв?')) return;
+    try {
+      await api.reviews.delete(reviewId, token);
+      showToast('Отзыв удалён');
+      const fresh = await api.servers.get(id);
+      setServer(fresh);
+    } catch (e: any) {
+      showToast(e.message || 'Ошибка удаления');
+    }
   }
 
   async function submitReview(e: { preventDefault(): void }) {
@@ -358,7 +371,14 @@ export function ServerDetailClient() {
             <div className={styles.dblockBody}>
               {server.reviews && server.reviews.length > 0 ? (
                 <div className={styles.reviewList}>
-                  {server.reviews.map(r => <ReviewCard key={r.id} review={r} />)}
+                  {server.reviews.map(r => (
+                    <ReviewCard
+                      key={r.id}
+                      review={r}
+                      canDelete={isAdmin || r.user.id === user?.id}
+                      onDelete={() => deleteReview(r.id)}
+                    />
+                  ))}
                 </div>
               ) : (
                 <p className={styles.empty}>Отзывов пока нет — будьте первым!</p>
@@ -402,7 +422,15 @@ function SocialLink({ ico, name, href }: { ico: string; name: string; href: stri
     </a>
   );
 }
-function ReviewCard({ review: r }: { review: Review }) {
+function ReviewCard({
+  review: r,
+  canDelete,
+  onDelete,
+}: {
+  review: Review;
+  canDelete?: boolean;
+  onDelete?: () => void;
+}) {
   const displayName = r.user.nickname ?? r.user.name ?? 'Игрок';
   return (
     <div className={styles.reviewCard}>
@@ -417,7 +445,28 @@ function ReviewCard({ review: r }: { review: Review }) {
           )}
           {displayName}
         </span>
-        <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.6rem' }}>
+          <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
+          {canDelete && onDelete && (
+            <button
+              type="button"
+              onClick={onDelete}
+              title="Удалить отзыв"
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                color: 'var(--text3)',
+                fontSize: '.7rem',
+                padding: '.15rem .45rem',
+                borderRadius: 2,
+                cursor: 'pointer',
+                lineHeight: 1,
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </span>
       </div>
       <div className={styles.reviewStars}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
       <p className={styles.reviewTxt}>{r.text}</p>

@@ -165,12 +165,25 @@ export class AuthService {
     return this.signToken(user.id, user.email, user.role);
   }
 
-  // ── Смена никнейма ───────────────────────────
+  // ── Смена никнейма (не чаще раза в 7 дней) ──
   async updateNickname(userId: string, nickname: string) {
     const trimmed = nickname.trim();
     if (!/^[a-zA-Zа-яА-ЯёЁ0-9_\-]{3,16}$/.test(trimmed)) {
       throw new BadRequestException('Никнейм: 3-16 символов, только буквы/цифры/_-');
     }
+
+    const me = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { nicknameChangedAt: true },
+    });
+    if (me?.nicknameChangedAt) {
+      const nextAllowed = new Date(me.nicknameChangedAt.getTime() + 7 * 24 * 60 * 60 * 1000);
+      if (nextAllowed > new Date()) {
+        const d = nextAllowed.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+        throw new BadRequestException(`Никнейм можно менять раз в 7 дней. Следующая смена — ${d}`);
+      }
+    }
+
     const exists = await this.prisma.user.findFirst({
       where: { nickname: { equals: trimmed, mode: 'insensitive' }, NOT: { id: userId } },
     });
@@ -178,8 +191,8 @@ export class AuthService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data:  { nickname: trimmed },
-      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true },
+      data:  { nickname: trimmed, nicknameChangedAt: new Date() },
+      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true, nicknameChangedAt: true },
     });
     return user;
   }
@@ -198,7 +211,7 @@ export class AuthService {
   async getMe(userId: string) {
     return this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true, vkId: true, createdAt: true },
+      select: { id: true, email: true, name: true, nickname: true, avatar: true, role: true, vkId: true, createdAt: true, nicknameChangedAt: true },
     });
   }
 

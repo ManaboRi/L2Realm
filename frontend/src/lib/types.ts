@@ -85,13 +85,14 @@ export interface NewsItem {
 }
 
 export interface User {
-  id:        string;
-  email:     string;
-  name?:     string;
-  nickname?: string;
-  avatar?:   string;
-  vkId?:     string;
-  role:      'USER' | 'ADMIN';
+  id:                string;
+  email:             string;
+  name?:             string;
+  nickname?:         string;
+  avatar?:           string;
+  vkId?:             string;
+  role:              'USER' | 'ADMIN';
+  nicknameChangedAt?: string | null;
 }
 
 export interface FavoriteServer {

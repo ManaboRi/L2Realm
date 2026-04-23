@@ -162,37 +162,53 @@ export default function ProfilePage() {
       </section>
 
       {/* ── Никнейм ──────────────────────────────── */}
-      <section style={cardStyle}>
-        <div style={sectionTitleStyle}>Никнейм</div>
-        <form onSubmit={handleNickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
-            <label style={labelStyle}>Новый никнейм</label>
-            <input
-              className="input"
-              type="text"
-              maxLength={16}
-              value={nick}
-              onChange={e => { setNick(e.target.value); setNickSuccess(false); }}
-              placeholder="3–16 символов"
-            />
-            <div style={{ fontSize: '.7rem', color: 'var(--text3)' }}>
-              Буквы (лат/кир), цифры, «_» и «-». Виден другим игрокам.
-            </div>
-          </div>
+      {(() => {
+        const NICK_COOLDOWN_DAYS = 7;
+        const lastChanged = user.nicknameChangedAt ? new Date(user.nicknameChangedAt) : null;
+        const nextAllowed = lastChanged ? new Date(lastChanged.getTime() + NICK_COOLDOWN_DAYS * 86400000) : null;
+        const cooldownActive = !!(nextAllowed && nextAllowed > new Date());
+        const nextStr = nextAllowed?.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
 
-          {nickError && <p style={{ color: '#e55', fontSize: '.82rem', margin: 0 }}>{nickError}</p>}
-          {nickSuccess && <p style={{ color: '#5c5', fontSize: '.82rem', margin: 0 }}>✅ Никнейм сохранён</p>}
+        return (
+          <section style={cardStyle}>
+            <div style={sectionTitleStyle}>Никнейм</div>
+            <form onSubmit={handleNickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
+                <label style={labelStyle}>Новый никнейм</label>
+                <input
+                  className="input"
+                  type="text"
+                  maxLength={16}
+                  value={nick}
+                  onChange={e => { setNick(e.target.value); setNickSuccess(false); }}
+                  placeholder="3–16 символов"
+                  disabled={cooldownActive}
+                />
+                <div style={{ fontSize: '.7rem', color: 'var(--text3)' }}>
+                  Буквы (лат/кир), цифры, «_» и «-». Виден другим игрокам. Менять можно раз в {NICK_COOLDOWN_DAYS} дней.
+                </div>
+                {cooldownActive && (
+                  <div style={{ fontSize: '.75rem', color: 'var(--gold-d)' }}>
+                    🕒 Следующая смена доступна {nextStr}
+                  </div>
+                )}
+              </div>
 
-          <button
-            className="btn-primary"
-            type="submit"
-            disabled={nickSaving}
-            style={{ padding: '.5rem', alignSelf: 'flex-start', minWidth: '180px' }}
-          >
-            {nickSaving ? 'Сохраняем...' : 'Сохранить'}
-          </button>
-        </form>
-      </section>
+              {nickError && <p style={{ color: '#e55', fontSize: '.82rem', margin: 0 }}>{nickError}</p>}
+              {nickSuccess && <p style={{ color: '#5c5', fontSize: '.82rem', margin: 0 }}>✅ Никнейм сохранён</p>}
+
+              <button
+                className="btn-primary"
+                type="submit"
+                disabled={nickSaving || cooldownActive}
+                style={{ padding: '.5rem', alignSelf: 'flex-start', minWidth: '180px' }}
+              >
+                {nickSaving ? 'Сохраняем...' : 'Сохранить'}
+              </button>
+            </form>
+          </section>
+        );
+      })()}
 
       {/* ── Избранное ────────────────────────────── */}
       <section style={cardStyle}>

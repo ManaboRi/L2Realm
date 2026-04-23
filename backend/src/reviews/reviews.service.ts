@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -46,12 +46,26 @@ export class ReviewsService {
     return review;
   }
 
-  async remove(id: string) {
+  // Админ удаляет любой отзыв; юзер — только свой
+  async remove(id: string, actorId: string, actorRole: string) {
     const review = await this.prisma.review.findUnique({ where: { id } });
     if (!review) throw new NotFoundException();
+    if (actorRole !== 'ADMIN' && review.userId !== actorId) {
+      throw new ForbiddenException('Нельзя удалять чужие отзывы');
+    }
     await this.prisma.review.delete({ where: { id } });
     await this.recalcRating(review.serverId);
     return { deleted: true };
+  }
+
+  // Одноразовая синхронизация денормализованного rating/ratingCount
+  // на всех серверах — нужно после каскадного удаления юзеров.
+  async recalcAllRatings() {
+    const servers = await this.prisma.server.findMany({ select: { id: true } });
+    for (const s of servers) {
+      await this.recalcRating(s.id);
+    }
+    return { ok: true, recalculated: servers.length };
   }
 
   async getPending() {

@@ -29,6 +29,7 @@ model User {
   resetTokenExpires  DateTime?
   registrationIp     String?
   vkId               String?   @unique
+  nicknameChangedAt  DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

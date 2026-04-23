@@ -63,6 +63,8 @@ export const api = {
       request<any>(`/reviews/${id}/approve`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
     delete: (id: string, token: string) =>
       request<any>(`/reviews/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+    recalcAll: (token: string) =>
+      request<{ ok: boolean; recalculated: number }>('/reviews/recalc-all', { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
   },
 
   // ── Мониторинг ────────────────────────────────

@@ -94,6 +94,15 @@ export default function AdminPage() {
     catch (e: any) { showToast(e.message); }
   }
 
+  async function recalcAllRatings() {
+    if (!token) return;
+    if (!confirm('Пересчитать рейтинги всех серверов? Исправит залипшие счётчики отзывов после удаления аккаунтов.')) return;
+    try {
+      const res = await api.reviews.recalcAll(token);
+      showToast(`Пересчитано: ${res.recalculated} серверов`);
+    } catch (e: any) { showToast(e.message); }
+  }
+
   async function approveRequest(r: any) {
     setAddForm({
       id:          slugify(r.name),
@@ -495,7 +504,12 @@ export default function AdminPage() {
             {/* Отзывы на модерации */}
             {tab === 'reviews' && (
               <div className={styles.section}>
-                <div className={styles.sectionTitle}>Отзывы на модерации ({reviews.length})</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.6rem', flexWrap: 'wrap' }}>
+                  <div className={styles.sectionTitle}>Отзывы на модерации ({reviews.length})</div>
+                  <button className={styles.btnSm} onClick={recalcAllRatings} title="Пересчитать rating/ratingCount на всех серверах">
+                    ↻ Пересчитать рейтинги
+                  </button>
+                </div>
                 {reviews.length === 0 ? <p className={styles.empty}>Нет отзывов на модерации</p> : (
                   <div className={styles.reviewCards}>
                     {reviews.map((r: any) => (
