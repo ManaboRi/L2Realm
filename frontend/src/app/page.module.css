@@ -33,22 +33,31 @@
   z-index: 0;
 }
 
-/* Персонаж — голова чуть выше рамки, тело уходит вниз */
+/* Персонаж — голова торчит выше блока, низ срезается на уровне груди */
 .heroChar {
   position: absolute;
-  right: 2%;
-  top: -28%;
-  height: 148%;
+  right: 1%;
+  top: -38%;
+  height: 210%;
   width: auto;
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  mask-image: radial-gradient(ellipse 62% 70% at 50% 48%, black 25%, transparent 65%);
-  -webkit-mask-image: radial-gradient(ellipse 62% 70% at 50% 48%, black 25%, transparent 65%);
-  opacity: .92;
+  /* Верх: плавное появление (голова над блоком)
+     Низ: исчезает на ~63% высоты изображения (уровень груди)
+     Бока: срезаем серый дым */
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, black 10%, black 62%, transparent 74%),
+    linear-gradient(to right,  transparent 6%, black 20%, black 82%, transparent 95%);
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, black 10%, black 62%, transparent 74%),
+    linear-gradient(to right,  transparent 6%, black 20%, black 82%, transparent 95%);
+  mask-composite: intersect;
+  -webkit-mask-composite: source-in;
+  opacity: .95;
 }
 
-@media (max-width: 900px) { .heroChar { height: 130%; top: -20%; right: -1%; } }
+@media (max-width: 900px) { .heroChar { height: 175%; top: -30%; right: -1%; } }
 @media (max-width: 660px) { .heroChar { display: none; } }
 
 .heroLeft  { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .7rem; }
