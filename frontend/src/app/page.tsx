@@ -102,8 +102,6 @@ function HomeContent() {
       <div className={styles.pageInner}>
 
       <section className={styles.hero}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/hero-char.png" alt="" className={styles.heroChar} aria-hidden="true" />
         <div className={styles.heroLeft}>
           <h1 className={styles.heroTitle}>Каталог Серверов <em>Lineage 2</em></h1>
           {stats && (
