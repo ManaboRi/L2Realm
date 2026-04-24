@@ -56,6 +56,7 @@ export class ServersService {
       include: { subscription: true, _count: { select: { reviews: true } } },
       orderBy: sort === 'name'   ? { name: 'asc' }
               : sort === 'rating' ? { rating: 'desc' }
+              : sort === 'votes'  ? { monthlyVotes: 'desc' }
               :                    { openedDate: 'desc' },
     });
 

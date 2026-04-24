@@ -36,6 +36,7 @@ model User {
   reviews        Review[]
   favorites      Favorite[]
   serverRequests ServerRequest[]
+  votes          Vote[]
 }
 
 enum Role {
@@ -66,9 +67,10 @@ model Server {
   site        String?
   shortDesc   String?
   fullDesc    String?
-  rating      Float    @default(0)
-  ratingCount Int      @default(0)
-  online      Int?     // текущий онлайн (из мониторинга)
+  rating       Float    @default(0)
+  ratingCount  Int      @default(0)
+  monthlyVotes Int      @default(0)
+  online       Int?     // текущий онлайн (из мониторинга)
   status      String   @default("online") // online | offline | unknown
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -79,6 +81,7 @@ model Server {
   monitorLogs  MonitorLog[]
   favorites    Favorite[]
   boosts       Boost[]
+  votes        Vote[]
 }
 
 // ── Избранное / Watchlist ─────────────────────
@@ -166,6 +169,20 @@ model MonitorLog {
   checkedAt DateTime @default(now())
 
   @@index([serverId, checkedAt])
+}
+
+// ── Голоса ────────────────────────────────────
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId  String
+  server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([serverId, userId, createdAt])
+  @@index([serverId, ip, createdAt])
 }
 
 // ── Заявки на добавление ──────────────────────

@@ -171,6 +171,7 @@ function HomeContent() {
                 <option value="opened">По дате открытия</option>
                 <option value="name">По алфавиту</option>
                 <option value="rating">По рейтингу</option>
+                <option value="votes">По голосам</option>
               </select>
             </div>
           </div>

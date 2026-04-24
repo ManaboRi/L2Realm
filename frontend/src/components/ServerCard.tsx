@@ -85,6 +85,9 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {s.ratingCount > 0 && (
             <span className={styles.rating}>★ {s.rating.toFixed(1)} ({s.ratingCount})</span>
           )}
+          {(s.monthlyVotes ?? 0) > 0 && (
+            <span className={styles.votes} title="Голосов за этот месяц">▲ {s.monthlyVotes}</span>
+          )}
         </div>
         <div className={styles.btns}>
           <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер →</a>

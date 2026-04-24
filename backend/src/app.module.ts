@@ -11,6 +11,7 @@ import { MonitoringModule } from './monitoring/monitoring.module';
 import { PaymentsModule }  from './payments/payments.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { UploadModule }    from './upload/upload.module';
+import { VotesModule }     from './votes/votes.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UploadModule }    from './upload/upload.module';
     PaymentsModule,
     FavoritesModule,
     UploadModule,
+    VotesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

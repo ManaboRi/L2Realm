@@ -32,10 +32,16 @@ export interface Server {
   boost?:      Boost | null;
   reviews?:    Review[];
   news?:       NewsItem[];
+  monthlyVotes?: number;
   _isVip?:     boolean;
   _isBoosted?: boolean;
   _isSod?:     boolean;
   _boostEnd?:  string | null;
+}
+
+export interface VoteStatus {
+  voted:       boolean;
+  cooldownEnds: string | null;
 }
 
 export interface Subscription {

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import type { Server, Review } from '@/lib/types';
+import type { Server, Review, VoteStatus } from '@/lib/types';
 import styles from './page.module.css';
 
 function fmtDate(s?: string | null) {
@@ -31,6 +31,16 @@ function relativeOpened(s?: string | null): string {
   return `${y} лет назад`;
 }
 function flag(c?: string) { return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦' }[c??''] ?? ''; }
+
+function cooldownText(cooldownEnds: string | null): string {
+  if (!cooldownEnds) return '';
+  const diff = new Date(cooldownEnds).getTime() - Date.now();
+  if (diff <= 0) return '';
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  if (h > 0) return `Следующий голос через ${h} ч. ${m} мин.`;
+  return `Следующий голос через ${m} мин.`;
+}
 
 function formatDesc(text: string) {
   if (!text) return null;
@@ -88,8 +98,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [reviewRating, setReviewRating] = useState(5);
   const [submitting, setSubmitting] = useState(false);
   const [toast,    setToast]    = useState('');
-  const [isFav,    setIsFav]    = useState(false);
-  const [favBusy,  setFavBusy]  = useState(false);
+  const [isFav,       setIsFav]       = useState(false);
+  const [favBusy,     setFavBusy]     = useState(false);
+  const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
+  const [voting,      setVoting]      = useState(false);
 
   // Мониторинг и аптайм-график — свежие данные, подгружаются на клиенте.
   // SEO-критичный контент (название, описание, отзывы) уже в initialServer.
@@ -102,6 +114,28 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     if (!token) { setIsFav(false); return; }
     api.favorites.ids(token).then(ids => setIsFav(ids.includes(id))).catch(() => {});
   }, [token, id]);
+
+  useEffect(() => {
+    if (!token) { setVoteStatus(null); return; }
+    api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+  }, [token, id]);
+
+  async function handleVote() {
+    if (!token) return showToast('Войдите, чтобы проголосовать');
+    setVoting(true);
+    try {
+      await api.votes.vote(id, token);
+      showToast('Голос принят! ▲ +1 к рейтингу сервера');
+      setServer(prev => ({ ...prev, monthlyVotes: (prev.monthlyVotes ?? 0) + 1 }));
+      const fresh = await api.votes.status(id, token);
+      setVoteStatus(fresh);
+    } catch {
+      // Обновляем статус чтобы показать cooldown, если голосование заблокировано
+      if (token) api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+      showToast('Голос уже учтён — следующий через 12 ч.');
+    }
+    setVoting(false);
+  }
 
   async function toggleFavorite() {
     if (!token) return showToast('Войдите, чтобы добавить в избранное');
@@ -206,6 +240,29 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
           <div className={styles.headerRight}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem' }}>
+              <button
+                type="button"
+                className="btn-gold"
+                style={{
+                  padding: '.5rem 1.2rem',
+                  opacity: voteStatus?.voted ? 0.5 : 1,
+                  cursor: voteStatus?.voted ? 'default' : 'pointer',
+                }}
+                onClick={handleVote}
+                disabled={voting || !!voteStatus?.voted}
+                title="Проголосовать за сервер (раз в 12 часов)"
+              >
+                {voting
+                  ? <span className="spin" />
+                  : <>▲ Проголосовать{(server.monthlyVotes ?? 0) > 0 ? ` (${server.monthlyVotes})` : ''}</>}
+              </button>
+              {voteStatus?.voted && voteStatus.cooldownEnds && cooldownText(voteStatus.cooldownEnds) && (
+                <span style={{ fontSize: '.68rem', color: 'var(--text3)' }}>
+                  {cooldownText(voteStatus.cooldownEnds)}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               className="btn-ghost"
@@ -239,6 +296,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
+                ['Голосов (месяц)', (server.monthlyVotes ?? 0) > 0 ? `▲ ${server.monthlyVotes}` : '—'],
                 ['Тариф',      server.subscription?.plan ?? 'FREE'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
