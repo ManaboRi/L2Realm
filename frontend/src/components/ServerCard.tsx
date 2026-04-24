@@ -1,7 +1,6 @@
 'use client';
 import Link from 'next/link';
 import type { Server } from '@/lib/types';
-import { VoteButton } from './VoteButton';
 import styles from './ServerCard.module.css';
 
 function fmtDate(s?: string | null) {
@@ -77,18 +76,25 @@ export function ServerCard({ server: s, vipBlock }: Props) {
       {/* Правая часть */}
       <div className={styles.right}>
         <span className={styles.date} title={fmtDate(s.openedDate)}>{relativeOpened(s.openedDate)}</span>
+
         <div className={styles.meta}>
           {s.status && (
             <span className={s.status === 'online' ? styles.online : styles.offline}>
               {s.status === 'online' ? '● Online' : '● Offline'}
             </span>
           )}
-          {s.ratingCount > 0 && (
-            <span className={styles.rating}>★ {s.rating.toFixed(1)} ({s.ratingCount})</span>
-          )}
+          {/* Средняя оценка + число отзывов */}
+          {s.ratingCount > 0
+            ? <span className={styles.rating} title="Средняя оценка">★ {s.rating.toFixed(1)} ({s.ratingCount})</span>
+            : <span className={styles.noRating}>Нет оценок</span>}
+          {/* Счётчик голосов */}
+          <span className={styles.voteCount} title="Голосов за месяц">
+            <img src="/images/vote-icon.png" alt="" className={styles.voteIco} />
+            {s.monthlyVotes ?? 0}
+          </span>
         </div>
+
         <div className={styles.btns}>
-          <VoteButton serverId={s.id} weeklyVotes={s.weeklyVotes} />
           <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер →</a>
         </div>
       </div>

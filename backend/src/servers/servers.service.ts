@@ -106,7 +106,8 @@ export class ServersService {
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
       }
-      return 0; // стабильно: сохраняем исходный user-sort
+      // Обычные серверы: чем больше голосов — тем выше (VIP/Boost/SoD уже отсеяны выше)
+      return (b.monthlyVotes ?? 0) - (a.monthlyVotes ?? 0);
     });
 
     const total = decorated.length;

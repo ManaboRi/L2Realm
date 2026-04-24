@@ -237,6 +237,22 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </span>
                 {status?.uptime != null && <span className={styles.uptime}>• Аптайм {status.uptime}%</span>}
               </div>
+
+              {/* Быстрая статистика: голоса / рейтинг / отзывы */}
+              <div className={styles.headerStats}>
+                <span className={styles.hstat}>
+                  <img src="/images/vote-icon.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                  {server.monthlyVotes ?? 0} голосов / мес.
+                </span>
+                {server.ratingCount > 0 && (
+                  <>
+                    <span className={styles.hstatDot}>·</span>
+                    <span className={styles.hstat}>★ {server.rating.toFixed(1)} / 5</span>
+                    <span className={styles.hstatDot}>·</span>
+                    <span className={styles.hstat}>{server.ratingCount} {server.ratingCount === 1 ? 'отзыв' : server.ratingCount < 5 ? 'отзыва' : 'отзывов'}</span>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className={styles.headerRight}>
@@ -253,7 +269,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: '.3rem', verticalAlign: 'middle' }} />Проголосовать</>}
+                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 26, height: 26, objectFit: 'contain', marginRight: '.35rem', verticalAlign: 'middle' }} />Проголосовать</>}
                 </button>
                 {(server.weeklyVotes ?? 0) > 0 && (
                   <span className={styles.weeklyCount}>

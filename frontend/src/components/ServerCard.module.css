@@ -84,14 +84,11 @@
 .meta    { display: flex; align-items: center; gap: .4rem; white-space: nowrap; }
 .online  { font-size: .62rem; color: #4AAA70; }
 .offline { font-size: .62rem; color: #CC6060; }
-.rating  { font-size: .62rem; color: var(--gold-d); }
+.rating   { font-size: .62rem; color: var(--gold-d); }
+.noRating { font-size: .62rem; color: var(--text3); }
+.voteCount { display: inline-flex; align-items: center; gap: .22rem; font-size: .62rem; color: var(--text2); }
+.voteIco   { width: 13px; height: 13px; object-fit: contain; flex-shrink: 0; }
 .btns   { display: flex; gap: .35rem; }
-.btnMore {
-  background: transparent; border: 1px solid var(--border); color: var(--text2);
-  padding: .24rem .65rem; border-radius: 2px; font-size: .7rem; text-transform: uppercase;
-  letter-spacing: .04em; transition: all .18s;
-}
-.btnMore:hover { border-color: var(--border2); color: var(--text); }
 
 @media (max-width: 600px) {
   .right { display: none; }
