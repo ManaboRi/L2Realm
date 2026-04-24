@@ -251,7 +251,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   disabled={voting || !!voteStatus?.voted}
                   title="Проголосовать за сервер (раз в 12 часов)"
                 >
-                  {voting ? <span className="spin" /> : '▲ Проголосовать'}
+                  {voting
+                    ? <span className="spin" />
+                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 20, height: 20, objectFit: 'contain', marginRight: '.3rem', verticalAlign: 'middle' }} />Проголосовать</>}
                 </button>
                 {(server.weeklyVotes ?? 0) > 0 && (
                   <span className={styles.weeklyCount}>

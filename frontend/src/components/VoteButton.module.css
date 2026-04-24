@@ -17,4 +17,4 @@
   color: var(--text3); cursor: default;
 }
 
-.ico { width: 10px; height: 11px; flex-shrink: 0; }
+.ico    { width: 18px; height: 18px; flex-shrink: 0; object-fit: contain; }

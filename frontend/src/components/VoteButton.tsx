@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import styles from './VoteButton.module.css';
 
 interface Props {
-  serverId:    string;
+  serverId:     string;
   weeklyVotes?: number;
 }
 
@@ -32,8 +32,8 @@ export function VoteButton({ serverId, weeklyVotes = 0 }: Props) {
 
   const cls = [
     styles.btn,
-    voted    ? styles.voted : '',
-    !token   ? styles.muted : '',
+    voted  ? styles.voted : '',
+    !token ? styles.muted : '',
   ].filter(Boolean).join(' ');
 
   const label = voted
@@ -54,16 +54,8 @@ export function VoteButton({ serverId, weeklyVotes = 0 }: Props) {
         : 'Голосовать за сервер (раз в 12 ч.)'
       }
     >
-      <VoteArrow />
+      <img src="/images/vote-icon.png" alt="" className={styles.ico} />
       <span>{label}</span>
     </button>
-  );
-}
-
-function VoteArrow() {
-  return (
-    <svg className={styles.ico} viewBox="0 0 10 11" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M5 0L9.5 5.5H7V11H3V5.5H0.5L5 0Z" fill="currentColor" />
-    </svg>
   );
 }
