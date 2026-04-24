@@ -240,44 +240,43 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
           <div className={styles.headerRight}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '.2rem' }}>
+            {/* Ряд 1: Голосовать + Избранное */}
+            <div className={styles.headerActions}>
+              <div className={styles.voteWrap}>
+                <button
+                  type="button"
+                  className="btn-primary"
+                  style={{ opacity: voteStatus?.voted ? 0.45 : 1, padding: '.48rem 1rem' }}
+                  onClick={handleVote}
+                  disabled={voting || !!voteStatus?.voted}
+                  title="Проголосовать за сервер (раз в 12 часов)"
+                >
+                  {voting ? <span className="spin" /> : '▲ Проголосовать'}
+                </button>
+                {(server.weeklyVotes ?? 0) > 0 && (
+                  <span className={styles.weeklyCount}>
+                    {server.weeklyVotes} голосов за 7 дн.
+                  </span>
+                )}
+                {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) && (
+                  <span className={styles.weeklyCount}>{cooldownText(voteStatus.cooldownEnds)}</span>
+                )}
+              </div>
               <button
                 type="button"
-                className="btn-gold"
-                style={{
-                  padding: '.5rem 1.2rem',
-                  opacity: voteStatus?.voted ? 0.5 : 1,
-                  cursor: voteStatus?.voted ? 'default' : 'pointer',
-                }}
-                onClick={handleVote}
-                disabled={voting || !!voteStatus?.voted}
-                title="Проголосовать за сервер (раз в 12 часов)"
+                className="btn-ghost"
+                style={{ color: isFav ? 'var(--gold)' : undefined, borderColor: isFav ? 'var(--gold)' : undefined, padding: '.48rem .9rem' }}
+                onClick={toggleFavorite}
+                disabled={favBusy}
+                title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
               >
-                {voting
-                  ? <span className="spin" />
-                  : <>▲ Проголосовать{(server.monthlyVotes ?? 0) > 0 ? ` (${server.monthlyVotes})` : ''}</>}
+                {isFav ? '★ В избранном' : '⚔ В избранное'}
               </button>
-              {voteStatus?.voted && voteStatus.cooldownEnds && cooldownText(voteStatus.cooldownEnds) && (
-                <span style={{ fontSize: '.68rem', color: 'var(--text3)' }}>
-                  {cooldownText(voteStatus.cooldownEnds)}
-                </span>
-              )}
             </div>
-            <button
-              type="button"
-              className="btn-ghost"
-              style={{
-                padding: '.5rem 1rem',
-                color: isFav ? 'var(--gold)' : undefined,
-                borderColor: isFav ? 'var(--gold)' : undefined,
-              }}
-              onClick={toggleFavorite}
-              disabled={favBusy}
-              title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-            >
-              {isFav ? '★ В избранном' : '⚔ В избранное'}
-            </button>
-            <a href={server.url} target="_blank" rel="noopener" className={styles.btnSite}>Перейти на сервер →</a>
+            {/* Ряд 2: Перейти на сервер — главный CTA */}
+            <a href={server.url} target="_blank" rel="noopener" className={styles.btnSiteLarge}>
+              Перейти на сервер →
+            </a>
           </div>
         </div>
       </div>
@@ -296,7 +295,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
-                ['Голосов (месяц)', (server.monthlyVotes ?? 0) > 0 ? `▲ ${server.monthlyVotes}` : '—'],
+                ['Голосов / нед.', (server.weeklyVotes ?? 0) > 0 ? `▲ ${server.weeklyVotes}` : '—'],
                 ['Тариф',      server.subscription?.plan ?? 'FREE'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>

@@ -70,6 +70,7 @@ model Server {
   rating       Float    @default(0)
   ratingCount  Int      @default(0)
   monthlyVotes Int      @default(0)
+  weeklyVotes  Int      @default(0)
   online       Int?     // текущий онлайн (из мониторинга)
   status      String   @default("online") // online | offline | unknown
   createdAt   DateTime @default(now())

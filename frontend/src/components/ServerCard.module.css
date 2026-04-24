@@ -85,7 +85,6 @@
 .online  { font-size: .62rem; color: #4AAA70; }
 .offline { font-size: .62rem; color: #CC6060; }
 .rating  { font-size: .62rem; color: var(--gold-d); }
-.votes   { font-size: .62rem; color: var(--text3); }
 .btns   { display: flex; gap: .35rem; }
 .btnMore {
   background: transparent; border: 1px solid var(--border); color: var(--text2);

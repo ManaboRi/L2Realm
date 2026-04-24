@@ -23,3 +23,6 @@ ALTER TABLE "Vote" ADD CONSTRAINT "Vote_userId_fkey" FOREIGN KEY ("userId") REFE
 
 -- AddForeignKey
 ALTER TABLE "Vote" ADD CONSTRAINT "Vote_serverId_fkey" FOREIGN KEY ("serverId") REFERENCES "Server"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AlterTable (weeklyVotes)
+ALTER TABLE "Server" ADD COLUMN IF NOT EXISTS "weeklyVotes" INTEGER NOT NULL DEFAULT 0;

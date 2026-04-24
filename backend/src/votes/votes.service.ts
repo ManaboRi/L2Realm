@@ -29,7 +29,10 @@ export class VotesService {
 
     await this.prisma.$transaction([
       this.prisma.vote.create({ data: { userId, serverId, ip } }),
-      this.prisma.server.update({ where: { id: serverId }, data: { monthlyVotes: { increment: 1 } } }),
+      this.prisma.server.update({
+        where: { id: serverId },
+        data: { monthlyVotes: { increment: 1 }, weeklyVotes: { increment: 1 } },
+      }),
     ]);
 
     return { success: true };
@@ -54,5 +57,11 @@ export class VotesService {
   @Cron('0 0 1 * *')
   async resetMonthlyVotes() {
     await this.prisma.server.updateMany({ data: { monthlyVotes: 0 } });
+  }
+
+  // Сброс недельного счётчика — каждую пятницу в 06:00 UTC
+  @Cron('0 6 * * 5')
+  async resetWeeklyVotes() {
+    await this.prisma.server.updateMany({ data: { weeklyVotes: 0 } });
   }
 }

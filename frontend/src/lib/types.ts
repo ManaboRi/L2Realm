@@ -33,6 +33,7 @@ export interface Server {
   reviews?:    Review[];
   news?:       NewsItem[];
   monthlyVotes?: number;
+  weeklyVotes?:  number;
   _isVip?:     boolean;
   _isBoosted?: boolean;
   _isSod?:     boolean;

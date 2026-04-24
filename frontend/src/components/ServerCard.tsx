@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import type { Server } from '@/lib/types';
+import { VoteButton } from './VoteButton';
 import styles from './ServerCard.module.css';
 
 function fmtDate(s?: string | null) {
@@ -85,13 +86,10 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {s.ratingCount > 0 && (
             <span className={styles.rating}>★ {s.rating.toFixed(1)} ({s.ratingCount})</span>
           )}
-          {(s.monthlyVotes ?? 0) > 0 && (
-            <span className={styles.votes} title="Голосов за этот месяц">▲ {s.monthlyVotes}</span>
-          )}
         </div>
         <div className={styles.btns}>
+          <VoteButton serverId={s.id} weeklyVotes={s.weeklyVotes} />
           <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер →</a>
-          <Link href={`/servers/${s.id}`} className={styles.btnMore}>Подробнее</Link>
         </div>
       </div>
     </div>
