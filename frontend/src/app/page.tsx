@@ -1,47 +1,83 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { ServerCard } from '@/components/ServerCard';
 import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
 import type { Server, Stats } from '@/lib/types';
-
-const VIP_MAX = 3;
 import styles from './page.module.css';
 
+const VIP_MAX = 3;
+
 const CHRONICLES = ['Essence', 'Classic', 'Interlude', 'High Five', 'Gracia'];
-const RATES      = [
+const RATES = [
   { v: 'low',   l: 'x1–x5' },
   { v: 'mid',   l: 'x7–x30' },
   { v: 'high',  l: 'x50–x100' },
   { v: 'ultra', l: 'x100–x999' },
   { v: 'mega',  l: 'x1000+' },
 ];
+const OPENED = [
+  { v: '7d',  l: 'За 7 дней' },
+  { v: '30d', l: 'За 30 дней' },
+];
 
 type FilterCounts = { chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> };
 
 export default function HomePage() {
+  return (
+    <Suspense>
+      <HomeContent />
+    </Suspense>
+  );
+}
+
+function HomeContent() {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const sp       = useSearchParams();
+
   const [servers,  setServers]  = useState<Server[]>([]);
   const [stats,    setStats]    = useState<Stats | null>(null);
   const [counts,   setCounts]   = useState<FilterCounts | null>(null);
   const [loading,  setLoading]  = useState(true);
-  const [search,   setSearch]   = useState('');
-  const [sort,     setSort]     = useState('opened');
-  const [filters,  setFilters]  = useState<Record<string, string>>({});
-  const [page,     setPage]     = useState(1);
+  const [pages,    setPages]    = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const [pages,    setPages]    = useState(1);
+  // Инициализация состояния из URL
+  const [search,  setSearch]  = useState(() => sp.get('q')      ?? '');
+  const [sort,    setSort]    = useState(() => sp.get('sort')   ?? 'opened');
+  const [page,    setPage]    = useState(() => Number(sp.get('page') ?? 1));
+  const [filters, setFilters] = useState<Record<string, string>>(() => ({
+    chr:    sp.get('chr')    ?? '',
+    rate:   sp.get('rate')   ?? '',
+    opened: sp.get('opened') ?? '',
+  }));
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+
+  // Синхронизация состояния → URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search)           params.set('q',      search);
+    if (sort !== 'opened') params.set('sort',   sort);
+    if (filters.chr)      params.set('chr',    filters.chr);
+    if (filters.rate)     params.set('rate',   filters.rate);
+    if (filters.opened)   params.set('opened', filters.opened);
+    if (page > 1)         params.set('page',   String(page));
+    const query = params.toString();
+    router.replace(`${pathname}${query ? '?' + query : ''}`, { scroll: false } as any);
+  }, [search, sort, filters, page, pathname, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const params: Record<string, string> = { sort, page: String(page), limit: '30' };
-      if (search)         params.search    = search;
-      if (filters.chr)    params.chronicle = filters.chr;
-      if (filters.rate)   params.rate      = filters.rate;
+      if (search)          params.search      = search;
+      if (filters.chr)     params.chronicle   = filters.chr;
+      if (filters.rate)    params.rate        = filters.rate;
+      if (filters.opened)  params.openedWithin = filters.opened;
 
       const res = await api.servers.list(params);
       setServers(res.data);
@@ -105,9 +141,12 @@ export default function HomePage() {
           <FilterGroup label="Рейты">
             {RATES.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
           </FilterGroup>
+          <FilterGroup label="Дата открытия">
+            {OPENED.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.opened === v} onClick={() => toggleFilter('opened', v)} />)}
+          </FilterGroup>
 
           {Object.values(filters).some(Boolean) && (
-            <button className={styles.clearBtn} onClick={() => { setFilters({}); setPage(1); }}>
+            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', opened: '' }); setPage(1); }}>
               ✕ Сбросить фильтры
             </button>
           )}
@@ -128,7 +167,7 @@ export default function HomePage() {
             </div>
             <div className={styles.sortWrap}>
               <span className={styles.sortLabel}>Сортировка</span>
-              <select className="input" style={{ width: 'auto' }} value={sort} onChange={e => setSort(e.target.value)}>
+              <select className="input" style={{ width: 'auto' }} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
                 <option value="opened">По дате открытия</option>
                 <option value="name">По алфавиту</option>
                 <option value="rating">По рейтингу</option>

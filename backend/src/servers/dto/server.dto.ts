@@ -34,7 +34,8 @@ export class FilterServersDto {
   @IsOptional() @IsString() rate?: string;       // low|mid|high|ultra
   @IsOptional() @IsString() donate?: string;
   @IsOptional() @IsString() type?: string;
-  @IsOptional() @IsString() sort?: string;       // opened|name|rating
+  @IsOptional() @IsString() sort?: string;        // opened|name|rating
+  @IsOptional() @IsString() openedWithin?: string; // 7d|30d
   @IsOptional() @Transform(({ value }) => Number(value)) @IsInt() page?: number;
   @IsOptional() @Transform(({ value }) => Number(value)) @IsInt() limit?: number;
 }

@@ -30,7 +30,7 @@ export class ServersService {
 
   // ── Получить все с фильтрами ─────────────────
   async findAll(filters: FilterServersDto) {
-    const { search, chronicle, rate, donate, type, sort = 'opened', page = 1, limit = 50 } = filters;
+    const { search, chronicle, rate, donate, type, openedWithin, sort = 'opened', page = 1, limit = 50 } = filters;
 
     const where: any = {};
 
@@ -40,9 +40,15 @@ export class ServersService {
         { shortDesc: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (chronicle) where.chronicle = { startsWith: chronicle, mode: 'insensitive' };
-    if (donate)    where.donate = donate;
-    if (type)      where.type = { has: type };
+    if (chronicle)    where.chronicle = { startsWith: chronicle, mode: 'insensitive' };
+    if (donate)       where.donate = donate;
+    if (type)         where.type = { has: type };
+    if (openedWithin) {
+      const days  = openedWithin === '7d' ? 7 : 30;
+      const since = new Date();
+      since.setDate(since.getDate() - days);
+      where.openedDate = { gte: since, lte: new Date() };
+    }
 
     // Фильтр по рейту требует post-processing т.к. rateNum хранится как число
     const allServers = await this.prisma.server.findMany({
