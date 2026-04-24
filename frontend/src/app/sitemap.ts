@@ -1,10 +1,11 @@
 import type { MetadataRoute } from 'next';
 import type { ServersResponse } from '@/lib/types';
 
-// ISR: sitemap регенерируется на первый запрос после деплоя и далее раз в 10 минут.
-// Без этого флага Next.js пытается построить sitemap на этапе `next build`, когда
-// контейнер бэкенда ещё не поднят — и кеширует пустой результат навсегда.
-export const revalidate = 600;
+// force-dynamic: sitemap всегда генерится на запрос, не пре-рендерится в build.
+// ISR (revalidate = N) не подходит — Next.js всё равно пре-рендерит в build,
+// когда контейнер backend не поднят, и кеширует пустой результат до TTL.
+// sitemap дёргают поисковики редко — стоимость fresh-запроса на каждый хит ничтожна.
+export const dynamic = 'force-dynamic';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
@@ -12,7 +13,7 @@ const SITE = 'https://l2realm.ru';
 async function fetchAllServers() {
   try {
     const res = await fetch(`${BACKEND}/api/servers?limit=500`, {
-      next: { revalidate: 3600 },
+      cache: 'no-store',
     });
     if (!res.ok) return [];
     const data = (await res.json()) as ServersResponse;
