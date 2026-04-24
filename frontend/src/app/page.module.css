@@ -1,31 +1,30 @@
-.page { min-height: 100vh; }
+/* Замок + флаг — фон всей страницы */
+.page {
+  min-height: 100vh;
+  background: url('/images/hero-bg.png') center top / cover fixed no-repeat;
+}
 
 /* Общий контейнер, выравнивает hero по ширине layout */
 .pageInner { max-width: 1300px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 0; }
 
-/* Hero — карточка с рамкой */
+/* Hero — карточка с рамкой, overflow:visible чтобы персонаж торчал сверху */
 .hero {
   position: relative;
   padding: 1.1rem 2rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  /* overflow: visible — персонаж торчит выше блока */
+  background: var(--bg2);
   overflow: visible;
   margin-bottom: .9rem;
 }
 
-/* Фон внутри рамки через ::before (clip-ится сам, персонаж — нет) */
+/* Тонкий золотой градиент слева — декор */
 .hero::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 4px;
-  overflow: hidden;
-  background:
-    radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%),
-    linear-gradient(to right, rgba(9,11,16,.85) 0%, rgba(9,11,16,.6) 45%, rgba(9,11,16,.15) 100%),
-    url('/images/hero-bg.png') center/cover no-repeat,
-    var(--bg2);
+  background: radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
