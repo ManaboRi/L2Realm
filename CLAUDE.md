@@ -104,6 +104,44 @@ Swagger доступен только в dev на `/api/docs` — в проде 
 
 При добавлении новой env-переменной, которую должен видеть backend в Docker, **обязательно** добавить её в `docker-compose.yml` в блок `backend.environment:`. Без этого переменная будет в root `.env`, но не попадёт в контейнер.
 
+## Где что лежит для частых задач
+
+Быстрые указатели, чтобы не grep'ать. Сверяться с текущим кодом перед правкой — строки могут съехать.
+
+### Бэкенд
+- Webhook-верификация ЮКассы: `backend/src/payments/payments.service.ts` → `handleWebhook()`, `fetchPaymentFromYookassa()`, `isYookassaIp()`
+- Активация VIP/буста и денежные константы: `payments.service.ts` → `VIP_PRICE/VIP_DAYS/BOOST_PRICE/BOOST_DAYS`, `activateVip()`, `activateBoost()`
+- Ротация «Сервер дня»: `servers.service.ts` → `sodSeed()` и `findAll()` (пул из всей БД, окно 5ч)
+- Пересчёт денормализованного рейтинга: `reviews.service.ts` → `recalcRating()`, `recalcAllRatings()`, админ-эндпоинт `POST /api/reviews/recalc-all`
+- Удаление отзыва (юзер/админ): `reviews.service.ts` → `remove(id, actorId, actorRole)`
+- Смена никнейма + throttle 7 дней: `auth.service.ts` → `updateNickname()`, `getMe()` отдаёт `nicknameChangedAt`
+- Мониторинг пинга с UA: `monitoring.service.ts` → `pingUrl()`, cron `@Cron('*/5 * * * *')`
+- Сброс истёкших подписок: `monitoring.service.ts` → `resetExpiredSubscriptions()` (ежечасно)
+- Rate limits: `auth.controller.ts`, `payments.controller.ts` → `@Throttle({...})`
+- JWT ≥32 валидация: `jwt.strategy.ts`, `auth.module.ts`
+
+### Фронтенд
+- Карточка отзыва с удалением: `frontend/src/app/servers/[id]/ServerDetailClient.tsx` → `ReviewCard` в конце файла, `deleteReview()` в компоненте
+- SSR-метаданные сервера: `app/servers/[id]/page.tsx` → `generateMetadata()` с `revalidate: 300`
+- Sitemap динамический: `app/sitemap.ts` (обязательно `export const revalidate = 600`)
+- Robots: `app/robots.ts`
+- Яндекс.Метрика + SPA-tracker: `components/YandexMetrika.tsx`
+- Верификация Вебмастера: `app/layout.tsx` → `metadata.verification.yandex`
+- Security headers фронта: `next.config.ts` → `securityHeaders[]`
+- AuthContext (user/token/isAdmin): `context/AuthContext.tsx`
+- API-клиент (двойной BASE): `lib/api.ts`
+- VK OAuth PKCE: `lib/vkAuth.ts` + `app/auth/vk/callback/page.tsx`
+- Прокси с BLOCKED_PATHS: `app/api/proxy/[...path]/route.ts`
+- Cooldown никнейма в UI: `app/profile/page.tsx` — блок с `user.nicknameChangedAt`
+- Админ-кнопка «Пересчитать рейтинги»: `app/admin/page.tsx` → `recalcAllRatings()`
+- Мобильный хидер: `components/Header.tsx` + `Header.module.css` (медиа `max-width: 600px/380px`)
+
+### Инфра
+- nginx webhook-route: `nginx/conf.d/default.conf` → `location = /yookassa-webhook`
+- Docker backend env: `docker-compose.yml` → `services.backend.environment`
+- Prisma миграции: `backend/prisma/migrations/` (deploy на старте контейнера через CMD Dockerfile)
+- Шаблон env: корневой `.env.example`
+
 ## Что НЕ делать
 
 - Не менять `name` → `nickname` в публичных API-ответах назад — специально убирали VK ФИО из выдачи.

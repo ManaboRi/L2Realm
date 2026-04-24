@@ -10,8 +10,7 @@
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "ts-node prisma/seed.ts",
-    "migrate:servers": "ts-node prisma/migrate-servers.ts"
+    "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@nestjs/cli": "^10.3.2",
