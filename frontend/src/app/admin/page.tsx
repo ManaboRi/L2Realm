@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { ImageUpload } from '@/components/ImageUpload';
 import type { VipStatus } from '@/lib/types';
 import { VIP_MAX } from '@/lib/types';
 import styles from './page.module.css';
@@ -288,8 +289,8 @@ export default function AdminPage() {
                     {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </AField>
-                <AField label="Иконка (URL)"><input className="input" type="url" value={editForm.icon} onChange={e => setEditForm((p:any) => ({...p,icon:e.target.value}))} placeholder="https://…" /></AField>
-                <AField label="Баннер (URL)"><input className="input" type="url" value={editForm.banner} onChange={e => setEditForm((p:any) => ({...p,banner:e.target.value}))} placeholder="https://…" /></AField>
+                <ImageUpload label="Иконка" value={editForm.icon} type="icon" token={token!} onChange={url => setEditForm((p:any) => ({...p,icon:url}))} />
+                <ImageUpload label="Баннер" value={editForm.banner} type="banner" token={token!} onChange={url => setEditForm((p:any) => ({...p,banner:url}))} />
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
@@ -605,8 +606,8 @@ export default function AdminPage() {
                       </select>
                     </AField>
                     {/* Строка 4 */}
-                    <AField label="Иконка (URL)"><input className="input" type="url" value={addForm.icon} onChange={e => setAddForm(p => ({...p,icon:e.target.value}))} placeholder="https://…" /></AField>
-                    <AField label="Баннер (URL)"><input className="input" type="url" value={addForm.banner} onChange={e => setAddForm(p => ({...p,banner:e.target.value}))} placeholder="https://…" /></AField>
+                    <ImageUpload label="Иконка" value={addForm.icon} type="icon" token={token!} onChange={url => setAddForm(p => ({...p,icon:url}))} />
+                    <ImageUpload label="Баннер" value={addForm.banner} type="banner" token={token!} onChange={url => setAddForm(p => ({...p,banner:url}))} />
                     {/* Строка 5 */}
                     <AField label="Telegram"><input className="input" type="url" value={addForm.telegram} onChange={e => setAddForm(p => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                     <AField label="Discord"><input className="input" type="url" value={addForm.discord} onChange={e => setAddForm(p => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>

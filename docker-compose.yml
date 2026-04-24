@@ -20,6 +20,8 @@ services:
     build:
       context: ./backend
     restart: unless-stopped
+    volumes:
+      - ./uploads:/app/uploads
     environment:
       DATABASE_URL: postgresql://l2realm:${POSTGRES_PASSWORD}@postgres:5432/l2realm
       JWT_SECRET: ${JWT_SECRET}
@@ -61,6 +63,7 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./certbot/www:/var/www/certbot:ro
       - ./certbot/conf:/etc/letsencrypt:ro
+      - ./uploads:/var/www/uploads:ro
     depends_on:
       - frontend
     networks:

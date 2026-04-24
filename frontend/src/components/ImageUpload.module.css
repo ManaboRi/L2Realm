@@ -1,0 +1,74 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.label {
+  font-family: 'Cinzel', serif;
+  font-size: .58rem;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+
+.preview {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  background: var(--bg4);
+  display: inline-flex;
+}
+.previewIcon {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+}
+.previewBanner {
+  width: 100%;
+  max-width: 320px;
+  height: 80px;
+  object-fit: cover;
+}
+
+.row {
+  display: flex;
+  gap: .4rem;
+  align-items: center;
+}
+
+.btn {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: .3rem .75rem;
+  border-radius: 2px;
+  font-size: .74rem;
+  cursor: pointer;
+  transition: border-color .18s, color .18s;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--gold-d);
+  color: var(--gold);
+}
+.btn:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.btnClear {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  padding: .3rem .5rem;
+  border-radius: 2px;
+  font-size: .74rem;
+  cursor: pointer;
+  transition: color .18s, border-color .18s;
+}
+.btnClear:hover { color: var(--red); border-color: var(--red); }
+
+.error {
+  font-size: .72rem;
+  color: var(--red);
+}
