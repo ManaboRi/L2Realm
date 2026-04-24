@@ -90,7 +90,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {/* Счётчик голосов */}
           <span className={styles.voteCount} title="Голосов за месяц">
             <img src="/images/vote-icon.png" alt="" className={styles.voteIco} />
-            {s.monthlyVotes ?? 0}
+            {s.weeklyVotes ?? 0}
           </span>
         </div>
 

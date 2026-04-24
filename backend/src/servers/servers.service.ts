@@ -56,7 +56,7 @@ export class ServersService {
       include: { subscription: true, _count: { select: { reviews: true } } },
       orderBy: sort === 'name'   ? { name: 'asc' }
               : sort === 'rating' ? { rating: 'desc' }
-              : sort === 'votes'  ? { monthlyVotes: 'desc' }
+              : sort === 'votes'  ? { weeklyVotes: 'desc' }
               :                    { openedDate: 'desc' },
     });
 
@@ -106,8 +106,8 @@ export class ServersService {
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
       }
-      // Обычные серверы: чем больше голосов — тем выше (VIP/Boost/SoD уже отсеяны выше)
-      return (b.monthlyVotes ?? 0) - (a.monthlyVotes ?? 0);
+      // Обычные серверы: чем больше голосов за неделю — тем выше (VIP/Boost/SoD уже отсеяны выше)
+      return (b.weeklyVotes ?? 0) - (a.weeklyVotes ?? 0);
     });
 
     const total = decorated.length;

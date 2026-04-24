@@ -103,9 +103,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
   const [voting,      setVoting]      = useState(false);
 
-  // Мониторинг и аптайм-график — свежие данные, подгружаются на клиенте.
-  // SEO-критичный контент (название, описание, отзывы) уже в initialServer.
+  // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
+  // поэтому отзывы и рейтинг обновляем сразу при монтировании.
   useEffect(() => {
+    api.servers.get(id).then(setServer).catch(() => {});
     api.monitoring.status(id).then(setStatus).catch(() => {});
     api.monitoring.daily(id, 30).then(setDaily).catch(() => {});
   }, [id]);
@@ -126,7 +127,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     try {
       await api.votes.vote(id, token);
       showToast('Голос принят! ▲ +1 к рейтингу сервера');
-      setServer(prev => ({ ...prev, monthlyVotes: (prev.monthlyVotes ?? 0) + 1 }));
+      setServer(prev => ({ ...prev, weeklyVotes: (prev.weeklyVotes ?? 0) + 1, monthlyVotes: (prev.monthlyVotes ?? 0) + 1 }));
       const fresh = await api.votes.status(id, token);
       setVoteStatus(fresh);
     } catch {
@@ -242,7 +243,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div className={styles.headerStats}>
                 <span className={styles.hstat}>
                   <img src="/images/vote-icon.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />
-                  {server.monthlyVotes ?? 0} голосов / мес.
+                  {server.weeklyVotes ?? 0} голосов
                 </span>
                 {server.ratingCount > 0 && (
                   <>
