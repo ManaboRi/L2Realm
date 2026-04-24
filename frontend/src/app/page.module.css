@@ -9,7 +9,7 @@
   padding: 1.1rem 2rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--bg2);
+  background: var(--bg2) url('/images/hero-bg.png') center/cover no-repeat;
   overflow: hidden;
   margin-bottom: .9rem;
 }
@@ -17,9 +17,34 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%);
+  /* Затемнение центра — чтобы текст читался поверх фона */
+  background:
+    radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%),
+    linear-gradient(to right, rgba(9,11,16,.85) 0%, rgba(9,11,16,.6) 45%, rgba(9,11,16,.15) 100%);
   pointer-events: none;
 }
+
+/* Персонаж — абсолютно поверх фона, справа */
+.heroChar {
+  position: absolute;
+  right: -2%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 175%;
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+  /* Радиальная маска: вырезаем серый фон — центр (персонаж) виден, края исчезают */
+  mask-image: radial-gradient(ellipse 55% 72% at 52% 44%, black 20%, transparent 65%);
+  -webkit-mask-image: radial-gradient(ellipse 55% 72% at 52% 44%, black 20%, transparent 65%);
+  /* mix-blend-mode: multiply убивает серый фон (серый × тёмный фон = тёмный → невидимый) */
+  mix-blend-mode: luminosity;
+  opacity: .72;
+  z-index: 0;
+}
+
+@media (max-width: 900px) { .heroChar { height: 150%; right: -5%; } }
+@media (max-width: 660px) { .heroChar { display: none; } }
 
 .heroLeft  { position: relative; display: flex; flex-direction: column; gap: .7rem; }
 
