@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
@@ -77,11 +76,12 @@ function formatDesc(text: string) {
   return result;
 }
 
-export function ServerDetailClient() {
-  const { id }     = useParams<{ id: string }>();
+export function ServerDetailClient({ initialServer }: { initialServer: Server }) {
+  const id = initialServer.id;
   const { user, token, isAdmin } = useAuth();
-  const [server,   setServer]   = useState<Server | null>(null);
-  const [loading,  setLoading]  = useState(true);
+  // Initial data приходит из server component — никакого loading-state для body.
+  // Боты и медленный интернет получают полностью отрендеренный HTML сразу.
+  const [server,   setServer]   = useState<Server>(initialServer);
   const [status,   setStatus]   = useState<any>(null);
   const [daily,    setDaily]    = useState<any>(null);
   const [reviewTxt, setReviewTxt] = useState('');
@@ -91,16 +91,15 @@ export function ServerDetailClient() {
   const [isFav,    setIsFav]    = useState(false);
   const [favBusy,  setFavBusy]  = useState(false);
 
+  // Мониторинг и аптайм-график — свежие данные, подгружаются на клиенте.
+  // SEO-критичный контент (название, описание, отзывы) уже в initialServer.
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    api.servers.get(id).then(s => { setServer(s); setLoading(false); }).catch(() => setLoading(false));
     api.monitoring.status(id).then(setStatus).catch(() => {});
     api.monitoring.daily(id, 30).then(setDaily).catch(() => {});
   }, [id]);
 
   useEffect(() => {
-    if (!token || !id) { setIsFav(false); return; }
+    if (!token) { setIsFav(false); return; }
     api.favorites.ids(token).then(ids => setIsFav(ids.includes(id))).catch(() => {});
   }, [token, id]);
 
@@ -154,13 +153,6 @@ export function ServerDetailClient() {
     }
     setSubmitting(false);
   }
-
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem', gap: '.6rem', color: 'var(--text3)' }}>
-      <span className="spin" /> Загружаем...
-    </div>
-  );
-  if (!server) return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text3)' }}>Сервер не найден</div>;
 
   const isOnline = status?.status === 'online';
 

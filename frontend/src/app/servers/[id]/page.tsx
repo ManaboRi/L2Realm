@@ -1,10 +1,13 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import type { Server } from '@/lib/types';
 import { ServerDetailClient } from './ServerDetailClient';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 
+// Fetch memoization в Next.js: этот вызов дедуплицируется между
+// generateMetadata и Page, так что реальный запрос к backend один.
 async function fetchServer(id: string): Promise<Server | null> {
   try {
     const res = await fetch(`${BACKEND}/api/servers/${id}`, {
@@ -68,6 +71,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function Page() {
-  return <ServerDetailClient />;
+export default async function Page({ params }: Props) {
+  const { id } = await params;
+  const server = await fetchServer(id);
+  if (!server) notFound();
+  return <ServerDetailClient initialServer={server} />;
 }
