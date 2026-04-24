@@ -296,15 +296,6 @@ export default function AdminPage() {
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
               </div>
 
-              <div className={styles.checkRow}>
-                {([['type_new','Новый'],['type_featured','🔥 Популярный']] as const).map(([k,l]) => (
-                  <label key={k} className={styles.checkLabel}>
-                    <input type="checkbox" checked={editForm[k]} onChange={e => setEditForm((p:any) => ({...p,[k]:e.target.checked}))} />
-                    {l}
-                  </label>
-                ))}
-              </div>
-
               <AField label="Краткое описание">
                 <input className="input" value={editForm.shortDesc} onChange={e => setEditForm((p:any) => ({...p,shortDesc:e.target.value}))} />
               </AField>

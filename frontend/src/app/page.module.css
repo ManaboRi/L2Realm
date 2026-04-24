@@ -3,50 +3,53 @@
 /* Общий контейнер, выравнивает hero по ширине layout */
 .pageInner { max-width: 1300px; margin: 0 auto; padding: 1.5rem 1.5rem 4rem; display: flex; flex-direction: column; gap: 0; }
 
-/* Hero — карточка с рамкой, скруглённые верхние углы */
+/* Hero — карточка с рамкой */
 .hero {
   position: relative;
   padding: 1.1rem 2rem 1.1rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background: var(--bg2) url('/images/hero-bg.png') center/cover no-repeat;
-  overflow: hidden;
+  /* overflow: visible — персонаж торчит выше блока */
+  overflow: visible;
   margin-bottom: .9rem;
 }
+
+/* Фон внутри рамки через ::before (clip-ится сам, персонаж — нет) */
 .hero::before {
   content: '';
   position: absolute;
   inset: 0;
-  /* Затемнение центра — чтобы текст читался поверх фона */
+  border-radius: 4px;
+  overflow: hidden;
   background:
     radial-gradient(ellipse 60% 150% at -5% 50%, rgba(200,168,75,.06) 0%, transparent 60%),
-    linear-gradient(to right, rgba(9,11,16,.85) 0%, rgba(9,11,16,.6) 45%, rgba(9,11,16,.15) 100%);
+    linear-gradient(to right, rgba(9,11,16,.85) 0%, rgba(9,11,16,.6) 45%, rgba(9,11,16,.15) 100%),
+    url('/images/hero-bg.png') center/cover no-repeat,
+    var(--bg2);
   pointer-events: none;
-}
-
-/* Персонаж — абсолютно поверх фона, справа */
-.heroChar {
-  position: absolute;
-  right: -2%;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 175%;
-  width: auto;
-  pointer-events: none;
-  user-select: none;
-  /* Радиальная маска: вырезаем серый фон — центр (персонаж) виден, края исчезают */
-  mask-image: radial-gradient(ellipse 55% 72% at 52% 44%, black 20%, transparent 65%);
-  -webkit-mask-image: radial-gradient(ellipse 55% 72% at 52% 44%, black 20%, transparent 65%);
-  /* mix-blend-mode: multiply убивает серый фон (серый × тёмный фон = тёмный → невидимый) */
-  mix-blend-mode: luminosity;
-  opacity: .72;
   z-index: 0;
 }
 
-@media (max-width: 900px) { .heroChar { height: 150%; right: -5%; } }
+/* Персонаж — закреплён снизу-справа, голова торчит выше блока */
+.heroChar {
+  position: absolute;
+  right: 1%;
+  bottom: 0;
+  height: 220%;
+  width: auto;
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+  mask-image: radial-gradient(ellipse 55% 65% at 50% 54%, black 22%, transparent 62%);
+  -webkit-mask-image: radial-gradient(ellipse 55% 65% at 50% 54%, black 22%, transparent 62%);
+  mix-blend-mode: luminosity;
+  opacity: .85;
+}
+
+@media (max-width: 900px) { .heroChar { height: 180%; right: -3%; } }
 @media (max-width: 660px) { .heroChar { display: none; } }
 
-.heroLeft  { position: relative; display: flex; flex-direction: column; gap: .7rem; }
+.heroLeft  { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .7rem; }
 
 .heroEye   { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; }
 .heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 2.6vw, 2.2rem); font-weight: 700; color: #F0E8C8; line-height: 1.15; }
