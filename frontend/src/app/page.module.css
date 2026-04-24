@@ -33,20 +33,20 @@
 /* Персонаж — закреплён снизу-справа, голова торчит выше блока */
 .heroChar {
   position: absolute;
-  right: 1%;
+  right: 2%;
   bottom: 0;
-  height: 220%;
+  height: 230%;
   width: auto;
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  mask-image: radial-gradient(ellipse 55% 65% at 50% 54%, black 22%, transparent 62%);
-  -webkit-mask-image: radial-gradient(ellipse 55% 65% at 50% 54%, black 22%, transparent 62%);
-  mix-blend-mode: luminosity;
-  opacity: .85;
+  /* Вырезаем серый фон: центральный эллипс непрозрачный, края исчезают */
+  mask-image: radial-gradient(ellipse 60% 68% at 50% 50%, black 28%, transparent 66%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 68% at 50% 50%, black 28%, transparent 66%);
+  opacity: .92;
 }
 
-@media (max-width: 900px) { .heroChar { height: 180%; right: -3%; } }
+@media (max-width: 900px) { .heroChar { height: 185%; right: -2%; } }
 @media (max-width: 660px) { .heroChar { display: none; } }
 
 .heroLeft  { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .7rem; }
