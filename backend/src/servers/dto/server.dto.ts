@@ -1,6 +1,7 @@
 import { IsString, IsOptional, IsBoolean, IsInt, IsArray, IsDateString, IsUrl, Min, Max } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { PartialType } from '@nestjs/mapped-types';
 
 export class CreateServerDto {
   @ApiProperty() @IsString() id: string;
@@ -26,7 +27,7 @@ export class CreateServerDto {
   @IsOptional() @IsString() fullDesc?: string;
 }
 
-export class UpdateServerDto extends CreateServerDto {}
+export class UpdateServerDto extends PartialType(CreateServerDto) {}
 
 export class FilterServersDto {
   @IsOptional() @IsString() search?: string;

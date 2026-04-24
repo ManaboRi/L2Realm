@@ -614,15 +614,6 @@ export default function AdminPage() {
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                   </div>
 
-                  <div className={styles.checkRow}>
-                    {([['type_new','Новый'],['type_featured','🔥 Популярный'],['vip','⭐ VIP']] as const).map(([k,l]) => (
-                      <label key={k} className={styles.checkLabel}>
-                        <input type="checkbox" checked={(addForm as any)[k]} onChange={e => setAddForm(p => ({...p,[k]:e.target.checked}))} />
-                        {l}
-                      </label>
-                    ))}
-                  </div>
-
                   <AField label="Краткое описание">
                     <input className="input" value={addForm.shortDesc} onChange={e => setAddForm(p => ({...p,shortDesc:e.target.value}))} placeholder="Одна строка для карточки" />
                   </AField>

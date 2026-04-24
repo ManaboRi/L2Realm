@@ -28,7 +28,9 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
 
   const init: RequestInit = { method: req.method, headers };
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    init.body = await req.text();
+    const ct = req.headers.get('content-type') ?? '';
+    // multipart/form-data (файлы) — пробрасываем как blob, иначе бинарные данные портятся
+    init.body = ct.startsWith('multipart/') ? await req.blob() : await req.text();
   }
 
   const res = await fetch(target, init);
