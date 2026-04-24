@@ -1,8 +1,14 @@
-/* Замок + флаг — фон всей страницы, затемнён оверлеем */
+/* Замок + флаг — фон всей страницы, плавно темнеет книзу */
 .page {
   min-height: 100vh;
   background:
-    linear-gradient(rgba(6, 8, 14, 0.72), rgba(6, 8, 14, 0.72)),
+    linear-gradient(
+      to bottom,
+      rgba(6, 8, 14, 0.62) 0%,
+      rgba(6, 8, 14, 0.68) 40%,
+      rgba(6, 8, 14, 0.88) 70%,
+      rgba(6, 8, 14, 1.00) 100%
+    ),
     url('/images/hero-bg.png') center top / cover fixed no-repeat;
 }
 
@@ -36,18 +42,15 @@
 /* Персонаж — только волосы торчат выше, грудь = нижняя граница */
 .heroChar {
   position: absolute;
-  right: 1%;
+  right: -2%;
   top: -10%;
-  height: 185%;
+  height: 192%;
   width: auto;
   pointer-events: none;
   user-select: none;
   z-index: 2;
-  /* Затемнение */
-  filter: brightness(0.62);
-  /* Верх: чуть над головой → прозрачно → волосы появляются плавно
-     Низ: грудь (~54%) → исчезает
-     Бока: убираем серый фон */
+  filter: brightness(0.72);
+  opacity: 0.82;
   mask-image:
     linear-gradient(to bottom, transparent 0%, black 7%, black 54%, transparent 65%),
     linear-gradient(to right, transparent 4%, black 16%, black 90%, transparent 100%);
@@ -58,7 +61,7 @@
   -webkit-mask-composite: source-in;
 }
 
-@media (max-width: 900px) { .heroChar { height: 160%; top: -8%; right: -1%; } }
+@media (max-width: 900px) { .heroChar { height: 165%; top: -8%; right: -2%; } }
 @media (max-width: 660px) { .heroChar { display: none; } }
 
 .heroLeft  { position: relative; z-index: 1; display: flex; flex-direction: column; gap: .7rem; }
