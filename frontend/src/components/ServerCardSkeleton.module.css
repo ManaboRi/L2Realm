@@ -1,0 +1,46 @@
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+.bone {
+  background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 2px;
+}
+
+.row {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  padding: .75rem 1rem;
+}
+
+.icon {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border-radius: 2px;
+}
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: .45rem; }
+
+.nameRow { display: flex; gap: .5rem; align-items: center; }
+.name    { height: .9rem; width: 44%; }
+.tag1    { height: .75rem; width: 56px; }
+.tag2    { height: .75rem; width: 44px; }
+
+.desc { height: .75rem; width: 72%; }
+
+.right { display: flex; flex-direction: column; align-items: flex-end; gap: .45rem; flex-shrink: 0; }
+.date  { height: .65rem; width: 80px; }
+.meta  { height: .62rem; width: 60px; }
+.btns  { display: flex; gap: .35rem; }
+.btn1  { height: 1.6rem; width: 72px; border-radius: 2px; }
+.btn2  { height: 1.6rem; width: 62px; border-radius: 2px; }
+
+@media (max-width: 600px) {
+  .right { display: none; }
+}

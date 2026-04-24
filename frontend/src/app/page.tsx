@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { ServerCard } from '@/components/ServerCard';
+import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
 import type { Server, Stats } from '@/lib/types';
 
 const VIP_MAX = 3;
@@ -136,7 +137,9 @@ export default function HomePage() {
           </div>
 
           {loading ? (
-            <div className={styles.loadWrap}><span className="spin" /> Загружаем серверы...</div>
+            <div className={styles.list}>
+              {Array.from({ length: 5 }).map((_, i) => <ServerCardSkeleton key={i} />)}
+            </div>
           ) : (() => {
             const vipServers  = servers.filter(s => s.subscription?.plan === 'VIP');
             const mainServers = servers.filter(s => s.subscription?.plan !== 'VIP');
