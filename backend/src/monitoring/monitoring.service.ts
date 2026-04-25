@@ -191,9 +191,15 @@ export class MonitoringService {
           path:     (parsed.pathname || '/') + (parsed.search || ''),
           timeout:  7000,
           headers: {
-            'User-Agent':      'Mozilla/5.0 (compatible; L2RealmMonitor/1.0; +https://l2realm.ru)',
-            'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Language': 'ru,en;q=0.5',
+            // Полноценный браузерный UA — Cloudflare/anti-bot пропускают; identifier-style
+            // («compatible; L2RealmMonitor») блокировался у E-Global и подобных.
+            'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Sec-Fetch-Dest':  'document',
+            'Sec-Fetch-Mode':  'navigate',
+            'Sec-Fetch-Site':  'none',
           },
         }, res => {
           const code = res.statusCode ?? 0;
