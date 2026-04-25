@@ -196,8 +196,14 @@ model ServerRequest {
   rates       String
   url         String
   openedDate  DateTime?                       // когда открылся / откроется
-  status      String    @default("pending")   // pending | approved | rejected
+  status      String    @default("pending")   // pending | approved | rejected | pending_payment
+  contact     String?                         // TG/VK для связи (для платных «Скоро открытие»)
+  paid        Boolean   @default(false)       // true для оплаченных «Скоро открытие»
+  paymentId   String?                         // ЮКасса payment id
+  ip          String?
   createdAt   DateTime  @default(now())
 
   @@index([userId, createdAt])
+  @@index([paid])
+  @@index([paymentId])
 }

@@ -141,3 +141,4 @@ export const VIP_DAYS    = 31;
 export const VIP_MAX     = 3;
 export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
+export const COMING_SOON_PRICE = 1000;

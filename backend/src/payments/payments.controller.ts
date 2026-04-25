@@ -23,6 +23,19 @@ export class PaymentsController {
     return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email);
   }
 
+  // Платное размещение «Скоро открытие» — 5 попыток/час с IP
+  @Throttle({ default: { ttl: 3_600_000, limit: 5 } })
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'))
+  @Post('purchase-soon')
+  purchaseSoon(
+    @Body() body: { name: string; chronicle: string; rates: string; url: string; openedDate: string; contact: string; returnUrl: string },
+    @Req() req: ExpressRequest & { user: { id: string; email: string } },
+  ) {
+    const ip = req.ip || '';
+    return this.payments.createSoonPurchase(req.user.id, req.user.email, ip, body.returnUrl, body);
+  }
+
   // Webhook от ЮКассы:
   //   1. проверяем source IP (whitelist ЮКассы, https://yookassa.ru/developers/using-api/webhooks#ip)
   //   2. внутри handleWebhook — делаем GET /v3/payments/{id} и сверяем статус + сумму

@@ -85,6 +85,14 @@ export const api = {
           headers: { Authorization: `Bearer ${token}` },
         },
       ),
+    purchaseSoon: (data: { name: string; chronicle: string; rates: string; url: string; openedDate: string; contact: string; returnUrl: string }, token: string) =>
+      request<{ dev?: boolean; activated?: boolean; paymentId?: string; confirmationUrl?: string; requestId?: string }>(
+        '/payments/purchase-soon', {
+          method: 'POST',
+          body: JSON.stringify(data),
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      ),
     vipStatus: () => request<VipStatus>('/payments/vip/status'),
     subscription: (serverId: string) => request<Subscription | null>(`/payments/subscription/${serverId}`),
     boost: (serverId: string) => request<Boost | null>(`/payments/boost/${serverId}`),

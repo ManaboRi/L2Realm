@@ -5,11 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
-export const VIP_PRICE   = 5000;
-export const VIP_DAYS    = 31;
-export const VIP_MAX     = 3;
-export const BOOST_PRICE = 500;
-export const BOOST_DAYS  = 7;
+export const VIP_PRICE         = 5000;
+export const VIP_DAYS          = 31;
+export const VIP_MAX           = 3;
+export const BOOST_PRICE       = 500;
+export const BOOST_DAYS        = 7;
+export const COMING_SOON_PRICE = 1000;
 
 type PurchaseKind = 'vip' | 'boost';
 
@@ -160,14 +161,22 @@ export class PaymentsService {
       return { ok: true };
     }
 
-    const { serverId, kind } = verified.metadata || {};
-    if (!serverId || (kind !== 'vip' && kind !== 'boost')) {
-      this.logger.warn(`⚠️ Платёж ${paymentId}: отсутствует или некорректна metadata`);
+    const { serverId, kind, requestId } = verified.metadata || {};
+    if (kind !== 'vip' && kind !== 'boost' && kind !== 'soon') {
+      this.logger.warn(`⚠️ Платёж ${paymentId}: неизвестный kind в metadata`);
+      return { ok: true };
+    }
+    if ((kind === 'vip' || kind === 'boost') && !serverId) {
+      this.logger.warn(`⚠️ Платёж ${paymentId}: VIP/boost без serverId`);
+      return { ok: true };
+    }
+    if (kind === 'soon' && !requestId) {
+      this.logger.warn(`⚠️ Платёж ${paymentId}: soon без requestId`);
       return { ok: true };
     }
 
     // 3. Проверка суммы — защита от подмены amount
-    const expected = kind === 'vip' ? VIP_PRICE : BOOST_PRICE;
+    const expected = kind === 'vip' ? VIP_PRICE : kind === 'boost' ? BOOST_PRICE : COMING_SOON_PRICE;
     const actualRub = parseFloat(verified.amount?.value);
     if (verified.amount?.currency !== 'RUB' || actualRub !== expected) {
       this.logger.error(
@@ -180,9 +189,12 @@ export class PaymentsService {
     if (kind === 'vip') {
       await this.activateVip(serverId, paymentId);
       this.logger.log(`✅ VIP активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
-    } else {
+    } else if (kind === 'boost') {
       await this.activateBoost(serverId, paymentId);
       this.logger.log(`✅ Буст активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
+    } else {
+      await this.activateSoon(requestId, paymentId);
+      this.logger.log(`✅ «Скоро открытие» активировано (request ${requestId}, payment ${paymentId}, ${actualRub} RUB)`);
     }
 
     return { ok: true };
@@ -209,11 +221,116 @@ export class PaymentsService {
   // ── Проверка идемпотентности ──────────────────
   // Если paymentId уже сохранён в Subscription или Boost — значит обработан
   private async isPaymentProcessed(paymentId: string): Promise<boolean> {
-    const [sub, boost] = await Promise.all([
+    const [sub, boost, soonReq] = await Promise.all([
       this.prisma.subscription.findFirst({ where: { paymentId } }),
       this.prisma.boost.findFirst({ where: { paymentId } }),
+      this.prisma.serverRequest.findFirst({ where: { paymentId, paid: true } }),
     ]);
-    return !!sub || !!boost;
+    return !!sub || !!boost || !!soonReq;
+  }
+
+  // ── Платное размещение «Скоро открытие» ──────
+  async createSoonPurchase(
+    userId: string,
+    userEmail: string,
+    ip: string,
+    returnUrl: string,
+    data: { name: string; chronicle: string; rates: string; url: string; openedDate: string; contact: string },
+  ) {
+    if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
+    if (!data.name?.trim() || !data.chronicle?.trim() || !data.rates?.trim() || !data.url?.trim()) {
+      throw new BadRequestException('Заполните название, хронику, рейты и URL');
+    }
+    if (!data.openedDate) throw new BadRequestException('Укажите дату открытия');
+    const opened = new Date(data.openedDate);
+    if (isNaN(opened.getTime()) || opened <= new Date()) {
+      throw new BadRequestException('«Скоро открытие» — только для серверов с датой открытия в будущем');
+    }
+    if (!data.contact?.trim()) throw new BadRequestException('Укажите контакт (TG/VK) для связи');
+
+    // Антидубль по URL: уже зарегистрированный сервер или активная заявка
+    const existing = await this.prisma.serverRequest.findFirst({
+      where: { url: data.url.trim(), status: { in: ['pending', 'approved', 'pending_payment'] } },
+    });
+    if (existing) throw new BadRequestException('Заявка для этого сервера уже существует');
+
+    // Создаём заявку в статусе pending_payment — после успешного webhook'а станет approved
+    const request = await this.prisma.serverRequest.create({
+      data: {
+        userId,
+        ip,
+        name:       data.name.trim(),
+        chronicle:  data.chronicle.trim(),
+        rates:      data.rates.trim(),
+        url:        data.url.trim(),
+        contact:    data.contact.trim(),
+        openedDate: opened,
+        status:     'pending_payment',
+        paid:       false,
+      },
+    });
+
+    const shopId    = this.config.get('YOOKASSA_SHOP_ID');
+    const secretKey = this.config.get('YOOKASSA_SECRET_KEY');
+
+    if (!shopId || !secretKey) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new BadRequestException('Платежи временно недоступны. Обратитесь в поддержку.');
+      }
+      // dev: сразу одобряем
+      await this.prisma.serverRequest.update({
+        where: { id: request.id },
+        data:  { status: 'approved', paid: true, paymentId: 'dev-' + uuidv4() },
+      });
+      return { dev: true, activated: true, requestId: request.id };
+    }
+
+    const description = `L2Realm «Скоро открытие» — анонс «${data.name.trim()}»`;
+    const idempotenceKey = uuidv4();
+    const response = await axios.post(
+      'https://api.yookassa.ru/v3/payments',
+      {
+        amount:       { value: COMING_SOON_PRICE.toFixed(2), currency: 'RUB' },
+        confirmation: { type: 'redirect', return_url: returnUrl },
+        description,
+        metadata:     { kind: 'soon', requestId: request.id },
+        capture:      true,
+        receipt: {
+          customer: { email: userEmail },
+          items: [{
+            description,
+            quantity:        '1.00',
+            amount:          { value: COMING_SOON_PRICE.toFixed(2), currency: 'RUB' },
+            vat_code:        1,
+            payment_mode:    'full_prepayment',
+            payment_subject: 'service',
+          }],
+        },
+      },
+      { auth: { username: shopId, password: secretKey }, headers: { 'Idempotence-Key': idempotenceKey } },
+    );
+
+    // Сохраняем paymentId — пригодится в webhook
+    await this.prisma.serverRequest.update({
+      where: { id: request.id },
+      data:  { paymentId: response.data.id },
+    });
+
+    return {
+      paymentId:       response.data.id,
+      confirmationUrl: response.data.confirmation.confirmation_url,
+      status:          response.data.status,
+      amount:          COMING_SOON_PRICE,
+      kind:            'soon',
+      requestId:       request.id,
+    };
+  }
+
+  private async activateSoon(requestId: string, paymentId: string) {
+    await this.prisma.serverRequest.update({
+      where: { id: requestId },
+      data:  { status: 'approved', paid: true, paymentId },
+    });
   }
 
   // ── Активация VIP ─────────────────────────────

@@ -18,7 +18,11 @@ export default function AddServerPage() {
     rates:      '',
     url:        '',
     openedDate: '',
+    contact:    '',
   });
+
+  // Платный flow активен, если дата открытия в будущем
+  const isFutureDate = !!(form.openedDate && new Date(form.openedDate) > new Date());
 
   function upd(k: string, v: string) { setForm(p => ({ ...p, [k]: v })); }
 
@@ -32,6 +36,32 @@ export default function AddServerPage() {
       showToast('Заполните название, хронику, рейты и URL');
       return;
     }
+
+    // Платный flow для «Скоро открытие»
+    if (isFutureDate) {
+      if (!form.contact.trim()) {
+        showToast('Укажите контакт (TG/VK) — мы свяжемся с вами после оплаты');
+        return;
+      }
+      setLoading(true);
+      try {
+        const res = await api.payments.purchaseSoon(
+          { ...form, returnUrl: window.location.origin + '/coming-soon' },
+          token,
+        );
+        if (res.confirmationUrl) { window.location.href = res.confirmationUrl; return; }
+        if (res.activated) {
+          showToast('Размещение оформлено! (dev mode — без оплаты)');
+          setTimeout(() => router.push('/coming-soon'), 1500);
+        }
+      } catch (e) {
+        showToast(e instanceof Error ? e.message : 'Ошибка при оформлении');
+      }
+      setLoading(false);
+      return;
+    }
+
+    // Бесплатный flow — обычная заявка
     setLoading(true);
     try {
       await api.servers.request(form, token);
@@ -127,17 +157,51 @@ export default function AddServerPage() {
                 </p>
               </Field>
 
+              {/* Контакт нужен только для платного flow «Скоро открытие» */}
+              {isFutureDate && (
+                <Field label="Контакт для связи (TG/VK) *">
+                  <input
+                    className="input"
+                    value={form.contact}
+                    onChange={e => upd('contact', e.target.value)}
+                    placeholder="@yourhandle или vk.com/id…"
+                  />
+                  <p style={{ fontSize: '.72rem', color: 'var(--text3)', margin: '.2rem 0 0' }}>
+                    Свяжемся с вами после оплаты, чтобы согласовать детали анонса (иконка, описание).
+                  </p>
+                </Field>
+              )}
+
+              {/* Баннер про платное размещение — появляется когда дата в будущем */}
+              {isFutureDate && (
+                <div style={{ background: 'rgba(200,168,75,.08)', border: '1px solid var(--gold-d)', borderRadius: 3, padding: '.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '.4rem' }}>
+                  <div style={{ fontFamily: "'Cinzel', serif", fontSize: '.78rem', color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '.1em' }}>
+                    ⏳ Скоро открытие — платное размещение
+                  </div>
+                  <p style={{ fontSize: '.84rem', color: 'var(--text2)', margin: 0, lineHeight: 1.55 }}>
+                    Сервер с датой открытия в будущем размещается в разделе «Скоро открытие» за 1 000 ₽ разово.
+                    После оплаты сервер появится <strong>сразу</strong>, без модерации, и будет показываться там до даты открытия.
+                  </p>
+                </div>
+              )}
+
               <button
                 className="btn-primary"
                 style={{ alignSelf: 'flex-end', padding: '.5rem 1.8rem', marginTop: '.4rem' }}
                 onClick={submit}
                 disabled={loading}
               >
-                {loading ? <span className="spin" /> : 'Отправить заявку'}
+                {loading
+                  ? <span className="spin" />
+                  : isFutureDate
+                    ? 'Оплатить размещение — 1 000 ₽'
+                    : 'Отправить заявку'}
               </button>
 
               <p className={styles.note}>
-                Одна заявка с аккаунта раз в 24 часа. После одобрения сервер появится в каталоге — все детали (описание, иконка, соцсети) мы добавим сами.
+                {isFutureDate
+                  ? 'После оплаты через ЮKassa сервер автоматически попадёт в раздел «Скоро открытие». Чек придёт на email из вашего профиля.'
+                  : 'Одна заявка с аккаунта раз в 24 часа. После одобрения сервер появится в каталоге — все детали (описание, иконка, соцсети) мы добавим сами.'}
               </p>
             </div>
           </div>

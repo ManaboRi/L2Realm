@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, VipStatus } from '@/lib/types';
-import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS } from '@/lib/types';
+import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS, COMING_SOON_PRICE } from '@/lib/types';
 import styles from './page.module.css';
 
 export function PricingClient() {
@@ -81,6 +81,12 @@ export function PricingClient() {
         <h1 className={styles.heroTitle}>Продвижение <em>сервера</em></h1>
         <p className={styles.heroSub}>
           Размещение в каталоге — бесплатное. Если хочется больше видимости — ниже два способа.
+          {' '}
+          <span
+            title="Бесплатно, ротация автоматическая — сервер дня случайно выбирается каждые 5 часов из всех серверов без активного VIP или буста."
+            style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:16, height:16, borderRadius:'50%', border:'1px solid var(--text3)', fontSize:'.62rem', color:'var(--text3)', cursor:'help', marginLeft:'.3rem', verticalAlign:'middle' }}
+          >★</span>
+          <span style={{ fontSize: '.78rem', color: 'var(--text3)', marginLeft: '.3rem' }}>про «Сервер дня»</span>
         </p>
       </div>
 
@@ -209,23 +215,31 @@ export function PricingClient() {
             </button>
           </div>
 
-          {/* Сервер дня */}
+          {/* Скоро открытие */}
           <div className={`${styles.tier} ${styles.tierSod}`}>
             <div className={styles.tierHead}>
-              <span className={`${styles.tierBadge} ${styles.badgeSod}`}>★ Сервер дня</span>
-              <span className={styles.tierPrice}>бесплатно</span>
+              <span className={`${styles.tierBadge} ${styles.badgeSod}`}>⏳ Скоро открытие</span>
+              <span className={styles.tierPrice}>{COMING_SOON_PRICE.toLocaleString('ru-RU')} ₽<span className={styles.priceSub}> / разово</span></span>
             </div>
-            <h2 className={styles.tierTitle}>Случайный сервер каждые 5 часов</h2>
+            <h2 className={styles.tierTitle}>Платное размещение анонса</h2>
             <p className={styles.tierDesc}>
-              Каждые 5 часов в каталоге случайный сервер отмечается как «Сервер дня» — с изумрудной подсветкой
-              и бейджем. Бесплатно, для всех серверов без активного VIP или буста.
+              Если ваш сервер ещё не открылся — оплатите размещение в разделе «Скоро открытие».
+              Сервер появится сразу после оплаты, без ручной модерации, и будет показываться там
+              до даты открытия.
             </p>
             <ul className={styles.tierList}>
-              <li>Случайный выбор раз в 5 часов</li>
-              <li>Изумрудная акцентная линия + бейдж</li>
-              <li>Отдельная позиция в каталоге</li>
-              <li>Ничего покупать не нужно</li>
+              <li>Размещение в специальном блоке «Скоро открытие»</li>
+              <li>Без ожидания модерации — сразу после оплаты</li>
+              <li>Виден до даты открытия, потом переходит в каталог</li>
+              <li>Можно сразу подключить VIP/буст после открытия</li>
             </ul>
+            <Link
+              href="/add"
+              className="btn-primary"
+              style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            >
+              Оформить за {COMING_SOON_PRICE.toLocaleString('ru-RU')} ₽ →
+            </Link>
           </div>
 
         </div>
