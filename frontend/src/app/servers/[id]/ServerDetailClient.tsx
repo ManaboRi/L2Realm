@@ -244,6 +244,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <span className={styles.hstat}>
                   <img src="/images/vote-icon.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />
                   {server.weeklyVotes ?? 0} голосов
+                  <span
+                    title="Счётчик сбрасывается каждую пятницу в 6:00 МСК"
+                    style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:13, height:13, borderRadius:'50%', border:'1px solid var(--text3)', fontSize:'.55rem', color:'var(--text3)', cursor:'help', marginLeft:'.2rem', flexShrink:0, lineHeight:1 }}
+                  >?</span>
                 </span>
                 {server.ratingCount > 0 && (
                   <>
@@ -270,7 +274,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 26, height: 26, objectFit: 'contain', marginRight: '.35rem', verticalAlign: 'middle' }} />Проголосовать</>}
+                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />Проголосовать</>}
                 </button>
                 {(server.weeklyVotes ?? 0) > 0 && (
                   <span className={styles.weeklyCount}>
@@ -314,7 +318,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
-                ['Голосов / нед.', (server.weeklyVotes ?? 0) > 0 ? `▲ ${server.weeklyVotes}` : '—'],
                 ['Тариф',      server.subscription?.plan ?? 'FREE'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>

@@ -61,7 +61,14 @@ button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
 }
 .input:focus  { border-color: var(--border2); }
 .input::placeholder { color: var(--text3); }
-select.input  { cursor: pointer; }
+select.input {
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  padding-right: 1.8rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%238B6914'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .55rem center;
+}
 select.input option { background: var(--bg3); }
 
 .block { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; }

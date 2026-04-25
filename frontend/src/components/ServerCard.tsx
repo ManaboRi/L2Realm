@@ -95,7 +95,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
         </div>
 
         <div className={styles.btns}>
-          <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер →</a>
+          <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер ›</a>
         </div>
       </div>
     </div>
