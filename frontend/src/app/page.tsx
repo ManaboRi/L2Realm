@@ -48,6 +48,18 @@ function HomeContent() {
   const [showSuggest, setShowSuggest] = useState(false);
   const searchBoxRef = useRef<HTMLDivElement>(null);
 
+  // Легенда «что значат метки» — закрывается навсегда через localStorage
+  const [showLegend, setShowLegend] = useState(true);
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localStorage.getItem('l2r_legend_dismissed') === '1') {
+      setShowLegend(false);
+    }
+  }, []);
+  function dismissLegend() {
+    setShowLegend(false);
+    if (typeof window !== 'undefined') localStorage.setItem('l2r_legend_dismissed', '1');
+  }
+
   // Инициализация состояния из URL
   const [search,  setSearch]  = useState(() => sp.get('q')      ?? '');
   const [sort,    setSort]    = useState(() => sp.get('sort')   ?? 'opened');
@@ -227,6 +239,29 @@ function HomeContent() {
               </select>
             </div>
           </div>
+
+          {/* Легенда меток — что значат бейджи в каталоге */}
+          {showLegend && (
+            <div className={styles.legend}>
+              <div className={styles.legendItems}>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.legendBadge} ${styles.legendVip}`}>◆ VIP</span>
+                  <span className={styles.legendDesc}>премиум-блок наверху каталога</span>
+                </span>
+                <span className={styles.legendDot}>·</span>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.legendBadge} ${styles.legendBoost}`}>🔥 Буст</span>
+                  <span className={styles.legendDesc}>продвижение выше обычных</span>
+                </span>
+                <span className={styles.legendDot}>·</span>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.legendBadge} ${styles.legendSod}`}>★ Сервер дня</span>
+                  <span className={styles.legendDesc}>случайный сервер каталога, меняется автоматически каждые 5 часов — бесплатное промо</span>
+                </span>
+              </div>
+              <button type="button" className={styles.legendClose} onClick={dismissLegend} title="Скрыть подсказку">✕</button>
+            </div>
+          )}
 
           {loading ? (
             <div className={styles.list}>

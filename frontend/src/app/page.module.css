@@ -159,6 +159,38 @@
 .empty        { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 3rem; text-align: center; color: var(--text3); font-family: 'Almendra', serif; font-style: italic; }
 .list         { display: flex; flex-direction: column; gap: 4px; }
 
+/* Легенда меток */
+.legend {
+  display: flex; align-items: center; gap: .8rem;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-left: 2px solid var(--gold-d);
+  border-radius: 3px;
+  padding: .55rem .85rem;
+}
+.legendItems {
+  display: flex; align-items: center; gap: .55rem;
+  flex-wrap: wrap; flex: 1; min-width: 0;
+  font-size: .72rem; color: var(--text2); line-height: 1.5;
+}
+.legendItem { display: inline-flex; align-items: center; gap: .35rem; }
+.legendDot  { color: var(--text3); opacity: .5; }
+.legendBadge {
+  font-family: 'Cinzel', serif; font-size: .58rem;
+  letter-spacing: .08em; padding: .12rem .42rem;
+  border-radius: 2px; white-space: nowrap; flex-shrink: 0;
+}
+.legendVip   { background: linear-gradient(135deg, var(--gold-d), var(--gold)); color: #090B10; font-weight: 700; }
+.legendBoost { background: rgba(240,140,70,.12); color: #F08C46; border: 1px solid rgba(240,140,70,.35); }
+.legendSod   { background: rgba(90,180,130,.12); color: #5AB482; border: 1px solid rgba(90,180,130,.3); }
+.legendDesc  { color: var(--text3); }
+.legendClose {
+  background: none; border: none; color: var(--text3);
+  font-size: .85rem; padding: .15rem .35rem; line-height: 1;
+  border-radius: 2px; transition: color .15s;
+  flex-shrink: 0; align-self: flex-start;
+}
+.legendClose:hover { color: var(--gold); }
+
 .pagination   { display: flex; gap: .3rem; flex-wrap: wrap; }
 .pageBtn      { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); padding: .3rem .65rem; border-radius: 2px; font-size: .76rem; transition: all .15s; }
 .pageBtn:hover { border-color: var(--border2); color: var(--text); }
