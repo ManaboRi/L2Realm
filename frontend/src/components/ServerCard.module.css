@@ -87,7 +87,7 @@
 .rating   { font-size: .62rem; color: var(--gold-d); }
 .noRating { font-size: .62rem; color: var(--text3); }
 .voteCount { display: inline-flex; align-items: center; gap: .22rem; font-size: .62rem; color: var(--text2); }
-.voteIco   { width: 13px; height: 13px; object-fit: contain; flex-shrink: 0; }
+.voteIco   { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; }
 .btns   { display: flex; gap: .35rem; }
 
 @media (max-width: 600px) {

@@ -242,12 +242,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {/* Быстрая статистика: голоса / рейтинг / отзывы */}
               <div className={styles.headerStats}>
                 <span className={styles.hstat}>
-                  <img src="/images/vote-icon.png" alt="" style={{ width: 14, height: 14, objectFit: 'contain' }} />
+                  <img src="/images/vote-icon.png" alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                   {server.weeklyVotes ?? 0} голосов
-                  <span
-                    title="Счётчик сбрасывается каждую пятницу в 6:00 МСК"
-                    style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:13, height:13, borderRadius:'50%', border:'1px solid var(--text3)', fontSize:'.55rem', color:'var(--text3)', cursor:'help', marginLeft:'.2rem', flexShrink:0, lineHeight:1 }}
-                  >?</span>
+                  <span className={styles.voteTip}>?</span>
                 </span>
                 {server.ratingCount > 0 && (
                   <>
@@ -318,7 +315,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
-                ['Тариф',      server.subscription?.plan ?? 'FREE'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
               ))}
