@@ -277,10 +277,10 @@ export class PaymentsService {
       if (process.env.NODE_ENV === 'production') {
         throw new BadRequestException('Платежи временно недоступны. Обратитесь в поддержку.');
       }
-      // dev: сразу одобряем
+      // dev: имитируем оплату, дальше — обычная модерация (status=pending, paid=true)
       await this.prisma.serverRequest.update({
         where: { id: request.id },
-        data:  { status: 'approved', paid: true, paymentId: 'dev-' + uuidv4() },
+        data:  { status: 'pending', paid: true, paymentId: 'dev-' + uuidv4() },
       });
       return { dev: true, activated: true, requestId: request.id };
     }
@@ -327,9 +327,12 @@ export class PaymentsService {
   }
 
   private async activateSoon(requestId: string, paymentId: string) {
+    // После оплаты заявка идёт на модерацию: paid=true, но status=pending —
+    // админ должен одобрить контент (название/описание/URL) перед публикацией.
+    // Это защищает каталог от мусорных заявок даже от платных юзеров.
     await this.prisma.serverRequest.update({
       where: { id: requestId },
-      data:  { status: 'approved', paid: true, paymentId },
+      data:  { status: 'pending', paid: true, paymentId },
     });
   }
 

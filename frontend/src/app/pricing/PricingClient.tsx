@@ -80,13 +80,7 @@ export function PricingClient() {
         <p className={styles.heroEye}>◆ Тарифы и продвижение ◆</p>
         <h1 className={styles.heroTitle}>Продвижение <em>сервера</em></h1>
         <p className={styles.heroSub}>
-          Размещение в каталоге — бесплатное. Если хочется больше видимости — ниже два способа.
-          {' '}
-          <span
-            title="Бесплатно, ротация автоматическая — сервер дня случайно выбирается каждые 5 часов из всех серверов без активного VIP или буста."
-            style={{ display:'inline-flex', alignItems:'center', justifyContent:'center', width:16, height:16, borderRadius:'50%', border:'1px solid var(--text3)', fontSize:'.62rem', color:'var(--text3)', cursor:'help', marginLeft:'.3rem', verticalAlign:'middle' }}
-          >★</span>
-          <span style={{ fontSize: '.78rem', color: 'var(--text3)', marginLeft: '.3rem' }}>про «Сервер дня»</span>
+          Размещение уже открытого сервера в каталоге — бесплатное. Ниже три платных способа получить больше видимости.
         </p>
       </div>
 

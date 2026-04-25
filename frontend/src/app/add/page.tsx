@@ -51,8 +51,8 @@ export default function AddServerPage() {
         );
         if (res.confirmationUrl) { window.location.href = res.confirmationUrl; return; }
         if (res.activated) {
-          showToast('Размещение оформлено! (dev mode — без оплаты)');
-          setTimeout(() => router.push('/coming-soon'), 1500);
+          showToast('Оплата получена. Заявка ушла на модерацию (до 24 часов).');
+          setTimeout(() => router.push('/'), 1800);
         }
       } catch (e) {
         showToast(e instanceof Error ? e.message : 'Ошибка при оформлении');
@@ -180,7 +180,8 @@ export default function AddServerPage() {
                   </div>
                   <p style={{ fontSize: '.84rem', color: 'var(--text2)', margin: 0, lineHeight: 1.55 }}>
                     Сервер с датой открытия в будущем размещается в разделе «Скоро открытие» за 1 000 ₽ разово.
-                    После оплаты сервер появится <strong>сразу</strong>, без модерации, и будет показываться там до даты открытия.
+                    После оплаты заявка попадёт на быструю модерацию (до 24 часов) — после одобрения сервер
+                    появится в разделе и будет показываться там до даты открытия.
                   </p>
                 </div>
               )}
@@ -200,7 +201,7 @@ export default function AddServerPage() {
 
               <p className={styles.note}>
                 {isFutureDate
-                  ? 'После оплаты через ЮKassa сервер автоматически попадёт в раздел «Скоро открытие». Чек придёт на email из вашего профиля.'
+                  ? 'После оплаты через ЮKassa заявка автоматически уходит на модерацию (до 24 часов). После одобрения сервер появится в разделе «Скоро открытие». Чек придёт на email из вашего профиля.'
                   : 'Одна заявка с аккаунта раз в 24 часа. После одобрения сервер появится в каталоге — все детали (описание, иконка, соцсети) мы добавим сами.'}
               </p>
             </div>
