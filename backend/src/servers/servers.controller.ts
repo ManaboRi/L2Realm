@@ -3,6 +3,7 @@ import {
   Param, Body, Query, UseGuards, Request,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { ServersService } from './servers.service';
 import { CreateServerDto, UpdateServerDto, FilterServersDto } from './dto/server.dto';
@@ -14,6 +15,9 @@ export class ServersController {
   constructor(private srv: ServersService) {}
 
   // ── Публичные ────────────────────────────────
+  // Стрóгий лимит для каталога — 60/мин с IP. Главная страница тянет /servers + /stats + /counts
+  // (3 запроса) на загрузку, 60/мин = ~20 страниц/мин с одного IP. Боты подрезаются.
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @Get()
   findAll(@Query() filters: FilterServersDto) {
     return this.srv.findAll(filters);
@@ -39,9 +43,11 @@ export class ServersController {
     return this.srv.findOne(id);
   }
 
-  // ── Заявка (только авторизованные, 1/24ч) ───
+  // ── Заявка (только авторизованные, 1/24ч по IP, 1/24ч по аккаунту) ───
+  // HTTP-лимит 1/24ч по IP — defense-in-depth поверх service-level cooldown по userId
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'))
+  @Throttle({ default: { ttl: 24 * 60 * 60 * 1000, limit: 1 } })
   @Post('request')
   submitRequest(@Body() body: any, @Request() req: { user: { id: string } }) {
     return this.srv.submitRequest(req.user.id, body);
