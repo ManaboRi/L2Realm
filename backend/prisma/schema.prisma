@@ -118,7 +118,7 @@ enum SubscriptionPlan {
   VIP       // 5000₽/мес — отдельный блок (3 места)
 }
 
-// ── Буст «Огонёк» (250₽ / 7 дней) ─────────────
+// ── Буст «Огонёк» (500₽ / 7 дней) ─────────────
 model Boost {
   id         String   @id @default(cuid())
   serverId   String

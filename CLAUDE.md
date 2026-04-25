@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Проект
 
-**L2Realm** — каталог приватных серверов Lineage 2 (https://l2realm.ru). Next.js 16 (frontend) + NestJS 10 (backend) + PostgreSQL/Prisma + Docker Compose на VPS. Монетизация через ЮКассу (VIP 5000₽/31 день, буст 250₽/7 дней), авторизация только через VK ID. Полный исторический чек-лист фич — в `README.md` (не дублировать).
+**L2Realm** — каталог приватных серверов Lineage 2 (https://l2realm.ru). Next.js 16 (frontend) + NestJS 10 (backend) + PostgreSQL/Prisma + Docker Compose на VPS. Монетизация через ЮКассу (VIP 5000₽/31 день, буст 500₽/7 дней), авторизация только через VK ID. Полный исторический чек-лист фич — в `README.md` (не дублировать).
 
 ## Частые команды
 
@@ -158,7 +158,7 @@ Swagger доступен только в dev на `/api/docs` — в проде 
 - (пусто)
 
 **Ждёт проверки на проде:**
-- ЮКасса end-to-end: боевая покупка буста 250₽ со второго аккаунта (нужен второй VK — у юзера пока нет)
+- ЮКасса end-to-end: боевая покупка буста 500₽ со второго аккаунта (нужен второй VK — у юзера пока нет)
 - E-Global мониторинг с новым UA — через 30 минут после последнего деплоя аптайм-бар должен стать зелёным
 - Яндекс.Вебмастер: verification-метатег добавлен в `layout.tsx`, нужно подтвердить права
 

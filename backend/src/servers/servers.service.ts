@@ -11,13 +11,11 @@ function rateRange(n: number): string {
   return 'mega';
 }
 
-// Сид для «Сервера дня» — сменяется раз в сутки в 6:00 МСК (= 3:00 UTC).
+// Сид для «Сервера дня» — меняется раз в 5 часов (окна 0-4, 5-9, 10-14, 15-19, 20-23 UTC).
 function sodSeed(): number {
-  const now = new Date();
-  // До 3:00 UTC считаем «вчерашним» днём — иначе сервер менялся бы в 6 утра по МСК
-  const d = new Date(now);
-  if (d.getUTCHours() < 3) d.setUTCDate(d.getUTCDate() - 1);
-  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
+  const d = new Date();
+  const window5h = Math.floor(d.getUTCHours() / 5);
+  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}-w${window5h}`;
   let h = 0;
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
   return h;

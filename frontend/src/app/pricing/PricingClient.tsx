@@ -215,13 +215,13 @@ export function PricingClient() {
               <span className={`${styles.tierBadge} ${styles.badgeSod}`}>★ Сервер дня</span>
               <span className={styles.tierPrice}>бесплатно</span>
             </div>
-            <h2 className={styles.tierTitle}>Случайный сервер каждый день</h2>
+            <h2 className={styles.tierTitle}>Случайный сервер каждые 5 часов</h2>
             <p className={styles.tierDesc}>
-              Каждые сутки в каталоге случайный сервер отмечается как «Сервер дня» — с изумрудной подсветкой
+              Каждые 5 часов в каталоге случайный сервер отмечается как «Сервер дня» — с изумрудной подсветкой
               и бейджем. Бесплатно, для всех серверов без активного VIP или буста.
             </p>
             <ul className={styles.tierList}>
-              <li>Случайный выбор раз в сутки (по UTC)</li>
+              <li>Случайный выбор раз в 5 часов</li>
               <li>Изумрудная акцентная линия + бейдж</li>
               <li>Отдельная позиция в каталоге</li>
               <li>Ничего покупать не нужно</li>

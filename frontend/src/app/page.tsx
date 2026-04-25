@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -7,8 +7,6 @@ import { ServerCard } from '@/components/ServerCard';
 import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
 import type { Server, Stats } from '@/lib/types';
 import styles from './page.module.css';
-
-const VIP_MAX = 3;
 
 const CHRONICLES = ['Essence', 'Classic', 'Interlude', 'High Five', 'Gracia'];
 const RATES = [
@@ -44,6 +42,11 @@ function HomeContent() {
   const [loading,  setLoading]  = useState(true);
   const [pages,    setPages]    = useState(1);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+
+  // Автодополнение поиска
+  const [suggestions, setSuggestions] = useState<Server[]>([]);
+  const [showSuggest, setShowSuggest] = useState(false);
+  const searchBoxRef = useRef<HTMLDivElement>(null);
 
   // Инициализация состояния из URL
   const [search,  setSearch]  = useState(() => sp.get('q')      ?? '');
@@ -96,6 +99,29 @@ function HomeContent() {
     setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
     setPage(1);
   }
+
+  // Автодополнение: дёргаем API при изменении текста (debounce 200ms)
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    const t = setTimeout(() => {
+      api.servers.list({ search: q, limit: '6' })
+        .then(r => setSuggestions(r.data.slice(0, 6)))
+        .catch(() => {});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Скрываем подсказки по клику вне блока поиска
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
+        setShowSuggest(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -155,15 +181,41 @@ function HomeContent() {
         {/* Контент */}
         <div className={styles.content}>
           <div className={styles.searchBar}>
-            <div className={styles.searchWrap}>
+            <div className={styles.searchWrap} ref={searchBoxRef}>
               <span className={styles.searchIcon}>⌕</span>
               <input
                 className={styles.searchInput}
                 placeholder="Поиск по названию сервера..."
                 value={search}
-                onChange={e => { setSearch(e.target.value); setPage(1); }}
+                onFocus={() => setShowSuggest(true)}
+                onChange={e => { setSearch(e.target.value); setPage(1); setShowSuggest(true); }}
+                onKeyDown={e => { if (e.key === 'Escape') setShowSuggest(false); }}
               />
-              {search && <button className={styles.searchClear} onClick={() => setSearch('')}>✕</button>}
+              {search && <button className={styles.searchClear} onClick={() => { setSearch(''); setShowSuggest(false); }}>✕</button>}
+
+              {showSuggest && suggestions.length > 0 && (
+                <div className={styles.suggestList}>
+                  {suggestions.map(s => (
+                    <Link
+                      key={s.id}
+                      href={`/servers/${s.id}`}
+                      className={styles.suggestItem}
+                      onClick={() => setShowSuggest(false)}
+                    >
+                      <span className={styles.suggestIcon}>
+                        {s.icon
+                          ? <img src={s.icon} alt="" />
+                          : <span>{s.abbr ?? s.name.slice(0, 2).toUpperCase()}</span>}
+                      </span>
+                      <span className={styles.suggestMain}>
+                        <span className={styles.suggestName}>{s.name}</span>
+                        <span className={styles.suggestMeta}>{s.chronicle} · {s.rates}</span>
+                      </span>
+                      <span className={styles.suggestArr}>›</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
             <div className={styles.sortWrap}>
               <span className={styles.sortLabel}>Сортировка</span>
@@ -183,30 +235,22 @@ function HomeContent() {
           ) : (() => {
             const vipServers  = servers.filter(s => s.subscription?.plan === 'VIP');
             const mainServers = servers.filter(s => s.subscription?.plan !== 'VIP');
-            const freeSlots   = VIP_MAX - vipServers.length;
             return (
               <>
-                {/* VIP-блок */}
-                {(vipServers.length > 0 || freeSlots > 0) && (
+                {/* VIP-блок — показываем только когда есть хотя бы один активный VIP.
+                    Свободные места показываются как «занять место», но не перетягивают
+                    внимание когда никто ещё не купил. */}
+                {vipServers.length > 0 && (
                   <div className={styles.vipSection}>
                     <div className={styles.vipHeader}>
                       <span className={styles.vipHeaderStar}>★</span>
                       <span className={styles.vipHeaderTitle}>VIP Серверы</span>
                       <span className={styles.vipHeaderSlots}>
-                        {freeSlots > 0
-                          ? `${vipServers.length} / ${VIP_MAX} мест занято`
-                          : 'Все места заняты'}
+                        {vipServers.length} активн{vipServers.length === 1 ? 'ый' : 'ых'}
                       </span>
                     </div>
                     <div className={styles.list}>
                       {vipServers.map(s => <ServerCard key={s.id} server={s} vipBlock />)}
-                      {freeSlots > 0 && Array.from({ length: freeSlots }).map((_, i) => (
-                        <Link key={`slot-${i}`} href="/pricing" className={styles.vipSlot}>
-                          <span className={styles.vipSlotPlus}>+</span>
-                          <span className={styles.vipSlotText}>Свободное VIP место</span>
-                          <span className={styles.vipSlotBtn}>Занять место →</span>
-                        </Link>
-                      ))}
                     </div>
                   </div>
                 )}

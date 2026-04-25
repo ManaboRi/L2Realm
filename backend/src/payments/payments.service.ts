@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 export const VIP_PRICE   = 5000;
 export const VIP_DAYS    = 31;
 export const VIP_MAX     = 3;
-export const BOOST_PRICE = 250;
+export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
 
 type PurchaseKind = 'vip' | 'boost';
@@ -24,6 +24,14 @@ export class PaymentsService {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) throw new NotFoundException('Сервер не найден');
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
+
+    // Серверы с датой открытия в будущем — VIP/буст продаются только после открытия
+    if (server.openedDate && server.openedDate > new Date()) {
+      const opens = server.openedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      throw new BadRequestException(
+        `Сервер ещё не открыт (откроется ${opens}). Покупка VIP и буста доступна только для открытых серверов.`,
+      );
+    }
 
     const amount = kind === 'vip' ? VIP_PRICE : BOOST_PRICE;
 
