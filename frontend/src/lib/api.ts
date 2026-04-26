@@ -175,6 +175,14 @@ export const api = {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       }),
+    // Сброс SSR-кеша Next.js после правки статьи (вне api/proxy — это Next.js route).
+    // Если slug передан — также инвалидирует /blog/<slug>.
+    revalidate: (slug: string | undefined, token: string) =>
+      fetch('/api/admin/revalidate-blog', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, token }),
+      }).then(r => r.json()).catch(() => ({ ok: false })),
   },
 
   // ── Голосование ──────────────────────────────

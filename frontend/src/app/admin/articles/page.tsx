@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { ImageUpload } from '@/components/ImageUpload';
 import type { Article } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -12,10 +13,11 @@ type FormState = {
   title:        string;
   description:  string;
   content:      string;
+  image:        string;
   publishedAt:  string; // datetime-local или пусто = черновик
 };
 
-const EMPTY: FormState = { slug: '', title: '', description: '', content: '', publishedAt: '' };
+const EMPTY: FormState = { slug: '', title: '', description: '', content: '', image: '', publishedAt: '' };
 
 function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -66,6 +68,7 @@ export default function AdminArticlesPage() {
       title:       a.title,
       description: a.description,
       content:     a.content,
+      image:       a.image ?? '',
       publishedAt: toLocalInput(a.publishedAt),
     });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -84,16 +87,23 @@ export default function AdminArticlesPage() {
         title:       form.title.trim(),
         description: form.description.trim(),
         content:     form.content,
+        image:       form.image.trim() || null,
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
+      let savedSlug = form.slug;
       if (form.id) {
-        await api.articles.update(form.id, payload, token);
+        const updated = await api.articles.update(form.id, payload, token);
+        savedSlug = updated.slug;
+        setForm(p => ({ ...p, slug: updated.slug }));
         showToast('Статья обновлена');
       } else {
         const created = await api.articles.create(payload, token);
+        savedSlug = created.slug;
         showToast('Статья создана');
         setForm({ ...form, id: created.id, slug: created.slug });
       }
+      // Сбрасываем SSR-кеш блога — иначе пользователь не увидит правки 5 минут
+      api.articles.revalidate(savedSlug, token).catch(() => {});
       await load();
     } catch (e: any) {
       showToast(e.message || 'Ошибка сохранения');
@@ -108,6 +118,7 @@ export default function AdminArticlesPage() {
       await api.articles.delete(a.id, token);
       showToast('Удалено');
       if (form.id === a.id) setForm(EMPTY);
+      api.articles.revalidate(a.slug, token).catch(() => {});
       await load();
     } catch (e: any) {
       showToast(e.message || 'Ошибка удаления');
@@ -123,6 +134,7 @@ export default function AdminArticlesPage() {
         token,
       );
       showToast(a.publishedAt ? 'Снято с публикации' : 'Опубликовано');
+      api.articles.revalidate(a.slug, token).catch(() => {});
       await load();
     } catch (e: any) {
       showToast(e.message || 'Ошибка');
@@ -200,6 +212,16 @@ export default function AdminArticlesPage() {
             maxLength={300}
           />
         </Field>
+
+        {token && (
+          <ImageUpload
+            label="Обложка статьи (опционально)"
+            value={form.image}
+            type="banner"
+            token={token}
+            onChange={url => setForm(p => ({ ...p, image: url }))}
+          />
+        )}
 
         <Field label="Текст статьи (Markdown) *">
           <textarea

@@ -108,6 +108,7 @@ export interface Article {
   title:        string;
   description:  string;
   content:      string;
+  image:        string | null;
   publishedAt:  string | null;
   createdAt:    string;
   updatedAt:    string;

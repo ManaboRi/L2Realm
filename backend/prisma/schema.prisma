@@ -215,6 +215,7 @@ model Article {
   title       String
   description String                            // SEO description, 1-2 предложения
   content     String                            // Markdown
+  image       String?                           // URL обложки (загружается через /upload?type=banner)
   publishedAt DateTime?                         // null = черновик, дата = опубликовано
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

@@ -72,12 +72,19 @@ export default async function BlogPage() {
         <div className={styles.grid}>
           {/* Главная статья — на всю ширину */}
           <Link href={`/blog/${featured.slug}`} className={`${styles.card} ${styles.cardFeatured}`}>
-            <ArticleMeta a={featured} />
-            <h2 className={styles.cardTitle}>{featured.title}</h2>
-            <p className={styles.cardLead}>
-              {featured.description || firstParagraph(featured.content, 280)}
-            </p>
-            <span className={styles.read}>Читать →</span>
+            {featured.image && (
+              <div className={styles.cover}>
+                <img src={featured.image} alt={featured.title} loading="lazy" />
+              </div>
+            )}
+            <div className={styles.cardBody}>
+              <ArticleMeta a={featured} />
+              <h2 className={styles.cardTitle}>{featured.title}</h2>
+              <p className={styles.cardLead}>
+                {featured.description || firstParagraph(featured.content, 280)}
+              </p>
+              <span className={styles.read}>Читать →</span>
+            </div>
           </Link>
 
           {/* Остальные — в две колонки */}
@@ -85,12 +92,19 @@ export default async function BlogPage() {
             <div className={styles.cards}>
               {rest.map(a => (
                 <Link key={a.id} href={`/blog/${a.slug}`} className={styles.card}>
-                  <ArticleMeta a={a} />
-                  <h3 className={styles.cardTitle}>{a.title}</h3>
-                  <p className={styles.cardLead}>
-                    {a.description || firstParagraph(a.content, 200)}
-                  </p>
-                  <span className={styles.read}>Читать →</span>
+                  {a.image && (
+                    <div className={styles.cover}>
+                      <img src={a.image} alt={a.title} loading="lazy" />
+                    </div>
+                  )}
+                  <div className={styles.cardBody}>
+                    <ArticleMeta a={a} />
+                    <h3 className={styles.cardTitle}>{a.title}</h3>
+                    <p className={styles.cardLead}>
+                      {a.description || firstParagraph(a.content, 200)}
+                    </p>
+                    <span className={styles.read}>Читать →</span>
+                  </div>
                 </Link>
               ))}
             </div>

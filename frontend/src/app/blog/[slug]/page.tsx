@@ -75,6 +75,11 @@ export default async function BlogPostPage({ params }: Props) {
       </div>
 
       <article className={styles.article}>
+        {article.image && (
+          <div className={styles.banner}>
+            <img src={article.image} alt={article.title} />
+          </div>
+        )}
         <header className={styles.head}>
           <div className={styles.meta}>
             <time dateTime={article.publishedAt ?? article.createdAt}>

@@ -13,10 +13,31 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 3rem 3.4rem 2.6rem;
+  overflow: hidden;
+  /* контент-блоки внутри держат свой горизонтальный padding,
+     чтобы баннер мог быть edge-to-edge */
 }
 
-.head { margin-bottom: 2.6rem; }
+.banner {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  background: var(--bg3);
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+.banner img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.head {
+  padding: 3rem 3.4rem 0;
+  margin-bottom: 2.6rem;
+}
+.banner + .head { padding-top: 2.4rem; }
+.body { padding: 0 3.4rem; }
+.foot { padding: 0 3.4rem 2.6rem; }
 
 .meta {
   display: flex; align-items: center; gap: .55rem;
@@ -164,6 +185,7 @@
 .foot {
   margin-top: 3rem;
   padding-top: 1.6rem;
+  padding-bottom: 2.6rem;
   border-top: 1px solid var(--border);
 }
 .back {
@@ -178,9 +200,12 @@
 
 @media (max-width: 760px) {
   .page { padding: .6rem .8rem 3rem; }
-  .article { padding: 1.8rem 1.4rem 1.6rem; }
-  .body { font-size: 1rem; line-height: 1.72; }
+  .head { padding: 1.8rem 1.4rem 0; margin-bottom: 1.6rem; }
+  .banner + .head { padding-top: 1.4rem; }
+  .body { padding: 0 1.4rem; font-size: 1rem; line-height: 1.72; }
+  .foot { padding: 0 1.4rem 1.6rem; }
   .body h2 { font-size: 1.4rem; margin-top: 2.4rem; }
   .body h3 { font-size: 1.18rem; margin-top: 2rem; }
   .lead { font-size: 1.05rem; }
+  .banner { aspect-ratio: 16 / 9; }
 }

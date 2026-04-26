@@ -6,6 +6,7 @@ export interface ArticleDto {
   title:        string;
   description:  string;
   content:      string;
+  image?:       string | null;
   publishedAt?: string | null;
 }
 
@@ -74,6 +75,7 @@ export class ArticlesService {
         title:       dto.title.trim(),
         description: dto.description.trim(),
         content:     dto.content,
+        image:       dto.image?.trim() || null,
         publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : null,
       },
     });
@@ -100,6 +102,9 @@ export class ArticlesService {
         title:       dto.title?.trim() ?? existing.title,
         description: dto.description?.trim() ?? existing.description,
         content:     dto.content ?? existing.content,
+        image:       dto.image === undefined
+          ? existing.image
+          : (dto.image?.trim() || null),
         publishedAt: dto.publishedAt === undefined
           ? existing.publishedAt
           : (dto.publishedAt ? new Date(dto.publishedAt) : null),
