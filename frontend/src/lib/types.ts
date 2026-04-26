@@ -142,3 +142,11 @@ export const VIP_MAX     = 3;
 export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
 export const COMING_SOON_PRICE = 1000;
+
+// Канонический список хроник. Используется в формах /add и админки (selects)
+// и для упорядочивания фильтров на главной (фильтр показывает только те,
+// у которых counts.chronicles[c] > 0 — пустые скрыты).
+export const CHRONICLES = [
+  'Interlude', 'High Five', 'Classic', 'Essence', 'Gracia',
+  'C4', 'GoD', 'Salvation', 'Samurai', 'Fafurion', 'C1', 'Lindvior',
+];
