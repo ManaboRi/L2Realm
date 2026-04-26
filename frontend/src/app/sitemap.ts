@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import type { ServersResponse } from '@/lib/types';
+import type { ServersResponse, Article } from '@/lib/types';
 
 // force-dynamic: sitemap всегда генерится на запрос, не пре-рендерится в build.
 // ISR (revalidate = N) не подходит — Next.js всё равно пре-рендерит в build,
@@ -23,13 +23,24 @@ async function fetchAllServers() {
   }
 }
 
+async function fetchAllArticles(): Promise<Article[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/articles`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const servers = await fetchAllServers();
+  const [servers, articles] = await Promise.all([fetchAllServers(), fetchAllArticles()]);
   const now = new Date();
 
   const staticUrls: MetadataRoute.Sitemap = [
     { url: `${SITE}/`,            lastModified: now, changeFrequency: 'hourly',  priority: 1.0 },
     { url: `${SITE}/coming-soon`, lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
+    { url: `${SITE}/blog`,        lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
     { url: `${SITE}/pricing`,     lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
     { url: `${SITE}/legal`,       lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
     { url: `${SITE}/privacy`,     lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
@@ -42,5 +53,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: s.vip ? 0.9 : 0.6,
   }));
 
-  return [...staticUrls, ...serverUrls];
+  const articleUrls: MetadataRoute.Sitemap = articles.map(a => ({
+    url: `${SITE}/blog/${a.slug}`,
+    lastModified: new Date(a.updatedAt),
+    changeFrequency: 'monthly',
+    priority: 0.6,
+  }));
+
+  return [...staticUrls, ...serverUrls, ...articleUrls];
 }

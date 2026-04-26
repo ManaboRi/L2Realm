@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus } from './types';
+import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus, Article } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -146,6 +146,33 @@ export const api = {
       request<User>('/auth/nickname', {
         method: 'PATCH',
         body: JSON.stringify({ nickname }),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+  },
+
+  // ── Статьи блога ─────────────────────────────
+  articles: {
+    list:  ()                  => request<Article[]>('/articles'),
+    get:   (slug: string)      => request<Article>(`/articles/${slug}`),
+    adminList: (token: string) =>
+      request<Article[]>('/articles/admin/all', { headers: { Authorization: `Bearer ${token}` } }),
+    adminGet: (id: string, token: string) =>
+      request<Article>(`/articles/admin/by-id/${id}`, { headers: { Authorization: `Bearer ${token}` } }),
+    create: (data: Partial<Article>, token: string) =>
+      request<Article>('/articles', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    update: (id: string, data: Partial<Article>, token: string) =>
+      request<Article>(`/articles/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    delete: (id: string, token: string) =>
+      request<void>(`/articles/${id}`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       }),
   },

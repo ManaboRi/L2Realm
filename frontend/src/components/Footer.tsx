@@ -18,6 +18,7 @@ export function Footer() {
           <Link href="/" className={styles.link}>Все серверы</Link>
           <Link href="/coming-soon" className={styles.link}>Скоро открытие</Link>
           <Link href="/add" className={styles.link}>Добавить сервер</Link>
+          <Link href="/blog" className={styles.link}>Статьи</Link>
         </div>
 
         <div className={styles.col}>

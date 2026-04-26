@@ -102,6 +102,17 @@ export interface User {
   nicknameChangedAt?: string | null;
 }
 
+export interface Article {
+  id:           string;
+  slug:         string;
+  title:        string;
+  description:  string;
+  content:      string;
+  publishedAt:  string | null;
+  createdAt:    string;
+  updatedAt:    string;
+}
+
 export interface FavoriteServer {
   id:          string;
   createdAt:   string;

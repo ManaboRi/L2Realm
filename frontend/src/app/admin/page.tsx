@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -327,6 +328,13 @@ export default function AdminPage() {
           {TABS.map(({ k, l }) => (
             <button key={k} className={`${styles.tab} ${tab === k ? styles.tabActive : ''}`} onClick={() => setTab(k)}>{l}</button>
           ))}
+          <Link
+            href="/admin/articles"
+            className={styles.tab}
+            style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+          >
+            ✎ Статьи блога
+          </Link>
         </div>
 
         {dataLoading ? (
