@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Article } from '@/lib/types';
-import { renderMarkdown } from '@/lib/markdown';
+import { renderMarkdown, readingTime } from '@/lib/markdown';
 import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -76,9 +76,13 @@ export default async function BlogPostPage({ params }: Props) {
 
       <article className={styles.article}>
         <header className={styles.head}>
-          <time className={styles.date} dateTime={article.publishedAt ?? article.createdAt}>
-            {fmtDate(article.publishedAt ?? article.createdAt)}
-          </time>
+          <div className={styles.meta}>
+            <time dateTime={article.publishedAt ?? article.createdAt}>
+              {fmtDate(article.publishedAt ?? article.createdAt)}
+            </time>
+            <span className={styles.metaDot}>·</span>
+            <span>{readingTime(article.content)} мин чтения</span>
+          </div>
           <h1 className={styles.title}>{article.title}</h1>
           {article.description && (
             <p className={styles.lead}>{article.description}</p>

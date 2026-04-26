@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Article } from '@/lib/types';
-import { firstParagraph } from '@/lib/markdown';
+import { firstParagraph, readingTime } from '@/lib/markdown';
 import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -41,38 +41,61 @@ function fmtDate(s: string | null): string {
   });
 }
 
+function ArticleMeta({ a }: { a: Article }) {
+  return (
+    <div className={styles.meta}>
+      <time dateTime={a.publishedAt ?? a.createdAt}>{fmtDate(a.publishedAt ?? a.createdAt)}</time>
+      <span className={styles.metaDot}>·</span>
+      <span>{readingTime(a.content)} мин чтения</span>
+    </div>
+  );
+}
+
 export default async function BlogPage() {
   const articles = await fetchArticles();
 
+  const [featured, ...rest] = articles;
+
   return (
     <div className={styles.page}>
-      <div className={styles.hero}>
+      <header className={styles.hero}>
         <p className={styles.heroEye}>◆ Блог ◆</p>
         <h1 className={styles.heroTitle}>Статьи и <em>гайды</em></h1>
         <p className={styles.heroSub}>
           Обзоры серверов, опыт играющих, технические заметки. Без воды.
         </p>
-      </div>
+      </header>
 
-      {articles.length === 0 ? (
+      {!featured ? (
         <p className={styles.empty}>Статей пока нет. Скоро напишем — заглядывай.</p>
       ) : (
-        <ul className={styles.list}>
-          {articles.map(a => (
-            <li key={a.id}>
-              <Link href={`/blog/${a.slug}`} className={styles.card}>
-                <time className={styles.date} dateTime={a.publishedAt ?? a.createdAt}>
-                  {fmtDate(a.publishedAt ?? a.createdAt)}
-                </time>
-                <h2 className={styles.cardTitle}>{a.title}</h2>
-                <p className={styles.cardLead}>
-                  {a.description || firstParagraph(a.content)}
-                </p>
-                <span className={styles.read}>Читать →</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className={styles.grid}>
+          {/* Главная статья — на всю ширину */}
+          <Link href={`/blog/${featured.slug}`} className={`${styles.card} ${styles.cardFeatured}`}>
+            <ArticleMeta a={featured} />
+            <h2 className={styles.cardTitle}>{featured.title}</h2>
+            <p className={styles.cardLead}>
+              {featured.description || firstParagraph(featured.content, 280)}
+            </p>
+            <span className={styles.read}>Читать →</span>
+          </Link>
+
+          {/* Остальные — в две колонки */}
+          {rest.length > 0 && (
+            <div className={styles.cards}>
+              {rest.map(a => (
+                <Link key={a.id} href={`/blog/${a.slug}`} className={styles.card}>
+                  <ArticleMeta a={a} />
+                  <h3 className={styles.cardTitle}>{a.title}</h3>
+                  <p className={styles.cardLead}>
+                    {a.description || firstParagraph(a.content, 200)}
+                  </p>
+                  <span className={styles.read}>Читать →</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

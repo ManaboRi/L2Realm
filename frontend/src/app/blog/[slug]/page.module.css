@@ -1,7 +1,7 @@
-.page { max-width: 760px; margin: 0 auto; padding: 1rem 1.5rem 4rem; }
+.page { max-width: 920px; margin: 0 auto; padding: 1rem 1.5rem 5rem; }
 
 .bread {
-  padding: .4rem 0 1.4rem;
+  padding: .4rem 0 1.6rem;
   display: flex; align-items: center; gap: .5rem;
   font-size: .72rem; color: var(--text3);
 }
@@ -13,29 +13,35 @@
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 2.4rem 2.4rem 2rem;
+  padding: 3rem 3.4rem 2.6rem;
 }
 
-.head { margin-bottom: 2rem; }
-.date {
+.head { margin-bottom: 2.6rem; }
+
+.meta {
+  display: flex; align-items: center; gap: .55rem;
   font-family: 'Cinzel', serif;
-  font-size: .64rem;
-  letter-spacing: .18em;
+  font-size: .68rem;
+  letter-spacing: .15em;
   color: var(--gold-d);
   text-transform: uppercase;
+  margin-bottom: .8rem;
 }
+.metaDot { opacity: .5; }
+
 .title {
   font-family: 'Cinzel', serif;
-  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+  font-size: clamp(1.8rem, 3.6vw, 2.8rem);
   font-weight: 700;
   color: #F0E8C8;
-  line-height: 1.2;
-  margin: .55rem 0 .9rem;
+  line-height: 1.18;
+  letter-spacing: -.005em;
+  margin: 0 0 1rem;
 }
 .lead {
   font-family: 'Almendra', serif;
   font-style: italic;
-  font-size: 1.05rem;
+  font-size: 1.18rem;
   color: var(--text2);
   line-height: 1.55;
   margin: 0;
@@ -43,70 +49,89 @@
   border-left: 2px solid var(--gold-d);
 }
 
-/* Тело статьи: rendered Markdown */
+/* Тело: rendered Markdown — типографика для длинного чтения */
 .body {
   font-family: 'DM Sans', sans-serif;
-  font-size: 1rem;
+  font-size: 1.08rem;       /* ~17.3px на 16px корне */
+  line-height: 1.78;
   color: var(--text);
-  line-height: 1.75;
 }
-.body p { margin: 0 0 1.1rem; color: var(--text); }
+
+.body p {
+  margin: 0 0 1.35rem;
+  color: var(--text);
+}
+.body p:last-child { margin-bottom: 0; }
+
 .body h2 {
   font-family: 'Cinzel', serif;
-  font-size: 1.4rem;
+  font-size: 1.7rem;
+  font-weight: 700;
   color: #F0E8C8;
-  margin: 2rem 0 .9rem;
-  padding-bottom: .4rem;
+  letter-spacing: -.005em;
+  line-height: 1.25;
+  margin: 3rem 0 1.1rem;     /* 48px сверху — разделы дышат */
+  padding-bottom: .55rem;
   border-bottom: 1px solid var(--border);
 }
 .body h3 {
   font-family: 'Cinzel', serif;
-  font-size: 1.15rem;
+  font-size: 1.32rem;
+  font-weight: 600;
   color: var(--gold);
-  margin: 1.5rem 0 .65rem;
+  line-height: 1.3;
+  margin: 2.5rem 0 .8rem;    /* 40px */
 }
 .body h4 {
   font-family: 'Cinzel', serif;
-  font-size: 1rem;
+  font-size: 1.05rem;
   color: var(--gold-d);
-  margin: 1.2rem 0 .5rem;
+  margin: 2rem 0 .65rem;
   text-transform: uppercase;
-  letter-spacing: .08em;
+  letter-spacing: .1em;
 }
+
 .body ul {
-  margin: 0 0 1.1rem;
-  padding-left: 1.4rem;
-  color: var(--text2);
+  margin: 0 0 1.35rem;
+  padding-left: 1.5rem;
+  color: var(--text);
 }
-.body ul li { margin: .35rem 0; line-height: 1.65; }
+.body ul li {
+  margin: .4rem 0;
+  line-height: 1.7;
+}
 .body ul li::marker { color: var(--gold-d); }
+
 .body strong { color: #F0E8C8; font-weight: 600; }
 .body em     { color: var(--text); font-style: italic; }
+
 .body a {
   color: var(--gold);
   text-decoration: underline;
   text-decoration-color: rgba(200,168,75,.4);
   text-underline-offset: 3px;
+  transition: text-decoration-color .15s;
 }
 .body a:hover { text-decoration-color: var(--gold); }
+
 .body code {
   font-family: ui-monospace, 'Cascadia Mono', 'Source Code Pro', Menlo, monospace;
-  font-size: .9em;
+  font-size: .92em;
   background: var(--bg4);
   border: 1px solid var(--border);
   border-radius: 2px;
-  padding: .08rem .3rem;
-  color: var(--gold-l, var(--gold));
+  padding: .1rem .35rem;
+  color: var(--gold);
 }
 .body pre {
   background: var(--bg4);
   border: 1px solid var(--border);
   border-radius: 3px;
-  padding: 1rem 1.1rem;
+  padding: 1.15rem 1.25rem;
   overflow-x: auto;
-  margin: 0 0 1.3rem;
-  font-size: .88rem;
-  line-height: 1.55;
+  margin: 0 0 1.5rem;
+  font-size: .92rem;
+  line-height: 1.6;
 }
 .body pre code {
   background: none;
@@ -114,42 +139,48 @@
   padding: 0;
   color: var(--text);
 }
+
 .body blockquote {
-  margin: 0 0 1.2rem;
-  padding: .6rem 1rem;
-  border-left: 2px solid var(--gold-d);
+  margin: 0 0 1.4rem;
+  padding: .8rem 1.2rem;
+  border-left: 3px solid var(--gold-d);
   background: rgba(200,168,75,.04);
   color: var(--text2);
   font-family: 'Almendra', serif;
   font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.6;
   border-radius: 0 2px 2px 0;
 }
 .body blockquote p { margin: 0; color: var(--text2); }
+
 .body hr {
   border: none;
   height: 1px;
   background: linear-gradient(90deg, rgba(200,168,75,.4), transparent);
-  margin: 2rem 0;
+  margin: 2.5rem 0;
 }
 
 .foot {
-  margin-top: 2.4rem;
-  padding-top: 1.4rem;
+  margin-top: 3rem;
+  padding-top: 1.6rem;
   border-top: 1px solid var(--border);
 }
 .back {
   font-family: 'Cinzel', serif;
-  font-size: .72rem;
-  letter-spacing: .12em;
+  font-size: .76rem;
+  letter-spacing: .14em;
   color: var(--gold-d);
   text-transform: uppercase;
+  transition: color .15s;
 }
 .back:hover { color: var(--gold); }
 
-@media (max-width: 600px) {
+@media (max-width: 760px) {
   .page { padding: .6rem .8rem 3rem; }
-  .article { padding: 1.5rem 1.2rem 1.4rem; }
-  .body { font-size: .95rem; }
-  .body h2 { font-size: 1.2rem; }
-  .body h3 { font-size: 1.05rem; }
+  .article { padding: 1.8rem 1.4rem 1.6rem; }
+  .body { font-size: 1rem; line-height: 1.72; }
+  .body h2 { font-size: 1.4rem; margin-top: 2.4rem; }
+  .body h3 { font-size: 1.18rem; margin-top: 2rem; }
+  .lead { font-size: 1.05rem; }
 }

@@ -73,12 +73,12 @@ export function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
-    // headings
-    const h = line.match(/^(#{1,3})\s+(.+)$/);
-    if (h) {
+    // headings — лояльные: #X, ## X, ###X — пробел после # необязателен
+    const h = line.match(/^(#{1,3})\s*(.+)$/);
+    if (h && h[2].trim()) {
       flushBullets();
       const level = h[1].length;
-      const html = renderInline(h[2]);
+      const html = renderInline(h[2].trim());
       const Tag: any = `h${level + 1}`; // h1 в файле = <h2> на странице (h1 — заголовок статьи)
       out.push(<Tag key={`h-${key++}`} dangerouslySetInnerHTML={{ __html: html }} />);
       continue;
@@ -124,6 +124,18 @@ export function renderMarkdown(text: string): React.ReactNode[] {
   flushBullets();
   flushCode();
   return out;
+}
+
+/** Время чтения в минутах. ~200 слов/мин для русского. Минимум 1 минута. */
+export function readingTime(text: string): number {
+  if (!text) return 1;
+  // выкидываем код-блоки и markdown-пунктуацию
+  const clean = text
+    .replace(/```[\s\S]*?```/g, '')
+    .replace(/`[^`]+`/g, '')
+    .replace(/[#>*_\[\]\(\)\-]/g, ' ');
+  const words = clean.split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
 }
 
 /** Первый абзац — для превью на /blog */

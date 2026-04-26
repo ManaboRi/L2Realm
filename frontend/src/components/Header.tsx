@@ -32,6 +32,9 @@ export function Header() {
           <Link href="/pricing" className={styles.navLink}>
             <span className={styles.navIcon}>◆</span>Тарифы
           </Link>
+          <Link href="/blog" className={styles.navLink}>
+            <span className={styles.navIcon}>✎</span>Статьи
+          </Link>
           {isAdmin && (
             <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`}>Admin</Link>
           )}
