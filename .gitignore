@@ -31,3 +31,6 @@ backend/prisma/migrations/*.lock
 
 # Let's Encrypt certs (создаются на сервере)
 certbot/
+
+# Claude Code local settings (per-user, не для репо)
+.claude/settings.local.json
