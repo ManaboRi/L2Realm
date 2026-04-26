@@ -73,8 +73,6 @@ model Server {
   weeklyVotes  Int      @default(0)
   online       Int?     // текущий онлайн (из мониторинга)
   status      String   @default("online") // online | offline | unknown
-  serverOfDay      Boolean  @default(false) // ежедневный «сервер дня» для автопоста в TG (12:00 МСК)
-  notifiedOpening  Boolean  @default(false) // уже ушло уведомление «завтра открытие» в TG
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

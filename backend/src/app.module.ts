@@ -12,7 +12,6 @@ import { PaymentsModule }  from './payments/payments.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { UploadModule }    from './upload/upload.module';
 import { VotesModule }     from './votes/votes.module';
-import { TelegramModule }  from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -30,7 +29,6 @@ import { TelegramModule }  from './telegram/telegram.module';
     FavoritesModule,
     UploadModule,
     VotesModule,
-    TelegramModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

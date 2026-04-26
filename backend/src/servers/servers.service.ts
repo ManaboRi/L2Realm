@@ -1,7 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
-import { TelegramService } from '../telegram/telegram.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
 
 function rateRange(n: number): string {
@@ -24,12 +23,9 @@ function sodSeed(): number {
 
 @Injectable()
 export class ServersService {
-  private readonly logger = new Logger(ServersService.name);
-
   constructor(
     private prisma: PrismaService,
     private monitoring: MonitoringService,
-    private telegram: TelegramService,
   ) {}
 
   // ── Получить все с фильтрами ─────────────────
@@ -156,11 +152,6 @@ export class ServersService {
 
     // Запускаем первую проверку мониторинга в фоне
     this.monitoring.checkServer(server.id).catch(() => {});
-
-    // Анонсируем новый сервер в Telegram-канале (не блокируем ответ)
-    this.telegram.postNewServer(server.id).catch(e => {
-      this.logger.error(`Telegram postNewServer failed: ${e?.message ?? e}`);
-    });
 
     return server;
   }
