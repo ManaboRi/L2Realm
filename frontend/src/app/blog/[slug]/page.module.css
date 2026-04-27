@@ -183,6 +183,27 @@
   margin: 2.5rem 0;
 }
 
+/* Pill-бейджи: **Сайт:** value, **Рейт:** value и т.п.
+   Класс md-pill ставится парсером (lib/markdown.tsx). :global() нужен,
+   потому что CSS Modules иначе хешируют имя класса, а в HTML мы
+   вставляем его как обычную строку. */
+.body :global(.md-pill) {
+  display: inline-block;
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  color: #C9A84C;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 13px;
+  line-height: 1.55;
+  margin: 2px;
+  vertical-align: middle;
+}
+.body :global(.md-pill b) {
+  font-weight: 600;
+  margin-right: 4px;
+}
+
 /* Таблицы — markdown GFM */
 .body table {
   width: 100%;

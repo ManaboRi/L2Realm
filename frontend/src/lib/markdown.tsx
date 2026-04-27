@@ -29,6 +29,19 @@ function renderInline(raw: string): string {
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     '<a href="$2" target="_blank" rel="noopener nofollow">$1</a>',
   );
+  // Pill-бейджи: <strong>X:</strong> value → <span class="md-pill">...</span>
+  // Value тянется до следующего <strong>Y:</strong> или конца строки.
+  // Срабатывает только на bold, заканчивающийся ":" — нормальный bold не задевает.
+  s = s.replace(
+    /<strong>([^<]+?:)<\/strong>([\s\S]*?)(?=<strong>[^<]+?:<\/strong>|$)/g,
+    (_m, label, value) => {
+      const lab = label.trim();
+      const val = value.trim();
+      return val
+        ? `<span class="md-pill"><b>${lab}</b> ${val}</span>`
+        : `<span class="md-pill"><b>${lab}</b></span>`;
+    },
+  );
   return s;
 }
 
