@@ -3,9 +3,11 @@ import React from 'react';
 /**
  * Минималистичный Markdown-парсер для статей блога.
  * Поддерживает: # ## ### заголовки, **жирный**, *курсив*, [текст](url),
- * - списки, --- разделители, > цитаты, ``` блоки кода, ` инлайн-код `, абзацы.
+ * - списки, --- разделители, > цитаты, ``` блоки кода, ` инлайн-код `,
+ * GFM-таблицы (| Header | ... |). Абзацы по CommonMark — соседние строки
+ * склеиваются в один <p>, разделитель — пустая строка.
  *
- * Если нужны таблицы, картинки, footnotes — вынести в react-markdown.
+ * Если нужны картинки, footnotes, nested блоки — вынести в react-markdown.
  */
 
 function escapeHtml(s: string): string {
@@ -30,12 +32,27 @@ function renderInline(raw: string): string {
   return s;
 }
 
+// Парсинг строки таблицы: "| a | b | c |" → ['a', 'b', 'c']
+function parseTableRow(line: string): string[] | null {
+  const trimmed = line.trim();
+  if (!trimmed.startsWith('|') || !trimmed.endsWith('|')) return null;
+  return trimmed.slice(1, -1).split('|').map(c => c.trim());
+}
+
+// Строка-разделитель: |---|---|---|  или  | :--- | :---: | ---: |
+function isTableSeparator(line: string): boolean {
+  const cells = parseTableRow(line);
+  if (!cells || !cells.length) return false;
+  return cells.every(c => /^:?-{3,}:?$/.test(c.trim()));
+}
+
 export function renderMarkdown(text: string): React.ReactNode[] {
   if (!text) return [];
 
-  const lines  = text.replace(/\r\n/g, '\n').split('\n');
+  const lines = text.replace(/\r\n/g, '\n').split('\n');
   const out: React.ReactNode[] = [];
   let bullets: string[] = [];
+  let paraBuf: string[] = [];
   let codeLines: string[] | null = null;
   let key = 0;
 
@@ -51,6 +68,14 @@ export function renderMarkdown(text: string): React.ReactNode[] {
     bullets = [];
   }
 
+  function flushParagraph() {
+    if (!paraBuf.length) return;
+    // CommonMark: соседние строки внутри абзаца склеиваются через пробел
+    const html = paraBuf.map(l => renderInline(l)).join(' ');
+    out.push(<p key={`p-${key++}`} dangerouslySetInnerHTML={{ __html: html }} />);
+    paraBuf = [];
+  }
+
   function flushCode() {
     if (codeLines === null) return;
     out.push(
@@ -59,12 +84,18 @@ export function renderMarkdown(text: string): React.ReactNode[] {
     codeLines = null;
   }
 
-  for (const rawLine of lines) {
+  function flushAll() {
+    flushBullets();
+    flushParagraph();
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
     const line = rawLine.replace(/\s+$/, '');
 
-    // code block toggle
+    // code block toggle (имеет высший приоритет — внутри `` `` ничего не парсим)
     if (/^```/.test(line)) {
-      if (codeLines === null) { flushBullets(); codeLines = []; }
+      if (codeLines === null) { flushAll(); codeLines = []; }
       else { flushCode(); }
       continue;
     }
@@ -73,10 +104,48 @@ export function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
+    // table (GFM): ищем header + separator вперёд
+    const headerCells = parseTableRow(line);
+    if (headerCells && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      flushAll();
+      const header = headerCells;
+      i += 2; // пропускаем header и separator, начинаем с первой data-row
+      const rows: string[][] = [];
+      while (i < lines.length) {
+        const dataLine = lines[i].replace(/\s+$/, '');
+        const cells = parseTableRow(dataLine);
+        if (!cells) break;
+        rows.push(cells);
+        i++;
+      }
+      i--; // компенсируем for++ — последняя non-table строка должна обработаться нормально
+      out.push(
+        <table key={`tbl-${key++}`}>
+          <thead>
+            <tr>
+              {header.map((h, k) => (
+                <th key={k} dangerouslySetInnerHTML={{ __html: renderInline(h) }} />
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, ri) => (
+              <tr key={ri}>
+                {r.map((c, ci) => (
+                  <td key={ci} dangerouslySetInnerHTML={{ __html: renderInline(c) }} />
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>,
+      );
+      continue;
+    }
+
     // headings — лояльные: #X, ## X, ###X — пробел после # необязателен
     const h = line.match(/^(#{1,3})\s*(.+)$/);
     if (h && h[2].trim()) {
-      flushBullets();
+      flushAll();
       const level = h[1].length;
       const html = renderInline(h[2].trim());
       const Tag: any = `h${level + 1}`; // h1 в файле = <h2> на странице (h1 — заголовок статьи)
@@ -86,7 +155,7 @@ export function renderMarkdown(text: string): React.ReactNode[] {
 
     // divider
     if (/^-{3,}$/.test(line)) {
-      flushBullets();
+      flushAll();
       out.push(<hr key={`hr-${key++}`} />);
       continue;
     }
@@ -94,34 +163,33 @@ export function renderMarkdown(text: string): React.ReactNode[] {
     // blockquote
     const q = line.match(/^>\s?(.*)$/);
     if (q) {
-      flushBullets();
+      flushAll();
       out.push(
         <blockquote key={`bq-${key++}`} dangerouslySetInnerHTML={{ __html: renderInline(q[1]) }} />,
       );
       continue;
     }
 
-    // bullet list
-    const b = line.match(/^[-*]\s+(.+)$/);
-    if (b) {
-      bullets.push(b[1]);
+    // bullet list — список накапливается, абзацный буфер сбрасывается
+    const bMatch = line.match(/^[-*]\s+(.+)$/);
+    if (bMatch) {
+      flushParagraph();
+      bullets.push(bMatch[1]);
       continue;
     }
 
-    // empty line — конец абзаца
+    // empty line — конец текущего блока (абзаца / списка)
     if (line.trim() === '') {
-      flushBullets();
+      flushAll();
       continue;
     }
 
-    // обычный абзац
+    // обычная строка → в буфер абзаца. Если только что был список — закрываем его.
     flushBullets();
-    out.push(
-      <p key={`p-${key++}`} dangerouslySetInnerHTML={{ __html: renderInline(line) }} />,
-    );
+    paraBuf.push(line);
   }
 
-  flushBullets();
+  flushAll();
   flushCode();
   return out;
 }
@@ -145,7 +213,7 @@ export function firstParagraph(text: string, maxChars = 220): string {
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
-    if (/^[#`>\-*]/.test(t)) continue; // пропускаем заголовки/код/цитаты/списки
+    if (/^[#`>\-*|]/.test(t)) continue; // пропускаем заголовки/код/цитаты/списки/таблицы
     // снимаем bold/italic/links для preview
     const clean = t
       .replace(/\*\*([^*]+?)\*\*/g, '$1')
