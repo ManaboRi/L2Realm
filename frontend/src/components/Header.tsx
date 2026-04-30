@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
@@ -8,81 +9,120 @@ import styles from './Header.module.css';
 export function Header() {
   const { user, isAdmin } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const pathname = usePathname();
 
   const displayName = user?.nickname || user?.name || user?.email || '';
   const initial = displayName[0]?.toUpperCase() || '?';
 
+  // Закрываем мобильное меню при переходе на другую страницу
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  // Закрываем по клику снаружи и по Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onClick(e: MouseEvent) {
+      if (!headerRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setMenuOpen(false); }
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [menuOpen]);
+
+  function closeMenu() { setMenuOpen(false); }
+
   return (
     <>
-      <header className={styles.header}>
-        <Link href="/" className={styles.logo}>
+      <header className={styles.header} ref={headerRef}>
+        <Link href="/" className={styles.logo} onClick={closeMenu}>
           <span className={styles.gem} />
           <span className={styles.logoText}>L2Realm</span>
         </Link>
 
-        <nav className={styles.nav}>
-          <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`}>
-            <img src="/images/nav-servers.png" alt="" className={styles.navIcon} />
-            <span className={styles.navText}>Все серверы</span>
-          </Link>
-          <Link href="/coming-soon" className={styles.navLink}>
-            <img src="/images/nav-coming-soon.png" alt="" className={styles.navIcon} />
-            <span className={styles.navText}>
-              <span className={styles.navTextFull}>Скоро открытие</span>
-              <span className={styles.navTextShort}>Скоро</span>
-            </span>
-          </Link>
-          <Link href="/pricing" className={styles.navLink}>
-            <img src="/images/nav-pricing.png" alt="" className={styles.navIcon} />
-            <span className={styles.navText}>Тарифы</span>
-          </Link>
-          <Link href="/blog" className={styles.navLink}>
-            <img src="/images/nav-blog.png" alt="" className={styles.navIcon} />
-            <span className={styles.navText}>Статьи</span>
-          </Link>
-          {isAdmin && (
-            <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`}><span className={styles.navText}>Admin</span></Link>
-          )}
-        </nav>
+        <button
+          className={`${styles.burger} ${menuOpen ? styles.burgerOpen : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label={menuOpen ? 'Закрыть меню' : 'Открыть меню'}
+          aria-expanded={menuOpen}
+          type="button"
+        >
+          <span /><span /><span />
+        </button>
 
-        <div className={styles.right}>
-          <div className={styles.socials}>
-            <a
-              href="https://t.me/l2realm_ru"
-              target="_blank"
-              rel="noopener"
-              className={styles.socialLink}
-              aria-label="Telegram-канал L2Realm"
-              title="Telegram-канал"
-            >
-              <img src="/images/Telegram.png" alt="" className={styles.socialIcon} />
-            </a>
-            <a
-              href="https://vk.com/l2realmru"
-              target="_blank"
-              rel="noopener"
-              className={styles.socialLink}
-              aria-label="ВКонтакте-сообщество L2Realm"
-              title="ВКонтакте"
-            >
-              <img src="/images/Vkontakte.png" alt="" className={styles.socialIcon} />
-            </a>
-          </div>
-
-          {user ? (
-            <Link href="/profile" className={styles.profileChip} title="Личный кабинет">
-              {user.avatar ? (
-                <img src={user.avatar} alt="" className={styles.profileAvatar} />
-              ) : (
-                <span className={styles.profileAvatarFallback}>{initial}</span>
-              )}
-              <span className={styles.profileName}>{displayName}</span>
+        <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
+          <nav className={styles.nav}>
+            <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`} onClick={closeMenu}>
+              <img src="/images/nav-servers.png" alt="" className={styles.navIcon} />
+              <span className={styles.navText}>Все серверы</span>
             </Link>
-          ) : (
-            <button className="btn-ghost" onClick={() => setAuthOpen(true)}>Войти</button>
-          )}
-          <Link href="/add" className={`btn-primary ${styles.addBtn}`}>+ Добавить сервер</Link>
-          <Link href="/add" className={`btn-primary ${styles.addBtnShort}`} title="Добавить сервер">+</Link>
+            <Link href="/coming-soon" className={styles.navLink} onClick={closeMenu}>
+              <img src="/images/nav-coming-soon.png" alt="" className={styles.navIcon} />
+              <span className={styles.navText}>
+                <span className={styles.navTextFull}>Скоро открытие</span>
+                <span className={styles.navTextShort}>Скоро</span>
+              </span>
+            </Link>
+            <Link href="/pricing" className={styles.navLink} onClick={closeMenu}>
+              <img src="/images/nav-pricing.png" alt="" className={styles.navIcon} />
+              <span className={styles.navText}>Тарифы</span>
+            </Link>
+            <Link href="/blog" className={styles.navLink} onClick={closeMenu}>
+              <img src="/images/nav-blog.png" alt="" className={styles.navIcon} />
+              <span className={styles.navText}>Статьи</span>
+            </Link>
+            {isAdmin && (
+              <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`} onClick={closeMenu}>
+                <span className={styles.navText}>Admin</span>
+              </Link>
+            )}
+          </nav>
+
+          <div className={styles.right}>
+            <div className={styles.socials}>
+              <a
+                href="https://t.me/l2realm_ru"
+                target="_blank"
+                rel="noopener"
+                className={styles.socialLink}
+                aria-label="Telegram-канал L2Realm"
+                title="Telegram-канал"
+              >
+                <img src="/images/Telegram.png" alt="" className={styles.socialIcon} />
+              </a>
+              <a
+                href="https://vk.com/l2realmru"
+                target="_blank"
+                rel="noopener"
+                className={styles.socialLink}
+                aria-label="ВКонтакте-сообщество L2Realm"
+                title="ВКонтакте"
+              >
+                <img src="/images/Vkontakte.png" alt="" className={styles.socialIcon} />
+              </a>
+            </div>
+
+            {user ? (
+              <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>
+                {user.avatar ? (
+                  <img src={user.avatar} alt="" className={styles.profileAvatar} />
+                ) : (
+                  <span className={styles.profileAvatarFallback}>{initial}</span>
+                )}
+                <span className={styles.profileName}>{displayName}</span>
+              </Link>
+            ) : (
+              <button className={`btn-ghost ${styles.loginBtn}`} onClick={() => { setAuthOpen(true); closeMenu(); }}>
+                Войти
+              </button>
+            )}
+            <Link href="/add" className={`btn-primary ${styles.addBtn}`} onClick={closeMenu}>+ Добавить сервер</Link>
+            <Link href="/add" className={`btn-primary ${styles.addBtnShort}`} title="Добавить сервер" onClick={closeMenu}>+</Link>
+          </div>
         </div>
       </header>
 

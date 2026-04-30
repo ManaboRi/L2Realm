@@ -13,14 +13,17 @@
 }
 .logoText { display: inline; }
 
-.addBtn { display: inline-block; }
-.addBtnShort { display: none; padding: .38rem .65rem; }
 .gem {
   width: 18px; height: 18px; border: 1.5px solid var(--gold-d);
   transform: rotate(45deg); position: relative; flex-shrink: 0;
 }
 .gem::before {
   content: ''; position: absolute; inset: 3px; background: var(--gold);
+}
+
+/* На десктопе .collapsible — обычный контейнер с inline-flex детьми */
+.collapsible {
+  display: contents;
 }
 
 .nav { display: flex; align-items: center; gap: .3rem; flex: 1; justify-content: center; }
@@ -45,7 +48,7 @@
 
 .right { display: flex; align-items: center; gap: .7rem; flex-shrink: 0; }
 
-/* Соц-иконки: круглые кнопки в правом блоке шапки */
+/* Соц-иконки: круглые кнопки */
 .socials {
   display: flex; align-items: center; gap: .4rem;
   padding-right: .65rem;
@@ -62,7 +65,6 @@
   position: relative;
 }
 .socialLink::after {
-  /* мягкий золотой glow на hover */
   content: ''; position: absolute; inset: -3px;
   border-radius: 50%;
   background: radial-gradient(circle, rgba(200,168,75,.22) 0%, transparent 70%);
@@ -129,31 +131,138 @@
   white-space: nowrap;
 }
 
+.addBtn { display: inline-block; }
+.addBtnShort { display: none; padding: .38rem .65rem; }
+.loginBtn { white-space: nowrap; }
+
+/* Бургер — иконка три полоски, видим только на mobile */
+.burger {
+  display: none;
+  width: 38px; height: 38px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  align-items: center; justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0;
+  transition: border-color .18s, background .18s;
+}
+.burger:hover { border-color: var(--gold); background: rgba(200,168,75,.07); }
+.burger span {
+  display: block;
+  width: 18px; height: 2px;
+  background: var(--gold);
+  border-radius: 1px;
+  transition: transform .25s, opacity .2s;
+  transform-origin: center;
+}
+.burgerOpen span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.burgerOpen span:nth-child(2) { opacity: 0; }
+.burgerOpen span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+/* ─── Mobile: гамбургер + выпадающее меню ─── */
 @media (max-width: 700px) {
-  .header { padding: 0 .7rem; gap: .35rem; }
-  .nav { gap: .15rem; flex: none; justify-content: flex-end; }
-  .navLink { padding: .35rem .5rem; font-size: .58rem; letter-spacing: .04em; gap: .35rem; }
-  .navIcon { width: 17px; height: 17px; }
-  .navTextFull { display: none; }
-  .navTextShort { display: inline; }
-  .profileName { display: none; }
-  .profileChip { padding: .25rem; }
-  .addBtn { display: none; }
-  .addBtnShort { display: inline-block; }
-  .socials { gap: .3rem; padding-right: .45rem; }
-  .socialLink { width: 28px; height: 28px; }
-  .socialIcon { width: 15px; height: 15px; }
+  .header { padding: 0 .8rem; gap: .5rem; }
+  .burger { display: flex; }
+
+  .collapsible {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 54px; left: 0; right: 0;
+    background: rgba(9,11,16,.98); backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: .9rem 1rem 1.1rem;
+    gap: .85rem;
+    transform: translateY(-12px);
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transition: transform .22s, opacity .22s, visibility 0s .22s;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    max-height: calc(100vh - 54px);
+    overflow-y: auto;
+  }
+  .collapsibleOpen {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+    visibility: visible;
+    transition: transform .22s, opacity .22s, visibility 0s 0s;
+  }
+
+  /* Nav в дропдауне — вертикальный список */
+  .nav {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .15rem;
+    flex: none;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  .navLink {
+    width: 100%;
+    padding: .7rem .85rem;
+    font-size: .76rem;
+    letter-spacing: .08em;
+    gap: .75rem;
+    border-radius: 3px;
+  }
+  .navIcon { width: 22px; height: 22px; opacity: .9; }
+  .navTextShort { display: none; }
+  .navTextFull { display: inline; }
+
+  /* Right в дропдауне — вертикальный стек, разделитель сверху */
+  .right {
+    flex-direction: column;
+    align-items: stretch;
+    gap: .55rem;
+    width: 100%;
+    padding-top: .85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Соц-иконки: горизонтально, по центру, без правого бордера */
+  .socials {
+    border-right: none;
+    padding-right: 0;
+    margin-right: 0;
+    justify-content: center;
+    gap: .9rem;
+  }
+  .socialLink { width: 36px; height: 36px; }
+  .socialIcon { width: 19px; height: 19px; }
+
+  /* Profile/Login на всю ширину */
+  .profileChip {
+    width: 100%;
+    justify-content: flex-start;
+    padding: .4rem .8rem .4rem .35rem;
+  }
+  .profileName {
+    display: inline;
+    max-width: none;
+    font-size: .76rem;
+  }
+  .loginBtn {
+    width: 100%;
+    padding: .55rem 1rem;
+    font-size: .82rem;
+  }
+
+  /* «+ Добавить сервер» — полная ширина */
+  .addBtn {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: .55rem 1rem;
+    font-size: .8rem;
+  }
+  .addBtnShort { display: none; }
 }
-@media (max-width: 540px) {
-  /* Узко — у nav-ссылок остаются только иконки */
-  .nav .navLink { padding: .35rem .45rem; gap: 0; }
-  .navText { display: none; }
-  .navIcon { width: 19px; height: 19px; }
-  .navAdmin { font-size: .55rem; padding: .35rem .45rem; }
-  .navAdmin .navText { display: inline; }
-}
+
 @media (max-width: 380px) {
   .logoText { display: none; }
-  /* На очень узких — соц-иконки в футере, в шапке скрываем */
-  .socials { display: none; }
 }
