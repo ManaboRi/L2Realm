@@ -41,6 +41,29 @@ export function Header() {
         </nav>
 
         <div className={styles.right}>
+          <div className={styles.socials}>
+            <a
+              href="https://t.me/l2realm_ru"
+              target="_blank"
+              rel="noopener"
+              className={styles.socialLink}
+              aria-label="Telegram-канал L2Realm"
+              title="Telegram-канал"
+            >
+              <img src="/images/Telegram.png" alt="" className={styles.socialIcon} />
+            </a>
+            <a
+              href="https://vk.com/l2realmru"
+              target="_blank"
+              rel="noopener"
+              className={styles.socialLink}
+              aria-label="ВКонтакте-сообщество L2Realm"
+              title="ВКонтакте"
+            >
+              <img src="/images/Vkontakte.png" alt="" className={styles.socialIcon} />
+            </a>
+          </div>
+
           {user ? (
             <Link href="/profile" className={styles.profileChip} title="Личный кабинет">
               {user.avatar ? (
