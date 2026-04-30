@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { CHRONICLES } from '@/lib/types';
 import styles from './page.module.css';
 
 export default function AddServerPage() {
@@ -133,7 +134,7 @@ export default function AddServerPage() {
                 <Field label="Хроника *">
                   <select className="input" value={form.chronicle} onChange={e => upd('chronicle', e.target.value)}>
                     <option value="">— Выберите —</option>
-                    {['Interlude','High Five','Classic','Essence','Gracia','Другая'].map(c => <option key={c}>{c}</option>)}
+                    {[...CHRONICLES, 'Другая'].map(c => <option key={c}>{c}</option>)}
                   </select>
                 </Field>
               </div>

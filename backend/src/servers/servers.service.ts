@@ -4,11 +4,12 @@ import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
 
 function rateRange(n: number): string {
-  if (n <= 5)    return 'low';
-  if (n <= 49)   return 'mid';
-  if (n <= 100)  return 'high';
-  if (n <= 999)  return 'ultra';
-  return 'mega';
+  if (n <= 5)     return 'low';
+  if (n <= 49)    return 'mid';
+  if (n <= 100)   return 'high';
+  if (n <= 999)   return 'ultra';
+  if (n <= 9999)  return 'mega';
+  return 'extreme';
 }
 
 // Сид для «Сервера дня» — меняется раз в 5 часов (окна 0-4, 5-9, 10-14, 15-19, 20-23 UTC).
@@ -99,14 +100,27 @@ export class ServersService {
       return { ...s, _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
     });
 
+    // При явной сортировке (rating/votes/name) — пиннится только VIP, остальные
+    // (включая SoD/Boost) идут в порядке выбранной сортировки. Это «честный»
+    // режим, когда юзер сам выбрал критерий и не хочет видеть продвижение.
+    // При сортировке по умолчанию (opened) — приоритет VIP → SoD → Boost → голоса.
+    const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes';
+
     decorated.sort((a, b) => {
+      // VIP всегда наверху — это часть купленной услуги
       if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
+
+      if (isExplicitSort) {
+        // Возвращаем 0 → стабильная сортировка JS сохранит порядок из orderBy
+        return 0;
+      }
+
       if (a._isSod !== b._isSod) return a._isSod ? -1 : 1;
       if (a._isBoosted !== b._isBoosted) return a._isBoosted ? -1 : 1;
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
       }
-      // Обычные серверы: чем больше голосов за неделю — тем выше (VIP/Boost/SoD уже отсеяны выше)
+      // Обычные серверы по умолчанию — по голосам за неделю
       return (b.weeklyVotes ?? 0) - (a.weeklyVotes ?? 0);
     });
 
@@ -251,7 +265,7 @@ export class ServersService {
     });
 
     const chronicles: Record<string, number> = {};
-    const rates: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0, mega: 0 };
+    const rates: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0, mega: 0, extreme: 0 };
     const donates: Record<string, number> = {};
     const types: Record<string, number> = {};
 

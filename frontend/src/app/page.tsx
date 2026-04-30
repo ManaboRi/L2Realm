@@ -6,16 +6,9 @@ import { api } from '@/lib/api';
 import { ServerCard } from '@/components/ServerCard';
 import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
 import type { Server, Stats } from '@/lib/types';
+import { CHRONICLES, RATES } from '@/lib/types';
 import styles from './page.module.css';
 
-const CHRONICLES = ['Essence', 'Classic', 'Interlude', 'High Five', 'Gracia'];
-const RATES = [
-  { v: 'low',   l: 'x1–x5' },
-  { v: 'mid',   l: 'x7–x30' },
-  { v: 'high',  l: 'x50–x100' },
-  { v: 'ultra', l: 'x100–x999' },
-  { v: 'mega',  l: 'x1000+' },
-];
 const OPENED = [
   { v: '7d',  l: 'За 7 дней' },
   { v: '30d', l: 'За 30 дней' },
@@ -162,10 +155,16 @@ function HomeContent() {
           <div className={styles.sidebarHead}><span className={styles.sideLabel}>Фильтры</span></div>
 
           <FilterGroup label="Хроника">
-            {CHRONICLES.map(v => <FilterChip key={v} label={v} active={filters.chr === v} count={counts?.chronicles[v]} onClick={() => toggleFilter('chr', v)} />)}
+            {/* Хроники: показываем только те, у которых хотя бы 1 сервер,
+                плюс активную (если выбрана и серверов сейчас 0). */}
+            {CHRONICLES
+              .filter(v => (counts?.chronicles[v] ?? 0) > 0 || filters.chr === v)
+              .map(v => <FilterChip key={v} label={v} active={filters.chr === v} count={counts?.chronicles[v]} onClick={() => toggleFilter('chr', v)} />)}
           </FilterGroup>
           <FilterGroup label="Рейты">
-            {RATES.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
+            {RATES
+              .filter(({ v }) => (counts?.rates[v] ?? 0) > 0 || filters.rate === v)
+              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
           </FilterGroup>
           <FilterGroup label="Дата открытия">
             {OPENED.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.opened === v} onClick={() => toggleFilter('opened', v)} />)}

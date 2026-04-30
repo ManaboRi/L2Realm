@@ -160,5 +160,19 @@ export const COMING_SOON_PRICE = 1000;
 // у которых counts.chronicles[c] > 0 — пустые скрыты).
 export const CHRONICLES = [
   'Interlude', 'High Five', 'Classic', 'Essence', 'Gracia',
-  'C4', 'GoD', 'Salvation', 'Samurai', 'Fafurion', 'C1', 'Lindvior',
+  'Infinite Odyssey', 'Goddess of Destruction', 'GoD',
+  'C1', 'C2', 'C3', 'C4', 'C5', 'C6',
+  'Salvation', 'Samurai', 'Fafurion', 'Lindvior',
 ];
+
+// Канонический список диапазонов рейтов. Backend в rateRange() даёт
+// серверу один из этих ключей. На фронте показываем только те, у которых
+// counts.rates[v] > 0.
+export const RATES = [
+  { v: 'low',     l: 'x1–x5' },
+  { v: 'mid',     l: 'x7–x30' },
+  { v: 'high',    l: 'x50–x100' },
+  { v: 'ultra',   l: 'x100–x999' },
+  { v: 'mega',    l: 'x1000–x9999' },
+  { v: 'extreme', l: 'x10000+' },
+] as const;

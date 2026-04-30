@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
 import type { VipStatus } from '@/lib/types';
-import { VIP_MAX } from '@/lib/types';
+import { VIP_MAX, CHRONICLES } from '@/lib/types';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
@@ -278,7 +278,7 @@ export default function AdminPage() {
                 <AField label="Аббревиатура"><input className="input" value={editForm.abbr} maxLength={3} onChange={e => setEditForm((p:any) => ({...p,abbr:e.target.value}))} /></AField>
                 <AField label="Хроника *">
                   <select className="input" value={editForm.chronicle} onChange={e => setEditForm((p:any) => ({...p,chronicle:e.target.value}))}>
-                    {['Interlude','High Five','Classic','Essence','Gracia'].map(c => <option key={c}>{c}</option>)}
+                    {CHRONICLES.map(c => <option key={c}>{c}</option>)}
                   </select>
                 </AField>
                 <AField label="Рейты *"><input className="input" required value={editForm.rates} onChange={e => setEditForm((p:any) => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
@@ -591,7 +591,7 @@ export default function AdminPage() {
                     {/* Строка 2 */}
                     <AField label="Хроника *">
                       <select className="input" value={addForm.chronicle} onChange={e => setAddForm(p => ({...p,chronicle:e.target.value}))}>
-                        {['Interlude','High Five','Classic','Essence','Gracia'].map(c => <option key={c}>{c}</option>)}
+                        {CHRONICLES.map(c => <option key={c}>{c}</option>)}
                       </select>
                     </AField>
                     <AField label="Рейты *"><input className="input" required value={addForm.rates} onChange={e => setAddForm(p => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
