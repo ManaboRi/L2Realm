@@ -42,4 +42,55 @@
 }
 .vkBtn:hover:not(:disabled)  { background: #1e85ff; }
 .vkBtn:active:not(:disabled) { transform: translateY(1px); }
-.vkBtn:disabled              { opacity: .6; cursor: wait; }
+.vkBtn:disabled              { opacity: .45; cursor: not-allowed; }
+
+/* Чекбокс согласия — обязателен перед входом */
+.consent {
+  display: flex; align-items: flex-start; gap: .55rem;
+  padding: .7rem .85rem;
+  margin-bottom: 1rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: border-color .18s, background .18s;
+}
+.consent:hover { border-color: var(--border2); }
+.consent:has(input:checked) {
+  border-color: var(--gold-d);
+  background: rgba(200,168,75,.04);
+}
+.consentBox {
+  /* кастомный чекбокс — заметный, золотой */
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  margin-top: .15rem;
+  flex-shrink: 0;
+  border: 1.5px solid var(--text3);
+  border-radius: 2px;
+  background: var(--bg2);
+  cursor: pointer;
+  position: relative;
+  transition: border-color .15s, background .15s;
+}
+.consentBox:hover { border-color: var(--gold-d); }
+.consentBox:checked {
+  border-color: var(--gold);
+  background: var(--gold);
+}
+.consentBox:checked::after {
+  content: '';
+  position: absolute;
+  left: 4px; top: .5px;
+  width: 5px; height: 9px;
+  border: solid #090B10;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.consentText {
+  font-size: .76rem;
+  color: var(--text2);
+  line-height: 1.5;
+  user-select: none;
+}

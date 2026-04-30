@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import type { ServersResponse, Article } from '@/lib/types';
+import { CHRONICLE_CONFIGS } from './_lib/chronicleConfig';
 
 // force-dynamic: sitemap всегда генерится на запрос, не пре-рендерится в build.
 // ISR (revalidate = N) не подходит — Next.js всё равно пре-рендерит в build,
@@ -46,6 +47,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/privacy`,     lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ];
 
+  // Страницы по хроникам — SEO-точки входа
+  const chronicleUrls: MetadataRoute.Sitemap = Object.values(CHRONICLE_CONFIGS).map(cfg => ({
+    url: `${SITE}/${cfg.slug}`,
+    lastModified: now,
+    changeFrequency: 'daily' as const,
+    priority: 0.85,
+  }));
+
   const serverUrls: MetadataRoute.Sitemap = servers.map(s => ({
     url: `${SITE}/servers/${s.id}`,
     lastModified: s.openedDate ? new Date(s.openedDate) : now,
@@ -60,5 +69,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...serverUrls, ...articleUrls];
+  return [...staticUrls, ...chronicleUrls, ...serverUrls, ...articleUrls];
 }
