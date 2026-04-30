@@ -41,7 +41,9 @@ export class ServersService {
         { shortDesc: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (chronicle)    where.chronicle = { startsWith: chronicle, mode: 'insensitive' };
+    // contains, не startsWith — чтобы /interlude матчил «C6 Interlude»,
+    // «Interlude PvP», «Interlude+» и подобные кастомные варианты названий
+    if (chronicle)    where.chronicle = { contains: chronicle, mode: 'insensitive' };
     if (donate)       where.donate = donate;
     if (type)         where.type = { has: type };
     if (openedWithin) {

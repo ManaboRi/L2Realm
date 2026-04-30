@@ -42,9 +42,18 @@ export async function ChroniclePage({ cfg }: { cfg: ChronicleCfg }) {
         </p>
       </header>
 
-      {servers.length > 0 && (
+      {servers.length > 0 ? (
         <div className={styles.list}>
           {servers.map(s => <ServerCard key={s.id} server={s} />)}
+        </div>
+      ) : (
+        <div className={styles.empty}>
+          <p>Серверов с этой хроникой в каталоге пока нет.</p>
+          <p>
+            <Link href={`/?chr=${encodeURIComponent(cfg.chronicle)}`} className={styles.footLink}>
+              ← Перейти в каталог
+            </Link>
+          </p>
         </div>
       )}
 

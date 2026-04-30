@@ -90,7 +90,20 @@
 .voteIco   { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; }
 .btns   { display: flex; gap: .35rem; }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
+  .row { padding: .65rem .8rem; gap: .65rem; }
+  .icon { width: 44px; height: 44px; font-size: .85rem; }
+  .name { font-size: .88rem; }
+  .desc { font-size: .76rem; }
+  .right { gap: .25rem; flex-shrink: 0; align-items: flex-end; min-width: 0; }
+  /* Дата и кнопка «На сервер» прячутся — клик по карточке открывает детальную */
+  .date, .btns { display: none; }
+  .meta { gap: .3rem; flex-wrap: wrap; justify-content: flex-end; }
+  .rating, .noRating, .online, .offline, .voteCount { font-size: .58rem; }
+  .voteIco { width: 12px; height: 12px; }
+}
+@media (max-width: 420px) {
+  /* Совсем узко — оставляем иконку + название + теги, всё мета скрываем */
   .right { display: none; }
-  .main  { min-width: 0; }
+  .main { min-width: 0; }
 }

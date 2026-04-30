@@ -49,6 +49,19 @@
 
 .list { display: flex; flex-direction: column; gap: 4px; }
 
+.empty {
+  text-align: center;
+  padding: 3rem 1.2rem;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text2);
+  font-family: 'Almendra', serif;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.empty p { margin: .4rem 0; }
+
 .foot {
   margin-top: 2rem;
   padding: 1rem 1.2rem;

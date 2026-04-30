@@ -22,21 +22,26 @@ export function Header() {
 
         <nav className={styles.nav}>
           <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`}>
-            <span className={styles.navIcon}>⚔</span>Все серверы
+            <img src="/images/nav-servers.png" alt="" className={styles.navIcon} />
+            <span className={styles.navText}>Все серверы</span>
           </Link>
           <Link href="/coming-soon" className={styles.navLink}>
-            <span className={styles.navIcon}>⏳</span>
-            <span className={styles.navTextFull}>Скоро открытие</span>
-            <span className={styles.navTextShort}>Скоро</span>
+            <img src="/images/nav-coming-soon.png" alt="" className={styles.navIcon} />
+            <span className={styles.navText}>
+              <span className={styles.navTextFull}>Скоро открытие</span>
+              <span className={styles.navTextShort}>Скоро</span>
+            </span>
           </Link>
           <Link href="/pricing" className={styles.navLink}>
-            <span className={styles.navIcon}>◆</span>Тарифы
+            <img src="/images/nav-pricing.png" alt="" className={styles.navIcon} />
+            <span className={styles.navText}>Тарифы</span>
           </Link>
           <Link href="/blog" className={styles.navLink}>
-            <span className={styles.navIcon}>✎</span>Статьи
+            <img src="/images/nav-blog.png" alt="" className={styles.navIcon} />
+            <span className={styles.navText}>Статьи</span>
           </Link>
           {isAdmin && (
-            <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`}>Admin</Link>
+            <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`}><span className={styles.navText}>Admin</span></Link>
           )}
         </nav>
 
