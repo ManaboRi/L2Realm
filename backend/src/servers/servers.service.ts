@@ -41,9 +41,6 @@ export class ServersService {
         { shortDesc: { contains: search, mode: 'insensitive' } },
       ];
     }
-    // contains, не startsWith — чтобы /interlude матчил «C6 Interlude»,
-    // «Interlude PvP», «Interlude+» и подобные кастомные варианты названий
-    if (chronicle)    where.chronicle = { contains: chronicle, mode: 'insensitive' };
     if (donate)       where.donate = donate;
     if (type)         where.type = { has: type };
     if (openedWithin) {
@@ -53,7 +50,9 @@ export class ServersService {
       where.openedDate = { gte: since, lte: new Date() };
     }
 
-    // Фильтр по рейту требует post-processing т.к. rateNum хранится как число
+    // chronicle и rate фильтруются в post-processing — у проекта могут быть
+    // несколько хроник/рейтов через instances, плюс свои собственные. Где
+    // совпадает хоть одно — проект попадает в выдачу.
     const allServers = await this.prisma.server.findMany({
       where,
       include: { subscription: true, _count: { select: { reviews: true } } },
@@ -63,10 +62,20 @@ export class ServersService {
               :                    { openedDate: 'desc' },
     });
 
-    // Фильтр по рейт-диапазону
-    const filtered = rate
-      ? allServers.filter(s => rateRange(s.rateNum) === rate)
-      : allServers;
+    function matchesChronicle(s: any): boolean {
+      if (!chronicle) return true;
+      const c = chronicle.toLowerCase();
+      if (s.chronicle?.toLowerCase().includes(c)) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => typeof i?.chronicle === 'string' && i.chronicle.toLowerCase().includes(c));
+    }
+    function matchesRate(s: any): boolean {
+      if (!rate) return true;
+      if (rateRange(s.rateNum) === rate) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => typeof i?.rateNum === 'number' && rateRange(i.rateNum) === rate);
+    }
+    const filtered = allServers.filter(s => matchesChronicle(s) && matchesRate(s));
 
     // Активные бусты (endDate > now) — словарь serverId → endDate
     const now = new Date();
@@ -250,20 +259,34 @@ export class ServersService {
   }
 
   // ── Серверы "Скоро открытие" ─────────────────
+  // Проект попадает сюда если у него либо собственный openedDate в будущем,
+  // либо хотя бы один instance с openedDate в будущем (новый запуск проекта).
   async getComingSoon() {
     const now = new Date();
-    const servers = await this.prisma.server.findMany({
-      where: { openedDate: { gt: now } },
+    const all = await this.prisma.server.findMany({
       include: { subscription: true },
       orderBy: { openedDate: 'asc' },
     });
-    return servers;
+    const filtered = all.filter(s => {
+      if (s.openedDate && s.openedDate > now) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => i?.openedDate && new Date(i.openedDate) > now);
+    });
+    // Сортируем по ближайшему будущему openedDate (свой или из instances)
+    filtered.sort((a, b) => {
+      const aDates = [a.openedDate, ...(Array.isArray(a.instances) ? (a.instances as any[]).map(i => i?.openedDate) : [])]
+        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t > now.getTime());
+      const bDates = [b.openedDate, ...(Array.isArray(b.instances) ? (b.instances as any[]).map(i => i?.openedDate) : [])]
+        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t > now.getTime());
+      return Math.min(...aDates) - Math.min(...bDates);
+    });
+    return filtered;
   }
 
   // ── Счётчики для фильтров ────────────────────
   async getFilterCounts() {
     const all = await this.prisma.server.findMany({
-      select: { chronicle: true, rateNum: true, donate: true, type: true },
+      select: { chronicle: true, rateNum: true, donate: true, type: true, instances: true },
     });
 
     const chronicles: Record<string, number> = {};
@@ -272,8 +295,21 @@ export class ServersService {
     const types: Record<string, number> = {};
 
     for (const s of all) {
-      chronicles[s.chronicle] = (chronicles[s.chronicle] || 0) + 1;
-      rates[rateRange(s.rateNum)] = (rates[rateRange(s.rateNum)] || 0) + 1;
+      // Один проект = +1 к каждой уникальной хронике/рейту, что у него встречается
+      // (свои + по всем instances). Иначе при наличии 3 запусков x10/x100/x1000
+      // у Scryde фильтр показал бы +3 в каждом, что ввело бы в заблуждение.
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const chronSet = new Set<string>();
+      const rateSet  = new Set<string>();
+      if (s.chronicle) chronSet.add(s.chronicle);
+      rateSet.add(rateRange(s.rateNum));
+      for (const i of insts) {
+        if (typeof i?.chronicle === 'string') chronSet.add(i.chronicle);
+        if (typeof i?.rateNum === 'number')   rateSet.add(rateRange(i.rateNum));
+      }
+      for (const c of chronSet) chronicles[c] = (chronicles[c] || 0) + 1;
+      for (const r of rateSet)  rates[r] = (rates[r] || 0) + 1;
+
       donates[s.donate] = (donates[s.donate] || 0) + 1;
       for (const t of s.type) {
         types[t] = (types[t] || 0) + 1;

@@ -65,8 +65,33 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {isSod && <span className={styles.sodBadge} title="Случайный сервер каталога — бесплатное промо. Выбирается автоматически каждые 5 часов из всех серверов без активного VIP или буста.">★ Сервер дня</span>}
           {isVip && <span className={styles.vipBadge}>VIP</span>}
           <div className={styles.tags}>
-            <span className="tag tc">{s.chronicle}</span>
-            <span className="tag tr">{s.rates}</span>
+            {/* Если у проекта есть instances — показываем сводные теги (только уникальные).
+                Если нет — собственные chronicle/rates сервера. */}
+            {(() => {
+              const insts = s.instances ?? [];
+              if (insts.length > 0) {
+                const chronSet = new Set<string>();
+                const rateSet  = new Set<string>();
+                if (s.chronicle) chronSet.add(s.chronicle);
+                if (s.rates)     rateSet.add(s.rates);
+                for (const i of insts) {
+                  if (i.chronicle) chronSet.add(i.chronicle);
+                  if (i.rates)     rateSet.add(i.rates);
+                }
+                return (
+                  <>
+                    {[...chronSet].map(c => <span key={`c-${c}`} className="tag tc">{c}</span>)}
+                    {[...rateSet].map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}
+                  </>
+                );
+              }
+              return (
+                <>
+                  <span className="tag tc">{s.chronicle}</span>
+                  <span className="tag tr">{s.rates}</span>
+                </>
+              );
+            })()}
             {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
           </div>
         </div>

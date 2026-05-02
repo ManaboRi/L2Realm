@@ -25,6 +25,8 @@ export class CreateServerDto {
   @IsOptional() @IsString() site?: string;
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
+  // instances — массив сабкарточек проекта (см. schema.prisma)
+  @IsOptional() instances?: any[];
 }
 
 export class UpdateServerDto extends PartialType(CreateServerDto) {}

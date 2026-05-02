@@ -2,6 +2,16 @@
 // L2Realm — TypeScript типы
 // ══════════════════════════════════════════════
 
+export interface ServerInstance {
+  id:          string;       // uuid внутри проекта
+  label?:      string;       // опционально: "Interlude PvP" или "x100"
+  chronicle:   string;
+  rates:       string;
+  rateNum:     number;
+  url:         string;       // внешний URL — сайт конкретного запуска
+  openedDate?: string | null;
+}
+
 export interface Server {
   id:          string;
   name:        string;
@@ -10,6 +20,7 @@ export interface Server {
   chronicle:   string;
   rates:       string;
   rateNum:     number;
+  instances?:  ServerInstance[]; // массив "запусков" проекта (Scryde-кейс)
   donate:      'free' | 'cosmetic' | 'p2w';
   type:        string[];
   vip:         boolean;

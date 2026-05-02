@@ -348,6 +348,44 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
 
+          {/* Сервера проекта — мини-карточки запусков */}
+          {server.instances && server.instances.length > 0 && (
+            <div className={styles.dblock}>
+              <div className={styles.dblockTitle}>Сервера проекта ({server.instances.length})</div>
+              <div className={styles.dblockBody}>
+                <div className={styles.instances}>
+                  {server.instances.map(inst => {
+                    const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
+                    return (
+                      <a
+                        key={inst.id}
+                        href={inst.url}
+                        target="_blank"
+                        rel="noopener nofollow"
+                        className={styles.instCard}
+                      >
+                        <div className={styles.instHead}>
+                          <span className={styles.instLabel}>{inst.label || `${inst.chronicle} ${inst.rates}`}</span>
+                          {isFuture && <span className={styles.instSoon}>⏳ Скоро</span>}
+                        </div>
+                        <div className={styles.instTags}>
+                          <span className="tag tc">{inst.chronicle}</span>
+                          <span className="tag tr">{inst.rates}</span>
+                        </div>
+                        {isFuture && (
+                          <div className={styles.instDate}>
+                            Открытие: {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </div>
+                        )}
+                        <div className={styles.instGo}>Перейти на сайт →</div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Аптайм-график */}
           {daily && (
             <div className={styles.dblock}>

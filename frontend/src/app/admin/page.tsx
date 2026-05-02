@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
+import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus } from '@/lib/types';
 import { VIP_MAX, CHRONICLES } from '@/lib/types';
 import styles from './page.module.css';
@@ -44,6 +45,7 @@ export default function AdminPage() {
     type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
+    instances: [] as any[],
   });
 
   useEffect(() => {
@@ -119,6 +121,7 @@ export default function AdminPage() {
       type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
+      instances: [],
     });
     setApprovingId(r.id);
     setTab('add');
@@ -178,6 +181,7 @@ export default function AdminPage() {
       vk:          s.vk          ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
+      instances:   Array.isArray(s.instances) ? s.instances : [],
     });
   }
 
@@ -206,7 +210,8 @@ export default function AdminPage() {
         vk:          editForm.vk || undefined,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
-      }, token);
+        instances:   editForm.instances ?? [],
+      } as any, token);
       showToast(`✅ Сервер ${editForm.name} обновлён`);
       setEditServer(null);
       loadTab('servers');
@@ -231,7 +236,8 @@ export default function AdminPage() {
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
-      }, token);
+        instances: addForm.instances ?? [],
+      } as any, token);
       if (approvingId) {
         try { await api.servers.updateRequest(approvingId, 'approved', token); } catch {}
         setApprovingId(null);
@@ -303,6 +309,13 @@ export default function AdminPage() {
               <AField label="Полное описание">
                 <textarea className="input" rows={5} value={editForm.fullDesc} onChange={e => setEditForm((p:any) => ({...p,fullDesc:e.target.value}))} style={{ resize:'vertical' }} />
               </AField>
+
+              <div style={{ marginTop:'.4rem' }}>
+                <InstancesEditor
+                  value={editForm.instances ?? []}
+                  onChange={v => setEditForm((p:any) => ({ ...p, instances: v }))}
+                />
+              </div>
 
               <div style={{ display:'flex', gap:'.8rem', marginTop:'.4rem' }}>
                 <button className="btn-primary" type="submit" disabled={editLoading} style={{ padding:'.5rem 1.6rem' }}>
@@ -619,6 +632,11 @@ export default function AdminPage() {
                   <AField label="Полное описание">
                     <textarea className="input" rows={6} value={addForm.fullDesc} onChange={e => setAddForm(p => ({...p,fullDesc:e.target.value}))} placeholder="## Заголовок&#10;- пункт 1&#10;- пункт 2" style={{ resize:'vertical' }} />
                   </AField>
+
+                  <InstancesEditor
+                    value={addForm.instances ?? []}
+                    onChange={v => setAddForm(p => ({ ...p, instances: v }))}
+                  />
 
                   <button className="btn-primary" type="submit" style={{ alignSelf:'flex-start', padding:'.5rem 1.6rem' }}>
                     ✅ Добавить сервер
