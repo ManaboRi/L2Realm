@@ -18,6 +18,7 @@ function emptyInstance(): ServerInstance {
   return {
     id:         newId(),
     label:      '',
+    shortDesc:  '',
     chronicle:  '',
     rates:      '',
     rateNum:    0,
@@ -142,6 +143,17 @@ export function InstancesEditor({ value, onChange }: Props) {
                   />
                 </label>
               </div>
+
+              <label className={styles.field}>
+                <span>Короткое описание (одна строка для карточки)</span>
+                <input
+                  className="input"
+                  value={inst.shortDesc ?? ''}
+                  onChange={e => update(idx, { shortDesc: e.target.value })}
+                  placeholder="Хардкорный PvP с автофармом"
+                  maxLength={140}
+                />
+              </label>
             </li>
           ))}
         </ul>

@@ -35,6 +35,13 @@
 .cardRight   { text-align: right; flex-shrink: 0; }
 .countdown   { font-family: 'Cinzel', serif; font-size: .82rem; color: var(--gold); font-weight: 600; }
 .openDate    { font-size: .7rem; color: var(--text3); margin-top: .2rem; }
+.cardLabel   {
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  color: var(--gold-d);
+  font-size: .82em;
+  letter-spacing: .03em;
+}
 
 @media (max-width: 600px) {
   .cardDesc  { display: none; }

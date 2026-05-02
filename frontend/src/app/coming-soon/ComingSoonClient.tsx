@@ -1,38 +1,96 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import type { Server } from '@/lib/types';
+import type { Server, ServerInstance } from '@/lib/types';
 import styles from './page.module.css';
 
-type Group = { label: string; emoji: string; servers: Server[] };
+// «Опенинг» — атомная сущность для /coming-soon. Один проект может породить
+// несколько опенингов (по одному на каждый future-instance), либо один
+// опенинг по самому серверу (если у него есть собственный openedDate без instances).
+type Opening = {
+  key:        string;            // уникальный ключ для React
+  serverId:   string;            // куда вести по клику (/servers/{id})
+  projectName:string;            // название проекта-родителя
+  icon:       string | null | undefined;
+  abbr:       string | null | undefined;
+  chronicle:  string;
+  rates:      string;
+  label?:     string;             // лейбл instance, если есть
+  shortDesc?: string;             // описание instance или сервера
+  openedAt:   string;
+};
 
-function groupByOpenDate(servers: Server[]): Group[] {
-  const now   = new Date();
-  const today = new Date(now); today.setHours(23, 59, 59, 999);
+type Group = { label: string; emoji: string; openings: Opening[] };
+
+function flattenOpenings(servers: Server[]): Opening[] {
+  const now = Date.now();
+  const result: Opening[] = [];
+  for (const s of servers) {
+    const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
+    const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
+
+    if (futureInsts.length > 0) {
+      // Проект с future-instance: каждый запуск — отдельная карточка
+      for (const i of futureInsts) {
+        result.push({
+          key:         `${s.id}::${i.id}`,
+          serverId:    s.id,
+          projectName: s.name,
+          icon:        s.icon,
+          abbr:        s.abbr,
+          chronicle:   i.chronicle,
+          rates:       i.rates,
+          label:       i.label,
+          shortDesc:   i.shortDesc || s.shortDesc || undefined,
+          openedAt:    i.openedDate!,
+        });
+      }
+    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+      // Одиночный сервер с собственной датой открытия
+      result.push({
+        key:         s.id,
+        serverId:    s.id,
+        projectName: s.name,
+        icon:        s.icon,
+        abbr:        s.abbr,
+        chronicle:   s.chronicle,
+        rates:       s.rates,
+        shortDesc:   s.shortDesc || undefined,
+        openedAt:    s.openedDate,
+      });
+    }
+  }
+  // Сортируем по ближайшей дате
+  result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
+  return result;
+}
+
+function groupByOpenDate(openings: Opening[]): Group[] {
+  const now      = new Date();
+  const today    = new Date(now); today.setHours(23, 59, 59, 999);
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(23, 59, 59, 999);
-  const week  = new Date(now); week.setDate(week.getDate() + 7);
-  const month = new Date(now); month.setDate(month.getDate() + 30);
+  const week     = new Date(now); week.setDate(week.getDate() + 7);
+  const month    = new Date(now); month.setDate(month.getDate() + 30);
 
   const groups: Group[] = [
-    { label: 'Сегодня',       emoji: '🔥', servers: [] },
-    { label: 'Завтра',        emoji: '⚡', servers: [] },
-    { label: 'На этой неделе',emoji: '📅', servers: [] },
-    { label: 'В этом месяце', emoji: '📆', servers: [] },
-    { label: 'Позже',         emoji: '⏳', servers: [] },
+    { label: 'Сегодня',        emoji: '🔥', openings: [] },
+    { label: 'Завтра',         emoji: '⚡', openings: [] },
+    { label: 'На этой неделе', emoji: '📅', openings: [] },
+    { label: 'В этом месяце',  emoji: '📆', openings: [] },
+    { label: 'Позже',          emoji: '⏳', openings: [] },
   ];
 
-  for (const s of servers) {
-    if (!s.openedDate) continue;
-    const d = new Date(s.openedDate);
-    if (d <= today)    groups[0].servers.push(s);
-    else if (d <= tomorrow) groups[1].servers.push(s);
-    else if (d <= week)     groups[2].servers.push(s);
-    else if (d <= month)    groups[3].servers.push(s);
-    else                    groups[4].servers.push(s);
+  for (const o of openings) {
+    const d = new Date(o.openedAt);
+    if (d <= today)         groups[0].openings.push(o);
+    else if (d <= tomorrow) groups[1].openings.push(o);
+    else if (d <= week)     groups[2].openings.push(o);
+    else if (d <= month)    groups[3].openings.push(o);
+    else                    groups[4].openings.push(o);
   }
 
-  return groups.filter(g => g.servers.length > 0);
+  return groups.filter(g => g.openings.length > 0);
 }
 
 function daysUntil(dateStr: string) {
@@ -54,7 +112,8 @@ export function ComingSoonClient() {
       .finally(() => setLoading(false));
   }, []);
 
-  const groups = groupByOpenDate(servers);
+  const openings = useMemo(() => flattenOpenings(servers), [servers]);
+  const groups   = useMemo(() => groupByOpenDate(openings), [openings]);
 
   return (
     <div className={styles.page}>
@@ -67,7 +126,7 @@ export function ComingSoonClient() {
       <div className={styles.wrap}>
         {loading ? (
           <div className={styles.loadWrap}><span className="spin" /> Загружаем...</div>
-        ) : servers.length === 0 ? (
+        ) : openings.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>⏳</div>
             <div className={styles.emptyTitle}>Пока нет ожидаемых серверов</div>
@@ -79,32 +138,33 @@ export function ComingSoonClient() {
             <div key={group.label} className={styles.group}>
               <div className={styles.groupTitle}>
                 <span>{group.emoji}</span> {group.label}
-                <span className={styles.groupCount}>{group.servers.length}</span>
+                <span className={styles.groupCount}>{group.openings.length}</span>
               </div>
               <div className={styles.cards}>
-                {group.servers.map(s => (
-                  <Link key={s.id} href={`/servers/${s.id}`} className={styles.card}>
+                {group.openings.map(o => (
+                  <Link key={o.key} href={`/servers/${o.serverId}`} className={styles.card}>
                     <div className={styles.cardLeft}>
-                      {s.icon
-                        ? <img src={s.icon} alt={s.name} className={styles.icon} />
-                        : <div className={styles.iconFallback}>{(s.abbr || s.name.slice(0,2)).toUpperCase()}</div>
+                      {o.icon
+                        ? <img src={o.icon} alt={o.projectName} className={styles.icon} />
+                        : <div className={styles.iconFallback}>{(o.abbr || o.projectName.slice(0,2)).toUpperCase()}</div>
                       }
                       <div>
-                        <div className={styles.cardName}>{s.name}</div>
-                        <div className={styles.cardMeta}>
-                          <span className="tag tc">{s.chronicle}</span>
-                          <span className="tag tn">{s.rates}</span>
+                        <div className={styles.cardName}>
+                          {o.projectName}
+                          {o.label && <span className={styles.cardLabel}> · {o.label}</span>}
                         </div>
-                        {s.shortDesc && <div className={styles.cardDesc}>{s.shortDesc}</div>}
+                        <div className={styles.cardMeta}>
+                          <span className="tag tc">{o.chronicle}</span>
+                          <span className="tag tn">{o.rates}</span>
+                        </div>
+                        {o.shortDesc && <div className={styles.cardDesc}>{o.shortDesc}</div>}
                       </div>
                     </div>
                     <div className={styles.cardRight}>
-                      <div className={styles.countdown}>{daysUntil(s.openedDate!)}</div>
-                      {s.openedDate && (
-                        <div className={styles.openDate}>
-                          {new Date(s.openedDate).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                        </div>
-                      )}
+                      <div className={styles.countdown}>{daysUntil(o.openedAt)}</div>
+                      <div className={styles.openDate}>
+                        {new Date(o.openedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                      </div>
                     </div>
                   </Link>
                 ))}

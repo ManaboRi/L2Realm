@@ -192,13 +192,21 @@ export default function AdminPage() {
     const types: string[] = [];
     if (editForm.type_new)      types.push('new');
     if (editForm.type_featured) types.push('featured');
+    // Если у проекта есть instances — chronicle/rates/rateNum скрыты в UI.
+    // Берём значения из первого instance (минимальный rateNum), чтобы при сортировке
+    // и базовых фильтрах проект имел осмысленные значения.
+    const insts = editForm.instances ?? [];
+    const sortedInsts = [...insts].sort((a:any,b:any) => (a.rateNum||0)-(b.rateNum||0));
+    const baseChron = sortedInsts.length > 0 ? sortedInsts[0].chronicle : editForm.chronicle;
+    const baseRates = sortedInsts.length > 0 ? sortedInsts[0].rates     : editForm.rates;
+    const baseRateN = sortedInsts.length > 0 ? sortedInsts[0].rateNum   : Number(editForm.rateNum);
     try {
       await api.servers.update(editServer.id, {
         name:        editForm.name,
         abbr:        editForm.abbr || editForm.name.slice(0, 2).toUpperCase(),
-        chronicle:   editForm.chronicle,
-        rates:       editForm.rates,
-        rateNum:     Number(editForm.rateNum),
+        chronicle:   baseChron,
+        rates:       baseRates,
+        rateNum:     baseRateN,
         url:         editForm.url,
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
@@ -227,10 +235,16 @@ export default function AdminPage() {
     const types: string[] = [];
     if (addForm.type_new)      types.push('new');
     if (addForm.type_featured) types.push('featured');
+    // Если у проекта есть instances — chronicle/rates/rateNum скрыты, берём из первого
+    const aInsts = addForm.instances ?? [];
+    const aSorted = [...aInsts].sort((a:any,b:any) => (a.rateNum||0)-(b.rateNum||0));
+    const aChron  = aSorted.length > 0 ? aSorted[0].chronicle : addForm.chronicle;
+    const aRates  = aSorted.length > 0 ? aSorted[0].rates     : addForm.rates;
+    const aRateN  = aSorted.length > 0 ? aSorted[0].rateNum   : Number(addForm.rateNum);
     try {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
-        url: addForm.url, chronicle: addForm.chronicle, rates: addForm.rates, rateNum: Number(addForm.rateNum),
+        url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
         type: types, vip: addForm.vip,
         openedDate: addForm.openedDate || undefined, country: addForm.country,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
@@ -282,13 +296,19 @@ export default function AdminPage() {
               <div className={styles.formGrid}>
                 <AField label="Название *"><input className="input" required value={editForm.name} onChange={e => setEditForm((p:any) => ({...p,name:e.target.value}))} /></AField>
                 <AField label="Аббревиатура"><input className="input" value={editForm.abbr} maxLength={3} onChange={e => setEditForm((p:any) => ({...p,abbr:e.target.value}))} /></AField>
-                <AField label="Хроника *">
-                  <select className="input" value={editForm.chronicle} onChange={e => setEditForm((p:any) => ({...p,chronicle:e.target.value}))}>
-                    {CHRONICLES.map(c => <option key={c}>{c}</option>)}
-                  </select>
-                </AField>
-                <AField label="Рейты *"><input className="input" required value={editForm.rates} onChange={e => setEditForm((p:any) => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
-                <AField label="Рейт (число)"><input className="input" type="number" min={1} value={editForm.rateNum} onChange={e => setEditForm((p:any) => ({...p,rateNum:e.target.value}))} /></AField>
+                {/* Хроника/Рейты/rateNum скрыты если у проекта есть instances —
+                    они подтягиваются из Карточек проекта (см. редактор внизу). */}
+                {(editForm.instances?.length ?? 0) === 0 && (
+                  <>
+                    <AField label="Хроника *">
+                      <select className="input" value={editForm.chronicle} onChange={e => setEditForm((p:any) => ({...p,chronicle:e.target.value}))}>
+                        {CHRONICLES.map(c => <option key={c}>{c}</option>)}
+                      </select>
+                    </AField>
+                    <AField label="Рейты *"><input className="input" required value={editForm.rates} onChange={e => setEditForm((p:any) => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
+                    <AField label="Рейт (число)"><input className="input" type="number" min={1} value={editForm.rateNum} onChange={e => setEditForm((p:any) => ({...p,rateNum:e.target.value}))} /></AField>
+                  </>
+                )}
                 <AField label="Сайт *"><input className="input" required type="url" value={editForm.url} onChange={e => setEditForm((p:any) => ({...p,url:e.target.value}))} /></AField>
                 <AField label="Дата открытия"><input className="input" type="date" value={editForm.openedDate} onChange={e => setEditForm((p:any) => ({...p,openedDate:e.target.value}))} /></AField>
                 <AField label="Страна">
@@ -601,14 +621,18 @@ export default function AdminPage() {
                     <AField label="ID *"><input className="input" required value={addForm.id} onChange={e => setAddForm(p => ({...p,id:e.target.value}))} placeholder="l2fantasy" /></AField>
                     <AField label="Название *"><input className="input" required value={addForm.name} onChange={e => setAddForm(p => ({...p,name:e.target.value}))} placeholder="L2Fantasy" /></AField>
                     <AField label="Аббревиатура"><input className="input" value={addForm.abbr} maxLength={3} onChange={e => setAddForm(p => ({...p,abbr:e.target.value}))} placeholder="LF" /></AField>
-                    {/* Строка 2 */}
-                    <AField label="Хроника *">
-                      <select className="input" value={addForm.chronicle} onChange={e => setAddForm(p => ({...p,chronicle:e.target.value}))}>
-                        {CHRONICLES.map(c => <option key={c}>{c}</option>)}
-                      </select>
-                    </AField>
-                    <AField label="Рейты *"><input className="input" required value={addForm.rates} onChange={e => setAddForm(p => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
-                    <AField label="Рейт (число)"><input className="input" type="number" min={1} value={addForm.rateNum} onChange={e => setAddForm(p => ({...p,rateNum:e.target.value}))} /></AField>
+                    {/* Строка 2 — скрыта если у проекта есть instances (теги из них) */}
+                    {(addForm.instances?.length ?? 0) === 0 && (
+                      <>
+                        <AField label="Хроника *">
+                          <select className="input" value={addForm.chronicle} onChange={e => setAddForm(p => ({...p,chronicle:e.target.value}))}>
+                            {CHRONICLES.map(c => <option key={c}>{c}</option>)}
+                          </select>
+                        </AField>
+                        <AField label="Рейты *"><input className="input" required value={addForm.rates} onChange={e => setAddForm(p => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
+                        <AField label="Рейт (число)"><input className="input" type="number" min={1} value={addForm.rateNum} onChange={e => setAddForm(p => ({...p,rateNum:e.target.value}))} /></AField>
+                      </>
+                    )}
                     {/* Строка 3 */}
                     <AField label="Сайт *"><input className="input" required type="url" value={addForm.url} onChange={e => setAddForm(p => ({...p,url:e.target.value}))} placeholder="https://…" /></AField>
                     <AField label="Дата открытия"><input className="input" type="date" value={addForm.openedDate} onChange={e => setAddForm(p => ({...p,openedDate:e.target.value}))} /></AField>

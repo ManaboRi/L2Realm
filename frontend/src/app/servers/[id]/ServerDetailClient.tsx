@@ -309,15 +309,33 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <div className={styles.block}>
             <div className={styles.blockTitle}>Характеристики</div>
             <div className={styles.rows}>
-              {[
-                ['Хроника',    server.chronicle],
-                ['Рейты',      server.rates],
-                ['Страна',     flag(server.country)],
-                ['Открылся',   relativeOpened(server.openedDate)],
-                ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
-              ].map(([l, v]) => (
-                <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
-              ))}
+              {(() => {
+                const insts = server.instances ?? [];
+                let chronicleStr = server.chronicle;
+                let ratesStr     = server.rates;
+                if (insts.length > 0) {
+                  // Собираем уникальные хроники в порядке встречаемости
+                  const chronSet: string[] = [];
+                  for (const i of insts) if (i.chronicle && !chronSet.includes(i.chronicle)) chronSet.push(i.chronicle);
+                  chronicleStr = chronSet.join(' | ');
+                  // Рейты — сортируем по rateNum возрастанию, dedup по rates-строке
+                  const seen = new Set<string>();
+                  const sortedRates = [...insts]
+                    .filter(i => i.rates)
+                    .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
+                    .filter(i => { if (seen.has(i.rates)) return false; seen.add(i.rates); return true; });
+                  ratesStr = sortedRates.map(i => i.rates).join(' | ');
+                }
+                return [
+                  ['Хроника',    chronicleStr],
+                  ['Рейты',      ratesStr],
+                  ['Страна',     flag(server.country)],
+                  ['Открылся',   relativeOpened(server.openedDate)],
+                  ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
+                ].map(([l, v]) => (
+                  <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
+                ));
+              })()}
             </div>
           </div>
 
@@ -354,33 +372,38 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div className={styles.dblockTitle}>Сервера проекта ({server.instances.length})</div>
               <div className={styles.dblockBody}>
                 <div className={styles.instances}>
-                  {server.instances.map(inst => {
-                    const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
-                    return (
-                      <a
-                        key={inst.id}
-                        href={inst.url}
-                        target="_blank"
-                        rel="noopener nofollow"
-                        className={styles.instCard}
-                      >
-                        <div className={styles.instHead}>
-                          <span className={styles.instLabel}>{inst.label || `${inst.chronicle} ${inst.rates}`}</span>
-                          {isFuture && <span className={styles.instSoon}>⏳ Скоро</span>}
-                        </div>
-                        <div className={styles.instTags}>
-                          <span className="tag tc">{inst.chronicle}</span>
-                          <span className="tag tr">{inst.rates}</span>
-                        </div>
-                        {isFuture && (
-                          <div className={styles.instDate}>
-                            Открытие: {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {[...server.instances]
+                    .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
+                    .map(inst => {
+                      const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
+                      return (
+                        <a
+                          key={inst.id}
+                          href={inst.url}
+                          target="_blank"
+                          rel="noopener nofollow"
+                          className={`${styles.instCard} ${isFuture ? styles.instCardSoon : ''}`}
+                        >
+                          <div className={styles.instRate}>{inst.rates}</div>
+                          <div className={styles.instMeta}>
+                            <div className={styles.instLabel}>{inst.label || inst.chronicle}</div>
+                            <div className={styles.instTags}>
+                              <span className="tag tc">{inst.chronicle}</span>
+                              {isFuture && <span className={styles.instSoon}>⏳ Скоро</span>}
+                            </div>
+                            {inst.shortDesc && (
+                              <div className={styles.instDesc}>{inst.shortDesc}</div>
+                            )}
+                            {isFuture && (
+                              <div className={styles.instDate}>
+                                Открытие: {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <div className={styles.instGo}>Перейти на сайт →</div>
-                      </a>
-                    );
-                  })}
+                          <div className={styles.instArrow}>→</div>
+                        </a>
+                      );
+                    })}
                 </div>
               </div>
             </div>
