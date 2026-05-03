@@ -100,7 +100,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [toast,    setToast]    = useState('');
   const [isFav,       setIsFav]       = useState(false);
   const [favBusy,     setFavBusy]     = useState(false);
-  const [descExpanded, setDescExpanded] = useState(false);
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
   const [voting,      setVoting]      = useState(false);
 
@@ -351,26 +350,13 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         {/* Правая колонка */}
         <div className={styles.right}>
 
-          {/* Описание — свёрнутое по умолчанию (3 строки), разворачивается по «Читать далее» */}
+          {/* Описание */}
           <div className={styles.dblock}>
             <div className={styles.dblockTitle}>О сервере</div>
             <div className={styles.dblockBody}>
-              {server.fullDesc ? (
-                <>
-                  <div className={`${styles.desc} ${styles.descClamp} ${descExpanded ? styles.descExpanded : ''}`}>
-                    {formatDesc(server.fullDesc)}
-                  </div>
-                  <button
-                    type="button"
-                    className={styles.descToggle}
-                    onClick={() => setDescExpanded(v => !v)}
-                  >
-                    {descExpanded ? 'Свернуть ↑' : 'Читать далее ↓'}
-                  </button>
-                </>
-              ) : (
-                <p className={styles.empty}>Описание отсутствует</p>
-              )}
+              {server.fullDesc
+                ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
+                : <p className={styles.empty}>Описание отсутствует</p>}
             </div>
           </div>
 
@@ -389,10 +375,13 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                       return (
                         <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
                           <div className={styles.instTileHead}>
-                            <span className={styles.instTileRate}>{inst.rates}</span>
+                            <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
                             {isFuture && <span className={styles.instTileSoonBadge}>⏳ Скоро</span>}
                           </div>
-                          <div className={styles.instTileChron}>{inst.chronicle}</div>
+                          <div className={styles.instTileTags}>
+                            <span className="tag tr">{inst.rates}</span>
+                            <span className="tag tc">{inst.chronicle}</span>
+                          </div>
                           {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
                           {isFuture && (
                             <div className={styles.instTileDate}>

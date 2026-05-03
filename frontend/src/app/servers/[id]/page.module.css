@@ -108,26 +108,25 @@
 .instTileSoon::before { background: rgba(90,180,130,.6); }
 
 .instTileHead {
-  display: flex; justify-content: space-between; align-items: center; gap: .4rem;
+  display: flex; justify-content: space-between; align-items: flex-start; gap: .4rem;
 }
-.instTileRate {
+.instTileLabel {
   font-family: 'Cinzel', serif;
-  font-size: 1.1rem; font-weight: 700;
-  color: var(--gold);
-  letter-spacing: .03em;
-  line-height: 1;
+  font-size: .92rem; font-weight: 600;
+  color: #F0E8C8;
+  line-height: 1.25;
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
 }
-.instTileSoon .instTileRate { color: #5AB482; }
 .instTileSoonBadge {
   font-size: .56rem; background: rgba(90,180,130,.12); color: #5AB482;
   border: 1px solid rgba(90,180,130,.3); padding: .08rem .35rem; border-radius: 2px;
   font-family: 'Cinzel', serif; white-space: nowrap; letter-spacing: .06em;
+  flex-shrink: 0;
 }
-.instTileChron {
-  font-family: 'Cinzel', serif;
-  font-size: .72rem;
-  color: var(--text2);
-  letter-spacing: .04em;
+.instTileTags {
+  display: flex; gap: .3rem; flex-wrap: wrap;
 }
 .instTileDesc {
   font-family: 'DM Sans', sans-serif;
@@ -135,8 +134,8 @@
   color: var(--text3);
   line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -173,7 +172,7 @@
 @media (max-width: 600px) {
   .instances { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .45rem; }
   .instTile { padding: .6rem .7rem; }
-  .instTileRate { font-size: .98rem; }
+  .instTileLabel { font-size: .85rem; }
 }
 
 /* Краткая статистика над «Характеристики» */
@@ -200,37 +199,6 @@
   color: var(--text2);
   text-transform: uppercase;
 }
-
-/* Свёрнутое описание ~3 строк с раскрытием по клику */
-.descClamp {
-  position: relative;
-  max-height: 72px;       /* ~3 строки при line-height 1.55 + font-size .88rem */
-  overflow: hidden;
-  transition: max-height .25s ease;
-}
-.descClamp::after {
-  content: '';
-  position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
-  background: linear-gradient(to bottom, transparent, var(--bg2));
-  pointer-events: none;
-  transition: opacity .25s;
-}
-.descExpanded {
-  max-height: 4000px;     /* достаточно для любого описания, transition сработает */
-}
-.descExpanded::after { opacity: 0; }
-.descToggle {
-  background: none; border: none;
-  color: var(--gold);
-  font-family: 'Cinzel', serif;
-  font-size: .68rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: .5rem 0 0;
-  transition: color .15s;
-}
-.descToggle:hover { color: var(--gold-l, var(--gold)); text-decoration: underline; }
 
 /* Description */
 .desc { display: flex; flex-direction: column; gap: .15rem; font-family: 'DM Sans', sans-serif; font-size: .9rem; color: var(--text); line-height: 1.6; }
