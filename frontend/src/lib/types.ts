@@ -167,14 +167,22 @@ export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
 export const COMING_SOON_PRICE = 1000;
 
-// Канонический список хроник. Используется в формах /add и админки (selects)
-// и для упорядочивания фильтров на главной (фильтр показывает только те,
-// у которых counts.chronicles[c] > 0 — пустые скрыты).
+// Канонический список хроник в хронологическом порядке выпуска.
+// Используется в формах /add и админки (selects) и для упорядочивания
+// фильтров на главной (фильтр показывает только те, у которых
+// counts.chronicles[c] > 0 — пустые скрыты).
 export const CHRONICLES = [
-  'Interlude', 'High Five', 'Classic', 'Essence', 'Gracia',
-  'Infinite Odyssey', 'Goddess of Destruction', 'GoD',
-  'C1', 'C2', 'C3', 'C4', 'C5', 'C6',
-  'Salvation', 'Samurai', 'Fafurion', 'Lindvior',
+  'C1', 'C2', 'C3', 'C4', 'C5',
+  'Interlude',
+  'Kamael', 'Hellbound',
+  'Gracia Part 1', 'Gracia Part 2', 'Gracia Final', 'Epilogue',
+  'Freya', 'High Five',
+  'Awakening', 'Harmony', 'Tauti', 'Glory Days', 'Lindvior',
+  'Valiance', 'Ertheia', 'Infinite Odyssey', 'Helios',
+  'Grand Crusade', 'Salvation', 'Fafurion', 'Prelude of War',
+  'Master Class', 'Storm of Terror', "Hero's Tome", 'Dethrone',
+  'Shine Maker', 'Rising Knight',
+  'Classic', 'Essence', 'Main',
 ];
 
 // Канонический список диапазонов рейтов. Backend в rateRange() даёт

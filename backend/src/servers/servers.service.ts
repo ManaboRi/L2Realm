@@ -43,12 +43,9 @@ export class ServersService {
     }
     if (donate)       where.donate = donate;
     if (type)         where.type = { has: type };
-    if (openedWithin) {
-      const days  = openedWithin === '7d' ? 7 : 30;
-      const since = new Date();
-      since.setDate(since.getDate() - days);
-      where.openedDate = { gte: since, lte: new Date() };
-    }
+    // openedWithin фильтруется в post-processing — у проекта может быть
+    // несколько дат открытия (своя + по каждому instance). Если хоть одна
+    // в окне since..now — проект попадает в выдачу.
 
     // chronicle и rate фильтруются в post-processing — у проекта могут быть
     // несколько хроник/рейтов через instances, плюс свои собственные. Где
@@ -59,8 +56,27 @@ export class ServersService {
       orderBy: sort === 'name'   ? { name: 'asc' }
               : sort === 'rating' ? { rating: 'desc' }
               : sort === 'votes'  ? { weeklyVotes: 'desc' }
-              :                    { openedDate: 'desc' },
+              :                    { id: 'asc' }, // 'opened' будем сортировать в post-process
     });
+
+    // Эффективная дата открытия — максимальная из собственной и instances.openedDate,
+    // но только в прошлом (будущие даты — отдельный кейс /coming-soon).
+    const nowTs = Date.now();
+    function effectiveOpenedTs(s: any): number {
+      const dates: number[] = [];
+      if (s.openedDate) {
+        const t = new Date(s.openedDate).getTime();
+        if (!isNaN(t) && t <= nowTs) dates.push(t);
+      }
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      for (const i of insts) {
+        if (i?.openedDate) {
+          const t = new Date(i.openedDate).getTime();
+          if (!isNaN(t) && t <= nowTs) dates.push(t);
+        }
+      }
+      return dates.length ? Math.max(...dates) : 0;
+    }
 
     function matchesChronicle(s: any): boolean {
       if (!chronicle) return true;
@@ -75,7 +91,21 @@ export class ServersService {
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
       return insts.some(i => typeof i?.rateNum === 'number' && rateRange(i.rateNum) === rate);
     }
-    const filtered = allServers.filter(s => matchesChronicle(s) && matchesRate(s));
+    function matchesOpenedWithin(s: any): boolean {
+      if (!openedWithin) return true;
+      const days = openedWithin === '7d' ? 7 : 30;
+      const sinceTs = nowTs - days * 86400000;
+      const eff = effectiveOpenedTs(s);
+      return eff >= sinceTs && eff <= nowTs;
+    }
+
+    let filtered = allServers.filter(s => matchesChronicle(s) && matchesRate(s) && matchesOpenedWithin(s));
+
+    // При sort=opened (по умолчанию) сортируем по эффективной дате (учитывает instances).
+    // Prisma orderBy для этого варианта не используется — выше выставлен стабильный {id:'asc'}.
+    if (!sort || sort === 'opened') {
+      filtered.sort((a, b) => effectiveOpenedTs(b as any) - effectiveOpenedTs(a as any));
+    }
 
     // Активные бусты (endDate > now) — словарь serverId → endDate
     const now = new Date();
@@ -111,11 +141,11 @@ export class ServersService {
       return { ...s, _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
     });
 
-    // При явной сортировке (rating/votes/name) — пиннится только VIP, остальные
-    // (включая SoD/Boost) идут в порядке выбранной сортировки. Это «честный»
-    // режим, когда юзер сам выбрал критерий и не хочет видеть продвижение.
-    // При сортировке по умолчанию (opened) — приоритет VIP → SoD → Boost → голоса.
-    const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes';
+    // При явной сортировке (opened/rating/votes/name) — пиннится только VIP,
+    // остальные (включая SoD/Boost) идут в порядке выбранной сортировки.
+    // Это «честный» режим, когда юзер сам выбрал критерий и не хочет видеть
+    // продвижение. SoD/Boost доступны в default-режиме (если sort пуст).
+    const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes' || sort === 'opened';
 
     decorated.sort((a, b) => {
       // VIP всегда наверху — это часть купленной услуги
