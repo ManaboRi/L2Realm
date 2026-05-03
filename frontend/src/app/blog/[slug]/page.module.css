@@ -40,6 +40,7 @@
 .body { padding: 0 1.5rem; }
 .foot { padding: 0 1.5rem; }
 
+/* meta теперь идёт под заголовком — отступ сверху от title, снизу до lead */
 .meta {
   display: flex; align-items: center; gap: .55rem;
   font-family: 'Cinzel', serif;
@@ -47,7 +48,7 @@
   letter-spacing: .15em;
   color: var(--gold-d);
   text-transform: uppercase;
-  margin-bottom: .8rem;
+  margin-bottom: 1.1rem;
 }
 .metaDot { opacity: .5; }
 
@@ -58,7 +59,7 @@
   color: #F0E8C8;
   line-height: 1.18;
   letter-spacing: -.005em;
-  margin: 0 0 1rem;
+  margin: 0 0 .55rem;        /* меньше отступ — meta идёт сразу после */
 }
 .lead {
   font-family: 'Almendra', serif;

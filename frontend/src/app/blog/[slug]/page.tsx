@@ -81,6 +81,7 @@ export default async function BlogPostPage({ params }: Props) {
           </div>
         )}
         <header className={styles.head}>
+          <h1 className={styles.title}>{article.title}</h1>
           <div className={styles.meta}>
             <time dateTime={article.publishedAt ?? article.createdAt}>
               {fmtDate(article.publishedAt ?? article.createdAt)}
@@ -88,7 +89,6 @@ export default async function BlogPostPage({ params }: Props) {
             <span className={styles.metaDot}>·</span>
             <span>{readingTime(article.content)} мин чтения</span>
           </div>
-          <h1 className={styles.title}>{article.title}</h1>
           {article.description && (
             <p className={styles.lead}>{article.description}</p>
           )}

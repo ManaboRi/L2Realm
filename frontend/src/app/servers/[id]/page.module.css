@@ -80,12 +80,10 @@
 
 /* Сервера проекта — компактные плитки в сетке */
 .instSubtitle {
-  font-family: 'Cinzel', serif;
-  font-size: .68rem;
-  letter-spacing: .14em;
-  color: var(--gold-d);
-  text-transform: uppercase;
-  margin: 0 0 .85rem;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .76rem;
+  color: var(--text3);
+  margin: 0 0 .7rem;
 }
 .instances {
   display: grid;
@@ -202,6 +200,37 @@
   color: var(--text2);
   text-transform: uppercase;
 }
+
+/* Свёрнутое описание ~3 строк с раскрытием по клику */
+.descClamp {
+  position: relative;
+  max-height: 72px;       /* ~3 строки при line-height 1.55 + font-size .88rem */
+  overflow: hidden;
+  transition: max-height .25s ease;
+}
+.descClamp::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: 0; height: 28px;
+  background: linear-gradient(to bottom, transparent, var(--bg2));
+  pointer-events: none;
+  transition: opacity .25s;
+}
+.descExpanded {
+  max-height: 4000px;     /* достаточно для любого описания, transition сработает */
+}
+.descExpanded::after { opacity: 0; }
+.descToggle {
+  background: none; border: none;
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: .5rem 0 0;
+  transition: color .15s;
+}
+.descToggle:hover { color: var(--gold-l, var(--gold)); text-decoration: underline; }
 
 /* Description */
 .desc { display: flex; flex-direction: column; gap: .15rem; font-family: 'DM Sans', sans-serif; font-size: .9rem; color: var(--text); line-height: 1.6; }

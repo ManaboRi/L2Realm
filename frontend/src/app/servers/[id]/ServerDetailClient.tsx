@@ -100,6 +100,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [toast,    setToast]    = useState('');
   const [isFav,       setIsFav]       = useState(false);
   const [favBusy,     setFavBusy]     = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
   const [voting,      setVoting]      = useState(false);
 
@@ -350,13 +351,26 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         {/* Правая колонка */}
         <div className={styles.right}>
 
-          {/* Описание */}
+          {/* Описание — свёрнутое по умолчанию (3 строки), разворачивается по «Читать далее» */}
           <div className={styles.dblock}>
             <div className={styles.dblockTitle}>О сервере</div>
             <div className={styles.dblockBody}>
-              {server.fullDesc
-                ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
-                : <p className={styles.empty}>Описание отсутствует</p>}
+              {server.fullDesc ? (
+                <>
+                  <div className={`${styles.desc} ${styles.descClamp} ${descExpanded ? styles.descExpanded : ''}`}>
+                    {formatDesc(server.fullDesc)}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.descToggle}
+                    onClick={() => setDescExpanded(v => !v)}
+                  >
+                    {descExpanded ? 'Свернуть ↑' : 'Читать далее ↓'}
+                  </button>
+                </>
+              ) : (
+                <p className={styles.empty}>Описание отсутствует</p>
+              )}
             </div>
           </div>
 
@@ -365,7 +379,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div className={styles.dblock}>
               <div className={styles.dblockBody}>
                 <p className={styles.instSubtitle}>
-                  {server.instances.length} {server.instances.length === 1 ? 'сервер проекта' : server.instances.length < 5 ? 'сервера проекта' : 'серверов проекта'}
+                  {server.instances.length} {server.instances.length === 1 ? 'сервер' : server.instances.length < 5 ? 'сервера' : 'серверов'}
                 </p>
                 <div className={styles.instances}>
                   {[...server.instances]
