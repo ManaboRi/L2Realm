@@ -120,7 +120,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
         </div>
 
         <div className={styles.btns}>
-          <a href={s.url} target="_blank" rel="noopener" className="btn-gold">На сервер ›</a>
+          <Link href={`/servers/${s.id}`} className="btn-gold">На сервер ›</Link>
         </div>
       </div>
     </div>

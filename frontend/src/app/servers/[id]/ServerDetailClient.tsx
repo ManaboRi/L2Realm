@@ -306,36 +306,30 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
         {/* Левая колонка */}
         <div className={styles.left}>
+          {/* Краткая статистика — над характеристиками. Если есть instances — показываем количество. */}
+          {server.instances && server.instances.length > 0 && (
+            <div className={styles.miniStats}>
+              <span className={styles.miniStatsNum}>{server.instances.length}</span>
+              <span className={styles.miniStatsLbl}>{
+                server.instances.length === 1 ? 'сервер проекта'
+                  : server.instances.length < 5 ? 'сервера проекта'
+                  : 'серверов проекта'
+              }</span>
+            </div>
+          )}
+
           <div className={styles.block}>
             <div className={styles.blockTitle}>Характеристики</div>
             <div className={styles.rows}>
-              {(() => {
-                const insts = server.instances ?? [];
-                let chronicleStr = server.chronicle;
-                let ratesStr     = server.rates;
-                if (insts.length > 0) {
-                  // Собираем уникальные хроники в порядке встречаемости
-                  const chronSet: string[] = [];
-                  for (const i of insts) if (i.chronicle && !chronSet.includes(i.chronicle)) chronSet.push(i.chronicle);
-                  chronicleStr = chronSet.join(' | ');
-                  // Рейты — сортируем по rateNum возрастанию, dedup по rates-строке
-                  const seen = new Set<string>();
-                  const sortedRates = [...insts]
-                    .filter(i => i.rates)
-                    .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
-                    .filter(i => { if (seen.has(i.rates)) return false; seen.add(i.rates); return true; });
-                  ratesStr = sortedRates.map(i => i.rates).join(' | ');
-                }
-                return [
-                  ['Хроника',    chronicleStr],
-                  ['Рейты',      ratesStr],
-                  ['Страна',     flag(server.country)],
-                  ['Открылся',   relativeOpened(server.openedDate)],
-                  ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
-                ].map(([l, v]) => (
-                  <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
-                ));
-              })()}
+              {/* Хроника / Рейты убраны — они видны в карточках серверов ниже.
+                  В характеристиках только метаданные проекта. */}
+              {[
+                ['Страна',     flag(server.country)],
+                ['Открылся',   relativeOpened(server.openedDate)],
+                ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
+              ].map(([l, v]) => (
+                <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
+              ))}
             </div>
           </div>
 
@@ -366,42 +360,40 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
 
-          {/* Сервера проекта — мини-карточки запусков */}
+          {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
           {server.instances && server.instances.length > 0 && (
             <div className={styles.dblock}>
-              <div className={styles.dblockTitle}>Сервера проекта ({server.instances.length})</div>
               <div className={styles.dblockBody}>
+                <p className={styles.instSubtitle}>
+                  {server.instances.length} {server.instances.length === 1 ? 'сервер проекта' : server.instances.length < 5 ? 'сервера проекта' : 'серверов проекта'}
+                </p>
                 <div className={styles.instances}>
                   {[...server.instances]
                     .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
                     .map(inst => {
                       const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
                       return (
-                        <a
-                          key={inst.id}
-                          href={inst.url}
-                          target="_blank"
-                          rel="noopener nofollow"
-                          className={`${styles.instCard} ${isFuture ? styles.instCardSoon : ''}`}
-                        >
-                          <div className={styles.instRate}>{inst.rates}</div>
-                          <div className={styles.instMeta}>
-                            <div className={styles.instLabel}>{inst.label || inst.chronicle}</div>
-                            <div className={styles.instTags}>
-                              <span className="tag tc">{inst.chronicle}</span>
-                              {isFuture && <span className={styles.instSoon}>⏳ Скоро</span>}
-                            </div>
-                            {inst.shortDesc && (
-                              <div className={styles.instDesc}>{inst.shortDesc}</div>
-                            )}
-                            {isFuture && (
-                              <div className={styles.instDate}>
-                                Открытие: {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
-                              </div>
-                            )}
+                        <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
+                          <div className={styles.instTileHead}>
+                            <span className={styles.instTileRate}>{inst.rates}</span>
+                            {isFuture && <span className={styles.instTileSoonBadge}>⏳ Скоро</span>}
                           </div>
-                          <div className={styles.instArrow}>→</div>
-                        </a>
+                          <div className={styles.instTileChron}>{inst.chronicle}</div>
+                          {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                          {isFuture && (
+                            <div className={styles.instTileDate}>
+                              {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                            </div>
+                          )}
+                          <a
+                            href={inst.url}
+                            target="_blank"
+                            rel="noopener nofollow"
+                            className={styles.instTileBtn}
+                          >
+                            На сайт →
+                          </a>
+                        </div>
                       );
                     })}
                 </div>

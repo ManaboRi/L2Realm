@@ -78,110 +78,129 @@
 .dblockBody  { padding: 1.1rem 1.2rem; }
 .empty { color: var(--text3); font-family: 'Almendra', serif; font-style: italic; font-size: .9rem; }
 
-/* Сервера проекта (instances) */
+/* Сервера проекта — компактные плитки в сетке */
+.instSubtitle {
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  letter-spacing: .14em;
+  color: var(--gold-d);
+  text-transform: uppercase;
+  margin: 0 0 .85rem;
+}
 .instances {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: .55rem;
 }
-.instCard {
-  display: flex; align-items: stretch; gap: 1rem;
-  background: linear-gradient(135deg, var(--bg3) 0%, rgba(200,168,75,.03) 100%);
+.instTile {
+  display: flex; flex-direction: column; gap: .35rem;
+  background: var(--bg3);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0;
-  text-decoration: none; color: inherit;
-  transition: background .2s, border-color .2s, transform .15s;
-  overflow: hidden;
+  border-radius: 3px;
+  padding: .7rem .8rem .65rem;
+  transition: background .15s, border-color .15s;
   position: relative;
 }
-.instCard::before {
+.instTile::before {
   content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px;
   background: var(--gold-d);
-  transition: background .2s, width .2s;
 }
-.instCard:hover {
-  background: linear-gradient(135deg, var(--bg4) 0%, rgba(200,168,75,.06) 100%);
-  border-color: var(--border2);
-  transform: translateY(-1px);
+.instTile:hover { background: var(--bg4); border-color: var(--border2); }
+/* Скоро — изумрудный акцент */
+.instTileSoon::before { background: rgba(90,180,130,.6); }
+
+.instTileHead {
+  display: flex; justify-content: space-between; align-items: center; gap: .4rem;
 }
-.instCard:hover::before { background: var(--gold); width: 3px; }
-
-/* Скоро — изумрудный акцент вместо золотого */
-.instCardSoon::before { background: rgba(90,180,130,.6); }
-.instCardSoon:hover::before { background: #5AB482; }
-
-/* Большой бейдж рейта слева — сразу выделяет карточку */
-.instRate {
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  min-width: 78px;
-  padding: 1rem 1.1rem;
+.instTileRate {
   font-family: 'Cinzel', serif;
-  font-size: 1.15rem; font-weight: 700;
+  font-size: 1.1rem; font-weight: 700;
   color: var(--gold);
-  background: rgba(200,168,75,.06);
-  border-right: 1px solid var(--border);
-  letter-spacing: .04em;
+  letter-spacing: .03em;
+  line-height: 1;
 }
-.instCardSoon .instRate { color: #5AB482; background: rgba(90,180,130,.05); }
-
-.instMeta {
-  flex: 1; min-width: 0;
-  display: flex; flex-direction: column; gap: .35rem;
-  padding: .85rem 0 .85rem 0;
-}
-.instLabel {
-  font-family: 'Cinzel', serif;
-  font-size: .92rem; font-weight: 600;
-  color: #F0E8C8; line-height: 1.25;
-}
-.instTags {
-  display: flex; gap: .3rem; flex-wrap: wrap; align-items: center;
-}
-.instSoon {
-  font-size: .58rem; background: rgba(90,180,130,.12); color: #5AB482;
-  border: 1px solid rgba(90,180,130,.3); padding: .1rem .42rem; border-radius: 2px;
+.instTileSoon .instTileRate { color: #5AB482; }
+.instTileSoonBadge {
+  font-size: .56rem; background: rgba(90,180,130,.12); color: #5AB482;
+  border: 1px solid rgba(90,180,130,.3); padding: .08rem .35rem; border-radius: 2px;
   font-family: 'Cinzel', serif; white-space: nowrap; letter-spacing: .06em;
 }
-.instDesc {
-  font-family: 'DM Sans', sans-serif;
-  font-size: .82rem;
+.instTileChron {
+  font-family: 'Cinzel', serif;
+  font-size: .72rem;
   color: var(--text2);
-  line-height: 1.5;
-  margin-top: .1rem;
+  letter-spacing: .04em;
+}
+.instTileDesc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .76rem;
+  color: var(--text3);
+  line-height: 1.45;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.instDate {
-  font-size: .68rem;
+.instTileDate {
+  font-size: .66rem;
   color: var(--gold-d);
   font-family: 'Cinzel', serif;
   letter-spacing: .04em;
-  margin-top: .1rem;
 }
-.instCardSoon .instDate { color: #5AB482; }
-.instArrow {
-  flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 1.1rem;
-  font-size: 1.2rem;
-  color: var(--gold-d);
-  transition: color .15s, transform .2s;
+.instTileSoon .instTileDate { color: #5AB482; }
+.instTileBtn {
+  margin-top: .25rem;
+  background: rgba(200,168,75,.08);
+  border: 1px solid var(--gold-d);
+  color: var(--gold);
+  text-align: center;
+  padding: .35rem .5rem;
+  border-radius: 2px;
+  font-family: 'Cinzel', serif;
+  font-size: .62rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background .15s;
 }
-.instCard:hover .instArrow { color: var(--gold); transform: translateX(3px); }
-.instCardSoon .instArrow { color: #5AB482; }
+.instTileBtn:hover { background: rgba(200,168,75,.18); }
+.instTileSoon .instTileBtn {
+  background: rgba(90,180,130,.08);
+  border-color: rgba(90,180,130,.5);
+  color: #5AB482;
+}
+.instTileSoon .instTileBtn:hover { background: rgba(90,180,130,.16); }
 
 @media (max-width: 600px) {
-  .instCard { gap: .65rem; }
-  .instRate { min-width: 60px; padding: .8rem .65rem; font-size: 1rem; }
-  .instMeta { padding: .65rem 0; gap: .3rem; }
-  .instLabel { font-size: .85rem; }
-  .instArrow { padding: 0 .75rem; }
-  .instDesc { font-size: .76rem; -webkit-line-clamp: 2; line-clamp: 2; }
+  .instances { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .45rem; }
+  .instTile { padding: .6rem .7rem; }
+  .instTileRate { font-size: .98rem; }
+}
+
+/* Краткая статистика над «Характеристики» */
+.miniStats {
+  background: linear-gradient(135deg, rgba(200,168,75,.06) 0%, var(--bg2) 100%);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold-d);
+  border-radius: 3px;
+  padding: .75rem 1rem;
+  margin-bottom: .65rem;
+  display: flex; align-items: baseline; gap: .55rem;
+}
+.miniStatsNum {
+  font-family: 'Cinzel', serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+}
+.miniStatsLbl {
+  font-family: 'Cinzel', serif;
+  font-size: .65rem;
+  letter-spacing: .14em;
+  color: var(--text2);
+  text-transform: uppercase;
 }
 
 /* Description */
