@@ -43,7 +43,9 @@ function HomeContent() {
 
   // Инициализация состояния из URL
   const [search,  setSearch]  = useState(() => sp.get('q')      ?? '');
-  const [sort,    setSort]    = useState(() => sp.get('sort')   ?? 'opened');
+  // sort = '' (default) даёт пьедестал VIP → СоД → Буст → остальные.
+  // Любое явное значение ('opened'/'name'/'rating'/'votes') пиннит только VIP.
+  const [sort,    setSort]    = useState(() => sp.get('sort')   ?? '');
   const [page,    setPage]    = useState(() => Number(sp.get('page') ?? 1));
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
     chr:    sp.get('chr')    ?? '',
@@ -57,7 +59,7 @@ function HomeContent() {
   useEffect(() => {
     const params = new URLSearchParams();
     if (search)           params.set('q',      search);
-    if (sort !== 'opened') params.set('sort',   sort);
+    if (sort)             params.set('sort',   sort);
     if (filters.chr)      params.set('chr',    filters.chr);
     if (filters.rate)     params.set('rate',   filters.rate);
     if (filters.opened)   params.set('opened', filters.opened);
@@ -69,7 +71,8 @@ function HomeContent() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { sort, page: String(page), limit: '30' };
+      const params: Record<string, string> = { page: String(page), limit: '30' };
+      if (sort)            params.sort        = sort;
       if (search)          params.search      = search;
       if (filters.chr)     params.chronicle   = filters.chr;
       if (filters.rate)    params.rate        = filters.rate;
@@ -219,6 +222,7 @@ function HomeContent() {
             <div className={styles.sortWrap}>
               <span className={styles.sortLabel}>Сортировка</span>
               <select className="input" style={{ width: 'auto' }} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
+                <option value="">По умолчанию</option>
                 <option value="opened">По дате открытия</option>
                 <option value="name">По алфавиту</option>
                 <option value="rating">По рейтингу</option>

@@ -98,9 +98,43 @@ export function ServerCard({ server: s, vipBlock }: Props) {
         <div className={styles.desc}>{s.shortDesc}</div>
       </Link>
 
-      {/* Правая часть */}
+      {/* Правая часть. Дата: основная — последний открывшийся сервер проекта
+          (effective opened из instances), под ней мелким серым — год создания
+          самого проекта, если он отличается. Для одиночных серверов (без
+          instances) показываем только основную дату. */}
       <div className={styles.right}>
-        <span className={styles.date} title={fmtDate(s.openedDate)}>{relativeOpened(s.openedDate)}</span>
+        {(() => {
+          const insts = s.instances ?? [];
+          // эффективная дата = max(server.openedDate, max(instance.openedDate)) в прошлом
+          const now = Date.now();
+          const candidates: number[] = [];
+          if (s.openedDate) {
+            const t = new Date(s.openedDate).getTime();
+            if (!isNaN(t) && t <= now) candidates.push(t);
+          }
+          for (const i of insts) {
+            if (i.openedDate) {
+              const t = new Date(i.openedDate).getTime();
+              if (!isNaN(t) && t <= now) candidates.push(t);
+            }
+          }
+          const effTs = candidates.length ? Math.max(...candidates) : null;
+          const effIso = effTs ? new Date(effTs).toISOString() : s.openedDate;
+          // Год проекта показываем только если он отличается от effective
+          const projYear = s.openedDate ? new Date(s.openedDate).getFullYear() : null;
+          const effYear  = effTs ? new Date(effTs).getFullYear() : null;
+          const showProjLine = insts.length > 0 && projYear && effYear && projYear !== effYear;
+          return (
+            <>
+              <span className={styles.date} title={fmtDate(effIso)}>{relativeOpened(effIso)}</span>
+              {showProjLine && (
+                <span className={styles.dateSub} title={`Проект существует с ${fmtDate(s.openedDate)}`}>
+                  проект с {projYear}
+                </span>
+              )}
+            </>
+          );
+        })()}
 
         <div className={styles.meta}>
           {s.status && (

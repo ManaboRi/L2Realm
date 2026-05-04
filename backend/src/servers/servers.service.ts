@@ -31,7 +31,9 @@ export class ServersService {
 
   // ── Получить все с фильтрами ─────────────────
   async findAll(filters: FilterServersDto) {
-    const { search, chronicle, rate, donate, type, openedWithin, sort = 'opened', page = 1, limit = 50 } = filters;
+    // sort без default: пустое = «по умолчанию» (пьедестал VIP → СоД → Буст
+     // → остальные по голосам). Явные значения: opened/name/rating/votes.
+    const { search, chronicle, rate, donate, type, openedWithin, sort, page = 1, limit = 50 } = filters;
 
     const where: any = {};
 
@@ -101,9 +103,10 @@ export class ServersService {
 
     let filtered = allServers.filter(s => matchesChronicle(s) && matchesRate(s) && matchesOpenedWithin(s));
 
-    // При sort=opened (по умолчанию) сортируем по эффективной дате (учитывает instances).
-    // Prisma orderBy для этого варианта не используется — выше выставлен стабильный {id:'asc'}.
-    if (!sort || sort === 'opened') {
+    // При sort=opened — сортируем по эффективной дате (учитывает instances).
+    // При пустом sort (default) — порядок задаст decorated.sort ниже
+    // (VIP → СоД → Буст → остальные по голосам).
+    if (sort === 'opened') {
       filtered.sort((a, b) => effectiveOpenedTs(b as any) - effectiveOpenedTs(a as any));
     }
 
