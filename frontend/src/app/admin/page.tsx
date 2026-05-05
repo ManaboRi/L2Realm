@@ -20,6 +20,19 @@ function slugify(s: string) {
     .slice(0, 40) || 'server-' + Math.random().toString(36).slice(2, 8);
 }
 
+function requestStatusInfo(r: any) {
+  if (r.status === 'approved') return { label: 'Одобрена', color: '#4AAA70' };
+  if (r.status === 'rejected') return { label: 'Отклонена', color: '#CC6060' };
+  if (r.status === 'pending_payment') return { label: 'Ожидает оплаты', color: '#D18A3D' };
+  return { label: 'На модерации', color: 'var(--gold-d)' };
+}
+
+function requestPaymentInfo(r: any) {
+  if (r.paid) return { label: 'Оплачено', className: `${styles.paymentBadge} ${styles.paymentPaid}` };
+  if (r.status === 'pending_payment') return { label: 'Оплата не завершена', className: `${styles.paymentBadge} ${styles.paymentWaiting}` };
+  return { label: 'Бесплатная заявка', className: `${styles.paymentBadge} ${styles.paymentFree}` };
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -108,6 +121,10 @@ export default function AdminPage() {
   }
 
   async function approveRequest(r: any) {
+    if (r.status === 'pending_payment') {
+      showToast('Эта заявка еще не оплачена. Одобрение станет доступно после webhook от ЮКассы.');
+      return;
+    }
     setAddForm({
       id:          slugify(r.name),
       name:        r.name,
@@ -558,8 +575,8 @@ export default function AdminPage() {
                     {requests.map((r: any) => {
                       const u = r.user;
                       const name = u?.nickname ?? u?.name ?? u?.email ?? 'Аноним';
-                      const statusColor = r.status === 'approved' ? '#4AAA70' : r.status === 'rejected' ? '#CC6060' : 'var(--gold-d)';
-                      const statusLbl = r.status === 'approved' ? '✓ Одобрена' : r.status === 'rejected' ? '✕ Отклонена' : '⏳ На модерации';
+                      const status = requestStatusInfo(r);
+                      const payment = requestPaymentInfo(r);
                       return (
                         <div key={r.id} className={styles.reviewCard}>
                           <div style={{ display:'flex', alignItems:'center', gap:'.6rem', marginBottom:'.5rem', flexWrap:'wrap' }}>
@@ -567,13 +584,16 @@ export default function AdminPage() {
                             <strong style={{ color:'var(--text)' }}>{name}</strong>
                             {u?.vkId && <span style={{ fontSize:'.7rem', color:'var(--text3)' }}>VK {u.vkId}</span>}
                             <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleString('ru-RU')}</span>
-                            <span style={{ marginLeft:'auto', fontSize:'.7rem', color: statusColor, fontFamily:"'Cinzel',serif", letterSpacing:'.08em', textTransform:'uppercase' }}>{statusLbl}</span>
+                            <span className={payment.className}>{payment.label}</span>
+                            <span style={{ marginLeft:'auto', fontSize:'.7rem', color: status.color, fontFamily:"'Cinzel',serif", letterSpacing:'.08em', textTransform:'uppercase' }}>{status.label}</span>
                           </div>
                           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:'.4rem .9rem', fontSize:'.82rem', color:'var(--text2)' }}>
                             <div><span style={{ color:'var(--text3)' }}>Название: </span><strong style={{ color:'var(--text)' }}>{r.name}</strong></div>
                             <div><span style={{ color:'var(--text3)' }}>Хроника: </span>{r.chronicle}</div>
                             <div><span style={{ color:'var(--text3)' }}>Рейты: </span>{r.rates}</div>
                             <div><span style={{ color:'var(--text3)' }}>Открытие: </span>{r.openedDate ? new Date(r.openedDate).toLocaleDateString('ru-RU') : '—'}</div>
+                            {r.contact && <div><span style={{ color:'var(--text3)' }}>Контакт: </span><strong style={{ color:'var(--text)' }}>{r.contact}</strong></div>}
+                            {r.paymentId && <div><span style={{ color:'var(--text3)' }}>Платеж: </span><span className={styles.tdMono}>{r.paymentId}</span></div>}
                             <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>URL: </span><a href={r.url} target="_blank" rel="noopener" style={{ color:'var(--gold)' }}>{r.url}</a></div>
                           </div>
                           {r.status === 'pending' && (
@@ -583,7 +603,13 @@ export default function AdminPage() {
                               <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
                             </div>
                           )}
-                          {r.status !== 'pending' && (
+                          {r.status === 'pending_payment' && (
+                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem', alignItems:'center', flexWrap:'wrap' }}>
+                              <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>Одобрение появится после успешной оплаты.</span>
+                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
+                            </div>
+                          )}
+                          {r.status !== 'pending' && r.status !== 'pending_payment' && (
                             <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem' }}>
                               <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
                             </div>

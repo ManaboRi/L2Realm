@@ -283,6 +283,12 @@ export class ServersService {
 
   // ── Обновить статус заявки (admin) ───────────
   async updateRequestStatus(id: string, status: string) {
+    if (status === 'approved') {
+      const request = await this.prisma.serverRequest.findUnique({ where: { id } });
+      if (request?.status === 'pending_payment' && !request.paid) {
+        throw new BadRequestException('Нельзя одобрить заявку до успешной оплаты');
+      }
+    }
     return this.prisma.serverRequest.update({ where: { id }, data: { status } });
   }
 

@@ -33,6 +33,10 @@
 .btnSuccess:hover { background: rgba(58,138,90,.1); }
 
 .planBadge { font-family: 'Cinzel', serif; font-size: .58rem; background: rgba(200,168,75,.1); color: var(--gold-d); border: 1px solid rgba(200,168,75,.2); padding: .06rem .35rem; border-radius: 2px; }
+.paymentBadge { font-family: 'Cinzel', serif; font-size: .58rem; padding: .08rem .42rem; border-radius: 2px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.paymentPaid { background: rgba(58,138,90,.12); color: #4AAA70; border: 1px solid rgba(58,138,90,.24); }
+.paymentWaiting { background: rgba(209,138,61,.12); color: #D18A3D; border: 1px solid rgba(209,138,61,.24); }
+.paymentFree { background: rgba(150,158,170,.1); color: var(--text3); border: 1px solid rgba(150,158,170,.18); }
 .status { font-size: .68rem; padding: .1rem .4rem; border-radius: 2px; }
 .statusPending { background: rgba(200,168,75,.1); color: var(--gold-d); border: 1px solid rgba(200,168,75,.2); }
 .statusDone    { background: rgba(58,138,90,.1);  color: #4AAA70; border: 1px solid rgba(58,138,90,.2); }
