@@ -40,6 +40,7 @@ export class MonitoringService {
       status:  server.status,
       online:  server.online,
       onlineSourceUrl: server.onlineSourceUrl,
+      onlineSourcePattern: server.onlineSourcePattern,
       onlineSourceStatus: server.onlineSourceStatus,
       onlineUpdatedAt: server.onlineUpdatedAt,
       onlineCheckedAt: server.onlineCheckedAt,
@@ -61,10 +62,10 @@ export class MonitoringService {
     const checkedAt = new Date();
 
     const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
-    const parsedProject = await this.readOnline(server.onlineSourceUrl);
+    const parsedProject = await this.readOnline(server.onlineSourceUrl, server.onlineSourcePattern);
     const parsedInstances = await mapWithConcurrency(instances, 3, async inst => {
       if (!inst?.onlineSourceUrl) return { ...inst, onlineSourceStatus: inst?.onlineSourceStatus ?? 'disabled' };
-      const parsed = await this.readOnline(inst.onlineSourceUrl);
+      const parsed = await this.readOnline(inst.onlineSourceUrl, inst.onlineSourcePattern);
       return {
         ...inst,
         online:             parsed.players,
@@ -226,11 +227,11 @@ export class MonitoringService {
     return Math.round((logs.filter(l => l.online).length / logs.length) * 100);
   }
 
-  private async readOnline(url?: string | null): Promise<OnlineParseResult> {
+  private async readOnline(url?: string | null, pattern?: string | null): Promise<OnlineParseResult> {
     if (!url?.trim()) return { players: null, status: 'disabled' };
     try {
       const html = await this.fetchText(url.trim());
-      const players = this.extractOnlinePlayers(html);
+      const players = this.extractOnlinePlayers(html, pattern);
       return players == null
         ? { players: null, status: 'not_found' }
         : { players, status: 'ok' };
@@ -254,7 +255,7 @@ export class MonitoringService {
     return String(data).slice(0, 600_000);
   }
 
-  private extractOnlinePlayers(html: string): number | null {
+  private extractOnlinePlayers(html: string, pattern?: string | null): number | null {
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, ' ')
       .replace(/<style[\s\S]*?<\/style>/gi, ' ')
@@ -264,10 +265,13 @@ export class MonitoringService {
       .replace(/\s+/g, ' ')
       .trim();
 
+    const custom = this.extractByPattern(html, text, pattern);
+    if (custom != null) return custom;
+
     const patterns = [
-      /["']?(?:online|players|player_count|online_players)["']?\s*[:=]\s*["']?([0-9][0-9\s.,]{0,10})/i,
-      /(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре|сейчас онлайн)\D{0,50}([0-9][0-9\s.,]{0,10})/i,
-      /([0-9][0-9\s.,]{0,10})\D{0,35}(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре)/i,
+      /["']?(?:online|players|player_count|online_players)["']?\s*[:=]\s*["']?([0-9][0-9\s.,]{0,20})/i,
+      /(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре|сейчас онлайн)\D{0,80}([0-9][0-9\s.,]{0,20})/i,
+      /([0-9][0-9\s.,]{0,20})\D{0,50}(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре)/i,
     ];
 
     for (const pattern of patterns) {
@@ -280,6 +284,18 @@ export class MonitoringService {
 
   // Многие сайты на Cloudflare/anti-bot блокируют запросы без UA — классифицируем
   // их как offline. Отдаём обычный браузерный UA и идём по исходному пути URL.
+  private extractByPattern(html: string, text: string, pattern?: string | null): number | null {
+    if (!pattern?.trim()) return null;
+    try {
+      const re = new RegExp(pattern.trim(), 'is');
+      const match = text.match(re) ?? html.match(re);
+      if (!match) return null;
+      return parsePlayerCount(match[1] ?? match[0]);
+    } catch {
+      return null;
+    }
+  }
+
   private pingUrl(url: string): Promise<boolean> {
     return new Promise(resolve => {
       try {

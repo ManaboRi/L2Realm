@@ -58,6 +58,7 @@ export default function AdminPage() {
     type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     onlineSourceUrl: '',
+    onlineSourcePattern: '',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
   });
@@ -139,6 +140,7 @@ export default function AdminPage() {
       type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       onlineSourceUrl: '',
+      onlineSourcePattern: '',
       shortDesc:'', fullDesc:'',
       instances: [],
     });
@@ -199,6 +201,7 @@ export default function AdminPage() {
       discord:     s.discord     ?? '',
       vk:          s.vk          ?? '',
       onlineSourceUrl: s.onlineSourceUrl ?? '',
+      onlineSourcePattern: s.onlineSourcePattern ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
       instances:   Array.isArray(s.instances) ? s.instances : [],
@@ -237,6 +240,7 @@ export default function AdminPage() {
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
         onlineSourceUrl: editForm.onlineSourceUrl || null,
+        onlineSourcePattern: editForm.onlineSourcePattern || null,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         instances:   editForm.instances ?? [],
@@ -271,6 +275,7 @@ export default function AdminPage() {
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         onlineSourceUrl: addForm.onlineSourceUrl || null,
+        onlineSourcePattern: addForm.onlineSourcePattern || null,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         instances: addForm.instances ?? [],
       } as any, token);
@@ -344,6 +349,7 @@ export default function AdminPage() {
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                 <AField label="Источник онлайна"><input className="input" type="url" value={editForm.onlineSourceUrl ?? ''} onChange={e => setEditForm((p:any) => ({...p,onlineSourceUrl:e.target.value}))} placeholder="Страница сайта с публичным online" /></AField>
+                <AField label="Шаблон онлайна"><input className="input" value={editForm.onlineSourcePattern ?? ''} onChange={e => setEditForm((p:any) => ({...p,onlineSourcePattern:e.target.value}))} placeholder="Например: Онлайн:\\s*([0-9\\s]+)" /></AField>
               </div>
 
               <AField label="Краткое описание">
@@ -683,6 +689,7 @@ export default function AdminPage() {
                     <AField label="Discord"><input className="input" type="url" value={addForm.discord} onChange={e => setAddForm(p => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                     <AField label="Источник онлайна"><input className="input" type="url" value={addForm.onlineSourceUrl} onChange={e => setAddForm(p => ({...p,onlineSourceUrl:e.target.value}))} placeholder="Страница сайта с публичным online" /></AField>
+                    <AField label="Шаблон онлайна"><input className="input" value={addForm.onlineSourcePattern} onChange={e => setAddForm(p => ({...p,onlineSourcePattern:e.target.value}))} placeholder="Например: Онлайн:\\s*([0-9\\s]+)" /></AField>
                   </div>
 
                   <AField label="Краткое описание">

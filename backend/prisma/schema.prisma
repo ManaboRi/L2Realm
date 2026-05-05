@@ -74,6 +74,7 @@ model Server {
   online       Int?     // текущий онлайн (из мониторинга)
   status      String   @default("online") // online | offline | unknown
   onlineSourceUrl    String?
+  onlineSourcePattern String?
   onlineSourceStatus String   @default("disabled") // disabled | ok | not_found | error
   onlineUpdatedAt    DateTime?
   onlineCheckedAt    DateTime?

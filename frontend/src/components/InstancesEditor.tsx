@@ -24,6 +24,7 @@ function emptyInstance(): ServerInstance {
     rateNum:    0,
     url:        '',
     onlineSourceUrl: '',
+    onlineSourcePattern: '',
     openedDate: null,
   };
 }
@@ -164,6 +165,16 @@ export function InstancesEditor({ value, onChange }: Props) {
                   value={inst.onlineSourceUrl ?? ''}
                   onChange={e => update(idx, { onlineSourceUrl: e.target.value })}
                   placeholder="Страница на сайте с публичной цифрой онлайна"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Шаблон онлайна</span>
+                <input
+                  className="input"
+                  value={inst.onlineSourcePattern ?? ''}
+                  onChange={e => update(idx, { onlineSourcePattern: e.target.value })}
+                  placeholder="Регулярка с числом в первой группе, например Online:\\s*([0-9\\s]+)"
                 />
               </label>
             </li>

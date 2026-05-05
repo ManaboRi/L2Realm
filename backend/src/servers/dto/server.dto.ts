@@ -26,6 +26,7 @@ export class CreateServerDto {
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
   @IsOptional() @IsString() onlineSourceUrl?: string;
+  @IsOptional() @IsString() onlineSourcePattern?: string;
   // instances — массив сабкарточек проекта (см. schema.prisma)
   @IsOptional() instances?: any[];
 }

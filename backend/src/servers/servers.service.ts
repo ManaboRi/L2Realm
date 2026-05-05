@@ -217,14 +217,21 @@ export class ServersService {
   // ── Обновить (только admin) ──────────────────
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
-    const { id: _id, openedDate, onlineSourceUrl, ...data } = dto as any;
-    const onlineSourceChanged = onlineSourceUrl !== undefined && onlineSourceUrl !== (existing as any).onlineSourceUrl;
+    const { id: _id, openedDate, onlineSourceUrl, onlineSourcePattern, ...data } = dto as any;
+    const onlineSourceChanged =
+      (onlineSourceUrl !== undefined && onlineSourceUrl !== (existing as any).onlineSourceUrl)
+      || (onlineSourcePattern !== undefined && onlineSourcePattern !== (existing as any).onlineSourcePattern);
     return this.prisma.server.update({
       where: { id },
       data: {
         ...data,
         ...(onlineSourceUrl !== undefined && {
           onlineSourceUrl,
+        }),
+        ...(onlineSourcePattern !== undefined && {
+          onlineSourcePattern,
+        }),
+        ...((onlineSourceUrl !== undefined || onlineSourcePattern !== undefined) && {
           ...(onlineSourceChanged && {
             onlineSourceStatus: 'disabled',
             online: null,

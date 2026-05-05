@@ -12,6 +12,7 @@ export interface ServerInstance {
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
   onlineSourceUrl?: string | null;
+  onlineSourcePattern?: string | null;
   online?: number | null;
   onlineUpdatedAt?: string | null;
   onlineCheckedAt?: string | null;
@@ -45,6 +46,7 @@ export interface Server {
   ratingCount: number;
   online?:     number;
   onlineSourceUrl?: string | null;
+  onlineSourcePattern?: string | null;
   onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
   onlineUpdatedAt?: string | null;
   onlineCheckedAt?: string | null;
