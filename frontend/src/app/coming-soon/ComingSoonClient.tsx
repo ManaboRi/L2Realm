@@ -1,7 +1,6 @@
 'use client';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
-import { api } from '@/lib/api';
 import type { Server, ServerInstance } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -101,17 +100,8 @@ function daysUntil(dateStr: string) {
   return `Через ${days} дн.`;
 }
 
-export function ComingSoonClient() {
-  const [servers,  setServers]  = useState<Server[]>([]);
-  const [loading,  setLoading]  = useState(true);
-
-  useEffect(() => {
-    api.servers.comingSoon()
-      .then(setServers)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
+export function ComingSoonClient({ initialServers }: { initialServers: Server[] }) {
+  const servers = initialServers;
   const openings = useMemo(() => flattenOpenings(servers), [servers]);
   const groups   = useMemo(() => groupByOpenDate(openings), [openings]);
 
@@ -124,9 +114,7 @@ export function ComingSoonClient() {
       </div>
 
       <div className={styles.wrap}>
-        {loading ? (
-          <div className={styles.loadWrap}><span className="spin" /> Загружаем...</div>
-        ) : openings.length === 0 ? (
+        {openings.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>⏳</div>
             <div className={styles.emptyTitle}>Пока нет ожидаемых серверов</div>

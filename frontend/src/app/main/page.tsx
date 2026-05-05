@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { ChroniclePage } from '../_components/ChroniclePage';
 import { CHRONICLE_CONFIGS } from '../_lib/chronicleConfig';
 
-const cfg = CHRONICLE_CONFIGS.classic;
+const cfg = CHRONICLE_CONFIGS.main;
 const SITE = 'https://l2realm.ru';
 
 export const dynamic = 'force-dynamic';

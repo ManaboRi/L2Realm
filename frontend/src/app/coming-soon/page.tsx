@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
+import type { Server } from '@/lib/types';
 import { ComingSoonClient } from './ComingSoonClient';
 
+const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Скоро открытие — новые сервера Lineage 2',
@@ -19,6 +23,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
-  return <ComingSoonClient />;
+async function fetchComingSoon(): Promise<Server[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return (await res.json()) as Server[];
+  } catch {
+    return [];
+  }
+}
+
+export default async function Page() {
+  const servers = await fetchComingSoon();
+  return <ComingSoonClient initialServers={servers} />;
 }

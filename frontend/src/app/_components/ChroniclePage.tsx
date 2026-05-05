@@ -8,9 +8,13 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 
 async function fetchServers(chronicle: string): Promise<Server[]> {
   try {
+    // cache: 'no-store' — не использовать ISR для запроса.
+    // Иначе при первом фейле fetch (например, backend перезапускается)
+    // пустой результат закешировался бы на 5 минут — все юзеры через
+    // <Link> видели бы пустую страницу, пока не нажмут F5.
     const res = await fetch(
       `${BACKEND}/api/servers?chronicle=${encodeURIComponent(chronicle)}&limit=200`,
-      { next: { revalidate: 300 } },
+      { cache: 'no-store' },
     );
     if (!res.ok) return [];
     const data = (await res.json()) as ServersResponse;

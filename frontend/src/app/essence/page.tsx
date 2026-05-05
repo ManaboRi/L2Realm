@@ -5,7 +5,7 @@ import { CHRONICLE_CONFIGS } from '../_lib/chronicleConfig';
 const cfg = CHRONICLE_CONFIGS.essence;
 const SITE = 'https://l2realm.ru';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title:       cfg.title,
