@@ -249,7 +249,7 @@ export default function ProfilePage() {
                     <span style={{
                       color: f.server.status === 'online' ? '#5c5' : f.server.status === 'offline' ? '#e55' : 'var(--text3)',
                     }}>
-                      {f.server.status === 'online' ? `онлайн ${f.server.online ?? ''}` : f.server.status === 'offline' ? 'оффлайн' : '—'}
+                      {f.server.status === 'online' ? 'онлайн' : f.server.status === 'offline' ? 'оффлайн' : '—'}
                     </span>
                   </div>
                 </Link>

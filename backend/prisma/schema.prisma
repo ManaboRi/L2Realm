@@ -71,13 +71,7 @@ model Server {
   ratingCount  Int      @default(0)
   monthlyVotes Int      @default(0)
   weeklyVotes  Int      @default(0)
-  online       Int?     // текущий онлайн (из мониторинга)
   status      String   @default("online") // online | offline | unknown
-  onlineSourceUrl    String?
-  onlineSourcePattern String?
-  onlineSourceStatus String   @default("disabled") // disabled | ok | not_found | error
-  onlineUpdatedAt    DateTime?
-  onlineCheckedAt    DateTime?
   // Внутренние «запуски» проекта (Scryde-кейс). Каждый — карточка
   // с рейтом/хроникой/URL внешнего сайта. Без своих ID, отзывов, голосов.
   // [{ id, label?, chronicle, rates, rateNum, url, openedDate? }]
@@ -124,7 +118,7 @@ model Subscription {
 
 enum SubscriptionPlan {
   FREE      // 0₽ — просто в списке
-  VIP       // 5000₽/мес — отдельный блок (3 места)
+  VIP       // 5000₽/мес — отдельный блок (5 мест)
 }
 
 // ── Буст «Огонёк» (500₽ / 7 дней) ─────────────
@@ -225,10 +219,12 @@ model Article {
   description String                            // SEO description, 1-2 предложения
   content     String                            // Markdown
   image       String?                           // URL обложки (загружается через /upload?type=banner)
+  category    String    @default("Новости")
   publishedAt DateTime?                         // null = черновик, дата = опубликовано
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@index([publishedAt])
+  @@index([category])
   @@index([slug])
 }

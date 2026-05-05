@@ -7,12 +7,14 @@ import { v4 as uuidv4 } from 'uuid';
 
 export const VIP_PRICE         = 5000;
 export const VIP_DAYS          = 31;
-export const VIP_MAX           = 3;
+export const VIP_MAX           = 5;
 export const BOOST_PRICE       = 500;
 export const BOOST_DAYS        = 7;
-export const COMING_SOON_PRICE = 1000;
+export const COMING_SOON_PRICE = 500;
+export const SOON_VIP_PRICE    = 2000;
+export const SOON_VIP_MAX      = 5;
 
-type PurchaseKind = 'vip' | 'boost';
+type PurchaseKind = 'vip' | 'boost' | 'soon_vip';
 
 @Injectable()
 export class PaymentsService {
@@ -26,15 +28,20 @@ export class PaymentsService {
     if (!server) throw new NotFoundException('Сервер не найден');
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
 
-    // Серверы с датой открытия в будущем — VIP/буст продаются только после открытия
-    if (server.openedDate && server.openedDate > new Date()) {
-      const opens = server.openedDate.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    const isComingSoon = isComingSoonServer(server);
+
+    // Серверы с датой открытия в будущем — обычные VIP/буст продаются только после открытия.
+    if (isComingSoon && kind !== 'soon_vip') {
+      const opens = nextOpeningDate(server)?.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }) ?? 'позже';
       throw new BadRequestException(
         `Сервер ещё не открыт (откроется ${opens}). Покупка VIP и буста доступна только для открытых серверов.`,
       );
     }
+    if (!isComingSoon && kind === 'soon_vip') {
+      throw new BadRequestException('VIP в «Скоро открытие» доступен только для серверов с будущей датой открытия');
+    }
 
-    const amount = kind === 'vip' ? VIP_PRICE : BOOST_PRICE;
+    const amount = kind === 'vip' ? VIP_PRICE : kind === 'soon_vip' ? SOON_VIP_PRICE : BOOST_PRICE;
 
     if (kind === 'vip') {
       const status = await this.getVipStatus();
@@ -48,6 +55,18 @@ export class PaymentsService {
         );
       }
     }
+    if (kind === 'soon_vip') {
+      const status = await this.getSoonVipStatus();
+      const already = await this.prisma.subscription.findUnique({ where: { serverId } });
+      if (already?.plan === 'VIP' && already.endDate > new Date()) {
+        throw new BadRequestException('У сервера уже активен VIP в «Скоро открытие»');
+      }
+      if (status.taken >= SOON_VIP_MAX) {
+        throw new BadRequestException(
+          `Все ${SOON_VIP_MAX} VIP-места в «Скоро открытие» заняты. Ближайшее освободится ${status.nextFreeAt?.toISOString()}`,
+        );
+      }
+    }
 
     const shopId    = this.config.get('YOOKASSA_SHOP_ID');
     const secretKey = this.config.get('YOOKASSA_SECRET_KEY');
@@ -58,7 +77,7 @@ export class PaymentsService {
         throw new BadRequestException('Платежи временно недоступны. Обратитесь в поддержку.');
       }
       this.logger.warn(`ЮКасса не настроена — активируем ${kind} сразу (dev mode, NODE_ENV=${process.env.NODE_ENV})`);
-      const result = kind === 'vip'
+      const result = (kind === 'vip' || kind === 'soon_vip')
         ? await this.activateVip(serverId, 'dev-' + uuidv4())
         : await this.activateBoost(serverId, 'dev-' + uuidv4());
       return { dev: true, activated: true, ...result };
@@ -66,6 +85,8 @@ export class PaymentsService {
 
     const description = kind === 'vip'
       ? `L2Realm VIP (${VIP_DAYS} дней) для «${server.name}»`
+      : kind === 'soon_vip'
+        ? `L2Realm VIP в «Скоро открытие» (${VIP_DAYS} дней) для «${server.name}»`
       : `L2Realm Буст (${BOOST_DAYS} дней) для «${server.name}»`;
 
     const idempotenceKey = uuidv4();
@@ -162,11 +183,11 @@ export class PaymentsService {
     }
 
     const { serverId, kind, requestId } = verified.metadata || {};
-    if (kind !== 'vip' && kind !== 'boost' && kind !== 'soon') {
+    if (kind !== 'vip' && kind !== 'boost' && kind !== 'soon' && kind !== 'soon_vip') {
       this.logger.warn(`⚠️ Платёж ${paymentId}: неизвестный kind в metadata`);
       return { ok: true };
     }
-    if ((kind === 'vip' || kind === 'boost') && !serverId) {
+    if ((kind === 'vip' || kind === 'boost' || kind === 'soon_vip') && !serverId) {
       this.logger.warn(`⚠️ Платёж ${paymentId}: VIP/boost без serverId`);
       return { ok: true };
     }
@@ -176,7 +197,13 @@ export class PaymentsService {
     }
 
     // 3. Проверка суммы — защита от подмены amount
-    const expected = kind === 'vip' ? VIP_PRICE : kind === 'boost' ? BOOST_PRICE : COMING_SOON_PRICE;
+    const expected = kind === 'vip'
+      ? VIP_PRICE
+      : kind === 'boost'
+        ? BOOST_PRICE
+        : kind === 'soon_vip'
+          ? SOON_VIP_PRICE
+          : COMING_SOON_PRICE;
     const actualRub = parseFloat(verified.amount?.value);
     if (verified.amount?.currency !== 'RUB' || actualRub !== expected) {
       this.logger.error(
@@ -186,9 +213,9 @@ export class PaymentsService {
     }
 
     // 4. Активация
-    if (kind === 'vip') {
+    if (kind === 'vip' || kind === 'soon_vip') {
       await this.activateVip(serverId, paymentId);
-      this.logger.log(`✅ VIP активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
+      this.logger.log(`✅ ${kind === 'soon_vip' ? 'Soon VIP' : 'VIP'} активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
     } else if (kind === 'boost') {
       await this.activateBoost(serverId, paymentId);
       this.logger.log(`✅ Буст активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
@@ -398,12 +425,27 @@ export class PaymentsService {
     const active = await this.prisma.subscription.findMany({
       where: { plan: 'VIP', endDate: { gt: now } },
       orderBy: { endDate: 'asc' },
-      include: { server: { select: { id: true, name: true, icon: true } } },
+      include: { server: true },
     });
-    const taken = active.length;
+    const mainActive = active.filter(s => !isComingSoonServer(s.server));
+    const taken = mainActive.length;
     const free  = Math.max(0, VIP_MAX - taken);
-    const nextFreeAt = taken >= VIP_MAX ? active[0]?.endDate ?? null : null;
-    return { taken, free, max: VIP_MAX, nextFreeAt, slots: active };
+    const nextFreeAt = taken >= VIP_MAX ? mainActive[0]?.endDate ?? null : null;
+    return { taken, free, max: VIP_MAX, nextFreeAt, slots: mainActive.map(compactVipSlot) };
+  }
+
+  async getSoonVipStatus() {
+    const now = new Date();
+    const active = await this.prisma.subscription.findMany({
+      where: { plan: 'VIP', endDate: { gt: now } },
+      orderBy: { endDate: 'asc' },
+      include: { server: true },
+    });
+    const soonActive = active.filter(s => isComingSoonServer(s.server));
+    const taken = soonActive.length;
+    const free  = Math.max(0, SOON_VIP_MAX - taken);
+    const nextFreeAt = taken >= SOON_VIP_MAX ? soonActive[0]?.endDate ?? null : null;
+    return { taken, free, max: SOON_VIP_MAX, nextFreeAt, slots: soonActive.map(compactVipSlot) };
   }
 
   // ── Активные бусты (публично, для сортировки) ─
@@ -456,6 +498,40 @@ function farFuture() {
   const d = new Date();
   d.setFullYear(d.getFullYear() + 100);
   return d;
+}
+
+function isComingSoonServer(server: any): boolean {
+  return !!nextOpeningDate(server);
+}
+
+function nextOpeningDate(server: any): Date | null {
+  const now = Date.now();
+  const dates: Date[] = [];
+  if (server?.openedDate) {
+    const d = new Date(server.openedDate);
+    if (!isNaN(d.getTime()) && d.getTime() > now) dates.push(d);
+  }
+  const insts = Array.isArray(server?.instances) ? server.instances : [];
+  for (const i of insts) {
+    if (!i?.openedDate) continue;
+    const d = new Date(i.openedDate);
+    if (!isNaN(d.getTime()) && d.getTime() > now) dates.push(d);
+  }
+  dates.sort((a, b) => a.getTime() - b.getTime());
+  return dates[0] ?? null;
+}
+
+function compactVipSlot(s: any) {
+  return {
+    id: s.id,
+    serverId: s.serverId,
+    endDate: s.endDate,
+    server: {
+      id: s.server.id,
+      name: s.server.name,
+      icon: s.server.icon,
+    },
+  };
 }
 
 function ipInCidr(ip: string, cidr: string): boolean {

@@ -21,5 +21,4 @@ Working notes for the user and Codex. Update when a task changes status.
 
 - JSON-LD structured data with Product schema and rating for search result stars.
 - Slugs instead of IDs in `/servers/[id]`, e.g. `/servers/newworld-interlude-x100`; needs 301 redirects and should wait until there is meaningful organic traffic.
-- Discounted VIP slots for servers from "Coming soon".
 - Clean old/noisy Prisma migrations or data-fix scripts in `backend/prisma/` when convenient.

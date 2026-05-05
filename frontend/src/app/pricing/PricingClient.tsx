@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, VipStatus } from '@/lib/types';
-import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS, COMING_SOON_PRICE } from '@/lib/types';
+import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS, COMING_SOON_PRICE, SOON_VIP_PRICE, SOON_VIP_MAX } from '@/lib/types';
 import styles from './page.module.css';
 
 export function PricingClient() {
   const { user, token } = useAuth();
   const [vip, setVip] = useState<VipStatus | null>(null);
+  const [soonVip, setSoonVip] = useState<VipStatus | null>(null);
   const [vipLoading, setVipLoading] = useState(true);
   const [servers, setServers] = useState<Server[]>([]);
   const [sel, setSel] = useState<string>('');
@@ -20,7 +21,9 @@ export function PricingClient() {
   const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    api.payments.vipStatus().then(s => { setVip(s); setVipLoading(false); }).catch(() => setVipLoading(false));
+    Promise.all([api.payments.vipStatus(), api.payments.soonVipStatus()])
+      .then(([main, soon]) => { setVip(main); setSoonVip(soon); setVipLoading(false); })
+      .catch(() => setVipLoading(false));
     api.servers.list({ limit: '500' }).then(r => setServers(r.data)).catch(() => {});
   }, []);
 
@@ -52,7 +55,7 @@ export function PricingClient() {
     setToast(msg); setTimeout(() => setToast(''), 3500);
   }
 
-  async function buy(kind: 'vip' | 'boost') {
+  async function buy(kind: 'vip' | 'boost' | 'soon_vip') {
     if (!token || !user) return showToast('Войдите, чтобы совершить покупку (чек придёт на ваш email)');
     if (!sel) return showToast('Выберите сервер');
     setBusy(kind);
@@ -60,9 +63,10 @@ export function PricingClient() {
       const res = await api.payments.purchase({ kind, serverId: sel, returnUrl: window.location.href }, token);
       if (res.confirmationUrl) { window.location.href = res.confirmationUrl; return; }
       if (res.activated) {
-        showToast(kind === 'vip' ? '◆ VIP активирован' : '🔥 Буст активирован');
-        const fresh = await api.payments.vipStatus();
-        setVip(fresh);
+        showToast(kind === 'boost' ? 'Буст активирован' : 'VIP активирован');
+        const [freshVip, freshSoonVip] = await Promise.all([api.payments.vipStatus(), api.payments.soonVipStatus()]);
+        setVip(freshVip);
+        setSoonVip(freshSoonVip);
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : 'Ошибка');
@@ -71,6 +75,11 @@ export function PricingClient() {
   }
 
   const vipFull = (vip?.taken ?? 0) >= VIP_MAX;
+  const soonVipFull = (soonVip?.taken ?? 0) >= SOON_VIP_MAX;
+  const selectedIsComingSoon = !!selectedServer && (
+    (selectedServer.openedDate && new Date(selectedServer.openedDate) > new Date()) ||
+    (selectedServer.instances ?? []).some(i => i.openedDate && new Date(i.openedDate) > new Date())
+  );
 
   return (
     <div className={styles.page}>
@@ -218,12 +227,11 @@ export function PricingClient() {
             <h2 className={styles.tierTitle}>Платное размещение анонса</h2>
             <p className={styles.tierDesc}>
               Если ваш сервер ещё не открылся — оплатите размещение в разделе «Скоро открытие».
-              Сервер появится сразу после оплаты, без ручной модерации, и будет показываться там
-              до даты открытия.
+              После оплаты заявка уйдёт на модерацию, а после одобрения будет показываться там до даты открытия.
             </p>
             <ul className={styles.tierList}>
               <li>Размещение в специальном блоке «Скоро открытие»</li>
-              <li>Без ожидания модерации — сразу после оплаты</li>
+              <li>Бейдж «Оплачено» и контакт видны администратору в заявке</li>
               <li>Виден до даты открытия, потом переходит в каталог</li>
               <li>Можно сразу подключить VIP/буст после открытия</li>
             </ul>
@@ -234,6 +242,52 @@ export function PricingClient() {
             >
               Оформить за {COMING_SOON_PRICE.toLocaleString('ru-RU')} ₽ →
             </Link>
+          </div>
+
+          {/* VIP Скоро открытие */}
+          <div className={`${styles.tier} ${styles.tierSoonVip}`}>
+            <div className={styles.tierHead}>
+              <span className={`${styles.tierBadge} ${styles.badgeSoonVip}`}>◆ VIP Скоро</span>
+              <span className={styles.tierPrice}>{SOON_VIP_PRICE.toLocaleString('ru-RU')} ₽<span className={styles.priceSub}> / {VIP_DAYS} дн.</span></span>
+            </div>
+            <h2 className={styles.tierTitle}>VIP-блок в разделе «Скоро открытие»</h2>
+            <p className={styles.tierDesc}>
+              Для серверов с будущей датой открытия: отдельный верхний блок в /coming-soon, золотая подсветка и приоритет над обычными анонсами.
+              Всего {SOON_VIP_MAX} мест.
+            </p>
+            <ul className={styles.tierList}>
+              <li>Отдельный VIP-блок над обычными ожидаемыми серверами</li>
+              <li>Премиальная карточка с бейджем VIP и акцентом на дату открытия</li>
+              <li>Работает для проекта или конкретного будущего запуска внутри проекта</li>
+              <li>Обычное размещение «Скоро открытие» остаётся отдельной услугой</li>
+            </ul>
+
+            <div className={styles.slotsBox}>
+              <div className={styles.slotsLine}>
+                <span>Мест занято:</span>
+                <strong className={soonVipFull ? styles.slotsFull : styles.slotsFree}>
+                  {vipLoading ? '…' : `${soonVip?.taken ?? 0} из ${SOON_VIP_MAX}`}
+                </strong>
+              </div>
+              {soonVipFull && soonVip?.nextFreeAt && (
+                <div className={styles.slotsLine}>
+                  <span>Ближайшее освободится:</span>
+                  <strong>{new Date(soonVip.nextFreeAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
+                </div>
+              )}
+              {!selectedIsComingSoon && (
+                <div className={styles.slotsHint}>Выберите сервер с будущей датой открытия.</div>
+              )}
+            </div>
+
+            <button
+              className="btn-primary"
+              onClick={() => buy('soon_vip')}
+              disabled={busy === 'soon_vip' || soonVipFull || !selectedIsComingSoon}
+              style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start' }}
+            >
+              {busy === 'soon_vip' ? <span className="spin" /> : soonVipFull ? 'Все места заняты' : `Купить VIP Скоро за ${SOON_VIP_PRICE.toLocaleString('ru-RU')} ₽`}
+            </button>
           </div>
 
         </div>

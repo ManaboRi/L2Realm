@@ -11,12 +11,6 @@ export interface ServerInstance {
   rateNum:     number;
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
-  onlineSourceUrl?: string | null;
-  onlineSourcePattern?: string | null;
-  online?: number | null;
-  onlineUpdatedAt?: string | null;
-  onlineCheckedAt?: string | null;
-  onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
 }
 
 export interface Server {
@@ -44,12 +38,6 @@ export interface Server {
   fullDesc?:   string;
   rating:      number;
   ratingCount: number;
-  online?:     number;
-  onlineSourceUrl?: string | null;
-  onlineSourcePattern?: string | null;
-  onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
-  onlineUpdatedAt?: string | null;
-  onlineCheckedAt?: string | null;
   status?:     'online' | 'offline' | 'unknown';
   subscription?: Subscription;
   boost?:      Boost | null;
@@ -132,6 +120,7 @@ export interface Article {
   description:  string;
   content:      string;
   image:        string | null;
+  category:     string;
   publishedAt:  string | null;
   createdAt:    string;
   updatedAt:    string;
@@ -149,7 +138,6 @@ export interface FavoriteServer {
     rating:      number;
     ratingCount: number;
     status:      'online' | 'offline' | 'unknown';
-    online:      number | null;
     openedDate:  string | null;
   };
 }
@@ -168,17 +156,18 @@ export interface Stats {
   newCount:    number;
   reviewCount: number;
   monthlyVotes?: number;
-  totalOnline?: number;
 }
 
 export type SubscriptionPlan = 'free' | 'vip';
 
 export const VIP_PRICE   = 5000;
 export const VIP_DAYS    = 31;
-export const VIP_MAX     = 3;
+export const VIP_MAX     = 5;
 export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
-export const COMING_SOON_PRICE = 1000;
+export const COMING_SOON_PRICE = 500;
+export const SOON_VIP_PRICE = 2000;
+export const SOON_VIP_MAX = 5;
 
 // Канонический список хроник в хронологическом порядке выпуска.
 // Используется в формах /add и админки (selects) и для упорядочивания

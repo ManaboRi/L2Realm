@@ -7,6 +7,7 @@ export interface ArticleDto {
   description:  string;
   content:      string;
   image?:       string | null;
+  category?:    string | null;
   publishedAt?: string | null;
 }
 
@@ -76,6 +77,7 @@ export class ArticlesService {
         description: dto.description.trim(),
         content:     dto.content,
         image:       dto.image?.trim() || null,
+        category:    dto.category?.trim() || 'Новости',
         publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : null,
       },
     });
@@ -105,6 +107,9 @@ export class ArticlesService {
         image:       dto.image === undefined
           ? existing.image
           : (dto.image?.trim() || null),
+        category:    dto.category === undefined
+          ? existing.category
+          : (dto.category?.trim() || 'Новости'),
         publishedAt: dto.publishedAt === undefined
           ? existing.publishedAt
           : (dto.publishedAt ? new Date(dto.publishedAt) : null),

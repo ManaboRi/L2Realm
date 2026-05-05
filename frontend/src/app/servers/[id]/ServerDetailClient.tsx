@@ -10,9 +10,6 @@ function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
-function fmtNum(n?: number | null) {
-  return typeof n === 'number' ? n.toLocaleString('ru-RU') : '';
-}
 function relativeOpened(s?: string | null): string {
   if (!s) return '—';
   const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
@@ -193,9 +190,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }
 
   const isOnline = status?.status === 'online';
-  const publicOnline = typeof status?.online === 'number' ? status.online : server.online;
-  const onlineSourceStatus = status?.onlineSourceStatus ?? server.onlineSourceStatus;
-  const onlineUpdatedAt = status?.onlineUpdatedAt ?? server.onlineUpdatedAt;
 
   return (
     <div className={styles.page}>
@@ -243,12 +237,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   {isOnline ? 'Сервер работает' : 'Статус неизвестен'}
                 </span>
                 {status?.uptime != null && <span className={styles.uptime}>• Аптайм {status.uptime}%</span>}
-                {onlineSourceStatus === 'ok' && typeof publicOnline === 'number' && (
-                  <span className={styles.onlineMetric} title={`Информация с сайта сервера${onlineUpdatedAt ? `, обновлено ${fmtDate(onlineUpdatedAt)}` : ''}`}>
-                    {fmtNum(publicOnline)} онлайн
-                    <span>с сайта</span>
-                  </span>
-                )}
               </div>
 
               {/* Быстрая статистика: голоса / рейтинг / отзывы */}
@@ -338,7 +326,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {[
                 ['Страна',     flag(server.country)],
                 ['Открылся',   relativeOpened(server.openedDate)],
-                ['Онлайн',     onlineSourceStatus === 'ok' && typeof publicOnline === 'number' ? `${fmtNum(publicOnline)} игроков` : 'Нет публичных данных'],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
@@ -396,11 +383,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                             <span className="tag tc">{inst.chronicle}</span>
                           </div>
                           {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
-                          {inst.onlineSourceStatus === 'ok' && typeof inst.online === 'number' && (
-                            <div className={styles.instTileOnline} title="Информация с сайта сервера">
-                              {fmtNum(inst.online)} онлайн <span>с сайта</span>
-                            </div>
-                          )}
                           {isFuture && (
                             <div className={styles.instTileDate}>
                               {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}

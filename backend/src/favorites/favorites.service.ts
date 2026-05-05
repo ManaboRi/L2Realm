@@ -14,7 +14,7 @@ export class FavoritesService {
         server: {
           select: {
             id: true, name: true, icon: true, chronicle: true, rates: true,
-            rating: true, ratingCount: true, status: true, online: true, openedDate: true,
+            rating: true, ratingCount: true, status: true, openedDate: true,
           },
         },
       },

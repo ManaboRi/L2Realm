@@ -3,12 +3,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import * as https from 'https';
 import * as http  from 'http';
-import axios from 'axios';
-
-type OnlineParseResult = {
-  players: number | null;
-  status: 'disabled' | 'ok' | 'not_found' | 'error';
-};
 
 const MONITOR_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
 const MONITOR_CONCURRENCY = 5;
@@ -38,12 +32,6 @@ export class MonitoringService {
     return {
       serverId,
       status:  server.status,
-      online:  server.online,
-      onlineSourceUrl: server.onlineSourceUrl,
-      onlineSourcePattern: server.onlineSourcePattern,
-      onlineSourceStatus: server.onlineSourceStatus,
-      onlineUpdatedAt: server.onlineUpdatedAt,
-      onlineCheckedAt: server.onlineCheckedAt,
       last,
       uptime:  this.calcUptime(history),
       history: history.reverse(),
@@ -59,48 +47,15 @@ export class MonitoringService {
     const start     = Date.now();
     const reachable = await this.pingUrl(url);
     const ping      = Date.now() - start;
-    const checkedAt = new Date();
-
-    const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
-    const parsedProject = await this.readOnline(server.onlineSourceUrl, server.onlineSourcePattern);
-    const parsedInstances = await mapWithConcurrency(instances, 3, async inst => {
-      if (!inst?.onlineSourceUrl) return { ...inst, onlineSourceStatus: inst?.onlineSourceStatus ?? 'disabled' };
-      const parsed = await this.readOnline(inst.onlineSourceUrl, inst.onlineSourcePattern);
-      return {
-        ...inst,
-        online:             parsed.players,
-        onlineUpdatedAt:     parsed.status === 'ok' ? checkedAt.toISOString() : inst.onlineUpdatedAt ?? null,
-        onlineCheckedAt:     checkedAt.toISOString(),
-        onlineSourceStatus:  parsed.status,
-      };
-    });
-
-    const instanceOnlineValues = parsedInstances
-      .map(inst => typeof inst.online === 'number' ? inst.online : null)
-      .filter((n): n is number => n != null);
-    const summedInstancesOnline = instanceOnlineValues.length
-      ? instanceOnlineValues.reduce((sum, n) => sum + n, 0)
-      : null;
-    const projectPlayers = parsedProject.status === 'ok'
-      ? parsedProject.players
-      : summedInstancesOnline;
-    const projectSourceStatus = server.onlineSourceUrl
-      ? parsedProject.status
-      : summedInstancesOnline != null ? 'ok' : 'disabled';
 
     await this.prisma.monitorLog.create({
-      data: { serverId, online: reachable, ping: reachable ? ping : null, players: projectPlayers },
+      data: { serverId, online: reachable, ping: reachable ? ping : null },
     });
 
     await this.prisma.server.update({
       where: { id: serverId },
       data:  {
         status: reachable ? 'online' : 'offline',
-        online: projectPlayers,
-        onlineSourceStatus: projectSourceStatus,
-        onlineUpdatedAt: projectPlayers != null ? checkedAt : server.onlineUpdatedAt,
-        onlineCheckedAt: checkedAt,
-        instances: parsedInstances,
       },
     });
 
@@ -227,75 +182,6 @@ export class MonitoringService {
     return Math.round((logs.filter(l => l.online).length / logs.length) * 100);
   }
 
-  private async readOnline(url?: string | null, pattern?: string | null): Promise<OnlineParseResult> {
-    if (!url?.trim()) return { players: null, status: 'disabled' };
-    try {
-      const html = await this.fetchText(url.trim());
-      const players = this.extractOnlinePlayers(html, pattern);
-      return players == null
-        ? { players: null, status: 'not_found' }
-        : { players, status: 'ok' };
-    } catch {
-      return { players: null, status: 'error' };
-    }
-  }
-
-  private async fetchText(url: string): Promise<string> {
-    const { data } = await axios.get<string>(url, {
-      responseType: 'text',
-      timeout: 10_000,
-      maxContentLength: 600_000,
-      headers: {
-        'User-Agent':      MONITOR_UA,
-        'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
-        'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
-      },
-      validateStatus: status => status > 0 && status < 500,
-    });
-    return String(data).slice(0, 600_000);
-  }
-
-  private extractOnlinePlayers(html: string, pattern?: string | null): number | null {
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/gi, ' ')
-      .replace(/&[a-z]+;/gi, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const custom = this.extractByPattern(html, text, pattern);
-    if (custom != null) return custom;
-
-    const patterns = [
-      /["']?(?:online|players|player_count|online_players)["']?\s*[:=]\s*["']?([0-9][0-9\s.,]{0,20})/i,
-      /(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре|сейчас онлайн)\D{0,80}([0-9][0-9\s.,]{0,20})/i,
-      /([0-9][0-9\s.,]{0,20})\D{0,50}(?:онлайн|online|players?|игрок(?:ов|и|а)?|играют|в игре)/i,
-    ];
-
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      const count = match ? parsePlayerCount(match[1]) : null;
-      if (count != null) return count;
-    }
-    return null;
-  }
-
-  // Многие сайты на Cloudflare/anti-bot блокируют запросы без UA — классифицируем
-  // их как offline. Отдаём обычный браузерный UA и идём по исходному пути URL.
-  private extractByPattern(html: string, text: string, pattern?: string | null): number | null {
-    if (!pattern?.trim()) return null;
-    try {
-      const re = new RegExp(pattern.trim(), 'is');
-      const match = text.match(re) ?? html.match(re);
-      if (!match) return null;
-      return parsePlayerCount(match[1] ?? match[0]);
-    } catch {
-      return null;
-    }
-  }
-
   private pingUrl(url: string): Promise<boolean> {
     return new Promise(resolve => {
       try {
@@ -330,15 +216,6 @@ export class MonitoringService {
       }
     });
   }
-}
-
-function parsePlayerCount(raw: string): number | null {
-  const compact = raw.replace(/\s/g, '').trim();
-  const normalized = compact.replace(/[.,](?=\d{3}\b)/g, '').replace(/[^\d]/g, '');
-  if (!normalized) return null;
-  const value = Number(normalized);
-  if (!Number.isInteger(value) || value < 0 || value > 200_000) return null;
-  return value;
 }
 
 async function mapWithConcurrency<T, R>(

@@ -8,15 +8,6 @@ function fmtDate(s?: string | null) {
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-function fmtNum(n?: number | null) {
-  return typeof n === 'number' ? n.toLocaleString('ru-RU') : '';
-}
-
-function onlineTitle(s: Server) {
-  const updated = s.onlineUpdatedAt ? `, обновлено ${fmtDate(s.onlineUpdatedAt)}` : '';
-  return s.onlineSourceUrl ? `Информация с сайта сервера${updated}` : 'Публичный онлайн пока не настроен';
-}
-
 function relativeOpened(s?: string | null): string {
   if (!s) return '—';
   const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
@@ -43,7 +34,7 @@ interface Props { server: Server; vipBlock?: boolean; }
 export function ServerCard({ server: s, vipBlock }: Props) {
   const isSoon    = s.openedDate ? new Date(s.openedDate) > new Date() : false;
   const plan      = s.subscription?.plan ?? 'FREE';
-  const isVip     = plan === 'VIP';
+  const isVip     = plan === 'VIP' && !isSoon;
   const isBoosted = !!s._isBoosted;
   const isSod     = !!s._isSod;
 
@@ -150,12 +141,6 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {s.status && (
             <span className={s.status === 'online' ? styles.online : styles.offline}>
               {s.status === 'online' ? '● Online' : '● Offline'}
-            </span>
-          )}
-          {s.onlineSourceStatus === 'ok' && typeof s.online === 'number' && (
-            <span className={styles.players} title={onlineTitle(s)}>
-              {fmtNum(s.online)} online
-              <span className={styles.sourceMark}>site</span>
             </span>
           )}
           {/* Средняя оценка + число отзывов */}

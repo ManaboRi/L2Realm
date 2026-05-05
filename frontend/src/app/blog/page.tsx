@@ -9,6 +9,8 @@ const SITE = 'https://l2realm.ru';
 
 export const dynamic = 'force-dynamic';
 
+type Props = { searchParams?: Promise<{ category?: string }> };
+
 export const metadata: Metadata = {
   title: 'Статьи о Lineage 2',
   description:
@@ -41,9 +43,14 @@ function fmtDate(s: string | null): string {
   });
 }
 
+function articleCategory(a: Article) {
+  return a.category?.trim() || 'Новости';
+}
+
 function ArticleMeta({ a }: { a: Article }) {
   return (
     <div className={styles.meta}>
+      <span className={styles.category}>{articleCategory(a)}</span>
       <time dateTime={a.publishedAt ?? a.createdAt}>{fmtDate(a.publishedAt ?? a.createdAt)}</time>
       <span className={styles.metaDot}>·</span>
       <span>{readingTime(a.content)} мин чтения</span>
@@ -51,10 +58,21 @@ function ArticleMeta({ a }: { a: Article }) {
   );
 }
 
-export default async function BlogPage() {
+export default async function BlogPage({ searchParams }: Props) {
   const articles = await fetchArticles();
+  const sp = await searchParams;
+  const activeCategory = sp?.category?.trim() || '';
 
-  const [featured, ...rest] = articles;
+  const categoryCounts = articles.reduce<Record<string, number>>((acc, a) => {
+    const c = articleCategory(a);
+    acc[c] = (acc[c] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  const categories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru'));
+  const visible = activeCategory
+    ? articles.filter(a => articleCategory(a) === activeCategory)
+    : articles;
 
   return (
     <div className={styles.page}>
@@ -62,53 +80,54 @@ export default async function BlogPage() {
         <p className={styles.heroEye}>◆ Блог ◆</p>
         <h1 className={styles.heroTitle}>Статьи и <em>гайды</em></h1>
         <p className={styles.heroSub}>
-          Обзоры серверов, опыт играющих, технические заметки. Без воды.
+          Обзоры серверов, опыт игроков, новости и практичные заметки по Lineage 2.
         </p>
       </header>
 
-      {!featured ? (
+      {articles.length === 0 ? (
         <p className={styles.empty}>Статей пока нет. Скоро напишем — заглядывай.</p>
       ) : (
-        <div className={styles.grid}>
-          {/* Главная статья — на всю ширину */}
-          <Link href={`/blog/${featured.slug}`} className={`${styles.card} ${styles.cardFeatured}`}>
-            {featured.image && (
-              <div className={styles.cover}>
-                <img src={featured.image} alt={featured.title} loading="lazy" />
-              </div>
-            )}
-            <div className={styles.cardBody}>
-              <ArticleMeta a={featured} />
-              <h2 className={styles.cardTitle}>{featured.title}</h2>
-              <p className={styles.cardLead}>
-                {featured.description || firstParagraph(featured.content, 280)}
-              </p>
-              <span className={styles.read}>Читать →</span>
-            </div>
-          </Link>
-
-          {/* Остальные — в две колонки */}
-          {rest.length > 0 && (
-            <div className={styles.cards}>
-              {rest.map(a => (
-                <Link key={a.id} href={`/blog/${a.slug}`} className={styles.card}>
-                  {a.image && (
-                    <div className={styles.cover}>
-                      <img src={a.image} alt={a.title} loading="lazy" />
-                    </div>
+        <div className={styles.layout}>
+          <main className={styles.feed}>
+            {visible.map(a => (
+              <Link key={a.id} href={`/blog/${a.slug}`} className={styles.articleCard}>
+                <div className={styles.cover}>
+                  {a.image ? (
+                    <img src={a.image} alt={a.title} loading="lazy" />
+                  ) : (
+                    <div className={styles.coverFallback} />
                   )}
-                  <div className={styles.cardBody}>
-                    <ArticleMeta a={a} />
-                    <h3 className={styles.cardTitle}>{a.title}</h3>
-                    <p className={styles.cardLead}>
-                      {a.description || firstParagraph(a.content, 200)}
-                    </p>
-                    <span className={styles.read}>Читать →</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+                  <div className={styles.coverShade} />
+                  <h2 className={styles.coverTitle}>{a.title}</h2>
+                </div>
+                <div className={styles.cardBody}>
+                  <ArticleMeta a={a} />
+                  <p className={styles.cardLead}>
+                    {a.description || firstParagraph(a.content, 240)}
+                  </p>
+                  <span className={styles.read}>Читать →</span>
+                </div>
+              </Link>
+            ))}
+          </main>
+
+          <aside className={styles.sidebar}>
+            <div className={styles.sideTitle}>Категории</div>
+            <Link href="/blog" className={`${styles.categoryLink} ${!activeCategory ? styles.categoryActive : ''}`}>
+              <span>Все статьи</span>
+              <strong>{articles.length}</strong>
+            </Link>
+            {categories.map(([name, count]) => (
+              <Link
+                key={name}
+                href={`/blog?category=${encodeURIComponent(name)}`}
+                className={`${styles.categoryLink} ${activeCategory === name ? styles.categoryActive : ''}`}
+              >
+                <span>{name}</span>
+                <strong>{count}</strong>
+              </Link>
+            ))}
+          </aside>
         </div>
       )}
     </div>

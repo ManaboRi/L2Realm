@@ -17,7 +17,7 @@ export class PaymentsController {
   @UseGuards(AuthGuard('jwt'))
   @Post('purchase')
   purchase(
-    @Body() body: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string },
+    @Body() body: { kind: 'vip' | 'boost' | 'soon_vip'; serverId: string; returnUrl: string },
     @Request() req: { user: { id: string; email: string } },
   ) {
     return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email);
@@ -63,6 +63,11 @@ export class PaymentsController {
   @Get('vip/status')
   vipStatus() {
     return this.payments.getVipStatus();
+  }
+
+  @Get('vip/soon-status')
+  soonVipStatus() {
+    return this.payments.getSoonVipStatus();
   }
 
   // Активные бусты (публично, лёгкий эндпоинт для сортировки на фронте если понадобится)

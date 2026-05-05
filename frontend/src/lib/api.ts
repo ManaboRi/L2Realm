@@ -76,8 +76,8 @@ export const api = {
 
   // ── Оплата ────────────────────────────────────
   payments: {
-    // Покупка VIP или буста (ЮКасса). Требует JWT — email пользователя уходит в чек.
-    purchase: (data: { kind: 'vip' | 'boost'; serverId: string; returnUrl: string }, token: string) =>
+    // Покупка VIP, VIP в «Скоро открытие» или буста (ЮКасса). Требует JWT — email пользователя уходит в чек.
+    purchase: (data: { kind: 'vip' | 'boost' | 'soon_vip'; serverId: string; returnUrl: string }, token: string) =>
       request<{ dev?: boolean; activated?: boolean; paymentId?: string; confirmationUrl?: string }>(
         '/payments/purchase', {
           method: 'POST',
@@ -94,6 +94,7 @@ export const api = {
         },
       ),
     vipStatus: () => request<VipStatus>('/payments/vip/status'),
+    soonVipStatus: () => request<VipStatus>('/payments/vip/soon-status'),
     subscription: (serverId: string) => request<Subscription | null>(`/payments/subscription/${serverId}`),
     boost: (serverId: string) => request<Boost | null>(`/payments/boost/${serverId}`),
     allSubs: (token: string) =>

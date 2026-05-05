@@ -83,6 +83,7 @@ export default async function BlogPostPage({ params }: Props) {
         <header className={styles.head}>
           <h1 className={styles.title}>{article.title}</h1>
           <div className={styles.meta}>
+            <span className={styles.category}>{article.category || 'Новости'}</span>
             <time dateTime={article.publishedAt ?? article.createdAt}>
               {fmtDate(article.publishedAt ?? article.createdAt)}
             </time>

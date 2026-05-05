@@ -18,6 +18,7 @@ type Opening = {
   label?:     string;             // лейбл instance, если есть
   shortDesc?: string;             // описание instance или сервера
   openedAt:   string;
+  isVip:      boolean;
 };
 
 type Group = { label: string; emoji: string; openings: Opening[] };
@@ -28,6 +29,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
   for (const s of servers) {
     const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
     const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
+    const isVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate) > new Date();
 
     if (futureInsts.length > 0) {
       // Проект с future-instance: каждый запуск — отдельная карточка
@@ -43,6 +45,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
           label:       i.label,
           shortDesc:   i.shortDesc || s.shortDesc || undefined,
           openedAt:    i.openedDate!,
+          isVip,
         });
       }
     } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
@@ -57,6 +60,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
         rates:       s.rates,
         shortDesc:   s.shortDesc || undefined,
         openedAt:    s.openedDate,
+        isVip,
       });
     }
   }
@@ -100,10 +104,43 @@ function daysUntil(dateStr: string) {
   return `Через ${days} дн.`;
 }
 
+function OpeningCard({ o, vip = false }: { o: Opening; vip?: boolean }) {
+  return (
+    <Link href={`/servers/${o.serverId}`} className={`${styles.card} ${vip ? styles.vipCard : ''}`}>
+      <div className={styles.cardLeft}>
+        {o.icon
+          ? <img src={o.icon} alt={o.projectName} className={styles.icon} />
+          : <div className={styles.iconFallback}>{(o.abbr || o.projectName.slice(0,2)).toUpperCase()}</div>
+        }
+        <div>
+          <div className={styles.cardName}>
+            {o.projectName}
+            {o.label && <span className={styles.cardLabel}> · {o.label}</span>}
+            {vip && <span className={styles.vipBadge}>VIP</span>}
+          </div>
+          <div className={styles.cardMeta}>
+            <span className="tag tc">{o.chronicle}</span>
+            <span className="tag tn">{o.rates}</span>
+          </div>
+          {o.shortDesc && <div className={styles.cardDesc}>{o.shortDesc}</div>}
+        </div>
+      </div>
+      <div className={styles.cardRight}>
+        <div className={styles.countdown}>{daysUntil(o.openedAt)}</div>
+        <div className={styles.openDate}>
+          {new Date(o.openedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export function ComingSoonClient({ initialServers }: { initialServers: Server[] }) {
   const servers = initialServers;
   const openings = useMemo(() => flattenOpenings(servers), [servers]);
-  const groups   = useMemo(() => groupByOpenDate(openings), [openings]);
+  const vipOpenings = useMemo(() => openings.filter(o => o.isVip), [openings]);
+  const regularOpenings = useMemo(() => openings.filter(o => !o.isVip), [openings]);
+  const groups = useMemo(() => groupByOpenDate(regularOpenings), [regularOpenings]);
 
   return (
     <div className={styles.page}>
@@ -122,43 +159,32 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
             <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>← Все серверы</Link>
           </div>
         ) : (
-          groups.map(group => (
-            <div key={group.label} className={styles.group}>
-              <div className={styles.groupTitle}>
-                <span>{group.emoji}</span> {group.label}
-                <span className={styles.groupCount}>{group.openings.length}</span>
+          <>
+            {vipOpenings.length > 0 && (
+              <div className={`${styles.group} ${styles.vipGroup}`}>
+                <div className={styles.vipHead}>
+                  <span className={styles.vipMark}>◆</span>
+                  <span>VIP Скоро открытие</span>
+                  <span className={styles.groupCount}>{vipOpenings.length}</span>
+                </div>
+                <div className={styles.cards}>
+                  {vipOpenings.map(o => <OpeningCard key={o.key} o={o} vip />)}
+                </div>
               </div>
-              <div className={styles.cards}>
-                {group.openings.map(o => (
-                  <Link key={o.key} href={`/servers/${o.serverId}`} className={styles.card}>
-                    <div className={styles.cardLeft}>
-                      {o.icon
-                        ? <img src={o.icon} alt={o.projectName} className={styles.icon} />
-                        : <div className={styles.iconFallback}>{(o.abbr || o.projectName.slice(0,2)).toUpperCase()}</div>
-                      }
-                      <div>
-                        <div className={styles.cardName}>
-                          {o.projectName}
-                          {o.label && <span className={styles.cardLabel}> · {o.label}</span>}
-                        </div>
-                        <div className={styles.cardMeta}>
-                          <span className="tag tc">{o.chronicle}</span>
-                          <span className="tag tn">{o.rates}</span>
-                        </div>
-                        {o.shortDesc && <div className={styles.cardDesc}>{o.shortDesc}</div>}
-                      </div>
-                    </div>
-                    <div className={styles.cardRight}>
-                      <div className={styles.countdown}>{daysUntil(o.openedAt)}</div>
-                      <div className={styles.openDate}>
-                        {new Date(o.openedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                      </div>
-                    </div>
-                  </Link>
-                ))}
+            )}
+
+            {groups.map(group => (
+              <div key={group.label} className={styles.group}>
+                <div className={styles.groupTitle}>
+                  <span>{group.emoji}</span> {group.label}
+                  <span className={styles.groupCount}>{group.openings.length}</span>
+                </div>
+                <div className={styles.cards}>
+                  {group.openings.map(o => <OpeningCard key={o.key} o={o} />)}
+                </div>
               </div>
-            </div>
-          ))
+            ))}
+          </>
         )}
       </div>
     </div>

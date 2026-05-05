@@ -22,6 +22,12 @@ function sodSeed(): number {
   return h;
 }
 
+function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
+  if (s.openedDate && new Date(s.openedDate).getTime() > nowTs) return true;
+  const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+  return insts.some(i => i?.openedDate && new Date(i.openedDate).getTime() > nowTs);
+}
+
 @Injectable()
 export class ServersService {
   constructor(
@@ -137,7 +143,7 @@ export class ServersService {
     const decorated = filtered.map(s => {
       const plan = (s.subscription as any)?.plan ?? 'FREE';
       const subActive = s.subscription?.endDate && s.subscription.endDate > now;
-      const isVip  = plan === 'VIP' && subActive;
+      const isVip  = plan === 'VIP' && subActive && !isComingSoonServer(s, nowTs);
       const boostEnd = boostMap.get(s.id) ?? null;
       const isBoosted = !!boostEnd;
       const isSod    = s.id === sodId;
@@ -217,27 +223,11 @@ export class ServersService {
   // ── Обновить (только admin) ──────────────────
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
-    const { id: _id, openedDate, onlineSourceUrl, onlineSourcePattern, ...data } = dto as any;
-    const onlineSourceChanged =
-      (onlineSourceUrl !== undefined && onlineSourceUrl !== (existing as any).onlineSourceUrl)
-      || (onlineSourcePattern !== undefined && onlineSourcePattern !== (existing as any).onlineSourcePattern);
+    const { id: _id, openedDate, ...data } = dto as any;
     return this.prisma.server.update({
       where: { id },
       data: {
         ...data,
-        ...(onlineSourceUrl !== undefined && {
-          onlineSourceUrl,
-        }),
-        ...(onlineSourcePattern !== undefined && {
-          onlineSourcePattern,
-        }),
-        ...((onlineSourceUrl !== undefined || onlineSourcePattern !== undefined) && {
-          ...(onlineSourceChanged && {
-            onlineSourceStatus: 'disabled',
-            online: null,
-            onlineUpdatedAt: null,
-          }),
-        }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
       },
     });
@@ -379,7 +369,7 @@ export class ServersService {
 
   // ── Статистика ───────────────────────────────
   async getStats() {
-    const [total, vip, newCount, monthlyVotesAgg, onlineAgg] = await Promise.all([
+    const [total, vip, newCount, monthlyVotesAgg] = await Promise.all([
       this.prisma.server.count(),
       this.prisma.server.count({ where: { vip: true } }),
       this.prisma.server.count({
@@ -392,10 +382,6 @@ export class ServersService {
       this.prisma.server.aggregate({
         _sum: { monthlyVotes: true },
       }),
-      this.prisma.server.aggregate({
-        where: { online: { not: null }, onlineSourceStatus: 'ok' },
-        _sum: { online: true },
-      }),
     ]);
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
     return {
@@ -404,7 +390,6 @@ export class ServersService {
       newCount,
       reviewCount,
       monthlyVotes: monthlyVotesAgg._sum.monthlyVotes ?? 0,
-      totalOnline: onlineAgg._sum.online ?? 0,
     };
   }
 }

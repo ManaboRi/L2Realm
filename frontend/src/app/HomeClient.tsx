@@ -157,11 +157,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 <span className={styles.statNum}>{(stats.monthlyVotes ?? 0).toLocaleString('ru-RU')}</span>
                 <span className={styles.statLbl}>Голосов</span>
               </div>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem} title="Примерная сумма публичного онлайна с сайтов серверов">
-                <span className={styles.statNum}>{(stats.totalOnline ?? 0).toLocaleString('ru-RU')}</span>
-                <span className={styles.statLbl}>Онлайн</span>
-              </div>
             </div>
           )}
           <p className={styles.heroSub}>
@@ -267,8 +262,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               {Array.from({ length: 5 }).map((_, i) => <ServerCardSkeleton key={i} />)}
             </div>
           ) : (() => {
-            const vipServers  = servers.filter(s => s.subscription?.plan === 'VIP');
-            const mainServers = servers.filter(s => s.subscription?.plan !== 'VIP');
+            const vipServers  = servers.filter(s => s._isVip);
+            const mainServers = servers.filter(s => !s._isVip);
             return (
               <>
                 {/* VIP-блок — показываем только когда есть хотя бы один активный VIP.

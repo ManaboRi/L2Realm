@@ -14,10 +14,12 @@ type FormState = {
   description:  string;
   content:      string;
   image:        string;
+  category:     string;
   publishedAt:  string; // datetime-local или пусто = черновик
 };
 
-const EMPTY: FormState = { slug: '', title: '', description: '', content: '', image: '', publishedAt: '' };
+const EMPTY: FormState = { slug: '', title: '', description: '', content: '', image: '', category: 'Новости', publishedAt: '' };
+const CATEGORY_SUGGESTIONS = ['Новости', 'Гайды', 'Сервера', 'Обзоры', 'Обновления'];
 
 function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return '';
@@ -69,6 +71,7 @@ export default function AdminArticlesPage() {
       description: a.description,
       content:     a.content,
       image:       a.image ?? '',
+      category:    a.category ?? 'Новости',
       publishedAt: toLocalInput(a.publishedAt),
     });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -88,6 +91,7 @@ export default function AdminArticlesPage() {
         description: form.description.trim(),
         content:     form.content,
         image:       form.image.trim() || null,
+        category:    form.category.trim() || 'Новости',
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
       let savedSlug = form.slug;
@@ -202,6 +206,20 @@ export default function AdminArticlesPage() {
           </Field>
         </div>
 
+        <Field label="Категория">
+          <input
+            className="input"
+            list="article-categories"
+            value={form.category}
+            onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+            placeholder="Новости, гайды, сервера..."
+            maxLength={40}
+          />
+          <datalist id="article-categories">
+            {CATEGORY_SUGGESTIONS.map(c => <option key={c} value={c} />)}
+          </datalist>
+        </Field>
+
         <Field label="Описание (для SEO + превью на /blog) *">
           <textarea
             className="input"
@@ -284,6 +302,7 @@ export default function AdminArticlesPage() {
               <tr>
                 <th>Заголовок</th>
                 <th>Slug</th>
+                <th>Категория</th>
                 <th>Статус</th>
                 <th>Дата</th>
                 <th></th>
@@ -297,6 +316,7 @@ export default function AdminArticlesPage() {
                   <tr key={a.id} className={form.id === a.id ? styles.rowActive : ''}>
                     <td>{a.title}</td>
                     <td><code>{a.slug}</code></td>
+                    <td>{a.category ?? 'Новости'}</td>
                     <td>
                       {published && <span className={styles.tagOn}>● Опубликовано</span>}
                       {scheduled && <span className={styles.tagSched}>⏳ {new Date(a.publishedAt!).toLocaleDateString('ru-RU')}</span>}
