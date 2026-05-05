@@ -216,11 +216,23 @@ export class ServersService {
 
   // ── Обновить (только admin) ──────────────────
   async update(id: string, dto: UpdateServerDto) {
-    await this.findOne(id);
-    const { id: _id, openedDate, ...data } = dto as any;
+    const existing = await this.findOne(id);
+    const { id: _id, openedDate, onlineSourceUrl, ...data } = dto as any;
+    const onlineSourceChanged = onlineSourceUrl !== undefined && onlineSourceUrl !== (existing as any).onlineSourceUrl;
     return this.prisma.server.update({
       where: { id },
-      data: { ...data, openedDate: openedDate ? new Date(openedDate) : undefined },
+      data: {
+        ...data,
+        ...(onlineSourceUrl !== undefined && {
+          onlineSourceUrl,
+          ...(onlineSourceChanged && {
+            onlineSourceStatus: 'disabled',
+            online: null,
+            onlineUpdatedAt: null,
+          }),
+        }),
+        openedDate: openedDate ? new Date(openedDate) : undefined,
+      },
     });
   }
 
@@ -360,7 +372,7 @@ export class ServersService {
 
   // ── Статистика ───────────────────────────────
   async getStats() {
-    const [total, vip, newCount] = await Promise.all([
+    const [total, vip, newCount, onlineAgg] = await Promise.all([
       this.prisma.server.count(),
       this.prisma.server.count({ where: { vip: true } }),
       this.prisma.server.count({
@@ -370,8 +382,12 @@ export class ServersService {
           },
         },
       }),
+      this.prisma.server.aggregate({
+        where: { online: { not: null }, onlineSourceStatus: 'ok' },
+        _sum: { online: true },
+      }),
     ]);
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
-    return { total, vip, newCount, reviewCount };
+    return { total, vip, newCount, reviewCount, totalOnline: onlineAgg._sum.online ?? 0 };
   }
 }

@@ -23,6 +23,7 @@ function emptyInstance(): ServerInstance {
     rates:      '',
     rateNum:    0,
     url:        '',
+    onlineSourceUrl: '',
     openedDate: null,
   };
 }
@@ -152,6 +153,17 @@ export function InstancesEditor({ value, onChange }: Props) {
                   onChange={e => update(idx, { shortDesc: e.target.value })}
                   placeholder="Хардкорный PvP с автофармом"
                   maxLength={140}
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>URL источника онлайна</span>
+                <input
+                  className="input"
+                  type="url"
+                  value={inst.onlineSourceUrl ?? ''}
+                  onChange={e => update(idx, { onlineSourceUrl: e.target.value })}
+                  placeholder="Страница на сайте с публичной цифрой онлайна"
                 />
               </label>
             </li>

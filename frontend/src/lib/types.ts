@@ -11,6 +11,10 @@ export interface ServerInstance {
   rateNum:     number;
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
+  onlineSourceUrl?: string | null;
+  online?: number | null;
+  onlineUpdatedAt?: string | null;
+  onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
 }
 
 export interface Server {
@@ -39,6 +43,9 @@ export interface Server {
   rating:      number;
   ratingCount: number;
   online?:     number;
+  onlineSourceUrl?: string | null;
+  onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
+  onlineUpdatedAt?: string | null;
   status?:     'online' | 'offline' | 'unknown';
   subscription?: Subscription;
   boost?:      Boost | null;
@@ -156,6 +163,7 @@ export interface Stats {
   vip:         number;
   newCount:    number;
   reviewCount: number;
+  totalOnline?: number;
 }
 
 export type SubscriptionPlan = 'free' | 'vip';

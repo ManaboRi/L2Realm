@@ -152,6 +152,15 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
               <div className={styles.statDivider} />
               <div className={styles.statItem}><span className={styles.statNum}>{stats.reviewCount}</span><span className={styles.statLbl}>Отзывов</span></div>
+              {(stats.totalOnline ?? 0) > 0 && (
+                <>
+                  <div className={styles.statDivider} />
+                  <div className={styles.statItem} title="Сумма публичного онлайна с сайтов серверов">
+                    <span className={styles.statNum}>{stats.totalOnline?.toLocaleString('ru-RU')}</span>
+                    <span className={styles.statLbl}>Онлайн</span>
+                  </div>
+                </>
+              )}
             </div>
           )}
           <p className={styles.heroSub}>

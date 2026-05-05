@@ -57,6 +57,7 @@ export default function AdminPage() {
     url:'', openedDate:'', country:'RU',
     type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
+    onlineSourceUrl: '',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
   });
@@ -137,6 +138,7 @@ export default function AdminPage() {
       country:     'RU',
       type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
+      onlineSourceUrl: '',
       shortDesc:'', fullDesc:'',
       instances: [],
     });
@@ -196,6 +198,7 @@ export default function AdminPage() {
       telegram:    s.telegram    ?? '',
       discord:     s.discord     ?? '',
       vk:          s.vk          ?? '',
+      onlineSourceUrl: s.onlineSourceUrl ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
       instances:   Array.isArray(s.instances) ? s.instances : [],
@@ -233,6 +236,7 @@ export default function AdminPage() {
         telegram:    editForm.telegram || undefined,
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
+        onlineSourceUrl: editForm.onlineSourceUrl || null,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         instances:   editForm.instances ?? [],
@@ -266,6 +270,7 @@ export default function AdminPage() {
         openedDate: addForm.openedDate || undefined, country: addForm.country,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
+        onlineSourceUrl: addForm.onlineSourceUrl || null,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         instances: addForm.instances ?? [],
       } as any, token);
@@ -338,6 +343,7 @@ export default function AdminPage() {
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
+                <AField label="Источник онлайна"><input className="input" type="url" value={editForm.onlineSourceUrl ?? ''} onChange={e => setEditForm((p:any) => ({...p,onlineSourceUrl:e.target.value}))} placeholder="Страница сайта с публичным online" /></AField>
               </div>
 
               <AField label="Краткое описание">
@@ -410,7 +416,9 @@ export default function AdminPage() {
                             <div style={{ display:'flex', flexDirection:'column', gap:'.15rem' }}>
                               {s._isVip && <span className={styles.planBadge}>◆ VIP{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
                               {s._isBoosted && <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>🔥 Буст{s._boostEnd ? ` · до ${new Date(s._boostEnd).toLocaleDateString('ru-RU')}` : ''}</span>}
-                              {!s._isVip && !s._isBoosted && <span style={{ color:'var(--text3)' }}>—</span>}
+                              {s.onlineSourceStatus === 'ok' && typeof s.online === 'number' && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#5AB482', borderColor:'rgba(90,180,130,.25)' }}>{s.online.toLocaleString('ru-RU')} online · site</span>}
+                              {s.onlineSourceUrl && s.onlineSourceStatus !== 'ok' && <span className={styles.planBadge} style={{ background:'rgba(209,138,61,.1)', color:'#D18A3D', borderColor:'rgba(209,138,61,.25)' }}>online: {s.onlineSourceStatus}</span>}
+                              {!s._isVip && !s._isBoosted && !s.onlineSourceUrl && <span style={{ color:'var(--text3)' }}>—</span>}
                             </div>
                           </td>
                           <td>
@@ -674,6 +682,7 @@ export default function AdminPage() {
                     <AField label="Telegram"><input className="input" type="url" value={addForm.telegram} onChange={e => setAddForm(p => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                     <AField label="Discord"><input className="input" type="url" value={addForm.discord} onChange={e => setAddForm(p => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
+                    <AField label="Источник онлайна"><input className="input" type="url" value={addForm.onlineSourceUrl} onChange={e => setAddForm(p => ({...p,onlineSourceUrl:e.target.value}))} placeholder="Страница сайта с публичным online" /></AField>
                   </div>
 
                   <AField label="Краткое описание">
