@@ -8,14 +8,14 @@ import styles from './page.module.css';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ slug: string }> };
 
 async function fetchArticle(slug: string): Promise<Article | null> {
   try {
     const res = await fetch(`${BACKEND}/api/articles/${encodeURIComponent(slug)}`, {
-      next: { revalidate: 300 },
+      cache: 'no-store',
     });
     if (!res.ok) return null;
     return await res.json();

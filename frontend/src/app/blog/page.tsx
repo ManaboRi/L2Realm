@@ -7,7 +7,7 @@ import styles from './page.module.css';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 
-export const revalidate = 300;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Статьи о Lineage 2',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 
 async function fetchArticles(): Promise<Article[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/articles`, { next: { revalidate: 300 } });
+    const res = await fetch(`${BACKEND}/api/articles`, { cache: 'no-store' });
     if (!res.ok) return [];
     return await res.json();
   } catch {
