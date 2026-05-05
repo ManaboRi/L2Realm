@@ -11,6 +11,7 @@ type OnlineParseResult = {
 };
 
 const MONITOR_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36';
+const MONITOR_CONCURRENCY = 5;
 
 @Injectable()
 export class MonitoringService {
@@ -41,6 +42,7 @@ export class MonitoringService {
       onlineSourceUrl: server.onlineSourceUrl,
       onlineSourceStatus: server.onlineSourceStatus,
       onlineUpdatedAt: server.onlineUpdatedAt,
+      onlineCheckedAt: server.onlineCheckedAt,
       last,
       uptime:  this.calcUptime(history),
       history: history.reverse(),
@@ -60,16 +62,17 @@ export class MonitoringService {
 
     const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
     const parsedProject = await this.readOnline(server.onlineSourceUrl);
-    const parsedInstances = await Promise.all(instances.map(async inst => {
+    const parsedInstances = await mapWithConcurrency(instances, 3, async inst => {
       if (!inst?.onlineSourceUrl) return { ...inst, onlineSourceStatus: inst?.onlineSourceStatus ?? 'disabled' };
       const parsed = await this.readOnline(inst.onlineSourceUrl);
       return {
         ...inst,
         online:             parsed.players,
         onlineUpdatedAt:     parsed.status === 'ok' ? checkedAt.toISOString() : inst.onlineUpdatedAt ?? null,
+        onlineCheckedAt:     checkedAt.toISOString(),
         onlineSourceStatus:  parsed.status,
       };
-    }));
+    });
 
     const instanceOnlineValues = parsedInstances
       .map(inst => typeof inst.online === 'number' ? inst.online : null)
@@ -95,6 +98,7 @@ export class MonitoringService {
         online: projectPlayers,
         onlineSourceStatus: projectSourceStatus,
         onlineUpdatedAt: projectPlayers != null ? checkedAt : server.onlineUpdatedAt,
+        onlineCheckedAt: checkedAt,
         instances: parsedInstances,
       },
     });
@@ -106,15 +110,15 @@ export class MonitoringService {
     return reachable;
   }
 
-  // ── Авто-проверка каждые 5 минут ────────────
-  @Cron('*/5 * * * *')
+  // ── Авто-проверка каждые 30 минут ───────────
+  @Cron('*/30 * * * *')
   async checkAllServers() {
     const servers = await this.prisma.server.findMany({ select: { id: true } });
-    this.logger.log(`Мониторинг: проверяем ${servers.length} серверов`);
+    this.logger.log(`Мониторинг: проверяем ${servers.length} серверов, параллельность ${MONITOR_CONCURRENCY}`);
 
-    for (const s of servers) {
+    await mapWithConcurrency(servers, MONITOR_CONCURRENCY, async s => {
       try { await this.checkServer(s.id); } catch {}
-    }
+    });
   }
 
   // ── Сброс истёкших тарифов — раз в час ──────
@@ -319,4 +323,24 @@ function parsePlayerCount(raw: string): number | null {
   const value = Number(normalized);
   if (!Number.isInteger(value) || value < 0 || value > 200_000) return null;
   return value;
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let index = 0;
+
+  async function run() {
+    while (index < items.length) {
+      const current = index++;
+      results[current] = await worker(items[current]);
+    }
+  }
+
+  const runners = Array.from({ length: Math.min(concurrency, items.length) }, run);
+  await Promise.all(runners);
+  return results;
 }

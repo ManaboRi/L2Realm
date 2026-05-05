@@ -76,6 +76,7 @@ model Server {
   onlineSourceUrl    String?
   onlineSourceStatus String   @default("disabled") // disabled | ok | not_found | error
   onlineUpdatedAt    DateTime?
+  onlineCheckedAt    DateTime?
   // Внутренние «запуски» проекта (Scryde-кейс). Каждый — карточка
   // с рейтом/хроникой/URL внешнего сайта. Без своих ID, отзывов, голосов.
   // [{ id, label?, chronicle, rates, rateNum, url, openedDate? }]

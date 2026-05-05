@@ -14,6 +14,7 @@ export interface ServerInstance {
   onlineSourceUrl?: string | null;
   online?: number | null;
   onlineUpdatedAt?: string | null;
+  onlineCheckedAt?: string | null;
   onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
 }
 
@@ -46,6 +47,7 @@ export interface Server {
   onlineSourceUrl?: string | null;
   onlineSourceStatus?: 'disabled' | 'ok' | 'not_found' | 'error';
   onlineUpdatedAt?: string | null;
+  onlineCheckedAt?: string | null;
   status?:     'online' | 'offline' | 'unknown';
   subscription?: Subscription;
   boost?:      Boost | null;
@@ -163,6 +165,7 @@ export interface Stats {
   vip:         number;
   newCount:    number;
   reviewCount: number;
+  monthlyVotes?: number;
   totalOnline?: number;
 }
 

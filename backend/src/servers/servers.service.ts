@@ -372,7 +372,7 @@ export class ServersService {
 
   // ── Статистика ───────────────────────────────
   async getStats() {
-    const [total, vip, newCount, onlineAgg] = await Promise.all([
+    const [total, vip, newCount, monthlyVotesAgg, onlineAgg] = await Promise.all([
       this.prisma.server.count(),
       this.prisma.server.count({ where: { vip: true } }),
       this.prisma.server.count({
@@ -383,11 +383,21 @@ export class ServersService {
         },
       }),
       this.prisma.server.aggregate({
+        _sum: { monthlyVotes: true },
+      }),
+      this.prisma.server.aggregate({
         where: { online: { not: null }, onlineSourceStatus: 'ok' },
         _sum: { online: true },
       }),
     ]);
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
-    return { total, vip, newCount, reviewCount, totalOnline: onlineAgg._sum.online ?? 0 };
+    return {
+      total,
+      vip,
+      newCount,
+      reviewCount,
+      monthlyVotes: monthlyVotesAgg._sum.monthlyVotes ?? 0,
+      totalOnline: onlineAgg._sum.online ?? 0,
+    };
   }
 }
