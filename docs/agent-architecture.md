@@ -122,7 +122,7 @@ Swagger is available only in dev at `/api/docs`; production disables it.
 - Security headers: `frontend/next.config.ts`
 - Auth context: `frontend/src/context/AuthContext.tsx`
 - API client: `frontend/src/lib/api.ts`
-- VK OAuth PKCE: `frontend/src/lib/vkAuth.ts` and `frontend/src/app/auth/vk/callback/page.tsx`
+- VK OAuth PKCE: `frontend/src/lib/vkAuth.ts` and `frontend/src/app/auth/callback/page.tsx`
 - Proxy blocked paths: `frontend/src/app/api/proxy/[...path]/route.ts`
 - Nickname cooldown UI: `frontend/src/app/profile/page.tsx`
 - Rating recalculation button: `frontend/src/app/admin/page.tsx`

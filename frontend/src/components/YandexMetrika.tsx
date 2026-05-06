@@ -40,7 +40,7 @@ export function YandexMetrika() {
       </Script>
       <noscript>
         <div>
-          <img src={`https://mc.yandex.ru/watch/${COUNTER_ID}`} style={{ position: 'absolute', left: '-9999px' }} alt="" />
+          <img src={`https://mc.yandex.ru/watch/${COUNTER_ID}`} style={{ position: 'absolute', left: '-9999px' }} alt="Yandex Metrika L2Realm" />
         </div>
       </noscript>
       <Suspense fallback={null}>

@@ -6,6 +6,13 @@ import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
 
+const CHRONICLE_LINKS = [
+  { href: '/chronicle/interlude', label: 'Interlude' },
+  { href: '/chronicle/high-five', label: 'High Five' },
+  { href: '/chronicle/classic', label: 'Classic' },
+  { href: '/chronicle/essence', label: 'Essence' },
+];
+
 export function Header() {
   const { user, isAdmin } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
@@ -57,24 +64,29 @@ export function Header() {
         <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
           <nav className={styles.nav}>
             <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`} onClick={closeMenu}>
-              <img src="/images/nav-servers.png" alt="" className={styles.navIcon} />
+              <img src="/images/nav-servers.png" alt="Каталог серверов Lineage 2" className={styles.navIcon} />
               <span className={styles.navText}>Все серверы</span>
             </Link>
             <Link href="/coming-soon" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-coming-soon.png" alt="" className={styles.navIcon} />
+              <img src="/images/nav-coming-soon.png" alt="Скоро открытие серверов Lineage 2" className={styles.navIcon} />
               <span className={styles.navText}>
                 <span className={styles.navTextFull}>Скоро открытие</span>
                 <span className={styles.navTextShort}>Скоро</span>
               </span>
             </Link>
             <Link href="/pricing" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-pricing.png" alt="" className={styles.navIcon} />
+              <img src="/images/nav-pricing.png" alt="Тарифы L2Realm" className={styles.navIcon} />
               <span className={styles.navText}>Тарифы</span>
             </Link>
             <Link href="/blog" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-blog.png" alt="" className={styles.navIcon} />
+              <img src="/images/nav-blog.png" alt="Статьи L2Realm" className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
             </Link>
+            {CHRONICLE_LINKS.map(link => (
+              <Link key={link.href} href={link.href} className={`${styles.navLink} ${styles.navChronicle}`} onClick={closeMenu}>
+                <span className={styles.navText}>{link.label}</span>
+              </Link>
+            ))}
             {isAdmin && (
               <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`} onClick={closeMenu}>
                 <span className={styles.navText}>Admin</span>
@@ -92,7 +104,7 @@ export function Header() {
                 aria-label="Telegram-канал L2Realm"
                 title="Telegram-канал"
               >
-                <img src="/images/Telegram.png" alt="" className={styles.socialIcon} />
+                <img src="/images/Telegram.png" alt="Telegram L2Realm" className={styles.socialIcon} />
               </a>
               <a
                 href="https://vk.com/l2realmru"
@@ -102,14 +114,14 @@ export function Header() {
                 aria-label="ВКонтакте-сообщество L2Realm"
                 title="ВКонтакте"
               >
-                <img src="/images/Vkontakte.png" alt="" className={styles.socialIcon} />
+                <img src="/images/Vkontakte.png" alt="ВКонтакте L2Realm" className={styles.socialIcon} />
               </a>
             </div>
 
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>
                 {user.avatar ? (
-                  <img src={user.avatar} alt="" className={styles.profileAvatar} />
+                  <img src={user.avatar} alt={`Аватар ${displayName}`} className={styles.profileAvatar} />
                 ) : (
                   <span className={styles.profileAvatarFallback}>{initial}</span>
                 )}

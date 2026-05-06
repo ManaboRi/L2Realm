@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { dateString, parseOrThrow, safeIp, safeSlug, safeText, safeUrl } from '../common/input-validation';
+import { z } from 'zod';
 
 export const VIP_PRICE         = 5000;
 export const VIP_DAYS          = 31;
@@ -16,6 +18,29 @@ export const SOON_VIP_MAX      = 5;
 
 type PurchaseKind = 'vip' | 'boost' | 'soon_vip';
 
+const returnUrlSchema = safeUrl.refine(value => {
+  if (process.env.NODE_ENV !== 'production') return true;
+  const url = new URL(value);
+  return url.origin === 'https://l2realm.ru';
+}, 'Return URL must point to https://l2realm.ru');
+
+const purchaseSchema = z.object({
+  kind: z.enum(['vip', 'boost', 'soon_vip']),
+  serverId: safeSlug.max(64),
+  returnUrl: returnUrlSchema,
+  userEmail: z.string().trim().email(),
+  instanceId: z.union([safeText(1, 80), z.literal(''), z.null()]).optional().transform(value => value || null),
+});
+
+const soonPurchaseSchema = z.object({
+  name: safeText(2, 80),
+  chronicle: safeText(1, 80),
+  rates: safeText(1, 40),
+  url: safeUrl,
+  openedDate: dateString,
+  contact: safeText(2, 120),
+});
+
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
@@ -24,6 +49,12 @@ export class PaymentsService {
 
   // ── Создать платёж (VIP или буст) ─────────────
   async createPurchase(kind: PurchaseKind, serverId: string, returnUrl: string, userEmail: string, instanceId?: string | null) {
+    const clean = parseOrThrow(purchaseSchema, { kind, serverId, returnUrl, userEmail, instanceId });
+    kind = clean.kind;
+    serverId = clean.serverId;
+    returnUrl = clean.returnUrl;
+    userEmail = clean.userEmail;
+    instanceId = clean.instanceId;
     const server = await this.prisma.server.findUnique({ where: { id: serverId }, include: { subscription: true } });
     if (!server) throw new NotFoundException('Сервер не найден');
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
@@ -284,20 +315,19 @@ export class PaymentsService {
     returnUrl: string,
     data: { name: string; chronicle: string; rates: string; url: string; openedDate: string; contact: string },
   ) {
+    const clean = parseOrThrow(soonPurchaseSchema, data);
+    returnUrl = parseOrThrow(returnUrlSchema, returnUrl);
+    userEmail = parseOrThrow(z.string().trim().email(), userEmail);
+    if (ip) parseOrThrow(safeIp, ip.replace(/^::ffff:/, ''));
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
-    if (!data.name?.trim() || !data.chronicle?.trim() || !data.rates?.trim() || !data.url?.trim()) {
-      throw new BadRequestException('Заполните название, хронику, рейты и URL');
-    }
-    if (!data.openedDate) throw new BadRequestException('Укажите дату открытия');
-    const opened = new Date(data.openedDate);
+    const opened = new Date(clean.openedDate);
     if (isNaN(opened.getTime()) || opened <= new Date()) {
       throw new BadRequestException('«Скоро открытие» — только для серверов с датой открытия в будущем');
     }
-    if (!data.contact?.trim()) throw new BadRequestException('Укажите контакт (TG/VK) для связи');
 
     // Антидубль по URL: уже зарегистрированный сервер или активная заявка
     const existing = await this.prisma.serverRequest.findFirst({
-      where: { url: data.url.trim(), status: { in: ['pending', 'approved', 'pending_payment'] } },
+      where: { url: clean.url, status: { in: ['pending', 'approved', 'pending_payment'] } },
     });
     if (existing) throw new BadRequestException('Заявка для этого сервера уже существует');
 
@@ -306,11 +336,11 @@ export class PaymentsService {
       data: {
         userId,
         ip,
-        name:       data.name.trim(),
-        chronicle:  data.chronicle.trim(),
-        rates:      data.rates.trim(),
-        url:        data.url.trim(),
-        contact:    data.contact.trim(),
+        name:       clean.name,
+        chronicle:  clean.chronicle,
+        rates:      clean.rates,
+        url:        clean.url,
+        contact:    clean.contact,
         openedDate: opened,
         status:     'pending_payment',
         paid:       false,
@@ -332,7 +362,7 @@ export class PaymentsService {
       return { dev: true, activated: true, requestId: request.id };
     }
 
-    const description = `L2Realm «Скоро открытие» — анонс «${data.name.trim()}»`;
+    const description = `L2Realm «Скоро открытие» — анонс «${clean.name}»`;
     const idempotenceKey = uuidv4();
     const response = await axios.post(
       'https://api.yookassa.ru/v3/payments',

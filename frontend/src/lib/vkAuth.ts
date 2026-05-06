@@ -3,6 +3,7 @@
 // ══════════════════════════════════════════════
 
 const STORAGE_KEY = 'l2r_vk_pkce';
+const ALLOWED_REDIRECT_URI = 'https://l2realm.ru/auth/callback';
 
 function randomString(bytes = 32): string {
   const arr = new Uint8Array(bytes);
@@ -23,9 +24,12 @@ async function sha256(input: string): Promise<ArrayBuffer> {
 
 export async function startVkLogin() {
   const clientId    = process.env.NEXT_PUBLIC_VK_CLIENT_ID;
-  const redirectUri = process.env.NEXT_PUBLIC_VK_REDIRECT_URI;
+  const redirectUri = process.env.NEXT_PUBLIC_VK_REDIRECT_URI || ALLOWED_REDIRECT_URI;
   if (!clientId || !redirectUri) {
     throw new Error('VK OAuth не настроен (проверь NEXT_PUBLIC_VK_CLIENT_ID и NEXT_PUBLIC_VK_REDIRECT_URI)');
+  }
+  if (redirectUri !== ALLOWED_REDIRECT_URI) {
+    throw new Error('VK OAuth redirect_uri должен быть https://l2realm.ru/auth/callback');
   }
 
   const codeVerifier  = randomString(32);

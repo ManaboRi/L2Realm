@@ -49,7 +49,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Страницы по хроникам — SEO-точки входа
   const chronicleUrls: MetadataRoute.Sitemap = Object.values(CHRONICLE_CONFIGS).map(cfg => ({
-    url: `${SITE}/${cfg.slug}`,
+    url: `${SITE}/chronicle/${cfg.slug}`,
     lastModified: now,
     changeFrequency: 'daily' as const,
     priority: 0.85,

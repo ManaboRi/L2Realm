@@ -127,7 +127,7 @@ export default function ProfilePage() {
           {user.avatar ? (
             <img
               src={user.avatar}
-              alt=""
+              alt={`Аватар ${user.nickname || user.name || user.email}`}
               style={{ width: 'clamp(56px, 14vw, 72px)', height: 'clamp(56px, 14vw, 72px)', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border2)', flexShrink: 0 }}
             />
           ) : (
@@ -235,7 +235,7 @@ export default function ProfilePage() {
                 {f.server.icon && (
                   <img
                     src={f.server.icon}
-                    alt=""
+                    alt={`Иконка сервера ${f.server.name}`}
                     style={{ width: 36, height: 36, borderRadius: '.3rem', objectFit: 'cover' }}
                   />
                 )}

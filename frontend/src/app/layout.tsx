@@ -5,6 +5,7 @@ import { Footer } from '@/components/Footer';
 import { NicknamePrompt } from '@/components/NicknamePrompt';
 import { AuthProvider } from '@/context/AuthContext';
 import { YandexMetrika } from '@/components/YandexMetrika';
+import { VKPixel } from '@/components/VKPixel';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://l2realm.ru'),
@@ -21,6 +22,10 @@ export const metadata: Metadata = {
   },
   verification: {
     yandex: 'cef19d9162540d2b',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 
@@ -41,6 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <NicknamePrompt />
         </AuthProvider>
         <YandexMetrika />
+        <VKPixel />
       </body>
     </html>
   );

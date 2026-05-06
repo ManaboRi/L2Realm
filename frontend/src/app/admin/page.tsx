@@ -698,7 +698,7 @@ export default function AdminPage() {
                       return (
                         <div key={r.id} className={styles.reviewCard}>
                           <div style={{ display:'flex', alignItems:'center', gap:'.6rem', marginBottom:'.5rem', flexWrap:'wrap' }}>
-                            {u?.avatar && <img src={u.avatar} alt="" style={{ width:24, height:24, borderRadius:'50%' }} />}
+                            {u?.avatar && <img src={u.avatar} alt={`Аватар ${name}`} style={{ width:24, height:24, borderRadius:'50%' }} />}
                             <strong style={{ color:'var(--text)' }}>{name}</strong>
                             {u?.vkId && <span style={{ fontSize:'.7rem', color:'var(--text3)' }}>VK {u.vkId}</span>}
                             <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleString('ru-RU')}</span>

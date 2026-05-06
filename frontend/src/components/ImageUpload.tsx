@@ -50,7 +50,7 @@ export function ImageUpload({ label, value, type, token, onChange }: Props) {
         <div className={styles.preview}>
           <img
             src={value}
-            alt="preview"
+            alt={`Превью изображения: ${label}`}
             className={type === 'icon' ? styles.previewIcon : styles.previewBanner}
           />
         </div>

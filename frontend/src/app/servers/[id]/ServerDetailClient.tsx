@@ -242,7 +242,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {/* Быстрая статистика: голоса / рейтинг / отзывы */}
               <div className={styles.headerStats}>
                 <span className={styles.hstat}>
-                  <img src="/images/vote-icon.png" alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                  <img src="/images/vote-icon.png" alt="Голоса сервера" style={{ width: 16, height: 16, objectFit: 'contain' }} />
                   {server.weeklyVotes ?? 0} голосов
                   <span className={styles.voteTip}>?</span>
                 </span>
@@ -271,7 +271,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : <><img src="/images/vote-icon.png" alt="" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />Проголосовать</>}
+                    : <><img src="/images/vote-icon.png" alt="Проголосовать за сервер" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />Проголосовать</>}
                 </button>
                 {(server.weeklyVotes ?? 0) > 0 && (
                   <span className={styles.weeklyCount}>
@@ -558,7 +558,7 @@ function ReviewCard({
           {r.user.avatar && (
             <img
               src={r.user.avatar}
-              alt=""
+              alt={`Аватар ${displayName}`}
               style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
             />
           )}

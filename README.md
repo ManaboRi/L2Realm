@@ -278,7 +278,8 @@ docker compose logs frontend --tail=30                       # без ECONNREFUS
    FRONTEND_URL=https://l2realm.ru
    VK_CLIENT_ID=...
    VK_CLIENT_SECRET=...
-   VK_REDIRECT_URI=https://l2realm.ru/auth/vk/callback
+   VK_REDIRECT_URI=https://l2realm.ru/auth/callback
+   VK_PIXEL_ID=...
    ```
    Docker Compose читает переменные отсюда и пробрасывает их в контейнер backend через блок `environment:` в `docker-compose.yml`. `backend/.env` внутри контейнера не существует — у него другой WORKDIR.
 3. `chmod 600 /opt/l2realm/.env`

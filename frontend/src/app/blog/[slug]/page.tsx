@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Статья не найдена', robots: { index: false, follow: false } };
   }
   const canonical = `${SITE}/blog/${article.slug}`;
+  const image = article.image || `${SITE}/apple-touch-icon.png`;
   return {
     title: article.title,
     description: article.description,
@@ -42,12 +43,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       url: canonical,
       siteName: 'L2Realm',
       locale: 'ru_RU',
+      images: [{ url: image, width: 1200, height: 630, alt: article.title }],
       ...(article.publishedAt && { publishedTime: article.publishedAt }),
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: article.title,
       description: article.description,
+      images: [image],
     },
   };
 }

@@ -232,7 +232,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                     >
                       <span className={styles.suggestIcon}>
                         {s.icon
-                          ? <img src={s.icon} alt="" />
+                          ? <img src={s.icon} alt={`Иконка сервера ${s.name}`} />
                           : <span>{s.abbr ?? s.name.slice(0, 2).toUpperCase()}</span>}
                       </span>
                       <span className={styles.suggestMain}>

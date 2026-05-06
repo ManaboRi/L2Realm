@@ -1,5 +1,12 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { parseOrThrow, safeText } from '../common/input-validation';
+import { z } from 'zod';
+
+const reviewSchema = z.object({
+  rating: z.coerce.number().int().min(1).max(5),
+  text: safeText(10, 2000),
+});
 
 @Injectable()
 export class ReviewsService {
@@ -24,13 +31,14 @@ export class ReviewsService {
 
   // 1 аккаунт = 1 отзыв на сервер; повторный вызов редактирует существующий
   async create(userId: string, serverId: string, rating: number, text: string) {
+    const clean = parseOrThrow(reviewSchema, { rating, text });
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) throw new NotFoundException('Сервер не найден');
 
     const review = await this.prisma.review.upsert({
       where:  { userId_serverId: { userId, serverId } },
-      create: { userId, serverId, rating, text, approved: false },
-      update: { rating, text, approved: false }, // при редактировании снова на модерацию
+      create: { userId, serverId, rating: clean.rating, text: clean.text, approved: false },
+      update: { rating: clean.rating, text: clean.text, approved: false }, // при редактировании снова на модерацию
       include: { user: { select: { id: true, nickname: true, avatar: true } } },
     });
 

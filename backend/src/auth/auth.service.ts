@@ -12,6 +12,19 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { VkService } from './vk.service';
 import { LoginDto, RegisterDto } from './dto/auth.dto';
+import { parseOrThrow, safeText } from '../common/input-validation';
+import { z } from 'zod';
+
+const VK_ALLOWED_REDIRECT_URI = 'https://l2realm.ru/auth/callback';
+
+const vkCallbackSchema = z.object({
+  code: safeText(8, 2048),
+  deviceId: safeText(1, 256),
+  codeVerifier: safeText(32, 256),
+  redirectUri: z.literal(VK_ALLOWED_REDIRECT_URI),
+  state: safeText(8, 256),
+  ip: z.string().optional(),
+});
 
 @Injectable()
 export class AuthService {
@@ -112,12 +125,13 @@ export class AuthService {
     state: string;
     ip?: string;
   }) {
+    const clean = parseOrThrow(vkCallbackSchema, params) as typeof params;
     const { accessToken } = await this.vk.exchangeCode({
-      code:         params.code,
-      deviceId:     params.deviceId,
-      codeVerifier: params.codeVerifier,
-      redirectUri:  params.redirectUri,
-      state:        params.state,
+      code:         clean.code,
+      deviceId:     clean.deviceId,
+      codeVerifier: clean.codeVerifier,
+      redirectUri:  clean.redirectUri,
+      state:        clean.state,
     });
     const info = await this.vk.fetchUserInfo(accessToken);
 
@@ -157,7 +171,7 @@ export class AuthService {
           vkId:          info.vkId,
           avatar:        info.avatar,
           emailVerified: !!info.email,
-          registrationIp: params.ip,
+          registrationIp: clean.ip,
         },
       });
     }

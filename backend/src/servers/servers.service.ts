@@ -2,6 +2,59 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
+import { dateString, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
+import { z } from 'zod';
+
+const serverInstanceSchema = z.object({
+  id: optionalSafeText(64),
+  label: optionalSafeText(80),
+  chronicle: optionalSafeText(80),
+  rates: optionalSafeText(40),
+  rateNum: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  url: optionalSafeUrl,
+  shortDesc: optionalSafeText(240),
+  openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  soonVipPaymentId: optionalSafeText(120),
+}).passthrough();
+
+const serverPayloadSchema = z.object({
+  id: safeSlug.max(64),
+  name: safeText(2, 80),
+  abbr: optionalSafeText(6),
+  url: safeUrl,
+  chronicle: safeText(1, 80),
+  rates: safeText(1, 40),
+  rateNum: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  donate: z.enum(['free', 'cosmetic', 'p2w']).optional(),
+  type: z.array(safeText(1, 40)).max(20).optional(),
+  vip: z.coerce.boolean().optional(),
+  openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  country: optionalSafeText(8),
+  icon: optionalSafeUrl,
+  banner: optionalSafeUrl,
+  discord: optionalSafeUrl,
+  telegram: optionalSafeUrl,
+  vk: optionalSafeUrl,
+  youtube: optionalSafeUrl,
+  site: optionalSafeUrl,
+  shortDesc: optionalSafeText(300),
+  fullDesc: optionalSafeText(10_000),
+  statusOverride: z.union([z.enum(['online', 'offline', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
+  instances: z.array(serverInstanceSchema).max(50).optional(),
+});
+
+const serverUpdateSchema = serverPayloadSchema.partial().omit({ id: true }).extend({
+  id: safeSlug.max(64).optional(),
+});
+
+const serverRequestSchema = z.object({
+  name: safeText(2, 80),
+  chronicle: safeText(1, 80),
+  rates: safeText(1, 40),
+  url: safeUrl,
+  openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+});
 
 function rateRange(n: number): string {
   if (n <= 5)     return 'low';
@@ -196,7 +249,8 @@ export class ServersService {
 
   // ── Создать (только admin) ───────────────────
   async create(dto: CreateServerDto) {
-    const { openedDate, ...rest } = dto;
+    const clean = parseOrThrow(serverPayloadSchema, dto) as any;
+    const { openedDate, ...rest } = clean;
     const manualStatus = normalizeStatusOverride((rest as any).statusOverride);
     const server = await this.prisma.server.create({
       data: {
@@ -215,7 +269,8 @@ export class ServersService {
   // ── Обновить (только admin) ──────────────────
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
-    const { id: _id, openedDate, ...data } = dto as any;
+    const clean = parseOrThrow(serverUpdateSchema, dto) as any;
+    const { id: _id, openedDate, ...data } = clean as any;
     const manualStatus = normalizeStatusOverride(data.statusOverride);
     const statusOverrideTouched = Object.prototype.hasOwnProperty.call(data, 'statusOverride');
     const server = await this.prisma.server.update({
@@ -243,9 +298,7 @@ export class ServersService {
   async submitRequest(userId: string, data: {
     name: string; chronicle: string; rates: string; url: string; openedDate?: string;
   }) {
-    if (!data.name?.trim() || !data.chronicle?.trim() || !data.rates?.trim() || !data.url?.trim()) {
-      throw new BadRequestException('Заполните название, хронику, рейты и URL');
-    }
+    const clean = parseOrThrow(serverRequestSchema, data);
 
     // Rate-limit: не чаще 1 заявки за 24 часа с аккаунта
     const since = new Date();
@@ -264,7 +317,7 @@ export class ServersService {
 
     // Антиспам: не принимаем дубли по URL (pending или approved)
     const existing = await this.prisma.serverRequest.findFirst({
-      where: { url: data.url, status: { in: ['pending', 'approved'] } },
+      where: { url: clean.url, status: { in: ['pending', 'approved'] } },
     });
     if (existing) {
       throw new BadRequestException('Заявка для этого сервера уже существует');
@@ -273,11 +326,11 @@ export class ServersService {
     return this.prisma.serverRequest.create({
       data: {
         userId,
-        name:       data.name.trim(),
-        chronicle:  data.chronicle.trim(),
-        rates:      data.rates.trim(),
-        url:        data.url.trim(),
-        openedDate: data.openedDate ? new Date(data.openedDate) : null,
+        name:       clean.name,
+        chronicle:  clean.chronicle,
+        rates:      clean.rates,
+        url:        clean.url,
+        openedDate: clean.openedDate ? new Date(clean.openedDate) : null,
       },
     });
   }

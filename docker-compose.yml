@@ -44,6 +44,7 @@ services:
       args:
         NEXT_PUBLIC_VK_CLIENT_ID: ${VK_CLIENT_ID}
         NEXT_PUBLIC_VK_REDIRECT_URI: ${VK_REDIRECT_URI}
+        NEXT_PUBLIC_VK_PIXEL_ID: ${VK_PIXEL_ID}
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000

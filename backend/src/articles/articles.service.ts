@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { dateString, optionalSafeUrl, parseOrThrow, safeSlug, safeText } from '../common/input-validation';
+import { z } from 'zod';
 
 export interface ArticleDto {
   slug?:        string;
@@ -10,6 +12,18 @@ export interface ArticleDto {
   category?:    string | null;
   publishedAt?: string | null;
 }
+
+const articleSchema = z.object({
+  slug: safeSlug.optional(),
+  title: safeText(3, 140),
+  description: safeText(20, 320),
+  content: safeText(20, 60_000),
+  image: optionalSafeUrl,
+  category: safeText(2, 40).optional(),
+  publishedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+});
+
+const articleUpdateSchema = articleSchema.partial();
 
 function slugify(s: string): string {
   return s
@@ -62,10 +76,8 @@ export class ArticlesService {
 
   // ── Создание (admin) ─────────────────────────
   async create(dto: ArticleDto) {
-    if (!dto.title?.trim() || !dto.description?.trim() || !dto.content?.trim()) {
-      throw new BadRequestException('title, description и content обязательны');
-    }
-    const slug = (dto.slug?.trim() || slugify(dto.title));
+    const clean = parseOrThrow(articleSchema, dto);
+    const slug = (clean.slug || slugify(clean.title));
 
     const exists = await this.prisma.article.findUnique({ where: { slug } });
     if (exists) throw new ConflictException(`Статья со slug «${slug}» уже существует`);
@@ -73,12 +85,12 @@ export class ArticlesService {
     return this.prisma.article.create({
       data: {
         slug,
-        title:       dto.title.trim(),
-        description: dto.description.trim(),
-        content:     dto.content,
-        image:       dto.image?.trim() || null,
-        category:    dto.category?.trim() || 'Новости',
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : null,
+        title:       clean.title,
+        description: clean.description,
+        content:     clean.content,
+        image:       clean.image,
+        category:    clean.category || 'Новости',
+        publishedAt: clean.publishedAt ? new Date(clean.publishedAt) : null,
       },
     });
   }
@@ -86,11 +98,12 @@ export class ArticlesService {
   // ── Обновление (admin) ───────────────────────
   async update(id: string, dto: ArticleDto) {
     const existing = await this.findOneAdmin(id);
+    const clean = parseOrThrow(articleUpdateSchema, dto);
 
     // При смене slug — проверка уникальности
     let newSlug = existing.slug;
-    if (dto.slug !== undefined) {
-      newSlug = dto.slug.trim() || slugify(dto.title || existing.title);
+    if (clean.slug !== undefined || dto.slug !== undefined) {
+      newSlug = clean.slug || slugify(clean.title || existing.title);
       if (newSlug !== existing.slug) {
         const collision = await this.prisma.article.findUnique({ where: { slug: newSlug } });
         if (collision) throw new ConflictException(`slug «${newSlug}» уже занят`);
@@ -101,18 +114,18 @@ export class ArticlesService {
       where: { id },
       data: {
         slug:        newSlug,
-        title:       dto.title?.trim() ?? existing.title,
-        description: dto.description?.trim() ?? existing.description,
-        content:     dto.content ?? existing.content,
+        title:       clean.title ?? existing.title,
+        description: clean.description ?? existing.description,
+        content:     clean.content ?? existing.content,
         image:       dto.image === undefined
           ? existing.image
-          : (dto.image?.trim() || null),
+          : clean.image,
         category:    dto.category === undefined
           ? existing.category
-          : (dto.category?.trim() || 'Новости'),
+          : (clean.category || 'Новости'),
         publishedAt: dto.publishedAt === undefined
           ? existing.publishedAt
-          : (dto.publishedAt ? new Date(dto.publishedAt) : null),
+          : (clean.publishedAt ? new Date(clean.publishedAt) : null),
       },
     });
   }

@@ -43,6 +43,10 @@
 }
 .navLink:hover .navIcon { opacity: 1; filter: drop-shadow(0 0 4px rgba(200,168,75,.4)); }
 .navAdmin { color: var(--gold-d); }
+.navChronicle {
+  padding-inline: .55rem;
+  color: var(--text3);
+}
 .navTextFull { display: inline; }
 .navTextShort { display: none; }
 
@@ -163,7 +167,7 @@
 .burgerOpen span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
 
 /* ─── Mobile: гамбургер + выпадающее меню ─── */
-@media (max-width: 700px) {
+@media (max-width: 1120px) {
   .header { padding: 0 .8rem; gap: .5rem; }
   .burger { display: flex; }
 
