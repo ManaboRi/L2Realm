@@ -43,10 +43,6 @@
 }
 .navLink:hover .navIcon { opacity: 1; filter: drop-shadow(0 0 4px rgba(200,168,75,.4)); }
 .navAdmin { color: var(--gold-d); }
-.navChronicle {
-  padding-inline: .55rem;
-  color: var(--text3);
-}
 .navTextFull { display: inline; }
 .navTextShort { display: none; }
 

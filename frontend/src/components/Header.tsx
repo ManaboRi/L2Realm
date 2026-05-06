@@ -6,13 +6,6 @@ import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
 
-const CHRONICLE_LINKS = [
-  { href: '/chronicle/interlude', label: 'Interlude' },
-  { href: '/chronicle/high-five', label: 'High Five' },
-  { href: '/chronicle/classic', label: 'Classic' },
-  { href: '/chronicle/essence', label: 'Essence' },
-];
-
 export function Header() {
   const { user, isAdmin } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
@@ -82,11 +75,6 @@ export function Header() {
               <img src="/images/nav-blog.png" alt="Статьи L2Realm" className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
             </Link>
-            {CHRONICLE_LINKS.map(link => (
-              <Link key={link.href} href={link.href} className={`${styles.navLink} ${styles.navChronicle}`} onClick={closeMenu}>
-                <span className={styles.navText}>{link.label}</span>
-              </Link>
-            ))}
             {isAdmin && (
               <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`} onClick={closeMenu}>
                 <span className={styles.navText}>Admin</span>
