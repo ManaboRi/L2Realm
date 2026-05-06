@@ -9,13 +9,13 @@ const SITE = 'https://l2realm.ru';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Квиз: как выбрать сервер Lineage 2 за 5 вопросов',
-  description: 'Пошаговый подбор сервера Lineage 2 по хронике, рейтам, PvP/PvE-фокусу, донату и стадии открытия.',
+  title: 'Какой сервер Lineage 2 тебе подойдёт — Квиз | L2Realm',
+  description: '4 вопроса — и ты знаешь какой сервер Lineage 2 тебе подойдёт. Персональные рекомендации из каталога l2realm.ru',
   alternates: { canonical: `${SITE}/quiz` },
   openGraph: {
     type: 'website',
-    title: 'Квиз: как выбрать сервер Lineage 2 за 5 вопросов',
-    description: 'Ответьте на 5 вопросов и получите до 3 подходящих серверов Lineage 2 из каталога L2Realm.',
+    title: 'Какой сервер Lineage 2 тебе подойдёт — Квиз | L2Realm',
+    description: '4 вопроса — и ты знаешь какой сервер Lineage 2 тебе подойдёт. Персональные рекомендации из каталога l2realm.ru',
     url: `${SITE}/quiz`,
     siteName: 'L2Realm',
     locale: 'ru_RU',
@@ -40,10 +40,10 @@ export default async function QuizPage() {
     <div className={styles.page}>
       <section className={styles.hero}>
         <p className={styles.eyebrow}>Подбор сервера</p>
-        <h1 className={styles.title}>Как выбрать сервер Lineage 2 за 5 вопросов</h1>
+        <h1 className={styles.title}>Какой сервер Lineage 2 тебе подойдёт</h1>
         <p className={styles.lead}>
-          Ответьте на короткий опрос: хроника, рейты, PvP/PvE, донат и стадия проекта.
-          Квиз не отсекает серверы жестко, а считает совпадения по скорингу и показывает самые близкие варианты.
+          Ответьте на 4 вопроса: версия Lineage 2, темп прокачки, донат и стадия проекта.
+          Квиз подберёт точные рекомендации из каталога L2Realm без сложных ручных фильтров.
         </p>
       </section>
 

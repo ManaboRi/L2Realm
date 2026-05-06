@@ -4,9 +4,9 @@
   background:
     linear-gradient(
       to bottom,
-      rgba(9, 11, 16, 0.78) 0%,
-      rgba(9, 11, 16, 0.84) 40%,
-      rgba(9, 11, 16, 0.94) 70%,
+      rgba(5, 7, 11, 0.86) 0%,
+      rgba(5, 7, 11, 0.90) 40%,
+      rgba(5, 7, 11, 0.96) 70%,
       rgba(9, 11, 16, 1.00) 100%
     ),
     url('/images/hero-bg.png') center top / cover fixed no-repeat;
@@ -44,6 +44,28 @@
 .heroEye   { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .3em; color: var(--gold-d); text-transform: uppercase; }
 .heroTitle { font-family: 'Cinzel', serif; font-size: clamp(1.5rem, 2.6vw, 2.2rem); font-weight: 700; color: #F0E8C8; line-height: 1.15; }
 .heroTitle em { color: var(--gold); font-style: normal; }
+.quizCta {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .45rem .9rem;
+  border: 1px solid var(--gold-d);
+  border-radius: 3px;
+  background: rgba(200,168,75,.12);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background .18s, border-color .18s, color .18s;
+}
+.quizCta:hover {
+  background: rgba(200,168,75,.2);
+  border-color: var(--gold);
+  color: #F5E7A8;
+}
 
 /* Метрики в маленькой рамке */
 .heroStats {

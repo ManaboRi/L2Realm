@@ -11,6 +11,8 @@ const serverInstanceSchema = z.object({
   chronicle: optionalSafeText(80),
   rates: optionalSafeText(40),
   rateNum: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  type: z.enum(['pvp', 'pve', 'pvp-pve', 'gve', 'rvr', 'multiproff', 'multicraft']).optional(),
+  donate: z.enum(['free', 'cosmetic', 'convenience', 'p2w']).optional(),
   url: optionalSafeUrl,
   shortDesc: optionalSafeText(240),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
@@ -26,7 +28,7 @@ const serverPayloadSchema = z.object({
   chronicle: safeText(1, 80),
   rates: safeText(1, 40),
   rateNum: z.coerce.number().int().min(1).max(1_000_000).optional(),
-  donate: z.enum(['free', 'cosmetic', 'p2w']).optional(),
+  donate: z.enum(['free', 'cosmetic', 'convenience', 'p2w']).optional(),
   type: z.array(safeText(1, 40)).max(20).optional(),
   vip: z.coerce.boolean().optional(),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
@@ -122,8 +124,8 @@ export class ServersService {
         { shortDesc: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (donate)       where.donate = donate;
-    if (type)         where.type = { has: type };
+    // donate/type фильтруются в post-processing: у проекта могут быть разные запуски
+    // с разными форматами и донатом внутри JSON instances.
     // openedWithin фильтруется в post-processing — у проекта может быть
     // несколько дат открытия (своя + по каждому instance). Если хоть одна
     // в окне since..now — проект попадает в выдачу.
@@ -179,8 +181,31 @@ export class ServersService {
       const eff = effectiveOpenedTs(s);
       return eff >= sinceTs && eff <= nowTs;
     }
+    function matchesDonate(s: any): boolean {
+      if (!donate) return true;
+      const wanted = donate === 'free' ? 'cosmetic' : donate;
+      const own = s.donate === 'free' ? 'cosmetic' : s.donate;
+      if (own === wanted) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => {
+        const value = i?.donate === 'free' ? 'cosmetic' : i?.donate;
+        return value === wanted;
+      });
+    }
+    function matchesType(s: any): boolean {
+      if (!type) return true;
+      if (Array.isArray(s.type) && s.type.includes(type)) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => i?.type === type);
+    }
 
-    let filtered = allServers.filter(s => matchesChronicle(s) && matchesRate(s) && matchesOpenedWithin(s));
+    let filtered = allServers.filter(s =>
+      matchesChronicle(s) &&
+      matchesRate(s) &&
+      matchesOpenedWithin(s) &&
+      matchesDonate(s) &&
+      matchesType(s),
+    );
 
     // При sort=opened — сортируем по эффективной дате (учитывает instances).
     // При пустом sort (default) — порядок задаст decorated.sort ниже
@@ -436,10 +461,16 @@ export class ServersService {
       for (const c of chronSet) chronicles[c] = (chronicles[c] || 0) + 1;
       for (const r of rateSet)  rates[r] = (rates[r] || 0) + 1;
 
-      donates[s.donate] = (donates[s.donate] || 0) + 1;
+      const donateSet = new Set<string>();
+      donateSet.add(s.donate === 'free' ? 'cosmetic' : s.donate);
       for (const t of s.type) {
         types[t] = (types[t] || 0) + 1;
       }
+      for (const i of insts) {
+        if (typeof i?.donate === 'string') donateSet.add(i.donate === 'free' ? 'cosmetic' : i.donate);
+        if (typeof i?.type === 'string') types[i.type] = (types[i.type] || 0) + 1;
+      }
+      for (const d of donateSet) donates[d] = (donates[d] || 0) + 1;
     }
 
     return { chronicles, rates, donates, types };

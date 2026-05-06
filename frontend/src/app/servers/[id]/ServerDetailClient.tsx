@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Review, VoteStatus } from '@/lib/types';
+import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
+
+const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
+const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
 function fmtDate(s?: string | null) {
   if (!s) return '—';
@@ -230,6 +234,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div className={styles.headerTags}>
                 <span className="tag tc">{server.chronicle}</span>
                 <span className="tag tr">{server.rates}</span>
+                {server.type?.find(t => typeLabels.has(t as any)) && (
+                  <span className="tag tn">{typeLabels.get(server.type.find(t => typeLabels.has(t as any)) as any)}</span>
+                )}
+                {server.donate && <span className="tag tn">{donateLabels.get((server.donate === 'free' ? 'cosmetic' : server.donate) as any) ?? server.donate}</span>}
               </div>
               <div className={styles.statusRow}>
                 <span className={isOnline ? styles.dotOnline : styles.dotOffline} />
@@ -381,6 +389,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                           <div className={styles.instTileTags}>
                             <span className="tag tr">{inst.rates}</span>
                             <span className="tag tc">{inst.chronicle}</span>
+                            {inst.type && <span className="tag tn">{typeLabels.get(inst.type as any) ?? inst.type}</span>}
+                            {inst.donate && <span className="tag tn">{donateLabels.get((inst.donate === 'free' ? 'cosmetic' : inst.donate) as any) ?? inst.donate}</span>}
                           </div>
                           {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
                           {isFuture && (

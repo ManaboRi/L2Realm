@@ -1,7 +1,7 @@
 'use client';
 import { useId, useMemo } from 'react';
 import type { ServerInstance } from '@/lib/types';
-import { CHRONICLES } from '@/lib/types';
+import { CHRONICLES, DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './InstancesEditor.module.css';
 
 interface Props {
@@ -22,6 +22,8 @@ function emptyInstance(): ServerInstance {
     chronicle:  '',
     rates:      '',
     rateNum:    0,
+    type:       'pvp-pve',
+    donate:     'cosmetic',
     url:        '',
     openedDate: null,
   };
@@ -95,6 +97,30 @@ export function InstancesEditor({ value, onChange }: Props) {
                   >
                     <option value="">— Выбери —</option>
                     {CHRONICLES.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </label>
+              </div>
+
+              <div className={styles.row}>
+                <label className={styles.field}>
+                  <span>Тип сервера *</span>
+                  <select
+                    className="input"
+                    value={inst.type ?? ''}
+                    onChange={e => update(idx, { type: e.target.value as ServerInstance['type'] })}
+                  >
+                    <option value="">— Выбери —</option>
+                    {SERVER_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Донат *</span>
+                  <select
+                    className="input"
+                    value={inst.donate === 'free' ? 'cosmetic' : (inst.donate ?? 'cosmetic')}
+                    onChange={e => update(idx, { donate: e.target.value as ServerInstance['donate'] })}
+                  >
+                    {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
                   </select>
                 </label>
               </div>

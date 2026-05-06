@@ -53,8 +53,8 @@ model Server {
   chronicle   String
   rates       String
   rateNum     Int      @default(1)
-  donate      String   @default("cosmetic") // free | cosmetic | p2w
-  type        String[] // pvp | pve | new | featured
+  donate      String   @default("cosmetic") // cosmetic | convenience | p2w
+  type        String[] // pvp | pve | pvp-pve | gve | rvr | multiproff | multicraft | new | featured
   vip         Boolean  @default(false)
   openedDate  DateTime?
   country     String   @default("RU")
@@ -75,7 +75,7 @@ model Server {
   statusOverride String? // null/auto = мониторинг, online/offline/unknown = ручной статус
   // Внутренние «запуски» проекта (Scryde-кейс). Каждый — карточка
   // с рейтом/хроникой/URL внешнего сайта. Без своих ID, отзывов, голосов.
-  // [{ id, label?, chronicle, rates, rateNum, url, openedDate? }]
+  // [{ id, label?, chronicle, rates, rateNum, type?, donate?, url, openedDate? }]
   instances    Json     @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

@@ -9,6 +9,8 @@ export interface ServerInstance {
   chronicle:   string;
   rates:       string;
   rateNum:     number;
+  type?:       ServerType;
+  donate?:     DonateType | 'free';
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
   soonVipUntil?: string | null;
@@ -24,7 +26,7 @@ export interface Server {
   rates:       string;
   rateNum:     number;
   instances?:  ServerInstance[]; // массив "запусков" проекта (Scryde-кейс)
-  donate:      'free' | 'cosmetic' | 'p2w';
+  donate:      DonateType | 'free';
   type:        string[];
   vip:         boolean;
   openedDate?: string;
@@ -164,6 +166,8 @@ export interface Stats {
 }
 
 export type SubscriptionPlan = 'free' | 'vip';
+export type ServerType = 'pvp' | 'pve' | 'pvp-pve' | 'gve' | 'rvr' | 'multiproff' | 'multicraft';
+export type DonateType = 'cosmetic' | 'convenience' | 'p2w';
 
 export const VIP_PRICE   = 5000;
 export const VIP_DAYS    = 31;
@@ -183,13 +187,29 @@ export const CHRONICLES = [
   'Interlude',
   'Kamael', 'Hellbound',
   'Gracia Part 1', 'Gracia Part 2', 'Gracia Final', 'Epilogue',
-  'Freya', 'High Five',
+  'Freya', 'High Five', 'GoD',
   'Awakening', 'Harmony', 'Tauti', 'Glory Days', 'Lindvior',
   'Valiance', 'Ertheia', 'Infinite Odyssey', 'Helios',
   'Grand Crusade', 'Salvation', 'Fafurion', 'Prelude of War',
   'Master Class', 'Storm of Terror', "Hero's Tome", 'Dethrone',
   'Shine Maker', 'Rising Knight',
   'Classic', 'Essence', 'Main',
+];
+
+export const SERVER_TYPES: { v: ServerType; l: string }[] = [
+  { v: 'pvp',        l: 'PvP' },
+  { v: 'pve',        l: 'PvE' },
+  { v: 'pvp-pve',    l: 'PvP/PvE' },
+  { v: 'gve',        l: 'GvE' },
+  { v: 'rvr',        l: 'RvR' },
+  { v: 'multiproff', l: 'MultiProff' },
+  { v: 'multicraft', l: 'MultiCraft' },
+];
+
+export const DONATE_OPTIONS: { v: DonateType; l: string }[] = [
+  { v: 'cosmetic',    l: 'Косметический' },
+  { v: 'convenience', l: 'Донат-удобства' },
+  { v: 'p2w',         l: 'P2W' },
 ];
 
 // Канонический список диапазонов рейтов. Backend в rateRange() даёт

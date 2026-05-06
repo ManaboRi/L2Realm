@@ -1,7 +1,11 @@
 'use client';
 import Link from 'next/link';
 import type { Server } from '@/lib/types';
+import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './ServerCard.module.css';
+
+const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
+const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
 function fmtDate(s?: string | null) {
   if (!s) return '—';
@@ -73,23 +77,37 @@ export function ServerCard({ server: s, vipBlock }: Props) {
               if (insts.length > 0) {
                 const chronSet = new Set<string>();
                 const rateSet  = new Set<string>();
+                const typeSet  = new Set<string>();
+                const donateSet = new Set<string>();
                 if (s.chronicle) chronSet.add(s.chronicle);
                 if (s.rates)     rateSet.add(s.rates);
+                for (const t of s.type ?? []) {
+                  if (typeLabels.has(t as any)) typeSet.add(t);
+                }
+                if (s.donate) donateSet.add(s.donate === 'free' ? 'cosmetic' : s.donate);
                 for (const i of insts) {
                   if (i.chronicle) chronSet.add(i.chronicle);
                   if (i.rates)     rateSet.add(i.rates);
+                  if (i.type)      typeSet.add(i.type);
+                  if (i.donate)    donateSet.add(i.donate === 'free' ? 'cosmetic' : i.donate);
                 }
                 return (
                   <>
                     {[...chronSet].map(c => <span key={`c-${c}`} className="tag tc">{c}</span>)}
                     {[...rateSet].map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}
+                    {[...typeSet].map(t => <span key={`t-${t}`} className="tag tn">{typeLabels.get(t as any) ?? t}</span>)}
+                    {[...donateSet].map(d => <span key={`d-${d}`} className="tag tn">{donateLabels.get(d as any) ?? d}</span>)}
                   </>
                 );
               }
+              const mainType = (s.type ?? []).find(t => typeLabels.has(t as any));
+              const donate = s.donate === 'free' ? 'cosmetic' : s.donate;
               return (
                 <>
                   <span className="tag tc">{s.chronicle}</span>
                   <span className="tag tr">{s.rates}</span>
+                  {mainType && <span className="tag tn">{typeLabels.get(mainType as any) ?? mainType}</span>}
+                  {donate && <span className="tag tn">{donateLabels.get(donate as any) ?? donate}</span>}
                 </>
               );
             })()}

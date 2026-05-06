@@ -322,7 +322,7 @@ export default function AdminArticlesPage() {
                       {scheduled && <span className={styles.tagSched}>⏳ {new Date(a.publishedAt!).toLocaleDateString('ru-RU')}</span>}
                       {!a.publishedAt && <span className={styles.tagOff}>○ Черновик</span>}
                     </td>
-                    <td>{new Date(a.updatedAt).toLocaleDateString('ru-RU')}</td>
+                    <td>{new Date(a.publishedAt ?? a.createdAt).toLocaleDateString('ru-RU')}</td>
                     <td className={styles.actions}>
                       <button className="btn-ghost" onClick={() => startEdit(a)}>Изм.</button>
                       <button className="btn-ghost" onClick={() => togglePublish(a)}>

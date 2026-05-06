@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus } from '@/lib/types';
-import { VIP_MAX, SOON_VIP_MAX, CHRONICLES } from '@/lib/types';
+import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
@@ -93,6 +93,7 @@ export default function AdminPage() {
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
     url:'', openedDate:'', country:'RU', statusOverride: 'auto',
+    serverType: 'pvp-pve', donate: 'cosmetic',
     type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
@@ -176,6 +177,8 @@ export default function AdminPage() {
       openedDate:  r.openedDate ? r.openedDate.slice(0, 10) : '',
       country:     'RU',
       statusOverride: 'auto',
+      serverType: 'pvp-pve',
+      donate: 'cosmetic',
       type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
@@ -252,6 +255,8 @@ export default function AdminPage() {
       openedDate:  s.openedDate  ? s.openedDate.slice(0, 10) : '',
       country:     s.country     ?? 'RU',
       statusOverride: s.statusOverride ?? 'auto',
+      serverType:  (s.type ?? []).find((t: string) => SERVER_TYPES.some(st => st.v === t)) ?? 'pvp-pve',
+      donate:      s.donate === 'free' ? 'cosmetic' : (s.donate ?? 'cosmetic'),
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
       icon:        s.icon        ?? '',
@@ -270,6 +275,7 @@ export default function AdminPage() {
     if (!token || !editServer) return;
     setEditLoading(true);
     const types: string[] = [];
+    if ((editForm.instances?.length ?? 0) === 0 && editForm.serverType) types.push(editForm.serverType);
     if (editForm.type_new)      types.push('new');
     if (editForm.type_featured) types.push('featured');
     // Если у проекта есть instances — chronicle/rates/rateNum скрыты в UI.
@@ -290,6 +296,7 @@ export default function AdminPage() {
         url:         editForm.url,
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
+        donate:      editForm.donate ?? 'cosmetic',
         statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
         icon:        editForm.icon || undefined,
@@ -314,6 +321,7 @@ export default function AdminPage() {
     e.preventDefault();
     if (!token) return;
     const types: string[] = [];
+    if ((addForm.instances?.length ?? 0) === 0 && addForm.serverType) types.push(addForm.serverType);
     if (addForm.type_new)      types.push('new');
     if (addForm.type_featured) types.push('featured');
     // Если у проекта есть instances — chronicle/rates/rateNum скрыты, берём из первого
@@ -326,7 +334,7 @@ export default function AdminPage() {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
         url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
-        type: types, vip: addForm.vip,
+        type: types, donate: addForm.donate, vip: addForm.vip,
         openedDate: addForm.openedDate || undefined, country: addForm.country,
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
@@ -391,6 +399,16 @@ export default function AdminPage() {
                     </AField>
                     <AField label="Рейты *"><input className="input" required value={editForm.rates} onChange={e => setEditForm((p:any) => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
                     <AField label="Рейт (число)"><input className="input" type="number" min={1} value={editForm.rateNum} onChange={e => setEditForm((p:any) => ({...p,rateNum:e.target.value}))} /></AField>
+                    <AField label="Тип сервера">
+                      <select className="input" value={editForm.serverType} onChange={e => setEditForm((p:any) => ({...p,serverType:e.target.value}))}>
+                        {SERVER_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+                      </select>
+                    </AField>
+                    <AField label="Донат">
+                      <select className="input" value={editForm.donate} onChange={e => setEditForm((p:any) => ({...p,donate:e.target.value}))}>
+                        {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
+                      </select>
+                    </AField>
                   </>
                 )}
                 <AField label="Сайт *"><input className="input" required type="url" value={editForm.url} onChange={e => setEditForm((p:any) => ({...p,url:e.target.value}))} /></AField>
@@ -779,6 +797,16 @@ export default function AdminPage() {
                         </AField>
                         <AField label="Рейты *"><input className="input" required value={addForm.rates} onChange={e => setAddForm(p => ({...p,rates:e.target.value}))} placeholder="x100" /></AField>
                         <AField label="Рейт (число)"><input className="input" type="number" min={1} value={addForm.rateNum} onChange={e => setAddForm(p => ({...p,rateNum:e.target.value}))} /></AField>
+                        <AField label="Тип сервера">
+                          <select className="input" value={addForm.serverType} onChange={e => setAddForm(p => ({...p,serverType:e.target.value}))}>
+                            {SERVER_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
+                          </select>
+                        </AField>
+                        <AField label="Донат">
+                          <select className="input" value={addForm.donate} onChange={e => setAddForm(p => ({...p,donate:e.target.value}))}>
+                            {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
+                          </select>
+                        </AField>
                       </>
                     )}
                     {/* Строка 3 */}

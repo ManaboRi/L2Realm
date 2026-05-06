@@ -4,13 +4,12 @@ import type { Server } from '@/lib/types';
 import { ServerCard } from '@/components/ServerCard';
 import styles from './page.module.css';
 
-type QuestionId = 'chronicle' | 'rates' | 'focus' | 'donate' | 'stage';
+type QuestionId = 'chronicle' | 'rates' | 'donate' | 'stage';
 type AnswerValue =
-  | 'interlude' | 'high-five' | 'classic' | 'essence' | 'any'
-  | 'r1-5' | 'r7-25' | 'r50plus'
-  | 'pvp' | 'pve' | 'balanced'
-  | 'free' | 'moderate' | 'open'
-  | 'soon' | 'new' | 'proven';
+  | 'interlude' | 'high-five' | 'classic' | 'essence' | 'god' | 'unknown'
+  | 'slow' | 'medium' | 'fast' | 'instant'
+  | 'cosmetic' | 'convenience' | 'donate-any'
+  | 'proven' | 'fresh' | 'stage-any';
 
 type Option = {
   value: AnswerValue;
@@ -30,58 +29,46 @@ type Answers = Partial<Record<QuestionId, AnswerValue>>;
 const QUESTIONS: Question[] = [
   {
     id: 'chronicle',
-    title: 'Какая хроника ближе?',
-    subtitle: 'Если нет жесткой привязки, оставьте "Не важно" — квиз не будет давать бонус по хронике.',
+    title: 'Какую версию Lineage 2 хочется?',
+    subtitle: 'Выбор хроники сразу сужает рекомендации. Если пока не уверен, оставь "Не знаю".',
     options: [
-      { value: 'interlude', title: 'Interlude', description: 'Классическая C6: дуэли, осады и привычный темп.' },
-      { value: 'high-five', title: 'High Five', description: 'Расширенная классика с большим количеством контента.' },
-      { value: 'classic', title: 'Classic', description: 'Низкий темп, долгий прогресс, ближе к официальной ветке.' },
-      { value: 'essence', title: 'Essence', description: 'Более быстрый современный формат с авто-механиками.' },
-      { value: 'any', title: 'Не важно', description: 'Готов рассмотреть разные хроники.' },
+      { value: 'interlude', title: 'Interlude', description: 'Классическая C6: простая, понятная, с сильным PvP-ядром.' },
+      { value: 'high-five', title: 'High Five', description: 'Больше контента, развитые классы и привычный late-game.' },
+      { value: 'classic', title: 'Classic', description: 'Медленнее, строже, ближе к долгой официальной прогрессии.' },
+      { value: 'essence', title: 'Essence', description: 'Современный быстрый формат с авто-механиками и динамичным темпом.' },
+      { value: 'god', title: 'GoD', description: 'Пост-High Five эпоха: пробуждения, новые системы и другая мета.' },
+      { value: 'unknown', title: 'Не знаю', description: 'Пусть квиз подберет без жесткой привязки к хронике.' },
     ],
   },
   {
     id: 'rates',
-    title: 'Какие рейты комфортнее?',
-    subtitle: 'Рейты считаются и по основной карточке проекта, и по отдельным запускам внутри проекта.',
+    title: 'Как хочешь прокачиваться?',
+    subtitle: 'Здесь выбираем не цифры, а ощущение темпа игры.',
     options: [
-      { value: 'r1-5', title: 'x1-x5', description: 'Медленный прогресс, ценность каждого уровня и предмета.' },
-      { value: 'r7-25', title: 'x7-x25', description: 'Компромисс между классикой и быстрым стартом.' },
-      { value: 'r50plus', title: 'x50+', description: 'Быстрый кач, PvP и меньше рутины.' },
-      { value: 'any', title: 'Не важно', description: 'Рейт не главный критерий.' },
-    ],
-  },
-  {
-    id: 'focus',
-    title: 'На чем должен держаться сервер?',
-    subtitle: 'Учитываются теги проекта и описание, поэтому совпадение мягкое, а не бинарное.',
-    options: [
-      { value: 'pvp', title: 'PvP', description: 'Бои, фан, быстрый вход в активность.' },
-      { value: 'pve', title: 'PvE', description: 'Фарм, экономика, кланы и постепенное развитие.' },
-      { value: 'balanced', title: 'Баланс', description: 'Нужен нормальный микс PvP и PvE без перекоса.' },
-      { value: 'any', title: 'Не важно', description: 'Главное, чтобы проект был живой.' },
+      { value: 'slow', title: 'Медленно — ценю каждый уровень', description: 'Подойдут x1-x5: долгий путь, экономика и вес каждого предмета.' },
+      { value: 'medium', title: 'Умеренно — за вечер виден прогресс', description: 'Подойдут x5-x30: уже бодро, но без мгновенного эндгейма.' },
+      { value: 'fast', title: 'Быстро — хочу в PvP за пару дней', description: 'Подойдут x30-x200: минимум рутины, быстрый вход в активность.' },
+      { value: 'instant', title: 'Мгновенно — сразу в эндгейм', description: 'Подойдут x200+: максимум скорости и быстрый фан.' },
     ],
   },
   {
     id: 'donate',
-    title: 'Какой донат приемлем?',
-    subtitle: 'Скоринг уважает строгий выбор, но не прячет полностью остальные варианты.',
+    title: 'Донат на сервере',
+    subtitle: 'Выбираем комфортный уровень влияния магазина на игру.',
     options: [
-      { value: 'free', title: 'Нет доната', description: 'Только честная игра без преимуществ за деньги.' },
-      { value: 'moderate', title: 'Умеренный', description: 'Косметика или удобства без грубого влияния на баланс.' },
-      { value: 'open', title: 'Свободный', description: 'Донат не пугает, если сервер подходит по остальному.' },
-      { value: 'any', title: 'Не важно', description: 'Этот критерий можно не учитывать.' },
+      { value: 'cosmetic', title: 'Только косметика — за честный баланс', description: 'Ищем сервера, где донат не дает игровой силы.' },
+      { value: 'convenience', title: 'Небольшие бонусы — не критично', description: 'Подойдут удобства и мягкие бонусы без грубого перекоса.' },
+      { value: 'donate-any', title: 'Не важно — главное атмосфера и люди', description: 'Донат не фильтруем, решают остальные параметры.' },
     ],
   },
   {
     id: 'stage',
-    title: 'На какой стадии интереснее играть?',
-    subtitle: 'Для проектов с несколькими запусками учитывается ближайшая или последняя дата запуска.',
+    title: 'Что важнее?',
+    subtitle: 'Последний шаг решает, нужен ли стабильный проект или свежий старт.',
     options: [
-      { value: 'soon', title: 'Открытие скоро', description: 'Хочется стартовать с первой волной игроков.' },
-      { value: 'new', title: 'Новый до 3 мес.', description: 'Старт уже прошел, но сервер еще свежий.' },
-      { value: 'proven', title: 'Проверенный', description: 'Лучше стабильный проект с историей.' },
-      { value: 'any', title: 'Не важно', description: 'Возраст сервера не решает.' },
+      { value: 'proven', title: 'Старый надёжный — без риска закрытия', description: 'Ищем проекты, которые живут давно.' },
+      { value: 'fresh', title: 'Свежий старт — начать вместе со всеми', description: 'Ищем будущие и недавно открывшиеся запуски.' },
+      { value: 'stage-any', title: 'Без разницы', description: 'Сортируем по голосам и общей активности.' },
     ],
   },
 ];
@@ -97,7 +84,7 @@ export function QuizClient({ servers }: { servers: Server[] }) {
 
   const result = useMemo(() => {
     if (!showResult) return [];
-    return scoreServers(servers, answers).slice(0, 3);
+    return filterServers(servers, answers).slice(0, 3);
   }, [answers, servers, showResult]);
 
   function choose(value: AnswerValue) {
@@ -177,11 +164,11 @@ export function QuizClient({ servers }: { servers: Server[] }) {
         <div className={styles.result}>
           <div className={styles.resultHead}>
             <div>
-              <p className={styles.eyebrow}>Скоринг завершен</p>
+              <p className={styles.eyebrow}>Подбор завершён</p>
               <h2>Твои серверы</h2>
               <p>
-                Это не жесткий фильтр: серверы получили баллы за совпадения с ответами,
-                а затем отсортировались по релевантности, активности и рейтингу.
+                Здесь только сервера, которые проходят выбранные фильтры. Если список пустой,
+                значит сейчас в каталоге нет точного совпадения под эти ответы.
               </p>
             </div>
             <button type="button" className="btn-ghost" onClick={restart}>
@@ -191,19 +178,15 @@ export function QuizClient({ servers }: { servers: Server[] }) {
 
           {result.length > 0 ? (
             <div className={styles.resultList}>
-              {result.map(item => (
-                <div key={item.server.id} className={styles.resultItem}>
-                  <div className={styles.scoreLine}>
-                    <span>{item.score} баллов совпадения</span>
-                    <span>{item.reasons.slice(0, 3).join(' · ') || 'Общий рейтинг каталога'}</span>
-                  </div>
-                  <ServerCard server={item.server} />
+              {result.map(server => (
+                <div key={server.id} className={styles.resultItem}>
+                  <ServerCard server={server} />
                 </div>
               ))}
             </div>
           ) : (
             <div className={styles.empty}>
-              <p>Серверов пока не удалось получить. Попробуйте открыть квиз позже или перейти в каталог.</p>
+              <p>Точных совпадений пока нет. Попробуйте смягчить хронику, донат или стадию проекта.</p>
               <a href="/" className="btn-gold">В каталог</a>
             </div>
           )}
@@ -213,125 +196,68 @@ export function QuizClient({ servers }: { servers: Server[] }) {
   );
 }
 
-function scoreServers(servers: Server[], answers: Answers) {
+function filterServers(servers: Server[], answers: Answers) {
   return servers
-    .map(server => {
-      const reasons: string[] = [];
-      let score = 0;
-
-      const chronicle = answers.chronicle;
-      if (chronicle && chronicle !== 'any' && matchesChronicle(server, chronicle)) {
-        score += 10;
-        reasons.push('хроника');
-      }
-
-      const rates = answers.rates;
-      if (rates && rates !== 'any' && matchesRates(server, rates)) {
-        score += 10;
-        reasons.push('рейты');
-      }
-
-      const focus = answers.focus;
-      if (focus && focus !== 'any') {
-        const focusScore = focusPoints(server, focus);
-        if (focusScore > 0) {
-          score += focusScore;
-          reasons.push(focus === 'balanced' ? 'баланс' : focus.toUpperCase());
-        }
-      }
-
-      const donate = answers.donate;
-      if (donate && donate !== 'any') {
-        const donateScore = donatePoints(server, donate);
-        if (donateScore > 0) {
-          score += donateScore;
-          reasons.push('донат');
-        }
-      }
-
-      const stage = answers.stage;
-      if (stage && stage !== 'any' && matchesStage(server, stage)) {
-        score += 10;
-        reasons.push('стадия');
-      }
-
-      if (server._isVip) score += 1.5;
-      if (server._isBoosted) score += 1;
-      if (server._isSod) score += 1;
-
-      return { server, score, reasons };
-    })
+    .filter(server => matchesChronicle(server, answers.chronicle))
+    .filter(server => matchesRate(server, answers.rates))
+    .filter(server => matchesDonate(server, answers.donate))
+    .filter(server => matchesStage(server, answers.stage))
     .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      if ((b.server.weeklyVotes ?? 0) !== (a.server.weeklyVotes ?? 0)) {
-        return (b.server.weeklyVotes ?? 0) - (a.server.weeklyVotes ?? 0);
-      }
-      return (b.server.rating ?? 0) - (a.server.rating ?? 0);
+      if ((b.weeklyVotes ?? 0) !== (a.weeklyVotes ?? 0)) return (b.weeklyVotes ?? 0) - (a.weeklyVotes ?? 0);
+      if ((b.monthlyVotes ?? 0) !== (a.monthlyVotes ?? 0)) return (b.monthlyVotes ?? 0) - (a.monthlyVotes ?? 0);
+      return (b.rating ?? 0) - (a.rating ?? 0);
     });
 }
 
-function matchesChronicle(server: Server, answer: AnswerValue): boolean {
-  const values = [
-    server.chronicle,
-    ...(server.instances ?? []).map(i => i.chronicle),
-  ].map(v => normalize(v));
-  const key = answer === 'high-five' ? 'high' : answer;
+function matchesChronicle(server: Server, answer?: AnswerValue): boolean {
+  if (!answer || answer === 'unknown') return true;
+  const values = [server.chronicle, ...(server.instances ?? []).map(i => i.chronicle)].map(normalize);
+  if (answer === 'god') {
+    return values.some(v =>
+      /awakening|harmony|tauti|glory|lindvior|valiance|ertheia|odyssey|helios|crusade|salvation|fafurion|war|class|terror|tome|dethrone|shine|rising|god/.test(v),
+    );
+  }
+  const key = answer === 'high-five' ? 'high five' : answer;
   return values.some(v => v.includes(key));
 }
 
-function matchesRates(server: Server, answer: AnswerValue): boolean {
-  const rates = [
-    server.rateNum,
-    ...(server.instances ?? []).map(i => i.rateNum),
-  ].filter((n): n is number => typeof n === 'number' && Number.isFinite(n));
+function matchesRate(server: Server, answer?: AnswerValue): boolean {
+  if (!answer) return true;
+  const rates = [server.rateNum, ...(server.instances ?? []).map(i => i.rateNum)]
+    .filter((n): n is number => typeof n === 'number' && Number.isFinite(n));
 
   return rates.some(rate => {
-    if (answer === 'r1-5') return rate >= 1 && rate <= 5;
-    if (answer === 'r7-25') return rate >= 7 && rate <= 25;
-    if (answer === 'r50plus') return rate >= 50;
-    return false;
+    if (answer === 'slow') return rate >= 1 && rate <= 5;
+    if (answer === 'medium') return rate >= 5 && rate <= 30;
+    if (answer === 'fast') return rate >= 30 && rate <= 200;
+    if (answer === 'instant') return rate >= 200;
+    return true;
   });
 }
 
-function focusPoints(server: Server, answer: AnswerValue): number {
-  const text = normalize([
-    server.shortDesc,
-    server.fullDesc,
-    ...(server.type ?? []),
-    ...(server.instances ?? []).flatMap(i => [i.label, i.shortDesc]),
-  ].filter(Boolean).join(' '));
+function matchesDonate(server: Server, answer?: AnswerValue): boolean {
+  if (!answer || answer === 'donate-any') return true;
+  const values = [
+    server.donate === 'free' ? 'cosmetic' : server.donate,
+    ...(server.instances ?? []).map(i => i.donate === 'free' ? 'cosmetic' : i.donate),
+  ].filter(Boolean);
 
-  if (answer === 'pvp') return /pvp|пвп|фан|осад|дуэл/.test(text) ? 10 : 0;
-  if (answer === 'pve') return /pve|пве|фарм|эконом|квест|рейд/.test(text) ? 10 : 0;
-  if (answer === 'balanced') {
-    const hasPvp = /pvp|пвп|фан|осад|дуэл/.test(text);
-    const hasPve = /pve|пве|фарм|эконом|квест|рейд/.test(text);
-    return hasPvp && hasPve ? 10 : hasPvp || hasPve ? 5 : 0;
-  }
-  return 0;
+  if (answer === 'cosmetic') return values.includes('cosmetic');
+  if (answer === 'convenience') return values.includes('convenience') || values.includes('cosmetic');
+  return true;
 }
 
-function donatePoints(server: Server, answer: AnswerValue): number {
-  if (answer === 'free') return server.donate === 'free' ? 10 : 0;
-  if (answer === 'moderate') return server.donate === 'cosmetic' || server.donate === 'free' ? 10 : 0;
-  if (answer === 'open') return server.donate === 'p2w' ? 10 : 4;
-  return 0;
-}
-
-function matchesStage(server: Server, answer: AnswerValue): boolean {
+function matchesStage(server: Server, answer?: AnswerValue): boolean {
+  if (!answer || answer === 'stage-any') return true;
   const now = Date.now();
-  const dates = [
-    server.openedDate,
-    ...(server.instances ?? []).map(i => i.openedDate),
-  ]
+  const dates = [server.openedDate, ...(server.instances ?? []).map(i => i.openedDate)]
     .filter(Boolean)
     .map(d => new Date(d as string).getTime())
     .filter(t => Number.isFinite(t));
 
-  if (answer === 'soon') return dates.some(t => t > now);
-  if (answer === 'new') return dates.some(t => t <= now && now - t <= 90 * 86400000);
-  if (answer === 'proven') return dates.length === 0 || dates.some(t => t <= now && now - t > 90 * 86400000);
-  return false;
+  if (answer === 'fresh') return dates.some(t => t > now || (t <= now && now - t <= 90 * 86400000));
+  if (answer === 'proven') return dates.some(t => t <= now && now - t >= 180 * 86400000);
+  return true;
 }
 
 function normalize(value: string): string {

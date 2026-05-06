@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { ServerCard } from '@/components/ServerCard';
 import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
 import type { Server, Stats } from '@/lib/types';
-import { CHRONICLES, RATES } from '@/lib/types';
+import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 const OPENED = [
@@ -61,6 +61,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     chr:    sp.get('chr')    ?? '',
     rate:   sp.get('rate')   ?? '',
     opened: sp.get('opened') ?? '',
+    donate: sp.get('donate') ?? '',
+    type:   sp.get('type')   ?? '',
   }));
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
@@ -73,6 +75,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (filters.chr)      params.set('chr',    filters.chr);
     if (filters.rate)     params.set('rate',   filters.rate);
     if (filters.opened)   params.set('opened', filters.opened);
+    if (filters.donate)   params.set('donate', filters.donate);
+    if (filters.type)     params.set('type',   filters.type);
     if (page > 1)         params.set('page',   String(page));
     const query = params.toString();
     router.replace(`${pathname}${query ? '?' + query : ''}`, { scroll: false } as any);
@@ -87,6 +91,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       if (filters.chr)     params.chronicle   = filters.chr;
       if (filters.rate)    params.rate        = filters.rate;
       if (filters.opened)  params.openedWithin = filters.opened;
+      if (filters.donate)  params.donate      = filters.donate;
+      if (filters.type)    params.type        = filters.type;
 
       const res = await api.servers.list(params);
       setServers(res.data);
@@ -147,6 +153,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       <section className={styles.hero}>
         <div className={styles.heroLeft}>
           <h1 className={styles.heroTitle}>Каталог Серверов <em>Lineage 2</em></h1>
+          <Link href="/quiz" className={styles.quizCta}>Пройти квиз</Link>
           {stats && (
             <div className={styles.heroStats}>
               <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
@@ -198,9 +205,19 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           <FilterGroup label="Дата открытия">
             {OPENED.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.opened === v} onClick={() => toggleFilter('opened', v)} />)}
           </FilterGroup>
+          <FilterGroup label="Тип сервера">
+            {SERVER_TYPES
+              .filter(({ v }) => (counts?.types[v] ?? 0) > 0 || filters.type === v)
+              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.type === v} count={counts?.types[v]} onClick={() => toggleFilter('type', v)} />)}
+          </FilterGroup>
+          <FilterGroup label="Донат">
+            {DONATE_OPTIONS
+              .filter(({ v }) => (counts?.donates[v] ?? 0) > 0 || filters.donate === v)
+              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.donate === v} count={counts?.donates[v]} onClick={() => toggleFilter('donate', v)} />)}
+          </FilterGroup>
 
           {Object.values(filters).some(Boolean) && (
-            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', opened: '' }); setPage(1); }}>
+            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', opened: '', donate: '', type: '' }); setPage(1); }}>
               ✕ Сбросить фильтры
             </button>
           )}
