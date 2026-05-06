@@ -33,6 +33,39 @@ function requestPaymentInfo(r: any) {
   return { label: 'Бесплатная заявка', className: `${styles.paymentBadge} ${styles.paymentFree}` };
 }
 
+function soonVipKey(serverId: string, instanceId?: string | null) {
+  return `${serverId}::${instanceId ?? ''}`;
+}
+
+function futureOpenings(servers: any[]) {
+  const now = Date.now();
+  const result: Array<{ key: string; serverId: string; instanceId?: string | null; label: string; openedAt: string }> = [];
+  for (const s of servers) {
+    const insts = Array.isArray(s.instances) ? s.instances : [];
+    const futureInsts = insts.filter((i: any) => i?.openedDate && new Date(i.openedDate).getTime() > now);
+    if (futureInsts.length > 0) {
+      for (const i of futureInsts) {
+        result.push({
+          key: soonVipKey(s.id, i.id),
+          serverId: s.id,
+          instanceId: i.id,
+          label: `${s.name}${i.label ? ` · ${i.label}` : ''} (${i.chronicle} · ${i.rates})`,
+          openedAt: i.openedDate,
+        });
+      }
+    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+      result.push({
+        key: soonVipKey(s.id, null),
+        serverId: s.id,
+        instanceId: null,
+        label: `${s.name} (${s.chronicle} · ${s.rates})`,
+        openedAt: s.openedDate,
+      });
+    }
+  }
+  return result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -171,6 +204,27 @@ export default function AdminPage() {
     try { await api.payments.revokeVip(serverId, token); showToast('VIP снят'); loadTab(tab); }
     catch (e: any) { showToast(e.message); }
   }
+  async function grantSoonVipFromValue(value: string) {
+    if (!token) return;
+    const [serverId, instanceId = ''] = value.split('::');
+    try {
+      await api.payments.grantSoonVip(serverId, instanceId || null, token);
+      showToast('◆ VIP Скоро выдан');
+      loadTab(tab);
+    } catch (e: any) {
+      showToast(e.message);
+    }
+  }
+  async function revokeSoonVip(serverId: string, instanceId?: string | null) {
+    if (!token || !confirm('Снять VIP Скоро с этого запуска?')) return;
+    try {
+      await api.payments.revokeSoonVip(serverId, instanceId, token);
+      showToast('VIP Скоро снят');
+      loadTab(tab);
+    } catch (e: any) {
+      showToast(e.message);
+    }
+  }
   async function grantBoost(serverId: string) {
     if (!token) return;
     try { await api.payments.grantBoost(serverId, token); showToast('🔥 Буст выдан'); loadTab(tab); }
@@ -302,6 +356,8 @@ export default function AdminPage() {
 
   const sodServer = servers.find((s: any) => s._isSod);
   const vipServerIds = new Set((vipStatus?.slots ?? []).map(s => s.serverId));
+  const soonVipKeys = new Set((soonVipStatus?.slots ?? []).map(s => soonVipKey(s.serverId, s.instanceId)));
+  const soonVipOptions = futureOpenings(servers).filter(o => !soonVipKeys.has(o.key));
   const boostServerIds = new Set(boosts.filter(b => new Date(b.endDate) > new Date()).map(b => b.serverId));
 
   return (
@@ -520,9 +576,25 @@ export default function AdminPage() {
                               <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
                               <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
                               <span style={{ fontSize:'.72rem', color:'var(--text3)' }}>{slot.instanceId ? 'Оплачен конкретный запуск' : 'VIP проекта'}</span>
+                              <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeSoonVip(slot.serverId, slot.instanceId)}>Снять VIP Скоро</button>
                             </>
                           ) : (
-                            <span style={{ fontSize:'.84rem', color:'#5AB482' }}>Свободно</span>
+                            <>
+                              <span style={{ fontSize:'.84rem', color:'#5AB482' }}>Свободно</span>
+                              <select
+                                className="input"
+                                style={{ fontSize:'.76rem', padding:'.3rem .5rem' }}
+                                defaultValue=""
+                                onChange={e => { if (e.target.value) { grantSoonVipFromValue(e.target.value); e.target.value = ''; } }}
+                              >
+                                <option value="">Выдать VIP Скоро…</option>
+                                {soonVipOptions.map(o => (
+                                  <option key={o.key} value={o.key}>
+                                    {o.label} · {new Date(o.openedAt).toLocaleDateString('ru-RU')}
+                                  </option>
+                                ))}
+                              </select>
+                            </>
                           )}
                         </div>
                       );

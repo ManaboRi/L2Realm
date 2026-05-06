@@ -424,6 +424,46 @@ export class PaymentsService {
     return { ok: true, serverId, instanceId, kind: 'soon_vip', endDate };
   }
 
+  async grantSoonVip(serverId: string, instanceId?: string | null) {
+    const server = await this.prisma.server.findUnique({ where: { id: serverId }, include: { subscription: true } });
+    if (!server) throw new NotFoundException('Сервер не найден');
+
+    const soonOpening = findSoonOpening(server, instanceId);
+    if (!soonOpening) throw new BadRequestException('Выберите будущий запуск из «Скоро открытие»');
+    if (isSoonOpeningVipActive(server, soonOpening.instanceId)) {
+      throw new BadRequestException('У этого запуска уже активен VIP в «Скоро открытие»');
+    }
+
+    const status = await this.getSoonVipStatus();
+    if (status.taken >= SOON_VIP_MAX) {
+      throw new BadRequestException(`Все ${SOON_VIP_MAX} VIP-места в «Скоро открытие» заняты`);
+    }
+
+    return this.activateSoonVip(serverId, null, soonOpening.instanceId);
+  }
+
+  async removeSoonVip(serverId: string, instanceId?: string | null) {
+    if (!instanceId) return this.removeVip(serverId);
+
+    const server = await this.prisma.server.findUnique({ where: { id: serverId } });
+    if (!server) throw new NotFoundException('Сервер не найден');
+
+    const insts = Array.isArray(server.instances) ? server.instances as any[] : [];
+    let found = false;
+    const next = insts.map(inst => {
+      if (inst?.id !== instanceId) return inst;
+      found = true;
+      const rest = { ...inst };
+      delete rest.soonVipUntil;
+      delete rest.soonVipPaymentId;
+      return rest;
+    });
+    if (!found) throw new NotFoundException('Запуск проекта не найден');
+
+    await this.prisma.server.update({ where: { id: serverId }, data: { instances: next } });
+    return { ok: true, serverId, instanceId, kind: 'soon_vip_removed' };
+  }
+
   // ── Снятие VIP вручную (admin) ────────────────
   async removeVip(serverId: string) {
     await this.prisma.subscription.upsert({

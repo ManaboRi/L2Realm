@@ -105,6 +105,10 @@ export const api = {
       request<any>(`/payments/vip/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
     revokeVip: (serverId: string, token: string) =>
       request<any>(`/payments/vip/${serverId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+    grantSoonVip: (serverId: string, instanceId: string | null | undefined, token: string) =>
+      request<any>(`/payments/vip/soon/${serverId}`, { method: 'POST', body: JSON.stringify({ instanceId: instanceId ?? null }), headers: { Authorization: `Bearer ${token}` } }),
+    revokeSoonVip: (serverId: string, instanceId: string | null | undefined, token: string) =>
+      request<any>(`/payments/vip/soon/${serverId}`, { method: 'DELETE', body: JSON.stringify({ instanceId: instanceId ?? null }), headers: { Authorization: `Bearer ${token}` } }),
     grantBoost: (serverId: string, token: string) =>
       request<any>(`/payments/boost/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
     revokeBoost: (serverId: string, token: string) =>

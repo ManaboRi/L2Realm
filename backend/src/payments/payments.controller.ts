@@ -108,6 +108,22 @@ export class PaymentsController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
+  @Post('vip/soon/:serverId')
+  grantSoonVip(@Param('serverId') id: string, @Body() body: { instanceId?: string | null }) {
+    return this.payments.grantSoonVip(id, body.instanceId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Delete('vip/soon/:serverId')
+  revokeSoonVip(@Param('serverId') id: string, @Body() body: { instanceId?: string | null }) {
+    return this.payments.removeSoonVip(id, body.instanceId);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Post('vip/:serverId')
   grantVip(@Param('serverId') id: string) {
     return this.payments.activateVip(id, null);
