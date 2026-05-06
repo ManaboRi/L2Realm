@@ -45,7 +45,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
           label:       i.label,
           shortDesc:   i.shortDesc || s.shortDesc || undefined,
           openedAt:    i.openedDate!,
-          isVip:       serverVip || (!!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now),
+          isVip:       !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
         });
       }
     } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {

@@ -85,7 +85,7 @@ function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
           chronicle: i.chronicle,
           rates: i.rates,
           openedAt: i.openedDate!,
-          isVip: serverVip || (!!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now),
+          isVip: !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
         });
       }
     } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
