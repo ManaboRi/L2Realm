@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus } from '@/lib/types';
-import { VIP_MAX, CHRONICLES } from '@/lib/types';
+import { VIP_MAX, SOON_VIP_MAX, CHRONICLES } from '@/lib/types';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
@@ -40,6 +40,7 @@ export default function AdminPage() {
   const [servers, setServers]     = useState<any[]>([]);
   const [reviews, setReviews]     = useState<any[]>([]);
   const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
+  const [soonVipStatus, setSoonVipStatus] = useState<VipStatus | null>(null);
   const [boosts, setBoosts]       = useState<any[]>([]);
   const [requests, setRequests]   = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(false);
@@ -54,7 +55,7 @@ export default function AdminPage() {
   // Форма добавления
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
-    url:'', openedDate:'', country:'RU',
+    url:'', openedDate:'', country:'RU', statusOverride: 'auto',
     type_new: false, type_featured: false, vip: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
@@ -78,12 +79,14 @@ export default function AdminPage() {
       if (t === 'reviews')  setReviews(await api.reviews.pending(token));
       if (t === 'requests') setRequests(await api.servers.getRequests(token));
       if (t === 'money') {
-        const [vs, bs, sl] = await Promise.all([
+        const [vs, svs, bs, sl] = await Promise.all([
           api.payments.vipStatus(),
+          api.payments.soonVipStatus(),
           api.payments.allBoosts(token),
           api.servers.list({ limit: '500' }),
         ]);
         setVipStatus(vs);
+        setSoonVipStatus(svs);
         setBoosts(bs);
         setServers(sl.data);
       }
@@ -135,6 +138,7 @@ export default function AdminPage() {
       url:         r.url,
       openedDate:  r.openedDate ? r.openedDate.slice(0, 10) : '',
       country:     'RU',
+      statusOverride: 'auto',
       type_new: false, type_featured: false, vip: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
@@ -189,6 +193,7 @@ export default function AdminPage() {
       url:         s.url         ?? '',
       openedDate:  s.openedDate  ? s.openedDate.slice(0, 10) : '',
       country:     s.country     ?? 'RU',
+      statusOverride: s.statusOverride ?? 'auto',
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
       icon:        s.icon        ?? '',
@@ -227,6 +232,7 @@ export default function AdminPage() {
         url:         editForm.url,
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
+        statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
         icon:        editForm.icon || undefined,
         banner:      editForm.banner || undefined,
@@ -264,6 +270,7 @@ export default function AdminPage() {
         url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
         type: types, vip: addForm.vip,
         openedDate: addForm.openedDate || undefined, country: addForm.country,
+        statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
@@ -331,6 +338,14 @@ export default function AdminPage() {
                 <AField label="Страна">
                   <select className="input" value={editForm.country} onChange={e => setEditForm((p:any) => ({...p,country:e.target.value}))}>
                     {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </AField>
+                <AField label="Ручной статус">
+                  <select className="input" value={editForm.statusOverride} onChange={e => setEditForm((p:any) => ({...p,statusOverride:e.target.value}))}>
+                    <option value="auto">Авто мониторинг</option>
+                    <option value="online">Всегда online</option>
+                    <option value="offline">Всегда offline</option>
+                    <option value="unknown">Неизвестно</option>
                   </select>
                 </AField>
                 <ImageUpload label="Иконка" value={editForm.icon} type="icon" token={token!} onChange={url => setEditForm((p:any) => ({...p,icon:url}))} />
@@ -403,14 +418,15 @@ export default function AdminPage() {
                       {servers.map(s => (
                         <tr key={s.id}>
                           <td className={styles.tdMono}>{s.id}</td>
-                          <td><strong>{s.name}</strong>{s._isSod && <span title="Сервер дня" style={{ marginLeft:'.35rem', color:'#5AB482' }}>★</span>}</td>
+                          <td><strong>{s.name}</strong>{s._isSod && <span title="Сервер недели" style={{ marginLeft:'.35rem', color:'#5AB482' }}>★</span>}</td>
                           <td>{s.chronicle}</td>
                           <td>{s.rates}</td>
                           <td style={{ fontSize:'.72rem' }}>
                             <div style={{ display:'flex', flexDirection:'column', gap:'.15rem' }}>
                               {s._isVip && <span className={styles.planBadge}>◆ VIP{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
                               {s._isBoosted && <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>🔥 Буст{s._boostEnd ? ` · до ${new Date(s._boostEnd).toLocaleDateString('ru-RU')}` : ''}</span>}
-                              {!s._isVip && !s._isBoosted && <span style={{ color:'var(--text3)' }}>—</span>}
+                              {s.statusOverride && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#5AB482', borderColor:'rgba(90,180,130,.25)' }}>Статус: {s.statusOverride}</span>}
+                              {!s._isVip && !s._isBoosted && !s.statusOverride && <span style={{ color:'var(--text3)' }}>—</span>}
                             </div>
                           </td>
                           <td>
@@ -435,7 +451,7 @@ export default function AdminPage() {
 
                 {sodServer && (
                   <div style={{ background:'var(--bg2)', border:'1px solid rgba(90,180,130,.35)', borderRadius:3, padding:'.8rem 1rem', display:'flex', alignItems:'center', gap:'.8rem', flexWrap:'wrap' }}>
-                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'#5AB482', textTransform:'uppercase', letterSpacing:'.14em' }}>★ Сервер дня сегодня</span>
+                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'#5AB482', textTransform:'uppercase', letterSpacing:'.14em' }}>★ Сервер недели</span>
                     <strong style={{ color:'var(--text)' }}>{sodServer.name}</strong>
                     <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>({sodServer.chronicle} · {sodServer.rates})</span>
                   </div>
@@ -477,6 +493,36 @@ export default function AdminPage() {
                                   .map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
                               </select>
                             </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* VIP Скоро открытие */}
+                <div>
+                  <div style={{ display:'flex', alignItems:'baseline', gap:'.8rem', flexWrap:'wrap', marginBottom:'.7rem' }}>
+                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'var(--gold)', margin:0 }}>◆ VIP Скоро открытие</h3>
+                    <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>
+                      {soonVipStatus ? `${soonVipStatus.taken} из ${soonVipStatus.max}` : '…'}
+                      {soonVipStatus?.nextFreeAt && soonVipStatus.taken >= soonVipStatus.max && ` · ближайшее освободится ${new Date(soonVipStatus.nextFreeAt).toLocaleDateString('ru-RU')}`}
+                    </span>
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
+                    {Array.from({ length: SOON_VIP_MAX }).map((_, i) => {
+                      const slot = soonVipStatus?.slots[i];
+                      return (
+                        <div key={i} style={{ background:'var(--bg2)', border:`1px solid ${slot ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
+                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em' }}>Слот #{i+1}</div>
+                          {slot ? (
+                            <>
+                              <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
+                              <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
+                              <span style={{ fontSize:'.72rem', color:'var(--text3)' }}>{slot.instanceId ? 'Оплачен конкретный запуск' : 'VIP проекта'}</span>
+                            </>
+                          ) : (
+                            <span style={{ fontSize:'.84rem', color:'#5AB482' }}>Свободно</span>
                           )}
                         </div>
                       );
@@ -665,6 +711,14 @@ export default function AdminPage() {
                     <AField label="Страна">
                       <select className="input" value={addForm.country} onChange={e => setAddForm(p => ({...p,country:e.target.value}))}>
                         {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
+                      </select>
+                    </AField>
+                    <AField label="Ручной статус">
+                      <select className="input" value={addForm.statusOverride} onChange={e => setAddForm(p => ({...p,statusOverride:e.target.value}))}>
+                        <option value="auto">Авто мониторинг</option>
+                        <option value="online">Всегда online</option>
+                        <option value="offline">Всегда offline</option>
+                        <option value="unknown">Неизвестно</option>
                       </select>
                     </AField>
                     {/* Строка 4 */}

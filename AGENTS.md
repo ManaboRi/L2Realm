@@ -69,10 +69,10 @@ Deploy is done manually by the user on VPS. See `docs/deploy.md`.
 - Prisma cascade deletes bypass service hooks. After SQL/user mass deletes, run `POST /api/reviews/recalc-all` or `recalcAllRatings()`.
 - Do not replace this with on-the-fly rating calculation.
 
-### Server Of The Day
+### Server Of The Week
 
-- SoD is computed in `servers.service.findAll()` from the full DB pool, not from filtered results.
-- Rotation uses 5-hour UTC windows.
+- The highlighted weekly server is computed in `servers.service.findAll()` from the full DB pool by `weeklyVotes`, not from filtered results.
+- Monthly vote reset also resets `weeklyVotes`, so each month starts a new top race.
 
 ### Frontend SSR And Caching
 
@@ -98,7 +98,7 @@ Deploy is done manually by the user on VPS. See `docs/deploy.md`.
 
 Backend:
 - `backend/src/auth/` - JWT, VK OAuth, legacy email code, nickname update
-- `backend/src/servers/` - CRUD, filters, server requests, subscriptions/boost merge, SoD
+- `backend/src/servers/` - CRUD, filters, server requests, subscriptions/boost merge, server-of-week flag
 - `backend/src/reviews/` - reviews, moderation, rating recalculation
 - `backend/src/monitoring/` - 5-minute monitoring cron, expired subscription reset
 - `backend/src/payments/` - YooKassa purchase creation, webhook, VIP/boost activation

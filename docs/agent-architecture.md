@@ -25,13 +25,12 @@ Relevant code:
 
 `recalcRating()` is called on review create/approve/remove. It is not called by Prisma cascade deletes at DB level. If users/reviews are deleted by SQL or mass delete, run full recalculation afterwards.
 
-## Server Of The Day
+## Server Of The Week
 
 Relevant code:
-- `backend/src/servers/servers.service.ts` -> `sodSeed()`
 - `backend/src/servers/servers.service.ts` -> `findAll()`
 
-SoD is selected from the full server DB pool, not the filtered result. Otherwise search/filter input changes the highlighted server. The seed is based on 5-hour UTC windows: `Math.floor(hours / 5)`.
+The highlighted weekly server is selected from the full server DB pool by `weeklyVotes`, not from the filtered result. Otherwise search/filter input changes the highlighted server. Monthly reset also resets `weeklyVotes`, so each month starts a fresh top race.
 
 ## Frontend SSR Metadata
 
@@ -96,7 +95,7 @@ VK OAuth requires HTTPS in `redirect_uri`, so local login cannot be fully tested
 ## Backend Modules
 
 - `auth/` - JWT strategy, VK OAuth, legacy email code, nicknames
-- `servers/` - CRUD, filters, add-server requests, subscriptions and boosts, SoD
+- `servers/` - CRUD, filters, add-server requests, subscriptions and boosts, server-of-week flag
 - `reviews/` - reviews, moderation, rating recalculation
 - `monitoring/` - server pings, monitor logs, subscription expiration reset
 - `payments/` - YooKassa createPurchase, webhook, VIP/boost activation

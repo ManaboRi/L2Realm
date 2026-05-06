@@ -11,6 +11,8 @@ export interface ServerInstance {
   rateNum:     number;
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
+  soonVipUntil?: string | null;
+  soonVipPaymentId?: string | null;
 }
 
 export interface Server {
@@ -39,6 +41,7 @@ export interface Server {
   rating:      number;
   ratingCount: number;
   status?:     'online' | 'offline' | 'unknown';
+  statusOverride?: 'online' | 'offline' | 'unknown' | null;
   subscription?: Subscription;
   boost?:      Boost | null;
   reviews?:    Review[];
@@ -81,6 +84,8 @@ export interface VipStatus {
   slots: Array<{
     id: string;
     serverId: string;
+    instanceId?: string | null;
+    instanceLabel?: string | null;
     endDate: string;
     server: { id: string; name: string; icon: string | null };
   }>;

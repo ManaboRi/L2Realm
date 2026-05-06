@@ -25,6 +25,7 @@ export class CreateServerDto {
   @IsOptional() @IsString() site?: string;
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
+  @IsOptional() @IsString() statusOverride?: string | null;
   // instances — массив сабкарточек проекта (см. schema.prisma)
   @IsOptional() instances?: any[];
 }

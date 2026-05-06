@@ -29,7 +29,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
   for (const s of servers) {
     const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
     const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
-    const isVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate) > new Date();
+    const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate) > new Date();
 
     if (futureInsts.length > 0) {
       // Проект с future-instance: каждый запуск — отдельная карточка
@@ -45,7 +45,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
           label:       i.label,
           shortDesc:   i.shortDesc || s.shortDesc || undefined,
           openedAt:    i.openedDate!,
-          isVip,
+          isVip:       serverVip || (!!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now),
         });
       }
     } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
@@ -60,7 +60,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
         rates:       s.rates,
         shortDesc:   s.shortDesc || undefined,
         openedAt:    s.openedDate,
-        isVip,
+        isVip:      serverVip,
       });
     }
   }

@@ -12,16 +12,6 @@ function rateRange(n: number): string {
   return 'extreme';
 }
 
-// Сид для «Сервера дня» — меняется раз в 5 часов (окна 0-4, 5-9, 10-14, 15-19, 20-23 UTC).
-function sodSeed(): number {
-  const d = new Date();
-  const window5h = Math.floor(d.getUTCHours() / 5);
-  const s = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}-w${window5h}`;
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h;
-}
-
 function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
   if (s.openedDate && new Date(s.openedDate).getTime() > nowTs) return true;
   const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
@@ -37,7 +27,7 @@ export class ServersService {
 
   // ── Получить все с фильтрами ─────────────────
   async findAll(filters: FilterServersDto) {
-    // sort без default: пустое = «по умолчанию» (пьедестал VIP → СоД → Буст
+    // sort без default: пустое = «по умолчанию» (пьедестал VIP → сервер недели → Буст
      // → остальные по голосам). Явные значения: opened/name/rating/votes.
     const { search, chronicle, rate, donate, type, openedWithin, sort, page = 1, limit = 50 } = filters;
 
@@ -124,22 +114,15 @@ export class ServersService {
     });
     const boostMap = new Map(boosts.map(b => [b.serverId, b.endDate]));
 
-    // Сервер дня: детерминированный рандом, окно 5 часов. Пул — ВСЯ БД минус VIP/бустовые,
-    // НЕ зависит от поиска/фильтров, чтобы SoD не менялся при вводе в поиск.
-    const poolForSod = await this.prisma.server.findMany({
-      select: { id: true, subscription: { select: { plan: true, endDate: true } } },
-      orderBy: { id: 'asc' }, // стабильный порядок — один и тот же сид даёт один и тот же сервер
+    // Сервер недели: проект с максимумом недельных голосов. Не зависит от поиска/фильтров.
+    const serverOfWeek = await this.prisma.server.findFirst({
+      where: { weeklyVotes: { gt: 0 } },
+      select: { id: true },
+      orderBy: [{ weeklyVotes: 'desc' }, { id: 'asc' }],
     });
-    const eligibleSod = poolForSod.filter(s => {
-      const subActive = s.subscription?.endDate && s.subscription.endDate > now;
-      const isVip = s.subscription?.plan === 'VIP' && subActive;
-      return !isVip && !boostMap.has(s.id);
-    });
-    const sodId = eligibleSod.length
-      ? eligibleSod[sodSeed() % eligibleSod.length].id
-      : null;
+    const sodId = serverOfWeek?.id ?? null;
 
-    // Приклеиваем флаги и сортируем: VIP → Boosted (по endDate DESC) → Сервер дня → остальные
+    // Приклеиваем флаги и сортируем: VIP → Сервер недели → Boosted (по endDate DESC) → остальные
     const decorated = filtered.map(s => {
       const plan = (s.subscription as any)?.plan ?? 'FREE';
       const subActive = s.subscription?.endDate && s.subscription.endDate > now;
@@ -151,9 +134,9 @@ export class ServersService {
     });
 
     // При явной сортировке (opened/rating/votes/name) — пиннится только VIP,
-    // остальные (включая SoD/Boost) идут в порядке выбранной сортировки.
+    // остальные (включая сервер недели/Boost) идут в порядке выбранной сортировки.
     // Это «честный» режим, когда юзер сам выбрал критерий и не хочет видеть
-    // продвижение. SoD/Boost доступны в default-режиме (если sort пуст).
+    // продвижение. Сервер недели/Boost доступны в default-режиме (если sort пуст).
     const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes' || sort === 'opened';
 
     decorated.sort((a, b) => {

@@ -1,0 +1,1 @@
+ALTER TABLE "Server" ADD COLUMN IF NOT EXISTS "statusOverride" TEXT;

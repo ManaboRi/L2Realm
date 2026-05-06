@@ -3,9 +3,67 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import type { Server, VipStatus } from '@/lib/types';
+import type { Server, ServerInstance, VipStatus } from '@/lib/types';
 import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS, COMING_SOON_PRICE, SOON_VIP_PRICE, SOON_VIP_MAX } from '@/lib/types';
 import styles from './page.module.css';
+
+type SoonOpening = {
+  key: string;
+  serverId: string;
+  instanceId?: string | null;
+  projectName: string;
+  label?: string;
+  chronicle: string;
+  rates: string;
+  openedAt: string;
+  isVip: boolean;
+};
+
+function isComingSoonServer(s: Server): boolean {
+  const now = Date.now();
+  return !!(
+    (s.openedDate && new Date(s.openedDate).getTime() > now) ||
+    (s.instances ?? []).some(i => i.openedDate && new Date(i.openedDate).getTime() > now)
+  );
+}
+
+function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
+  const now = Date.now();
+  const result: SoonOpening[] = [];
+  for (const s of servers) {
+    const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
+    const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
+    const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate).getTime() > now;
+
+    if (futureInsts.length > 0) {
+      for (const i of futureInsts) {
+        result.push({
+          key: `${s.id}::${i.id}`,
+          serverId: s.id,
+          instanceId: i.id,
+          projectName: s.name,
+          label: i.label,
+          chronicle: i.chronicle,
+          rates: i.rates,
+          openedAt: i.openedDate!,
+          isVip: serverVip || (!!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now),
+        });
+      }
+    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+      result.push({
+        key: s.id,
+        serverId: s.id,
+        instanceId: null,
+        projectName: s.name,
+        chronicle: s.chronicle,
+        rates: s.rates,
+        openedAt: s.openedDate,
+        isVip: serverVip,
+      });
+    }
+  }
+  return result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
+}
 
 export function PricingClient() {
   const { user, token } = useAuth();
@@ -13,49 +71,70 @@ export function PricingClient() {
   const [soonVip, setSoonVip] = useState<VipStatus | null>(null);
   const [vipLoading, setVipLoading] = useState(true);
   const [servers, setServers] = useState<Server[]>([]);
+  const [soonServers, setSoonServers] = useState<Server[]>([]);
   const [sel, setSel] = useState<string>('');
   const [query, setQuery] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [soonSel, setSoonSel] = useState<SoonOpening | null>(null);
+  const [soonQuery, setSoonQuery] = useState('');
+  const [soonPickerOpen, setSoonPickerOpen] = useState(false);
   const [toast, setToast] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
+  const soonPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([api.payments.vipStatus(), api.payments.soonVipStatus()])
       .then(([main, soon]) => { setVip(main); setSoonVip(soon); setVipLoading(false); })
       .catch(() => setVipLoading(false));
     api.servers.list({ limit: '500' }).then(r => setServers(r.data)).catch(() => {});
+    api.servers.comingSoon().then(setSoonServers).catch(() => {});
   }, []);
 
   // Закрывать выпадашку при клике снаружи
   useEffect(() => {
-    if (!pickerOpen) return;
+    if (!pickerOpen && !soonPickerOpen) return;
     function onClick(e: MouseEvent) {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
         setPickerOpen(false);
       }
+      if (soonPickerRef.current && !soonPickerRef.current.contains(e.target as Node)) {
+        setSoonPickerOpen(false);
+      }
     }
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
-  }, [pickerOpen]);
+  }, [pickerOpen, soonPickerOpen]);
 
   const selectedServer = servers.find(s => s.id === sel);
+  const paidServers = useMemo(() => servers.filter(s => !isComingSoonServer(s)), [servers]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return servers.slice(0, 50);
-    return servers.filter(s =>
+    if (!q) return paidServers.slice(0, 50);
+    return paidServers.filter(s =>
       s.name.toLowerCase().includes(q) ||
       s.chronicle.toLowerCase().includes(q) ||
       s.rates.toLowerCase().includes(q) ||
       s.id.toLowerCase().includes(q)
     ).slice(0, 50);
-  }, [servers, query]);
+  }, [paidServers, query]);
+  const soonOpenings = useMemo(() => flattenSoonOpenings(soonServers).filter(o => !o.isVip), [soonServers]);
+  const filteredSoonOpenings = useMemo(() => {
+    const q = soonQuery.trim().toLowerCase();
+    if (!q) return soonOpenings.slice(0, 50);
+    return soonOpenings.filter(o =>
+      o.projectName.toLowerCase().includes(q) ||
+      (o.label ?? '').toLowerCase().includes(q) ||
+      o.chronicle.toLowerCase().includes(q) ||
+      o.rates.toLowerCase().includes(q)
+    ).slice(0, 50);
+  }, [soonOpenings, soonQuery]);
 
   function showToast(msg: string) {
     setToast(msg); setTimeout(() => setToast(''), 3500);
   }
 
-  async function buy(kind: 'vip' | 'boost' | 'soon_vip') {
+  async function buy(kind: 'vip' | 'boost') {
     if (!token || !user) return showToast('Войдите, чтобы совершить покупку (чек придёт на ваш email)');
     if (!sel) return showToast('Выберите сервер');
     setBusy(kind);
@@ -74,12 +153,36 @@ export function PricingClient() {
     setBusy(null);
   }
 
+  async function buySoonVip() {
+    if (!token || !user) return showToast('Войдите, чтобы совершить покупку (чек придёт на ваш email)');
+    if (!soonSel) {
+      setSoonPickerOpen(true);
+      return showToast('Выберите запуск в «Скоро открытие»');
+    }
+    setBusy('soon_vip');
+    try {
+      const res = await api.payments.purchase({
+        kind: 'soon_vip',
+        serverId: soonSel.serverId,
+        instanceId: soonSel.instanceId,
+        returnUrl: window.location.href,
+      }, token);
+      if (res.confirmationUrl) { window.location.href = res.confirmationUrl; return; }
+      if (res.activated) {
+        showToast('VIP Скоро активирован');
+        const [freshSoonVip, freshSoonServers] = await Promise.all([api.payments.soonVipStatus(), api.servers.comingSoon()]);
+        setSoonVip(freshSoonVip);
+        setSoonServers(freshSoonServers);
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Ошибка');
+    }
+    setBusy(null);
+  }
+
   const vipFull = (vip?.taken ?? 0) >= VIP_MAX;
   const soonVipFull = (soonVip?.taken ?? 0) >= SOON_VIP_MAX;
-  const selectedIsComingSoon = !!selectedServer && (
-    (selectedServer.openedDate && new Date(selectedServer.openedDate) > new Date()) ||
-    (selectedServer.instances ?? []).some(i => i.openedDate && new Date(i.openedDate) > new Date())
-  );
+  const regularBuyLocked = !selectedServer;
 
   return (
     <div className={styles.page}>
@@ -94,8 +197,8 @@ export function PricingClient() {
       </div>
 
       <div className={styles.wrap}>
-        <div className={styles.serverPick}>
-          <label className={styles.pickLabel}>Ваш сервер</label>
+        <div className={`${styles.serverPick} ${!selectedServer ? styles.serverPickAttention : ''}`}>
+          <label className={styles.pickLabel}>Сначала выберите открытый сервер для VIP или буста</label>
           <div ref={pickerRef} className={styles.picker}>
             <input
               className={`input ${styles.pickerInput}`}
@@ -129,21 +232,21 @@ export function PricingClient() {
                     </button>
                   ))
                 )}
-                {servers.length > filtered.length && !query && (
+                {paidServers.length > filtered.length && !query && (
                   <div className={styles.pickerEmpty}>Показаны первые {filtered.length} — уточните поиском</div>
                 )}
               </div>
             )}
           </div>
           <p className={styles.pickHint}>
-            Сервера нет в списке? Сначала <Link href="/add" style={{ color: 'var(--gold)' }}>подайте заявку</Link> — после одобрения вернитесь сюда.
+            Для VIP «Скоро открытие» ниже есть отдельный выбор конкретного будущего запуска.
           </p>
         </div>
 
         <div className={styles.tiers}>
 
           {/* VIP */}
-          <div className={`${styles.tier} ${styles.tierVip}`}>
+          <div className={`${styles.tier} ${styles.tierVip} ${regularBuyLocked ? styles.tierDisabled : ''}`}>
             <div className={styles.tierHead}>
               <span className={styles.tierBadge}>◆ VIP</span>
               <span className={styles.tierPrice}>{VIP_PRICE.toLocaleString('ru-RU')} ₽<span className={styles.priceSub}> / {VIP_DAYS} дн.</span></span>
@@ -183,15 +286,15 @@ export function PricingClient() {
             <button
               className="btn-primary"
               onClick={() => buy('vip')}
-              disabled={busy === 'vip' || vipFull}
+              disabled={busy === 'vip' || vipFull || regularBuyLocked}
               style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start' }}
             >
-              {busy === 'vip' ? <span className="spin" /> : vipFull ? 'Все места заняты' : `Купить VIP за ${VIP_PRICE.toLocaleString('ru-RU')} ₽`}
+              {busy === 'vip' ? <span className="spin" /> : vipFull ? 'Все места заняты' : regularBuyLocked ? 'Выберите сервер выше' : `Купить VIP за ${VIP_PRICE.toLocaleString('ru-RU')} ₽`}
             </button>
           </div>
 
           {/* Буст */}
-          <div className={`${styles.tier} ${styles.tierBoost}`}>
+          <div className={`${styles.tier} ${styles.tierBoost} ${regularBuyLocked ? styles.tierDisabled : ''}`}>
             <div className={styles.tierHead}>
               <span className={`${styles.tierBadge} ${styles.badgeBoost}`}>🔥 Буст</span>
               <span className={styles.tierPrice}>{BOOST_PRICE} ₽<span className={styles.priceSub}> / {BOOST_DAYS} дн.</span></span>
@@ -211,10 +314,10 @@ export function PricingClient() {
             <button
               className="btn-primary"
               onClick={() => buy('boost')}
-              disabled={busy === 'boost'}
+              disabled={busy === 'boost' || regularBuyLocked}
               style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start' }}
             >
-              {busy === 'boost' ? <span className="spin" /> : `Купить буст за ${BOOST_PRICE} ₽`}
+              {busy === 'boost' ? <span className="spin" /> : regularBuyLocked ? 'Выберите сервер выше' : `Купить буст за ${BOOST_PRICE} ₽`}
             </button>
           </div>
 
@@ -275,18 +378,57 @@ export function PricingClient() {
                   <strong>{new Date(soonVip.nextFreeAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong>
                 </div>
               )}
-              {!selectedIsComingSoon && (
-                <div className={styles.slotsHint}>Выберите сервер с будущей датой открытия.</div>
-              )}
+              <div ref={soonPickerRef} className={styles.picker}>
+                <input
+                  className={`input ${styles.pickerInput}`}
+                  value={soonPickerOpen ? soonQuery : (soonSel ? `${soonSel.projectName}${soonSel.label ? ` · ${soonSel.label}` : ''} (${soonSel.chronicle} · ${soonSel.rates})` : '')}
+                  onChange={e => { setSoonQuery(e.target.value); setSoonPickerOpen(true); }}
+                  onFocus={() => { setSoonQuery(''); setSoonPickerOpen(true); }}
+                  placeholder="Найти запуск в «Скоро открытие»..."
+                />
+                {soonSel && (
+                  <button
+                    type="button"
+                    className={styles.pickerClear}
+                    onClick={() => { setSoonSel(null); setSoonQuery(''); setSoonPickerOpen(true); }}
+                    title="Сбросить выбор"
+                  >×</button>
+                )}
+                {soonPickerOpen && (
+                  <div className={styles.pickerList}>
+                    {filteredSoonOpenings.length === 0 ? (
+                      <div className={styles.pickerEmpty}>Нет свободных запусков для VIP</div>
+                    ) : (
+                      filteredSoonOpenings.map(o => (
+                        <button
+                          key={o.key}
+                          type="button"
+                          className={`${styles.pickerItem} ${o.key === soonSel?.key ? styles.pickerItemActive : ''}`}
+                          onClick={() => { setSoonSel(o); setSoonPickerOpen(false); setSoonQuery(''); }}
+                        >
+                          <span className={styles.pickerItemName}>{o.projectName}{o.label ? ` · ${o.label}` : ''}</span>
+                          <span className={styles.pickerItemMeta}>
+                            {o.chronicle} · {o.rates} · открытие {new Date(o.openedAt).toLocaleDateString('ru-RU')}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                    {soonOpenings.length > filteredSoonOpenings.length && !soonQuery && (
+                      <div className={styles.pickerEmpty}>Показаны первые {filteredSoonOpenings.length} — уточните поиском</div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className={styles.slotsHint}>VIP покупается на конкретный запуск, а не на весь проект сразу.</div>
             </div>
 
             <button
               className="btn-primary"
-              onClick={() => buy('soon_vip')}
-              disabled={busy === 'soon_vip' || soonVipFull || !selectedIsComingSoon}
+              onClick={buySoonVip}
+              disabled={busy === 'soon_vip' || soonVipFull}
               style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start' }}
             >
-              {busy === 'soon_vip' ? <span className="spin" /> : soonVipFull ? 'Все места заняты' : `Купить VIP Скоро за ${SOON_VIP_PRICE.toLocaleString('ru-RU')} ₽`}
+              {busy === 'soon_vip' ? <span className="spin" /> : soonVipFull ? 'Все места заняты' : !soonSel ? 'Выберите запуск' : `Купить VIP Скоро за ${SOON_VIP_PRICE.toLocaleString('ru-RU')} ₽`}
             </button>
           </div>
 

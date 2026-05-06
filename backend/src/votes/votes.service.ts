@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
-const COOLDOWN_MS = 12 * 60 * 60 * 1000;
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class VotesService {
@@ -63,7 +63,7 @@ export class VotesService {
   // Сброс ежемесячного счётчика — 1-го числа каждого месяца в 00:00 UTC
   @Cron('0 0 1 * *')
   async resetMonthlyVotes() {
-    await this.prisma.server.updateMany({ data: { monthlyVotes: 0 } });
+    await this.prisma.server.updateMany({ data: { monthlyVotes: 0, weeklyVotes: 0 } });
   }
 
   // Сброс недельного счётчика — каждую пятницу в 06:00 МСК (= 03:00 UTC)

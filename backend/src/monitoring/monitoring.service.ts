@@ -43,6 +43,15 @@ export class MonitoringService {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) return false;
 
+    const manualStatus = normalizeStatusOverride((server as any).statusOverride);
+    if (manualStatus) {
+      await this.prisma.server.update({
+        where: { id: serverId },
+        data:  { status: manualStatus },
+      });
+      return manualStatus === 'online';
+    }
+
     const url       = server.url || server.site;
     const start     = Date.now();
     const reachable = await this.pingUrl(url);
@@ -236,4 +245,9 @@ async function mapWithConcurrency<T, R>(
   const runners = Array.from({ length: Math.min(concurrency, items.length) }, run);
   await Promise.all(runners);
   return results;
+}
+
+function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 'unknown' | null {
+  if (value === 'online' || value === 'offline' || value === 'unknown') return value;
+  return null;
 }

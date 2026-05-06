@@ -63,7 +63,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           <span className={styles.name}>{s.name}</span>
           {isVip && <span className={styles.starVip} title="VIP">★</span>}
           {isBoosted && <span className={styles.fire} title="В огне — буст активен">🔥</span>}
-          {isSod && <span className={styles.sodBadge} title="Случайный сервер каталога — бесплатное промо. Выбирается автоматически каждые 5 часов из всех серверов без активного VIP или буста.">★ Сервер дня</span>}
+          {isSod && <span className={styles.sodBadge} title="Проект с наибольшим числом голосов за текущую неделю.">★ Сервер недели</span>}
           {isVip && <span className={styles.vipBadge}>VIP</span>}
           <div className={styles.tags}>
             {/* Если у проекта есть instances — показываем сводные теги (только уникальные).

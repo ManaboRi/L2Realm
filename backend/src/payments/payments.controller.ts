@@ -17,10 +17,10 @@ export class PaymentsController {
   @UseGuards(AuthGuard('jwt'))
   @Post('purchase')
   purchase(
-    @Body() body: { kind: 'vip' | 'boost' | 'soon_vip'; serverId: string; returnUrl: string },
+    @Body() body: { kind: 'vip' | 'boost' | 'soon_vip'; serverId: string; instanceId?: string; returnUrl: string },
     @Request() req: { user: { id: string; email: string } },
   ) {
-    return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email);
+    return this.payments.createPurchase(body.kind, body.serverId, body.returnUrl, req.user.email, body.instanceId);
   }
 
   // Платное размещение «Скоро открытие» — 5 попыток/час с IP

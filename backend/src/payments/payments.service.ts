@@ -23,12 +23,17 @@ export class PaymentsService {
   constructor(private prisma: PrismaService, private config: ConfigService) {}
 
   // ── Создать платёж (VIP или буст) ─────────────
-  async createPurchase(kind: PurchaseKind, serverId: string, returnUrl: string, userEmail: string) {
-    const server = await this.prisma.server.findUnique({ where: { id: serverId } });
+  async createPurchase(kind: PurchaseKind, serverId: string, returnUrl: string, userEmail: string, instanceId?: string | null) {
+    const server = await this.prisma.server.findUnique({ where: { id: serverId }, include: { subscription: true } });
     if (!server) throw new NotFoundException('Сервер не найден');
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
 
-    const isComingSoon = isComingSoonServer(server);
+    const soonOpening = kind === 'soon_vip'
+      ? findSoonOpening(server, instanceId)
+      : null;
+    const isComingSoon = kind === 'soon_vip'
+      ? !!soonOpening
+      : isComingSoonServer(server);
 
     // Серверы с датой открытия в будущем — обычные VIP/буст продаются только после открытия.
     if (isComingSoon && kind !== 'soon_vip') {
@@ -57,9 +62,11 @@ export class PaymentsService {
     }
     if (kind === 'soon_vip') {
       const status = await this.getSoonVipStatus();
-      const already = await this.prisma.subscription.findUnique({ where: { serverId } });
-      if (already?.plan === 'VIP' && already.endDate > new Date()) {
-        throw new BadRequestException('У сервера уже активен VIP в «Скоро открытие»');
+      if (!soonOpening) {
+        throw new BadRequestException('Выберите запуск из «Скоро открытие»');
+      }
+      if (isSoonOpeningVipActive(server, soonOpening.instanceId)) {
+        throw new BadRequestException('У этого запуска уже активен VIP в «Скоро открытие»');
       }
       if (status.taken >= SOON_VIP_MAX) {
         throw new BadRequestException(
@@ -77,9 +84,12 @@ export class PaymentsService {
         throw new BadRequestException('Платежи временно недоступны. Обратитесь в поддержку.');
       }
       this.logger.warn(`ЮКасса не настроена — активируем ${kind} сразу (dev mode, NODE_ENV=${process.env.NODE_ENV})`);
-      const result = (kind === 'vip' || kind === 'soon_vip')
-        ? await this.activateVip(serverId, 'dev-' + uuidv4())
-        : await this.activateBoost(serverId, 'dev-' + uuidv4());
+      const paymentId = 'dev-' + uuidv4();
+      const result = kind === 'soon_vip'
+        ? await this.activateSoonVip(serverId, paymentId, soonOpening?.instanceId)
+        : kind === 'vip'
+          ? await this.activateVip(serverId, paymentId)
+          : await this.activateBoost(serverId, paymentId);
       return { dev: true, activated: true, ...result };
     }
 
@@ -96,7 +106,7 @@ export class PaymentsService {
         amount:       { value: amount.toFixed(2), currency: 'RUB' },
         confirmation: { type: 'redirect', return_url: returnUrl },
         description,
-        metadata:     { serverId, kind },
+        metadata:     { serverId, kind, ...(soonOpening?.instanceId && { instanceId: soonOpening.instanceId }) },
         capture:      true,
         // Чек по 54-ФЗ — обязательный, ЮКасса передаст его в «Мой налог» для самозанятых
         receipt: {
@@ -182,7 +192,7 @@ export class PaymentsService {
       return { ok: true };
     }
 
-    const { serverId, kind, requestId } = verified.metadata || {};
+    const { serverId, kind, requestId, instanceId } = verified.metadata || {};
     if (kind !== 'vip' && kind !== 'boost' && kind !== 'soon' && kind !== 'soon_vip') {
       this.logger.warn(`⚠️ Платёж ${paymentId}: неизвестный kind в metadata`);
       return { ok: true };
@@ -214,7 +224,11 @@ export class PaymentsService {
 
     // 4. Активация
     if (kind === 'vip' || kind === 'soon_vip') {
-      await this.activateVip(serverId, paymentId);
+      if (kind === 'soon_vip') {
+        await this.activateSoonVip(serverId, paymentId, instanceId);
+      } else {
+        await this.activateVip(serverId, paymentId);
+      }
       this.logger.log(`✅ ${kind === 'soon_vip' ? 'Soon VIP' : 'VIP'} активирован для ${serverId} (payment ${paymentId}, ${actualRub} RUB)`);
     } else if (kind === 'boost') {
       await this.activateBoost(serverId, paymentId);
@@ -253,7 +267,13 @@ export class PaymentsService {
       this.prisma.boost.findFirst({ where: { paymentId } }),
       this.prisma.serverRequest.findFirst({ where: { paymentId, paid: true } }),
     ]);
-    return !!sub || !!boost || !!soonReq;
+    if (sub || boost || soonReq) return true;
+
+    const servers = await this.prisma.server.findMany({ select: { instances: true } });
+    return servers.some(s => {
+      const insts = Array.isArray(s.instances) ? s.instances as any[] : [];
+      return insts.some(i => i?.soonVipPaymentId === paymentId);
+    });
   }
 
   // ── Платное размещение «Скоро открытие» ──────
@@ -378,6 +398,32 @@ export class PaymentsService {
     return { ok: true, serverId, kind: 'vip', endDate };
   }
 
+  async activateSoonVip(serverId: string, paymentId: string | null, instanceId?: string | null) {
+    if (!instanceId) return this.activateVip(serverId, paymentId);
+
+    const server = await this.prisma.server.findUnique({ where: { id: serverId } });
+    if (!server) throw new NotFoundException('Сервер не найден');
+
+    const insts = Array.isArray(server.instances) ? server.instances as any[] : [];
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + VIP_DAYS);
+
+    let found = false;
+    const next = insts.map(inst => {
+      if (inst?.id !== instanceId) return inst;
+      found = true;
+      return {
+        ...inst,
+        soonVipUntil: endDate.toISOString(),
+        soonVipPaymentId: paymentId,
+      };
+    });
+
+    if (!found) throw new NotFoundException('Запуск проекта не найден');
+    await this.prisma.server.update({ where: { id: serverId }, data: { instances: next } });
+    return { ok: true, serverId, instanceId, kind: 'soon_vip', endDate };
+  }
+
   // ── Снятие VIP вручную (admin) ────────────────
   async removeVip(serverId: string) {
     await this.prisma.subscription.upsert({
@@ -442,10 +488,36 @@ export class PaymentsService {
       include: { server: true },
     });
     const soonActive = active.filter(s => isComingSoonServer(s.server));
-    const taken = soonActive.length;
+    const instanceSlots = await this.getActiveSoonVipInstanceSlots(now);
+    const slots = [...soonActive.map(compactVipSlot), ...instanceSlots]
+      .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
+    const taken = slots.length;
     const free  = Math.max(0, SOON_VIP_MAX - taken);
-    const nextFreeAt = taken >= SOON_VIP_MAX ? soonActive[0]?.endDate ?? null : null;
-    return { taken, free, max: SOON_VIP_MAX, nextFreeAt, slots: soonActive.map(compactVipSlot) };
+    const nextFreeAt = taken >= SOON_VIP_MAX ? slots[0]?.endDate ?? null : null;
+    return { taken, free, max: SOON_VIP_MAX, nextFreeAt, slots };
+  }
+
+  private async getActiveSoonVipInstanceSlots(now: Date) {
+    const servers = await this.prisma.server.findMany({
+      select: { id: true, name: true, icon: true, instances: true },
+    });
+
+    const slots: any[] = [];
+    for (const server of servers) {
+      const insts = Array.isArray(server.instances) ? server.instances as any[] : [];
+      for (const inst of insts) {
+        if (!inst?.soonVipUntil || new Date(inst.soonVipUntil) <= now) continue;
+        slots.push({
+          id: `${server.id}:${inst.id}`,
+          serverId: server.id,
+          instanceId: inst.id,
+          instanceLabel: inst.label || inst.rates || inst.chronicle,
+          endDate: inst.soonVipUntil,
+          server: { id: server.id, name: server.name, icon: server.icon },
+        });
+      }
+    }
+    return slots;
   }
 
   // ── Активные бусты (публично, для сортировки) ─
@@ -502,6 +574,37 @@ function farFuture() {
 
 function isComingSoonServer(server: any): boolean {
   return !!nextOpeningDate(server);
+}
+
+function findSoonOpening(server: any, instanceId?: string | null): { instanceId: string | null; openedAt: Date } | null {
+  const now = Date.now();
+  if (instanceId) {
+    const insts = Array.isArray(server?.instances) ? server.instances : [];
+    const inst = insts.find((i: any) => i?.id === instanceId);
+    if (!inst?.openedDate) return null;
+    const openedAt = new Date(inst.openedDate);
+    if (isNaN(openedAt.getTime()) || openedAt.getTime() <= now) return null;
+    return { instanceId, openedAt };
+  }
+
+  if (server?.openedDate) {
+    const openedAt = new Date(server.openedDate);
+    if (!isNaN(openedAt.getTime()) && openedAt.getTime() > now) {
+      return { instanceId: null, openedAt };
+    }
+  }
+  return null;
+}
+
+function isSoonOpeningVipActive(server: any, instanceId?: string | null): boolean {
+  const now = new Date();
+  if (!instanceId) {
+    const sub = server?.subscription;
+    return !!(sub?.plan === 'VIP' && sub?.endDate && new Date(sub.endDate) > now);
+  }
+  const insts = Array.isArray(server?.instances) ? server.instances : [];
+  const inst = insts.find((i: any) => i?.id === instanceId);
+  return !!inst?.soonVipUntil && new Date(inst.soonVipUntil) > now;
 }
 
 function nextOpeningDate(server: any): Date | null {
