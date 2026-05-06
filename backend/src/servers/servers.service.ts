@@ -71,6 +71,31 @@ function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
   return insts.some(i => i?.openedDate && new Date(i.openedDate).getTime() > nowTs);
 }
 
+function hasOpenedLaunch(s: any, nowTs = Date.now()): boolean {
+  if (s.openedDate) {
+    const t = new Date(s.openedDate).getTime();
+    if (!isNaN(t) && t <= nowTs) return true;
+  }
+
+  const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+  let hasDatedInstance = false;
+  for (const i of insts) {
+    if (!i?.openedDate) continue;
+    const t = new Date(i.openedDate).getTime();
+    if (isNaN(t)) continue;
+    hasDatedInstance = true;
+    if (t <= nowTs) return true;
+  }
+
+  if (insts.length === 0 && !s.openedDate) return true;
+  if (insts.length > 0 && !s.openedDate && !hasDatedInstance) return true;
+  return false;
+}
+
+function isOnlyComingSoonServer(s: any, nowTs = Date.now()): boolean {
+  return isComingSoonServer(s, nowTs) && !hasOpenedLaunch(s, nowTs);
+}
+
 function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 'unknown' | null {
   if (value === 'online' || value === 'offline' || value === 'unknown') return value;
   return null;
@@ -184,7 +209,7 @@ export class ServersService {
     const decorated = filtered.map(s => {
       const plan = (s.subscription as any)?.plan ?? 'FREE';
       const subActive = s.subscription?.endDate && s.subscription.endDate > now;
-      const isVip  = plan === 'VIP' && subActive && !isComingSoonServer(s, nowTs);
+      const isVip  = plan === 'VIP' && subActive && !isOnlyComingSoonServer(s, nowTs);
       const boostEnd = boostMap.get(s.id) ?? null;
       const isBoosted = !!boostEnd;
       const isSod    = s.id === sodId;

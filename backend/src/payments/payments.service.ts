@@ -64,7 +64,7 @@ export class PaymentsService {
       : null;
     const isComingSoon = kind === 'soon_vip'
       ? !!soonOpening
-      : isComingSoonServer(server);
+      : isOnlyComingSoonServer(server);
 
     // Серверы с датой открытия в будущем — обычные VIP/буст продаются только после открытия.
     if (isComingSoon && kind !== 'soon_vip') {
@@ -543,7 +543,7 @@ export class PaymentsService {
       orderBy: { endDate: 'asc' },
       include: { server: true },
     });
-    const mainActive = active.filter(s => !isComingSoonServer(s.server));
+    const mainActive = active.filter(s => !isOnlyComingSoonServer(s.server));
     const taken = mainActive.length;
     const free  = Math.max(0, VIP_MAX - taken);
     const nextFreeAt = taken >= VIP_MAX ? mainActive[0]?.endDate ?? null : null;
@@ -557,7 +557,7 @@ export class PaymentsService {
       orderBy: { endDate: 'asc' },
       include: { server: true },
     });
-    const soonActive = active.filter(s => isComingSoonServer(s.server));
+    const soonActive = active.filter(s => isOnlyComingSoonServer(s.server));
     const instanceSlots = await this.getActiveSoonVipInstanceSlots(now);
     const slots = [...soonActive.map(compactVipSlot), ...instanceSlots]
       .sort((a: any, b: any) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime());
@@ -644,6 +644,32 @@ function farFuture() {
 
 function isComingSoonServer(server: any): boolean {
   return !!nextOpeningDate(server);
+}
+
+function hasOpenedLaunch(server: any): boolean {
+  const now = Date.now();
+  if (server?.openedDate) {
+    const t = new Date(server.openedDate).getTime();
+    if (!isNaN(t) && t <= now) return true;
+  }
+
+  const insts = Array.isArray(server?.instances) ? server.instances : [];
+  let hasDatedInstance = false;
+  for (const inst of insts) {
+    if (!inst?.openedDate) continue;
+    const t = new Date(inst.openedDate).getTime();
+    if (isNaN(t)) continue;
+    hasDatedInstance = true;
+    if (t <= now) return true;
+  }
+
+  if (insts.length === 0 && !server?.openedDate) return true;
+  if (insts.length > 0 && !server?.openedDate && !hasDatedInstance) return true;
+  return false;
+}
+
+function isOnlyComingSoonServer(server: any): boolean {
+  return isComingSoonServer(server) && !hasOpenedLaunch(server);
 }
 
 function findSoonOpening(server: any, instanceId?: string | null): { instanceId: string | null; openedAt: Date } | null {

@@ -19,12 +19,51 @@ type SoonOpening = {
   isVip: boolean;
 };
 
-function isComingSoonServer(s: Server): boolean {
+function hasOpenedLaunch(s: Server): boolean {
   const now = Date.now();
-  return !!(
-    (s.openedDate && new Date(s.openedDate).getTime() > now) ||
-    (s.instances ?? []).some(i => i.openedDate && new Date(i.openedDate).getTime() > now)
-  );
+  if (s.openedDate) {
+    const t = new Date(s.openedDate).getTime();
+    if (!Number.isNaN(t) && t <= now) return true;
+  }
+
+  const insts = s.instances ?? [];
+  let hasDatedInstance = false;
+  for (const i of insts) {
+    if (!i.openedDate) continue;
+    const t = new Date(i.openedDate).getTime();
+    if (Number.isNaN(t)) continue;
+    hasDatedInstance = true;
+    if (t <= now) return true;
+  }
+
+  if (insts.length === 0 && !s.openedDate) return true;
+  if (insts.length > 0 && !s.openedDate && !hasDatedInstance) return true;
+  return false;
+}
+
+function hasProjectLaunches(s: Server): boolean {
+  return (s.instances?.length ?? 0) > 0;
+}
+
+function projectPickerLabel(s: Server): string {
+  return hasProjectLaunches(s) ? s.name : `${s.name} (${s.chronicle} · ${s.rates})`;
+}
+
+function projectPickerMeta(s: Server): string {
+  if (!hasProjectLaunches(s)) return `${s.chronicle} · ${s.rates}`;
+  const count = s.instances?.length ?? 0;
+  return `${count} запусков в проекте`;
+}
+
+function projectSearchText(s: Server): string {
+  const insts = s.instances ?? [];
+  return [
+    s.id,
+    s.name,
+    s.chronicle,
+    s.rates,
+    ...insts.flatMap(i => [i.id, i.label, i.chronicle, i.rates]),
+  ].filter(Boolean).join(' ').toLowerCase();
 }
 
 function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
@@ -107,16 +146,11 @@ export function PricingClient() {
   }, [pickerOpen, soonPickerOpen]);
 
   const selectedServer = servers.find(s => s.id === sel);
-  const paidServers = useMemo(() => servers.filter(s => !isComingSoonServer(s)), [servers]);
+  const paidServers = useMemo(() => servers.filter(hasOpenedLaunch), [servers]);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return paidServers.slice(0, 50);
-    return paidServers.filter(s =>
-      s.name.toLowerCase().includes(q) ||
-      s.chronicle.toLowerCase().includes(q) ||
-      s.rates.toLowerCase().includes(q) ||
-      s.id.toLowerCase().includes(q)
-    ).slice(0, 50);
+    return paidServers.filter(s => projectSearchText(s).includes(q)).slice(0, 50);
   }, [paidServers, query]);
   const soonOpenings = useMemo(() => flattenSoonOpenings(soonServers).filter(o => !o.isVip), [soonServers]);
   const filteredSoonOpenings = useMemo(() => {
@@ -202,7 +236,7 @@ export function PricingClient() {
           <div ref={pickerRef} className={styles.picker}>
             <input
               className={`input ${styles.pickerInput}`}
-              value={pickerOpen ? query : (selectedServer ? `${selectedServer.name} (${selectedServer.chronicle} · ${selectedServer.rates})` : '')}
+              value={pickerOpen ? query : (selectedServer ? projectPickerLabel(selectedServer) : '')}
               onChange={e => { setQuery(e.target.value); setPickerOpen(true); }}
               onFocus={() => { setQuery(''); setPickerOpen(true); }}
               placeholder="Начните вводить название, хронику или рейты…"
@@ -228,7 +262,7 @@ export function PricingClient() {
                       onClick={() => { setSel(s.id); setPickerOpen(false); setQuery(''); }}
                     >
                       <span className={styles.pickerItemName}>{s.name}</span>
-                      <span className={styles.pickerItemMeta}>{s.chronicle} · {s.rates}</span>
+                      <span className={styles.pickerItemMeta}>{projectPickerMeta(s)}</span>
                     </button>
                   ))
                 )}

@@ -66,6 +66,10 @@ function futureOpenings(servers: any[]) {
   return result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
 }
 
+function hasProjectLaunches(s: any): boolean {
+  return Array.isArray(s?.instances) && s.instances.length > 0;
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -475,8 +479,8 @@ export default function AdminPage() {
                         <tr key={s.id}>
                           <td className={styles.tdMono}>{s.id}</td>
                           <td><strong>{s.name}</strong>{s._isSod && <span title="Сервер недели" style={{ marginLeft:'.35rem', color:'#5AB482' }}>★</span>}</td>
-                          <td>{s.chronicle}</td>
-                          <td>{s.rates}</td>
+                          <td>{hasProjectLaunches(s) ? '—' : s.chronicle}</td>
+                          <td>{hasProjectLaunches(s) ? '—' : s.rates}</td>
                           <td style={{ fontSize:'.72rem' }}>
                             <div style={{ display:'flex', flexDirection:'column', gap:'.15rem' }}>
                               {s._isVip && <span className={styles.planBadge}>◆ VIP{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
@@ -509,7 +513,7 @@ export default function AdminPage() {
                   <div style={{ background:'var(--bg2)', border:'1px solid rgba(90,180,130,.35)', borderRadius:3, padding:'.8rem 1rem', display:'flex', alignItems:'center', gap:'.8rem', flexWrap:'wrap' }}>
                     <span style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'#5AB482', textTransform:'uppercase', letterSpacing:'.14em' }}>★ Сервер недели</span>
                     <strong style={{ color:'var(--text)' }}>{sodServer.name}</strong>
-                    <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>({sodServer.chronicle} · {sodServer.rates})</span>
+                    {!hasProjectLaunches(sodServer) && <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>({sodServer.chronicle} · {sodServer.rates})</span>}
                   </div>
                 )}
 
