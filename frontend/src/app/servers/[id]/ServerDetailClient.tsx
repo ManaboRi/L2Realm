@@ -133,7 +133,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     } catch {
       // Обновляем статус чтобы показать cooldown, если голосование заблокировано
       if (token) api.votes.status(id, token).then(setVoteStatus).catch(() => {});
-      showToast('Голос уже учтён — следующий через 12 ч.');
+      showToast('Голос уже учтён — следующий через 24 ч.');
     }
     setVoting(false);
   }
@@ -267,7 +267,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   style={{ opacity: voteStatus?.voted ? 0.45 : 1, padding: '.48rem 1rem' }}
                   onClick={handleVote}
                   disabled={voting || !!voteStatus?.voted}
-                  title="Проголосовать за сервер (раз в 12 часов)"
+                  title="Проголосовать за сервер (раз в 24 часа)"
                 >
                   {voting
                     ? <span className="spin" />

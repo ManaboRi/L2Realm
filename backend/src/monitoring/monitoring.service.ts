@@ -17,11 +17,23 @@ export class MonitoringService {
   async getStatus(serverId: string) {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) return null;
+    const manualStatus = normalizeStatusOverride((server as any).statusOverride);
 
     const last = await this.prisma.monitorLog.findFirst({
       where: { serverId },
       orderBy: { checkedAt: 'desc' },
     });
+
+    if (manualStatus) {
+      return {
+        serverId,
+        status: manualStatus,
+        last,
+        uptime: manualUptime(manualStatus),
+        history: [],
+        manual: true,
+      };
+    }
 
     const history = await this.prisma.monitorLog.findMany({
       where: { serverId },
@@ -117,6 +129,19 @@ export class MonitoringService {
 
   // ── Статистика аптайма за N дней ────────────
   async getUptimeStats(serverId: string, days = 7) {
+    const manualStatus = await this.getManualStatus(serverId);
+    if (manualStatus) {
+      const uptime = manualUptime(manualStatus);
+      return {
+        total: uptime == null ? 0 : 1,
+        online: manualStatus === 'online' ? 1 : 0,
+        offline: manualStatus === 'offline' ? 1 : 0,
+        uptime,
+        logs: [],
+        manual: true,
+      };
+    }
+
     const since = new Date();
     since.setDate(since.getDate() - days);
 
@@ -136,6 +161,11 @@ export class MonitoringService {
 
   // ── Дневная статистика для графика ──────────
   async getDailyStats(serverId: string, days = 30) {
+    const manualStatus = await this.getManualStatus(serverId);
+    if (manualStatus) {
+      return buildManualDailyStats(manualStatus, days);
+    }
+
     const since = new Date();
     since.setDate(since.getDate() - days);
     since.setHours(0, 0, 0, 0);
@@ -189,6 +219,14 @@ export class MonitoringService {
   private calcUptime(logs: { online: boolean }[]): number {
     if (!logs.length) return 0;
     return Math.round((logs.filter(l => l.online).length / logs.length) * 100);
+  }
+
+  private async getManualStatus(serverId: string): Promise<'online' | 'offline' | 'unknown' | null> {
+    const server = await this.prisma.server.findUnique({
+      where: { id: serverId },
+      select: { statusOverride: true },
+    });
+    return normalizeStatusOverride((server as any)?.statusOverride);
   }
 
   private pingUrl(url: string): Promise<boolean> {
@@ -250,4 +288,27 @@ async function mapWithConcurrency<T, R>(
 function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 'unknown' | null {
   if (value === 'online' || value === 'offline' || value === 'unknown') return value;
   return null;
+}
+
+function manualUptime(status: 'online' | 'offline' | 'unknown'): number | null {
+  if (status === 'online') return 100;
+  if (status === 'offline') return 0;
+  return null;
+}
+
+function buildManualDailyStats(status: 'online' | 'offline' | 'unknown', days: number) {
+  const uptime = manualUptime(status);
+  const today = new Date();
+  const result = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    result.push({
+      date: d.toISOString().slice(0, 10),
+      uptime,
+      avgPing: null,
+      total: uptime == null ? 0 : 1,
+    });
+  }
+  return { days: result, uptime30: uptime, avgResponse: null, manual: true };
 }

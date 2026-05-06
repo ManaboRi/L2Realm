@@ -18,6 +18,11 @@ function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
   return insts.some(i => i?.openedDate && new Date(i.openedDate).getTime() > nowTs);
 }
 
+function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 'unknown' | null {
+  if (value === 'online' || value === 'offline' || value === 'unknown') return value;
+  return null;
+}
+
 @Injectable()
 export class ServersService {
   constructor(
@@ -130,7 +135,8 @@ export class ServersService {
       const boostEnd = boostMap.get(s.id) ?? null;
       const isBoosted = !!boostEnd;
       const isSod    = s.id === sodId;
-      return { ...s, _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
+      const manualStatus = normalizeStatusOverride((s as any).statusOverride);
+      return { ...s, ...(manualStatus && { status: manualStatus }), _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
     });
 
     // При явной сортировке (opened/rating/votes/name) — пиннится только VIP,
@@ -184,15 +190,18 @@ export class ServersService {
       where: { serverId: id, endDate: { gt: new Date() } },
       orderBy: { endDate: 'desc' },
     });
-    return { ...server, boost };
+    const manualStatus = normalizeStatusOverride((server as any).statusOverride);
+    return { ...server, ...(manualStatus && { status: manualStatus }), boost };
   }
 
   // ── Создать (только admin) ───────────────────
   async create(dto: CreateServerDto) {
     const { openedDate, ...rest } = dto;
+    const manualStatus = normalizeStatusOverride((rest as any).statusOverride);
     const server = await this.prisma.server.create({
       data: {
         ...rest,
+        ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
       },
     });
@@ -207,13 +216,21 @@ export class ServersService {
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
     const { id: _id, openedDate, ...data } = dto as any;
-    return this.prisma.server.update({
+    const manualStatus = normalizeStatusOverride(data.statusOverride);
+    const statusOverrideTouched = Object.prototype.hasOwnProperty.call(data, 'statusOverride');
+    const server = await this.prisma.server.update({
       where: { id },
       data: {
         ...data,
+        ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
       },
     });
+    if (statusOverrideTouched && !manualStatus) {
+      await this.monitoring.checkServer(id).catch(() => {});
+      return this.findOne(id);
+    }
+    return server;
   }
 
   // ── Удалить (только admin) ───────────────────
