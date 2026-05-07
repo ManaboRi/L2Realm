@@ -195,7 +195,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           </FilterGroup>
           <FilterGroup label="Тип сервера">
             {SERVER_TYPES
-              .filter(({ v }) => (counts?.types[v] ?? 0) > 0 || filters.type === v)
+              .filter(({ v }) => v !== 'pvp-pve' && ((counts?.types[v] ?? 0) > 0 || filters.type === v))
               .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.type === v} count={counts?.types[v]} onClick={() => toggleFilter('type', v)} />)}
           </FilterGroup>
           <FilterGroup label="Донат">

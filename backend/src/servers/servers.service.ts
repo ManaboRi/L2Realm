@@ -103,6 +103,22 @@ function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 
   return null;
 }
 
+function typeMatches(value: string | undefined, wanted: string): boolean {
+  if (!value) return false;
+  if (value === wanted) return true;
+  return value === 'pvp-pve' && (wanted === 'pvp' || wanted === 'pve');
+}
+
+function addTypeForCounts(set: Set<string>, value: string | undefined) {
+  if (!value) return;
+  if (value === 'pvp-pve') {
+    set.add('pvp');
+    set.add('pve');
+    return;
+  }
+  set.add(value);
+}
+
 @Injectable()
 export class ServersService {
   constructor(
@@ -197,8 +213,8 @@ export class ServersService {
       const instValues = insts
         .map(i => i?.type)
         .filter(Boolean);
-      if (instValues.length > 0) return instValues.includes(type);
-      return Array.isArray(s.type) && s.type.includes(type);
+      if (instValues.length > 0) return instValues.some(value => typeMatches(value, type));
+      return Array.isArray(s.type) && s.type.some(value => typeMatches(value, type));
     }
 
     let filtered = allServers.filter(s =>
@@ -467,12 +483,12 @@ export class ServersService {
       const typeSet = new Set<string>();
       for (const i of insts) {
         if (typeof i?.donate === 'string' && i.donate !== 'free') donateSet.add(i.donate);
-        if (typeof i?.type === 'string') typeSet.add(i.type);
+        if (typeof i?.type === 'string') addTypeForCounts(typeSet, i.type);
       }
       if (donateSet.size === 0 && s.donate && s.donate !== 'free') donateSet.add(s.donate);
       for (const d of donateSet) donates[d] = (donates[d] || 0) + 1;
       if (typeSet.size === 0) {
-        for (const t of s.type) typeSet.add(t);
+        for (const t of s.type) addTypeForCounts(typeSet, t);
       }
       for (const t of typeSet) types[t] = (types[t] || 0) + 1;
     }

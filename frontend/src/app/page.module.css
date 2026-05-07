@@ -3,17 +3,10 @@
   min-height: 100vh;
   background:
     linear-gradient(
-      90deg,
-      rgba(5, 7, 11, 0.96) 0%,
-      rgba(5, 7, 11, 0.94) 28%,
-      rgba(5, 7, 11, 0.88) 62%,
-      rgba(5, 7, 11, 0.91) 100%
-    ),
-    linear-gradient(
       to bottom,
-      rgba(5, 7, 11, 0.90) 0%,
-      rgba(5, 7, 11, 0.93) 40%,
-      rgba(5, 7, 11, 0.96) 70%,
+      rgba(5, 7, 11, 0.82) 0%,
+      rgba(5, 7, 11, 0.88) 40%,
+      rgba(5, 7, 11, 0.95) 70%,
       rgba(9, 11, 16, 1.00) 100%
     ),
     url('/images/hero-bg.png') center top / cover fixed no-repeat;
