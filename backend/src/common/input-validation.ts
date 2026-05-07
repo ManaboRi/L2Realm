@@ -5,6 +5,9 @@ import { z, ZodError } from 'zod';
 export const safeText = (min: number, max: number) =>
   z.string().transform(sanitizeText).pipe(z.string().min(min).max(max));
 
+export const safeMarkdownText = (min: number, max: number) =>
+  z.string().transform(sanitizeMarkdownText).pipe(z.string().min(min).max(max));
+
 export const optionalSafeText = (max: number) =>
   z.string().transform(sanitizeText).pipe(z.string().max(max)).optional();
 
@@ -74,5 +77,20 @@ function sanitizeText(value: string): string {
     .replace(/javascript:/gi, '')
     .replace(/<\/?[^>]+>/g, '')
     .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+function sanitizeMarkdownText(value: string): string {
+  return value
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
+    .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/<\/?[^>]+>/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{4,}/g, '\n\n\n')
     .trim();
 }

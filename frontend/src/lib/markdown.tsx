@@ -37,11 +37,35 @@ function renderInline(raw: string): string {
     (_m, label, value) => {
       const lab = label.trim();
       const val = value.trim();
+      const normalizedLabel = lab.replace(/:$/, '').toLowerCase();
+      const pillLabels = new Set([
+        'сайт',
+        'рейт',
+        'рейты',
+        'хроника',
+        'онлайн',
+        'открытие',
+        'дата открытия',
+      ]);
+      if (!pillLabels.has(normalizedLabel) || val.length > 90 || /[.!?]\s/.test(val)) {
+        return `<strong>${lab}</strong>${value}`;
+      }
       return val
         ? `<span class="md-pill"><b>${lab}</b> ${val}</span>`
         : `<span class="md-pill"><b>${lab}</b></span>`;
     },
   );
+  return s;
+}
+
+function normalizeMarkdownSource(text: string): string {
+  let s = text.replace(/\r\n?/g, '\n');
+  const lineCount = s.split('\n').length;
+  if (lineCount <= 3 && /\s#{1,3}\s+/.test(s)) {
+    s = s.replace(/\s+(#{1,3}\s+)/g, '\n\n$1');
+    s = s.replace(/\s+(\*\*(?:Сайт|Рейт|Рейты|Хроника|Онлайн|Открытие|Дата открытия|Для кого|Осторожно):\*\*)/gi, '\n\n$1');
+    s = s.replace(/\s+(-{3,})\s+/g, '\n\n$1\n\n');
+  }
   return s;
 }
 
@@ -62,7 +86,7 @@ function isTableSeparator(line: string): boolean {
 export function renderMarkdown(text: string): React.ReactNode[] {
   if (!text) return [];
 
-  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const lines = normalizeMarkdownSource(text).split('\n');
   const out: React.ReactNode[] = [];
   let bullets: string[] = [];
   let paraBuf: string[] = [];
