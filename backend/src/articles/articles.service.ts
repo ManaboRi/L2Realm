@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { dateString, optionalSafeUrl, parseOrThrow, safeSlug, safeText } from '../common/input-validation';
+import { dateString, optionalSafeAssetUrl, parseOrThrow, safeSlug, safeText } from '../common/input-validation';
 import { z } from 'zod';
 
 export interface ArticleDto {
@@ -18,7 +18,7 @@ const articleSchema = z.object({
   title: safeText(3, 140),
   description: safeText(20, 320),
   content: safeText(20, 60_000),
-  image: optionalSafeUrl,
+  image: optionalSafeAssetUrl,
   category: safeText(2, 40).optional(),
   publishedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
 });

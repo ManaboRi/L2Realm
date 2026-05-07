@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
-import { dateString, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
+import { dateString, optionalSafeAssetUrl, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
 import { z } from 'zod';
 
 const serverInstanceSchema = z.object({
@@ -33,8 +33,8 @@ const serverPayloadSchema = z.object({
   vip: z.coerce.boolean().optional(),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   country: optionalSafeText(8),
-  icon: optionalSafeUrl,
-  banner: optionalSafeUrl,
+  icon: optionalSafeAssetUrl,
+  banner: optionalSafeAssetUrl,
   discord: optionalSafeUrl,
   telegram: optionalSafeUrl,
   vk: optionalSafeUrl,

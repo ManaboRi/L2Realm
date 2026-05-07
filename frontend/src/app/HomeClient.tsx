@@ -153,17 +153,9 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       <section className={styles.hero}>
         <div className={styles.heroLeft}>
           <h1 className={styles.heroTitle}>Каталог Серверов <em>Lineage 2</em></h1>
-          <Link href="/quiz" className={styles.quizCta}>Пройти квиз</Link>
           {stats && (
             <div className={styles.heroStats}>
               <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem}><span className={styles.statNum}>{stats.reviewCount}</span><span className={styles.statLbl}>Отзывов</span></div>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem} title="Голосов за текущий месяц">
-                <span className={styles.statNum}>{(stats.monthlyVotes ?? 0).toLocaleString('ru-RU')}</span>
-                <span className={styles.statLbl}>Голосов</span>
-              </div>
             </div>
           )}
           <p className={styles.heroSub}>
@@ -172,6 +164,11 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           </p>
         </div>
       </section>
+
+      <div className={styles.quizHint}>
+        <span>Не знаешь какой сервер выбрать? →</span>
+        <Link href="/quiz">Пройти тест за 1 минуту</Link>
+      </div>
 
       <button
         type="button"

@@ -28,12 +28,23 @@ export const safeUrl = z
     }
   }, 'URL must use http or https');
 
+export const safeAssetUrl = z.union([
+  safeUrl,
+  z
+    .string()
+    .trim()
+    .regex(/^\/(?:uploads|images)\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+$/, 'Asset URL must start with /uploads/ or /images/'),
+]);
+
 export const safeIp = z
   .string()
   .trim()
   .refine(value => isIP(value) > 0, 'Invalid IP address');
 
 export const optionalSafeUrl = z.union([safeUrl, z.literal(''), z.null()]).optional()
+  .transform(value => value || null);
+
+export const optionalSafeAssetUrl = z.union([safeAssetUrl, z.literal(''), z.null()]).optional()
   .transform(value => value || null);
 
 export const dateString = z.string().trim().refine(value => {
