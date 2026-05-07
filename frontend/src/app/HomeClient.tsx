@@ -10,11 +10,6 @@ import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
-const OPENED = [
-  { v: '7d',  l: 'За 7 дней' },
-  { v: '30d', l: 'За 30 дней' },
-];
-
 export type FilterCounts = { chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> };
 
 type HomeClientProps = {
@@ -60,7 +55,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
     chr:    sp.get('chr')    ?? '',
     rate:   sp.get('rate')   ?? '',
-    opened: sp.get('opened') ?? '',
     donate: sp.get('donate') ?? '',
     type:   sp.get('type')   ?? '',
   }));
@@ -74,7 +68,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (sort)             params.set('sort',   sort);
     if (filters.chr)      params.set('chr',    filters.chr);
     if (filters.rate)     params.set('rate',   filters.rate);
-    if (filters.opened)   params.set('opened', filters.opened);
     if (filters.donate)   params.set('donate', filters.donate);
     if (filters.type)     params.set('type',   filters.type);
     if (page > 1)         params.set('page',   String(page));
@@ -90,7 +83,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       if (search)          params.search      = search;
       if (filters.chr)     params.chronicle   = filters.chr;
       if (filters.rate)    params.rate        = filters.rate;
-      if (filters.opened)  params.openedWithin = filters.opened;
       if (filters.donate)  params.donate      = filters.donate;
       if (filters.type)    params.type        = filters.type;
 
@@ -199,9 +191,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               .filter(({ v }) => (counts?.rates[v] ?? 0) > 0 || filters.rate === v)
               .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
           </FilterGroup>
-          <FilterGroup label="Дата открытия">
-            {OPENED.map(({ v, l }) => <FilterChip key={v} label={l} active={filters.opened === v} onClick={() => toggleFilter('opened', v)} />)}
-          </FilterGroup>
           <FilterGroup label="Тип сервера">
             {SERVER_TYPES
               .filter(({ v }) => (counts?.types[v] ?? 0) > 0 || filters.type === v)
@@ -214,7 +203,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           </FilterGroup>
 
           {Object.values(filters).some(Boolean) && (
-            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', opened: '', donate: '', type: '' }); setPage(1); }}>
+            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', donate: '', type: '' }); setPage(1); }}>
               ✕ Сбросить фильтры
             </button>
           )}

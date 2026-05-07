@@ -88,16 +88,14 @@
 .layout { display: grid; grid-template-columns: 230px 1fr; gap: .9rem; align-items: start; }
 
 /* Сайдбар — отдельная карточка */
-.sidebar   { border: 1px solid var(--border); border-radius: 4px; padding: 1.2rem 1rem; position: sticky; top: 62px; max-height: calc(100vh - 72px); overflow-y: auto; display: flex; flex-direction: column; gap: 1.1rem; background: var(--bg2); }
-.sidebar::-webkit-scrollbar { width: 3px; }
-.sidebar::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+.sidebar   { border: 1px solid var(--border); border-radius: 4px; padding: 1rem .85rem; display: flex; flex-direction: column; gap: .75rem; background: var(--bg2); }
 .sidebarHead { padding-bottom: .4rem; border-bottom: 1px solid var(--border2); }
 .sideLabel   { font-family: 'Cinzel', serif; font-size: .66rem; color: var(--gold); text-transform: uppercase; letter-spacing: .28em; }
 
-.filterGroup  { display: flex; flex-direction: column; gap: .4rem; }
-.filterLabel  { font-family: 'Cinzel', serif; font-size: .58rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .22em; padding-bottom: .35rem; border-bottom: 1px solid var(--border); }
-.chips        { display: flex; flex-direction: column; gap: .18rem; }
-.chip         { background: transparent; border: 1px solid transparent; color: var(--text2); padding: .34rem .65rem; border-radius: 2px; font-size: .82rem; text-align: left; width: 100%; display: flex; align-items: center; gap: .42rem; transition: all .15s; }
+.filterGroup  { display: flex; flex-direction: column; gap: .28rem; }
+.filterLabel  { font-family: 'Cinzel', serif; font-size: .58rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .22em; padding-bottom: .28rem; border-bottom: 1px solid var(--border); }
+.chips        { display: flex; flex-direction: column; gap: .1rem; }
+.chip         { background: transparent; border: 1px solid transparent; color: var(--text2); padding: .26rem .55rem; border-radius: 2px; font-size: .8rem; text-align: left; width: 100%; display: flex; align-items: center; gap: .36rem; transition: all .15s; }
 .chip:hover   { background: var(--bg3); color: var(--text); }
 .chipActive   { background: rgba(200,168,75,.1); border-color: var(--gold-d); color: var(--gold); }
 .chipDot      { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; flex-shrink: 0; transition: opacity .15s; }
