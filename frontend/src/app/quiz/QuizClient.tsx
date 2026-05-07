@@ -238,9 +238,9 @@ function matchesRate(server: Server, answer?: AnswerValue): boolean {
 function matchesDonate(server: Server, answer?: AnswerValue): boolean {
   if (!answer || answer === 'donate-any') return true;
   const values = [
-    server.donate === 'free' ? 'cosmetic' : server.donate,
-    ...(server.instances ?? []).map(i => i.donate === 'free' ? 'cosmetic' : i.donate),
-  ].filter(Boolean);
+    server.donate,
+    ...(server.instances ?? []).map(i => i.donate),
+  ].filter(value => value && value !== 'free');
 
   if (answer === 'cosmetic') return values.includes('cosmetic');
   if (answer === 'convenience') return values.includes('convenience') || values.includes('cosmetic');

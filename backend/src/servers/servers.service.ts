@@ -183,20 +183,22 @@ export class ServersService {
     }
     function matchesDonate(s: any): boolean {
       if (!donate) return true;
-      const wanted = donate === 'free' ? 'cosmetic' : donate;
-      const own = s.donate === 'free' ? 'cosmetic' : s.donate;
-      if (own === wanted) return true;
+      const wanted = donate;
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
-      return insts.some(i => {
-        const value = i?.donate === 'free' ? 'cosmetic' : i?.donate;
-        return value === wanted;
-      });
+      const instValues = insts
+        .map(i => i?.donate)
+        .filter(value => value && value !== 'free');
+      if (instValues.length > 0) return instValues.includes(wanted);
+      return s.donate === wanted;
     }
     function matchesType(s: any): boolean {
       if (!type) return true;
-      if (Array.isArray(s.type) && s.type.includes(type)) return true;
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
-      return insts.some(i => i?.type === type);
+      const instValues = insts
+        .map(i => i?.type)
+        .filter(Boolean);
+      if (instValues.length > 0) return instValues.includes(type);
+      return Array.isArray(s.type) && s.type.includes(type);
     }
 
     let filtered = allServers.filter(s =>
@@ -462,15 +464,17 @@ export class ServersService {
       for (const r of rateSet)  rates[r] = (rates[r] || 0) + 1;
 
       const donateSet = new Set<string>();
-      donateSet.add(s.donate === 'free' ? 'cosmetic' : s.donate);
-      for (const t of s.type) {
-        types[t] = (types[t] || 0) + 1;
-      }
+      const typeSet = new Set<string>();
       for (const i of insts) {
-        if (typeof i?.donate === 'string') donateSet.add(i.donate === 'free' ? 'cosmetic' : i.donate);
-        if (typeof i?.type === 'string') types[i.type] = (types[i.type] || 0) + 1;
+        if (typeof i?.donate === 'string' && i.donate !== 'free') donateSet.add(i.donate);
+        if (typeof i?.type === 'string') typeSet.add(i.type);
       }
+      if (donateSet.size === 0 && s.donate && s.donate !== 'free') donateSet.add(s.donate);
       for (const d of donateSet) donates[d] = (donates[d] || 0) + 1;
+      if (typeSet.size === 0) {
+        for (const t of s.type) typeSet.add(t);
+      }
+      for (const t of typeSet) types[t] = (types[t] || 0) + 1;
     }
 
     return { chronicles, rates, donates, types };

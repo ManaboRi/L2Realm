@@ -256,7 +256,7 @@ export default function AdminPage() {
       country:     s.country     ?? 'RU',
       statusOverride: s.statusOverride ?? 'auto',
       serverType:  (s.type ?? []).find((t: string) => SERVER_TYPES.some(st => st.v === t)) ?? 'pvp-pve',
-      donate:      s.donate === 'free' ? 'cosmetic' : (s.donate ?? 'cosmetic'),
+      donate:      s.donate === 'free' ? '' : (s.donate ?? ''),
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
       icon:        s.icon        ?? '',
@@ -296,7 +296,7 @@ export default function AdminPage() {
         url:         editForm.url,
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
-        donate:      editForm.donate ?? 'cosmetic',
+        donate:      editForm.donate || undefined,
         statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
         icon:        editForm.icon || undefined,
@@ -406,6 +406,7 @@ export default function AdminPage() {
                     </AField>
                     <AField label="Донат">
                       <select className="input" value={editForm.donate} onChange={e => setEditForm((p:any) => ({...p,donate:e.target.value}))}>
+                        <option value="">Не указан</option>
                         {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
                       </select>
                     </AField>

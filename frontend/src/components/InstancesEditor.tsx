@@ -117,9 +117,10 @@ export function InstancesEditor({ value, onChange }: Props) {
                   <span>Донат *</span>
                   <select
                     className="input"
-                    value={inst.donate === 'free' ? 'cosmetic' : (inst.donate ?? 'cosmetic')}
-                    onChange={e => update(idx, { donate: e.target.value as ServerInstance['donate'] })}
+                    value={inst.donate === 'free' ? '' : (inst.donate ?? '')}
+                    onChange={e => update(idx, { donate: (e.target.value || undefined) as ServerInstance['donate'] })}
                   >
+                    <option value="">Не указан</option>
                     {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
                   </select>
                 </label>
