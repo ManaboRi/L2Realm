@@ -300,11 +300,16 @@ export class PaymentsService {
     ]);
     if (sub || boost || soonReq) return true;
 
-    const servers = await this.prisma.server.findMany({ select: { instances: true } });
-    return servers.some(s => {
-      const insts = Array.isArray(s.instances) ? s.instances as any[] : [];
-      return insts.some(i => i?.soonVipPaymentId === paymentId);
-    });
+    // soonVipPaymentId хранится в Server.instances (JSONB) — для O(log n)
+    // ищем через GIN-индекс jsonb_path_ops + оператор containment @>.
+    // Параметр paymentId передаётся через Prisma как $1, экранируется автоматически.
+    const containment = JSON.stringify([{ soonVipPaymentId: paymentId }]);
+    const found = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT "id" FROM "Server"
+      WHERE "instances" @> ${containment}::jsonb
+      LIMIT 1
+    `;
+    return found.length > 0;
   }
 
   // ── Платное размещение «Скоро открытие» ──────

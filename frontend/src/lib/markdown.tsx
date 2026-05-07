@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'isomorphic-dompurify';
 
 /**
  * Минималистичный Markdown-парсер для статей блога.
@@ -9,6 +10,20 @@ import React from 'react';
  *
  * Если нужны картинки, footnotes, nested блоки — вынести в react-markdown.
  */
+
+// Whitelist тегов и атрибутов для DOMPurify — последняя линия защиты
+// перед dangerouslySetInnerHTML. Бэкенд уже чистит входные данные при
+// сохранении (sanitizeMarkdownText), это второй слой на случай:
+//   • импорт данных мимо санитайзера
+//   • баг в regex-санитайзере на бэкенде
+//   • инъекция через будущие админ-фичи
+// Все обычные markdown-конструкции (заголовки, списки, ссылки, форматирование)
+// проходят как есть — отображение существующих статей не меняется.
+const PURIFY_OPTS = {
+  ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'b', 'span'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+  ALLOW_DATA_ATTR: false,
+} as const;
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -55,7 +70,10 @@ function renderInline(raw: string): string {
         : `<span class="md-pill"><b>${lab}</b></span>`;
     },
   );
-  return s;
+  // Финальный пропуск через DOMPurify — гарантирует что ни одного <script>
+  // или on*-атрибута не дойдёт до dangerouslySetInnerHTML.
+  // String() конвертит TrustedHTML → string (тип DOMPurify в новых версиях).
+  return String(DOMPurify.sanitize(s, PURIFY_OPTS as any));
 }
 
 function normalizeMarkdownSource(text: string): string {
