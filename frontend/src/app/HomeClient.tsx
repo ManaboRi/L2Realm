@@ -147,7 +147,9 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           <h1 className={styles.heroTitle}>Каталог Серверов <em>Lineage 2</em></h1>
           {stats && (
             <div className={styles.heroStats}>
-              <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
+              <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Проектов</span></div>
+              <div className={styles.statDivider} />
+              <div className={styles.statItem}><span className={styles.statNum}>{stats.launchCount ?? stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
             </div>
           )}
           <p className={styles.heroSub}>
@@ -158,8 +160,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       </section>
 
       <div className={styles.quizHint}>
-        <span>Не знаешь какой сервер выбрать? →</span>
-        <Link href="/quiz">Пройти тест за 1 минуту</Link>
+        <span>Не знаешь что выбрать? →</span>
+        <Link href="/quiz">Тест за 1 минуту</Link>
       </div>
 
       <button

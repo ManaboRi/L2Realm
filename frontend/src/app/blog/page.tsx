@@ -101,6 +101,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <h2 className={styles.coverTitle}>{a.title}</h2>
                 </div>
                 <div className={styles.cardBody}>
+                  <h2 className={styles.mobileTitle}>{a.title}</h2>
                   <ArticleMeta a={a} />
                   <p className={styles.cardLead}>
                     {a.description || firstParagraph(a.content, 240)}

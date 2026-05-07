@@ -11,6 +11,14 @@ function normalizedDonate(value?: string | null) {
   return value && value !== 'free' && donateLabels.has(value as any) ? value : null;
 }
 
+function voteWord(value: number) {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'голос';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'голоса';
+  return 'голосов';
+}
+
 function fmtDate(s?: string | null) {
   if (!s) return '—';
   return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -45,6 +53,37 @@ export function ServerCard({ server: s, vipBlock }: Props) {
   const isVip     = plan === 'VIP' && !isSoon;
   const isBoosted = !!s._isBoosted;
   const isSod     = !!s._isSod;
+  const insts     = s.instances ?? [];
+  const chronSet  = new Set<string>();
+  const rateSet   = new Set<string>();
+  const typeSet   = new Set<string>();
+  const donateSet = new Set<string>();
+
+  if (insts.length > 0) {
+    for (const i of insts) {
+      if (i.chronicle) chronSet.add(i.chronicle);
+      if (i.rates)     rateSet.add(i.rates);
+      if (i.type)      typeSet.add(i.type);
+      const instDonate = normalizedDonate(i.donate);
+      if (instDonate) donateSet.add(instDonate);
+    }
+  }
+  if (chronSet.size === 0 && s.chronicle) chronSet.add(s.chronicle);
+  if (rateSet.size === 0 && s.rates) rateSet.add(s.rates);
+  if (typeSet.size === 0) {
+    for (const t of s.type ?? []) {
+      if (typeLabels.has(t as any)) typeSet.add(t);
+    }
+  }
+  if (donateSet.size === 0) {
+    const ownDonate = normalizedDonate(s.donate);
+    if (ownDonate) donateSet.add(ownDonate);
+  }
+  const chronTags = [...chronSet];
+  const rateTags = [...rateSet];
+  const typeTags = [...typeSet];
+  const donateTags = [...donateSet];
+  const votes = s.weeklyVotes ?? 0;
 
   const rowClass = [
     styles.row,
@@ -69,70 +108,22 @@ export function ServerCard({ server: s, vipBlock }: Props) {
       <Link href={`/servers/${s.id}`} className={styles.main}>
         <div className={styles.head}>
           <div className={styles.titleRow}>
-          <span className={styles.name}>{s.name}</span>
-          {isVip && <span className={styles.starVip} title="VIP">★</span>}
-          {isBoosted && <span className={styles.fire} title="В огне — буст активен">🔥</span>}
-          {isSod && <span className={styles.sodBadge} title="Проект с наибольшим числом голосов за текущую неделю.">★ Сервер недели</span>}
-          {isVip && <span className={styles.vipBadge}>VIP</span>}
+            <span className={styles.name}>{s.name}</span>
+            {chronTags.map(c => <span key={`c-head-${c}`} className={`${styles.titleTag} tag tc`}>{c}</span>)}
+            {isVip && <span className={styles.starVip} title="VIP">★</span>}
+            {isBoosted && <span className={styles.fire} title="В огне — буст активен">🔥</span>}
+            {isSod && <span className={styles.sodBadge} title="Проект с наибольшим числом голосов за текущую неделю.">★ Сервер недели</span>}
+            {isVip && <span className={styles.vipBadge}>VIP</span>}
           </div>
           <div className={styles.tagStack}>
-            {/* Если у проекта есть instances — показываем сводные теги (только уникальные).
-                Если нет — собственные chronicle/rates сервера. */}
-            {(() => {
-              const insts = s.instances ?? [];
-              if (insts.length > 0) {
-                const chronSet = new Set<string>();
-                const rateSet  = new Set<string>();
-                const typeSet  = new Set<string>();
-                const donateSet = new Set<string>();
-                for (const i of insts) {
-                  if (i.chronicle) chronSet.add(i.chronicle);
-                  if (i.rates)     rateSet.add(i.rates);
-                  if (i.type)      typeSet.add(i.type);
-                  const instDonate = normalizedDonate(i.donate);
-                  if (instDonate) donateSet.add(instDonate);
-                }
-                if (chronSet.size === 0 && s.chronicle) chronSet.add(s.chronicle);
-                if (rateSet.size === 0 && s.rates) rateSet.add(s.rates);
-                if (typeSet.size === 0) {
-                  for (const t of s.type ?? []) {
-                    if (typeLabels.has(t as any)) typeSet.add(t);
-                  }
-                }
-                if (donateSet.size === 0) {
-                  const ownDonate = normalizedDonate(s.donate);
-                  if (ownDonate) donateSet.add(ownDonate);
-                }
-                return (
-                  <>
-                    <div className={styles.tagLine}>{[...chronSet].map(c => <span key={`c-${c}`} className="tag tc">{c}</span>)}</div>
-                    <div className={styles.tagLine}>{[...rateSet].map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}</div>
-                    {([...typeSet].length > 0 || [...donateSet].length > 0 || isSoon) && (
-                      <div className={styles.tagLine}>
-                        {[...typeSet].map(t => <span key={`t-${t}`} className="tag tn">{typeLabels.get(t as any) ?? t}</span>)}
-                        {[...donateSet].map(d => <span key={`d-${d}`} className="tag tn">{donateLabels.get(d as any) ?? d}</span>)}
-                        {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
-                      </div>
-                    )}
-                  </>
-                );
-              }
-              const mainType = (s.type ?? []).find(t => typeLabels.has(t as any));
-              const donate = normalizedDonate(s.donate);
-              return (
-                <>
-                  <div className={styles.tagLine}><span className="tag tc">{s.chronicle}</span></div>
-                  <div className={styles.tagLine}><span className="tag tr">{s.rates}</span></div>
-                  {(mainType || donate || isSoon) && (
-                    <div className={styles.tagLine}>
-                      {mainType && <span className="tag tn">{typeLabels.get(mainType as any) ?? mainType}</span>}
-                      {donate && <span className="tag tn">{donateLabels.get(donate as any) ?? donate}</span>}
-                      {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
-                    </div>
-                  )}
-                </>
-              );
-            })()}
+            <div className={styles.tagLine}>{rateTags.map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}</div>
+            {(typeTags.length > 0 || donateTags.length > 0 || isSoon) && (
+              <div className={styles.tagLine}>
+                {typeTags.map(t => <span key={`t-${t}`} className="tag tn">{typeLabels.get(t as any) ?? t}</span>)}
+                {donateTags.map(d => <span key={`d-${d}`} className="tag tn">{donateLabels.get(d as any) ?? d}</span>)}
+                {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
+              </div>
+            )}
           </div>
         </div>
         <div className={styles.desc}>{s.shortDesc}</div>
@@ -189,7 +180,8 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {/* Счётчик голосов */}
           <span className={styles.voteCount} title="Голосов за месяц">
             <img src="/images/vote-icon.png" alt="Голоса сервера" className={styles.voteIco} />
-            {s.weeklyVotes ?? 0}
+            <span>{votes}</span>
+            <span>{voteWord(votes)}</span>
           </span>
         </div>
 

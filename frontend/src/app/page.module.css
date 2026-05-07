@@ -3,9 +3,16 @@
   min-height: 100vh;
   background:
     linear-gradient(
+      90deg,
+      rgba(5, 7, 11, 0.96) 0%,
+      rgba(5, 7, 11, 0.94) 28%,
+      rgba(5, 7, 11, 0.88) 62%,
+      rgba(5, 7, 11, 0.91) 100%
+    ),
+    linear-gradient(
       to bottom,
-      rgba(5, 7, 11, 0.86) 0%,
-      rgba(5, 7, 11, 0.90) 40%,
+      rgba(5, 7, 11, 0.90) 0%,
+      rgba(5, 7, 11, 0.93) 40%,
       rgba(5, 7, 11, 0.96) 70%,
       rgba(9, 11, 16, 1.00) 100%
     ),
@@ -49,7 +56,8 @@
   display: flex;
   align-items: center;
   gap: .45rem;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   padding: 0 .9rem;
   margin-bottom: .9rem;
   background: rgba(20, 25, 34, 0.82);
@@ -95,7 +103,7 @@
 .filterGroup  { display: flex; flex-direction: column; gap: .28rem; }
 .filterLabel  { font-family: 'Cinzel', serif; font-size: .58rem; color: var(--gold-d); text-transform: uppercase; letter-spacing: .22em; padding-bottom: .28rem; border-bottom: 1px solid var(--border); }
 .chips        { display: flex; flex-direction: column; gap: .1rem; }
-.chip         { background: transparent; border: 1px solid transparent; color: var(--text2); padding: .26rem .55rem; border-radius: 2px; font-size: .8rem; text-align: left; width: 100%; display: flex; align-items: center; gap: .36rem; transition: all .15s; }
+.chip         { min-height: 36px; background: transparent; border: 1px solid transparent; color: var(--text2); padding: .3rem .58rem; border-radius: 2px; font-size: .8rem; text-align: left; width: 100%; display: flex; align-items: center; gap: .36rem; transition: all .15s; }
 .chip:hover   { background: var(--bg3); color: var(--text); }
 .chipActive   { background: rgba(200,168,75,.1); border-color: var(--gold-d); color: var(--gold); }
 .chipDot      { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; flex-shrink: 0; transition: opacity .15s; }
@@ -204,21 +212,32 @@
   .hero { padding: 1rem 1rem 1rem; }
   .heroTitle { font-size: clamp(1.3rem, 6vw, 1.8rem); }
   .heroSub { white-space: normal; font-size: .82rem; }
-  .heroStats { align-self: stretch; justify-content: space-around; }
+  .heroStats { align-self: stretch; justify-content: center; }
+  .quizHint {
+    min-height: 42px;
+    justify-content: center;
+    gap: .35rem;
+    padding: 0 .55rem;
+    font-size: clamp(.72rem, 3.3vw, .82rem);
+  }
   .layout { grid-template-columns: 1fr; gap: .6rem; }
 
-  .filtersToggle { display: flex; }
+  .filtersToggle { display: flex; min-height: 44px; }
   .sidebar { display: none; }
   .sidebar.sidebarOpen {
     display: flex;
     position: static; max-height: none;
-    flex-direction: column; gap: .8rem; padding: .9rem;
+    flex-direction: column; gap: .65rem; padding: .75rem;
     animation: fadeIn .22s ease;
   }
-  .filterGroup { min-width: 0; flex: 1; }
-  .chips { flex-direction: row; flex-wrap: wrap; }
-  .chip  { width: auto; }
+  .filterGroup { min-width: 0; flex: 1; gap: .35rem; }
+  .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .32rem; }
+  .chip  { width: 100%; min-height: 44px; justify-content: flex-start; background: rgba(20,25,34,.62); border-color: rgba(255,255,255,.04); }
 
   .searchBar { flex-direction: column; align-items: stretch; padding: .6rem .7rem; }
   .sortWrap  { justify-content: space-between; }
+}
+
+@media (max-width: 420px) {
+  .chips { grid-template-columns: 1fr; }
 }

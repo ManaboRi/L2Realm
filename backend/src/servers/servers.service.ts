@@ -482,8 +482,8 @@ export class ServersService {
 
   // ── Статистика ───────────────────────────────
   async getStats() {
-    const [total, vip, newCount, monthlyVotesAgg] = await Promise.all([
-      this.prisma.server.count(),
+    const [servers, vip, newCount, monthlyVotesAgg] = await Promise.all([
+      this.prisma.server.findMany({ select: { instances: true } }),
       this.prisma.server.count({ where: { vip: true } }),
       this.prisma.server.count({
         where: {
@@ -497,8 +497,14 @@ export class ServersService {
       }),
     ]);
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
+    const total = servers.length;
+    const launchCount = servers.reduce((sum, s) => {
+      const instances = Array.isArray(s.instances) ? s.instances : [];
+      return sum + (instances.length > 0 ? instances.length : 1);
+    }, 0);
     return {
       total,
+      launchCount,
       vip,
       newCount,
       reviewCount,

@@ -94,6 +94,13 @@
   color: #F0E8C8;
   text-shadow: 0 2px 14px rgba(0,0,0,.75);
 }
+.mobileTitle {
+  display: none;
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  color: #F0E8C8;
+  line-height: 1.2;
+}
 
 .cardBody {
   display: flex;
@@ -166,6 +173,7 @@
   color: var(--text2);
   text-decoration: none;
   font-size: .88rem;
+  min-height: 44px;
   padding: .5rem 0;
   border-bottom: 1px dashed var(--border);
   transition: color .15s;
@@ -204,11 +212,15 @@
 @media (max-width: 600px) {
   .page { padding: 1rem .9rem 3rem; }
   .hero { padding: 1.8rem 0 1.2rem; }
+  .heroTitle { font-size: clamp(1.8rem, 9vw, 2.35rem); }
+  .cover { min-height: 150px; }
   .coverTitle {
-    right: .9rem;
-    bottom: .85rem;
-    max-width: calc(100% - 1.8rem);
-    font-size: 1.22rem;
+    display: none;
   }
+  .mobileTitle {
+    display: block;
+    font-size: 1.08rem;
+  }
+  .meta { gap: .4rem; font-size: .58rem; letter-spacing: .08em; }
   .cardBody { padding: .9rem 1rem 1rem; }
 }

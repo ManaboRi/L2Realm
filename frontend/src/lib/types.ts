@@ -159,6 +159,7 @@ export interface ServersResponse {
 
 export interface Stats {
   total:       number;
+  launchCount?: number;
   vip:         number;
   newCount:    number;
   reviewCount: number;
