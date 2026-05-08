@@ -9,7 +9,7 @@
       rgba(5, 7, 11, 0.95) 70%,
       rgba(9, 11, 16, 1.00) 100%
     ),
-    url('/images/hero-bg.png') center top / cover fixed no-repeat;
+    url('/images/hero-bg.webp') center top / cover fixed no-repeat;
 }
 
 /* Общий контейнер, выравнивает hero по ширине layout */

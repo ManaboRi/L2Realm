@@ -19,6 +19,11 @@ export function ImageUpload({ label, value, type, token, onChange }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     setError('');
+    if (!token) {
+      setError('Не авторизован — войдите заново');
+      if (inputRef.current) inputRef.current.value = '';
+      return;
+    }
     setLoading(true);
     try {
       const body = new FormData();
@@ -29,8 +34,19 @@ export function ImageUpload({ label, value, type, token, onChange }: Props) {
         body,
       });
       if (!res.ok) {
+        // Понятные сообщения для частых статусов — особенно 401
+        // (истёкший/невалидный JWT после смены JWT_SECRET на проде).
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message ?? 'Ошибка загрузки');
+        if (res.status === 401) {
+          throw new Error('Сессия истекла — обновите страницу и войдите снова');
+        }
+        if (res.status === 403) {
+          throw new Error('Нет прав. Загрузка картинок только для админа');
+        }
+        if (res.status === 413) {
+          throw new Error('Файл слишком большой (лимит 8 МБ)');
+        }
+        throw new Error(data.message ?? `Ошибка загрузки (HTTP ${res.status})`);
       }
       const { url } = await res.json();
       onChange(url);

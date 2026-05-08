@@ -56,7 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* Preload hero-bg — это LCP-элемент главной, без preload Lighthouse
             показывает 8+ секунд. Браузер начнёт грузить параллельно с CSS. */}
-        <link rel="preload" as="image" href="/images/hero-bg.png" />
+        <link rel="preload" as="image" href="/images/hero-bg.webp" type="image/webp" />
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
