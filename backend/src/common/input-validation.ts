@@ -11,6 +11,9 @@ export const safeMarkdownText = (min: number, max: number) =>
 export const optionalSafeText = (max: number) =>
   z.string().transform(sanitizeText).pipe(z.string().max(max)).optional();
 
+export const optionalSafeMarkdownText = (max: number) =>
+  z.string().transform(sanitizeMarkdownText).pipe(z.string().max(max)).optional();
+
 export const safeSlug = z
   .string()
   .trim()
@@ -67,16 +70,23 @@ function formatZodError(error: ZodError): string {
     .join('; ');
 }
 
+// Чистит control chars кроме \n (0x0A) и \t (0x09) — переносы строк сохраняются.
+// Раньше убивал \n тоже → описания серверов в textarea теряли все переносы
+// после сохранения, текст слипался в один абзац. Markdown-санитайзер ниже
+// делает почти то же самое, но дополнительно нормализует CRLF и допускает
+// до 3 \n подряд (для пустых строк-разделителей в markdown).
 function sanitizeText(value: string): string {
   return value
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, ' ')
     .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
     .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
     .replace(/\son[a-z]+\s*=\s*(['"]).*?\1/gi, '')
     .replace(/\s(href|src)\s*=\s*(['"])\s*javascript:[\s\S]*?\2/gi, '')
     .replace(/javascript:/gi, '')
     .replace(/<\/?[^>]+>/g, '')
-    .replace(/\s{2,}/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
 
