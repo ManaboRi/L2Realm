@@ -13,9 +13,11 @@ import { Roles, RolesGuard } from '../auth/roles.guard';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads');
 
-// icon: 256×256 обрезка по центру; banner: до 1200px ширины, сохраняем пропорции
+// icon: 128×128 обрезка по центру (на главной отображается 48×48,
+// 128 покрывает retina на 2.5x). Раньше было 256×256 — лишний вес.
+// banner: до 1200px ширины, сохраняем пропорции.
 const SPECS = {
-  icon:   { width: 256, height: 256, fit: 'cover'    as const },
+  icon:   { width: 128, height: 128, fit: 'cover'    as const },
   banner: { width: 1200, height: undefined, fit: 'inside' as const },
 };
 
