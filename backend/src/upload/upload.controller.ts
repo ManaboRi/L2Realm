@@ -13,9 +13,12 @@ import { Roles, RolesGuard } from '../auth/roles.guard';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads');
 
-// icon: 256×256 обрезка по центру; banner: до 1200px ширины, сохраняем пропорции
+// icon: 96×96 обрезка по центру — на главной отображается 48×48, 96 покрывает
+// retina (2x). Раньше было 256×256 — на странице с 25 проектами это были
+// мегабайты лишних пикселей (LCP-блокер).
+// banner: до 1200px ширины, сохраняем пропорции.
 const SPECS = {
-  icon:   { width: 256, height: 256, fit: 'cover'    as const },
+  icon:   { width: 96, height: 96, fit: 'cover'    as const },
   banner: { width: 1200, height: undefined, fit: 'inside' as const },
 };
 
@@ -52,7 +55,7 @@ export class UploadController {
 
     await sharp(file.buffer)
       .resize(spec.width, spec.height, { fit: spec.fit, withoutEnlargement: true })
-      .webp({ quality: type === 'banner' ? 80 : 85 })
+      .webp({ quality: type === 'banner' ? 80 : 78 })
       .toFile(dest);
 
     return { url: `/uploads/${filename}` };

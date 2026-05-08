@@ -100,7 +100,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
       {/* Иконка */}
       <div className={styles.icon}>
         {s.icon
-          ? <img src={s.icon} alt={s.name} onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          ? <img src={s.icon} alt={s.name} width={48} height={48} loading="lazy" decoding="async" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           : <span>{s.abbr ?? s.name.slice(0, 2).toUpperCase()}</span>}
       </div>
 
@@ -179,7 +179,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
             : <span className={styles.noRating}>Нет оценок</span>}
           {/* Счётчик голосов */}
           <span className={styles.voteCount} title="Голосов за месяц">
-            <img src="/images/vote-icon.png" alt="Голоса сервера" className={styles.voteIco} />
+            <img src="/images/vote-icon.png" alt="Голоса сервера" width={16} height={16} loading="lazy" decoding="async" className={styles.voteIco} />
             <span>{votes}</span>
             <span>{voteWord(votes)}</span>
           </span>

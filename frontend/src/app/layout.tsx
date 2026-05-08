@@ -54,6 +54,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru">
       <head>
+        {/* Preconnect к Google Fonts — TLS-соединение устанавливается параллельно
+            с парсингом HTML, шрифты приходят на ~200-400мс быстрее. */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Preload hero-bg — это LCP-элемент главной, без preload Lighthouse
             показывает 8+ секунд. Браузер начнёт грузить параллельно с CSS. */}
         <link rel="preload" as="image" href="/images/hero-bg.webp" type="image/webp" />
