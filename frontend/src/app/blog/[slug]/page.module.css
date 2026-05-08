@@ -38,7 +38,82 @@
 }
 .banner + .head { padding-top: 2rem; }
 .body { padding: 0 1.5rem; }
+.related { padding: 2rem 1.5rem 0; }
 .foot { padding: 0 1.5rem; }
+
+.relatedTitle {
+  font-family: 'Cinzel', serif;
+  font-size: .82rem;
+  letter-spacing: .18em;
+  color: var(--gold-d);
+  text-transform: uppercase;
+  margin: 0 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+.relatedGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 600px) {
+  .relatedGrid { grid-template-columns: 1fr; }
+}
+.relatedCard {
+  display: flex; flex-direction: column;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--gold-d);
+  border-radius: 3px;
+  overflow: hidden;
+  text-decoration: none; color: inherit;
+  transition: background .18s, border-color .18s, transform .15s;
+}
+.relatedCard:hover {
+  background: var(--bg3);
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.relatedThumb {
+  aspect-ratio: 21 / 9;
+  background: var(--bg3);
+  overflow: hidden;
+}
+.relatedThumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.relatedBody {
+  display: flex; flex-direction: column; gap: .35rem;
+  padding: .85rem 1rem 1rem;
+}
+.relatedDate {
+  font-family: 'Cinzel', serif;
+  font-size: .58rem;
+  letter-spacing: .14em;
+  color: var(--gold-d);
+  text-transform: uppercase;
+}
+.relatedHeadline {
+  font-family: 'Cinzel', serif;
+  font-size: .92rem; font-weight: 600;
+  color: #F0E8C8;
+  line-height: 1.3;
+  margin: 0;
+}
+.relatedDesc {
+  font-family: 'DM Sans', sans-serif;
+  font-size: .8rem;
+  color: var(--text2);
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* meta теперь идёт под заголовком — отступ сверху от title, снизу до lead */
 .meta {

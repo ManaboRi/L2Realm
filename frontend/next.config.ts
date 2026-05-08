@@ -12,7 +12,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
-  "connect-src 'self' https://mc.yandex.ru https://mc.yandex.com https://vk.com https://*.vk.com https://top-fwz1.mail.ru",
+  "connect-src 'self' https://mc.yandex.ru https://mc.yandex.com wss://mc.yandex.com wss://mc.yandex.ru https://vk.com https://*.vk.com https://top-fwz1.mail.ru",
   "upgrade-insecure-requests",
 ].join("; ");
 

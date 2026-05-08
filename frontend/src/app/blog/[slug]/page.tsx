@@ -24,6 +24,18 @@ async function fetchArticle(slug: string): Promise<Article | null> {
   }
 }
 
+async function fetchRelatedArticles(currentSlug: string): Promise<Article[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/articles?limit=6`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const list: Article[] = Array.isArray(data) ? data : (data.data ?? []);
+    return list.filter(a => a.slug !== currentSlug).slice(0, 2);
+  } catch {
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const article = await fetchArticle(slug);
@@ -67,8 +79,36 @@ export default async function BlogPostPage({ params }: Props) {
   const article = await fetchArticle(slug);
   if (!article) notFound();
 
+  // Параллельно подгружаем 2 другие статьи для блока «Читать ещё».
+  const related = await fetchRelatedArticles(article.slug);
+
+  // Article schema (JSON-LD) — даёт Google/Яндексу понять что это статья,
+  // подтягивает картинку, дату публикации, автора. Может дать rich snippet.
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description,
+    image: article.image ? [article.image] : undefined,
+    datePublished: article.publishedAt ?? article.createdAt,
+    dateModified: article.updatedAt ?? article.publishedAt ?? article.createdAt,
+    author: { '@type': 'Organization', name: 'L2Realm' },
+    publisher: {
+      '@type': 'Organization',
+      name: 'L2Realm',
+      logo: { '@type': 'ImageObject', url: `${SITE}/icon.svg` },
+    },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/blog/${article.slug}` },
+  };
+
   return (
     <div className={styles.page}>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+
       <div className={styles.bread}>
         <Link href="/" className={styles.breadLink}>Главная</Link>
         <span className={styles.breadSep}>›</span>
@@ -101,6 +141,30 @@ export default async function BlogPostPage({ params }: Props) {
         <div className={styles.body}>
           {renderMarkdown(article.content)}
         </div>
+
+        {related.length > 0 && (
+          <aside className={styles.related}>
+            <h2 className={styles.relatedTitle}>Читать ещё</h2>
+            <div className={styles.relatedGrid}>
+              {related.map(r => (
+                <Link key={r.id} href={`/blog/${r.slug}`} className={styles.relatedCard}>
+                  {r.image && (
+                    <div className={styles.relatedThumb}>
+                      <img src={r.image} alt={r.title} loading="lazy" />
+                    </div>
+                  )}
+                  <div className={styles.relatedBody}>
+                    <time className={styles.relatedDate} dateTime={r.publishedAt ?? r.createdAt}>
+                      {fmtDate(r.publishedAt ?? r.createdAt)}
+                    </time>
+                    <h3 className={styles.relatedHeadline}>{r.title}</h3>
+                    {r.description && <p className={styles.relatedDesc}>{r.description}</p>}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </aside>
+        )}
 
         <div className={styles.foot}>
           <Link href="/blog" className={styles.back}>← Все статьи</Link>

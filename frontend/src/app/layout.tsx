@@ -35,9 +35,34 @@ export const viewport: Viewport = {
   themeColor: '#090B10',
 };
 
+// JSON-LD Organization schema — общая для всего сайта.
+// Помогает Яндексу/Google понять что это за организация, какие у неё соцсети.
+const organizationSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'L2Realm',
+  url: 'https://l2realm.ru',
+  logo: 'https://l2realm.ru/icon.svg',
+  description: 'Каталог приватных серверов Lineage 2. Фильтры, отзывы, рейтинг.',
+  sameAs: [
+    'https://t.me/l2realm_ru',
+    'https://vk.com/l2realmru',
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
+      <head>
+        {/* Preload hero-bg — это LCP-элемент главной, без preload Lighthouse
+            показывает 8+ секунд. Браузер начнёт грузить параллельно с CSS. */}
+        <link rel="preload" as="image" href="/images/hero-bg.png" />
+        <script
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+      </head>
       <body>
         <AuthProvider>
           <Header />

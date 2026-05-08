@@ -75,5 +75,38 @@ export default async function Page({ params }: Props) {
   const { id } = await params;
   const server = await fetchServer(id);
   if (!server) notFound();
-  return <ServerDetailClient initialServer={server} />;
+
+  // Product schema (JSON-LD) — даёт Google возможность показать звёздочки
+  // и количество отзывов прямо в выдаче. AggregateRating только если есть
+  // реальные отзывы (ratingCount > 0), иначе блок скрываем — Google не любит
+  // фейковые ratings.
+  const productSchema: any = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: server.name,
+    description: server.shortDesc || `Приватный сервер Lineage 2 ${server.chronicle} ${server.rates}`,
+    image: server.banner || server.icon || `${SITE}/icon.svg`,
+    brand: { '@type': 'Brand', name: 'L2Realm' },
+    category: `Lineage 2 ${server.chronicle}`,
+  };
+  if (server.ratingCount > 0) {
+    productSchema.aggregateRating = {
+      '@type': 'AggregateRating',
+      ratingValue: server.rating.toFixed(1),
+      reviewCount: server.ratingCount,
+      bestRating: 5,
+      worstRating: 1,
+    };
+  }
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <ServerDetailClient initialServer={server} />
+    </>
+  );
 }
