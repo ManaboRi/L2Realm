@@ -140,7 +140,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteTab, setVoteTab] = useState<'top' | 'recent'>('top');
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
-  const [voteFormOpen, setVoteFormOpen] = useState(false);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
   // поэтому отзывы и рейтинг обновляем сразу при монтировании.
@@ -161,10 +160,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [token, id]);
 
   async function handleVote() {
-    if (!voteFormOpen) {
-      setVoteFormOpen(true);
-      return;
-    }
     const nickname = voteNickname.trim();
     if (nickname.length < 2) {
       showToast('Укажи ник персонажа на сервере');
@@ -183,7 +178,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
       const fresh = await api.votes.status(id, token);
       setVoteStatus(fresh);
       api.votes.summary(id).then(setVoteSummary).catch(() => {});
-      setVoteFormOpen(false);
     } catch {
       // Обновляем статус чтобы показать cooldown, если голосование заблокировано
       api.votes.status(id, token).then(setVoteStatus).catch(() => {});
@@ -248,6 +242,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const mainDonate = normalizedDonate(server.donate);
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
+  const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
 
   return (
@@ -323,63 +318,58 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
           <div className={styles.headerRight}>
-            {/* Ряд 1: Голосовать + Избранное */}
-            <div className={styles.headerActions}>
-              <div className={styles.voteWrap}>
+            <div className={styles.voteBox}>
+              <div className={styles.voteBoxMeta}>
+                <span className={styles.voteBoxCount}>
+                  <span className={styles.voteBoxDot} />
+                  {monthlyVotes > 0 ? `${monthlyVotes} ${voteWord(monthlyVotes)} за месяц` : 'Голосов за месяц пока нет'}
+                </span>
+                <span>{voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) ? cooldownText(voteStatus.cooldownEnds) : '1 голос / 24ч IP'}</span>
+              </div>
+
+              <div className={styles.voteInline}>
+                <input
+                  className="input"
+                  value={voteNickname}
+                  onChange={e => setVoteNickname(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
+                  placeholder="Ник на сервере"
+                  maxLength={32}
+                  disabled={!!voteStatus?.voted}
+                  title={voteRewardsEnabled ? 'Ник нужен для выдачи бонуса на сервере' : 'Голос учтётся на L2Realm. Бонусы зависят от подключения Vote Manager проектом'}
+                />
                 <button
                   type="button"
-                  className="btn-primary"
-                  style={{ opacity: voteStatus?.voted ? 0.45 : 1, padding: '.48rem 1rem' }}
+                  className={styles.voteInlineBtn}
                   onClick={handleVote}
                   disabled={voting || !!voteStatus?.voted}
                   title="Проголосовать за сервер (раз в 24 часа)"
                 >
                   {voting
                     ? <span className="spin" />
-                    : <><img src="/images/vote-icon.png" alt="Проголосовать за сервер" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />{voteFormOpen ? 'Подтвердить голос' : totalVotes > 0 ? 'Проголосовать' : 'Стать первым кто оценит'}</>}
+                    : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
                 </button>
-                {voteFormOpen && !voteStatus?.voted && (
-                  <div className={styles.voteNickForm}>
-                    <input
-                      className="input"
-                      value={voteNickname}
-                      onChange={e => setVoteNickname(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
-                      placeholder="Ник персонажа на сервере"
-                      maxLength={32}
-                    />
-                    <span>Ник нужен для бонуса, если проект подключил выдачу наград.</span>
-                  </div>
-                )}
-                {totalVotes > 0 && (
-                  <span className={styles.weeklyCount}>
-                    {totalVotes} {voteWord(totalVotes)} за всё время
-                  </span>
-                )}
-                <span className={`${styles.voteIntegrationNote} ${voteRewardsEnabled ? styles.voteIntegrationOn : ''}`}>
-                  {voteRewardsEnabled
-                    ? 'Бонусы за голос подключены: награда выдаётся по нику на сервере.'
-                    : 'Голос учитывается на L2Realm. Бонус выдаётся только после подключения Vote Manager проектом.'}
-                </span>
-                {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) && (
-                  <span className={styles.weeklyCount}>{cooldownText(voteStatus.cooldownEnds)}</span>
-                )}
               </div>
-              <button
-                type="button"
-                className="btn-ghost"
-                style={{ color: isFav ? 'var(--gold)' : undefined, borderColor: isFav ? 'var(--gold)' : undefined, padding: '.48rem .9rem' }}
-                onClick={toggleFavorite}
-                disabled={favBusy}
-                title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-              >
-                {isFav ? '★ В избранном' : '⚔ В избранное'}
-              </button>
+
+              <div className={styles.voteQuickActions}>
+                <a href={server.url} target="_blank" rel="noopener" className={styles.btnSiteLarge}>
+                  <span aria-hidden="true">↗</span> Перейти
+                </a>
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  onClick={toggleFavorite}
+                  disabled={favBusy}
+                  title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                >
+                  <span aria-hidden="true">{isFav ? '★' : '☆'}</span> Сохранить
+                </button>
+              </div>
+
+              <div className={`${styles.voteBoxHint} ${voteRewardsEnabled ? styles.voteBoxHintOn : ''}`}>
+                {voteRewardsEnabled ? 'Бонусы подключены' : 'Бонус после подключения Vote Manager'}
+              </div>
             </div>
-            {/* Ряд 2: Перейти на сервер — главный CTA */}
-            <a href={server.url} target="_blank" rel="noopener" className={styles.btnSiteLarge}>
-              Перейти на сервер →
-            </a>
           </div>
         </div>
       </div>
