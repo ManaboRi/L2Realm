@@ -47,14 +47,30 @@ function articleCategory(a: Article) {
   return a.category?.trim() || 'Новости';
 }
 
-function ArticleMeta({ a }: { a: Article }) {
+function ArticleCard({ a, featured = false }: { a: Article; featured?: boolean }) {
   return (
-    <div className={styles.meta}>
-      <span className={styles.category}>{articleCategory(a)}</span>
-      <time dateTime={a.publishedAt ?? a.createdAt}>{fmtDate(a.publishedAt ?? a.createdAt)}</time>
-      <span className={styles.metaDot}>·</span>
-      <span>{readingTime(a.content)} мин чтения</span>
-    </div>
+    <Link href={`/blog/${a.slug}`} className={`${styles.articleCard} ${featured ? styles.cardFeatured : ''}`}>
+      <div className={styles.cover}>
+        {a.image ? (
+          <img src={a.image} alt={a.title} loading="lazy" />
+        ) : (
+          <div className={styles.coverFallback} />
+        )}
+        <span className={styles.coverCategory}>{articleCategory(a)}</span>
+      </div>
+      <div className={styles.cardBody}>
+        <div className={styles.meta}>
+          <time dateTime={a.publishedAt ?? a.createdAt}>{fmtDate(a.publishedAt ?? a.createdAt)}</time>
+          <span className={styles.metaDot}>·</span>
+          <span>{readingTime(a.content)} мин чтения</span>
+        </div>
+        <h2 className={styles.cardTitle}>{a.title}</h2>
+        <p className={styles.cardLead}>
+          {a.description || firstParagraph(a.content, featured ? 280 : 200)}
+        </p>
+        <span className={styles.read}>Читать статью →</span>
+      </div>
+    </Link>
   );
 }
 
@@ -74,13 +90,16 @@ export default async function BlogPage({ searchParams }: Props) {
     ? articles.filter(a => articleCategory(a) === activeCategory)
     : articles;
 
+  // Первая статья — featured (full-width), остальные в две колонки
+  const [featured, ...rest] = visible;
+
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
         <p className={styles.heroEye}>◆ Блог ◆</p>
         <h1 className={styles.heroTitle}>Статьи и <em>гайды</em></h1>
         <p className={styles.heroSub}>
-          Обзоры серверов, опыт игроков, новости и практичные заметки по Lineage 2.
+          Подробные обзоры серверов, гайды для игроков, новости и практические заметки по Lineage 2.
         </p>
       </header>
 
@@ -89,27 +108,12 @@ export default async function BlogPage({ searchParams }: Props) {
       ) : (
         <div className={styles.layout}>
           <main className={styles.feed}>
-            {visible.map(a => (
-              <Link key={a.id} href={`/blog/${a.slug}`} className={styles.articleCard}>
-                <div className={styles.cover}>
-                  {a.image ? (
-                    <img src={a.image} alt={a.title} loading="lazy" />
-                  ) : (
-                    <div className={styles.coverFallback} />
-                  )}
-                  <div className={styles.coverShade} />
-                  <h2 className={styles.coverTitle}>{a.title}</h2>
-                </div>
-                <div className={styles.cardBody}>
-                  <h2 className={styles.mobileTitle}>{a.title}</h2>
-                  <ArticleMeta a={a} />
-                  <p className={styles.cardLead}>
-                    {a.description || firstParagraph(a.content, 240)}
-                  </p>
-                  <span className={styles.read}>Читать →</span>
-                </div>
-              </Link>
-            ))}
+            {featured && <ArticleCard a={featured} featured />}
+            {rest.length > 0 && (
+              <div className={styles.cardsGrid}>
+                {rest.map(a => <ArticleCard key={a.id} a={a} />)}
+              </div>
+            )}
           </main>
 
           <aside className={styles.sidebar}>

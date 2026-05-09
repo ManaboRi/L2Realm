@@ -453,45 +453,112 @@ export class ServersService {
   }
 
   // ── Счётчики для фильтров ────────────────────
-  async getFilterCounts() {
+  async getFilterCounts(filters?: FilterServersDto) {
     const all = await this.prisma.server.findMany({
-      select: { chronicle: true, rateNum: true, donate: true, type: true, instances: true },
+      select: { chronicle: true, rateNum: true, donate: true, type: true, instances: true, openedDate: true },
     });
 
-    const chronicles: Record<string, number> = {};
-    const rates: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0, mega: 0, extreme: 0 };
-    const donates: Record<string, number> = {};
-    const types: Record<string, number> = {};
+    // Применяем все фильтры КРОМЕ того, по которому считаем counts.
+    // Это даёт «зависимые» фильтры: выбрал хронику Interlude → counts.rates
+    // показывает сколько серверов в Interlude по каждому диапазону рейтов.
+    // Counts по chronicle при этом считается без учёта самого chronicle-фильтра
+    // (иначе осталась бы только одна хроника).
+    const f = filters ?? {};
+    const nowTs = Date.now();
 
-    for (const s of all) {
-      // Один проект = +1 к каждой уникальной хронике/рейту, что у него встречается
-      // (свои + по всем instances). Иначе при наличии 3 запусков x10/x100/x1000
-      // у Scryde фильтр показал бы +3 в каждом, что ввело бы в заблуждение.
+    function chronicleMatch(s: any): boolean {
+      if (!f.chronicle) return true;
+      const c = f.chronicle.toLowerCase();
+      if (s.chronicle?.toLowerCase().includes(c)) return true;
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
-      const chronSet = new Set<string>();
-      const rateSet  = new Set<string>();
-      if (s.chronicle) chronSet.add(s.chronicle);
-      rateSet.add(rateRange(s.rateNum));
-      for (const i of insts) {
-        if (typeof i?.chronicle === 'string') chronSet.add(i.chronicle);
-        if (typeof i?.rateNum === 'number')   rateSet.add(rateRange(i.rateNum));
-      }
-      for (const c of chronSet) chronicles[c] = (chronicles[c] || 0) + 1;
-      for (const r of rateSet)  rates[r] = (rates[r] || 0) + 1;
-
-      const donateSet = new Set<string>();
-      const typeSet = new Set<string>();
-      for (const i of insts) {
-        if (typeof i?.donate === 'string' && i.donate !== 'free') donateSet.add(i.donate);
-        if (typeof i?.type === 'string') addTypeForCounts(typeSet, i.type);
-      }
-      if (donateSet.size === 0 && s.donate && s.donate !== 'free') donateSet.add(s.donate);
-      for (const d of donateSet) donates[d] = (donates[d] || 0) + 1;
-      if (typeSet.size === 0) {
-        for (const t of s.type) addTypeForCounts(typeSet, t);
-      }
-      for (const t of typeSet) types[t] = (types[t] || 0) + 1;
+      return insts.some(i => typeof i?.chronicle === 'string' && i.chronicle.toLowerCase().includes(c));
     }
+    function rateMatch(s: any): boolean {
+      if (!f.rate) return true;
+      if (rateRange(s.rateNum) === f.rate) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      return insts.some(i => typeof i?.rateNum === 'number' && rateRange(i.rateNum) === f.rate);
+    }
+    function donateMatch(s: any): boolean {
+      if (!f.donate) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const has = (val?: string) => val === f.donate;
+      if (insts.some(i => has(i?.donate))) return true;
+      if (insts.length === 0 && has(s.donate)) return true;
+      return false;
+    }
+    function typeMatchLocal(s: any): boolean {
+      if (!f.type) return true;
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      if (insts.some(i => typeMatches(i?.type, f.type as string))) return true;
+      if (insts.length === 0 && Array.isArray(s.type) && s.type.some((t: string) => typeMatches(t, f.type as string))) return true;
+      return false;
+    }
+    function openedMatch(s: any): boolean {
+      if (!f.openedWithin) return true;
+      const days = f.openedWithin === '7d' ? 7 : 30;
+      const sinceTs = nowTs - days * 86400000;
+      const dates: number[] = [];
+      if (s.openedDate) {
+        const t = new Date(s.openedDate).getTime();
+        if (!isNaN(t) && t <= nowTs) dates.push(t);
+      }
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      for (const i of insts) {
+        if (i?.openedDate) {
+          const t = new Date(i.openedDate).getTime();
+          if (!isNaN(t) && t <= nowTs) dates.push(t);
+        }
+      }
+      const eff = dates.length ? Math.max(...dates) : 0;
+      return eff >= sinceTs && eff <= nowTs;
+    }
+
+    function applyExcept(except: 'chronicle' | 'rate' | 'donate' | 'type' | 'opened'): any[] {
+      return all.filter(s => {
+        if (except !== 'chronicle' && !chronicleMatch(s)) return false;
+        if (except !== 'rate'      && !rateMatch(s))      return false;
+        if (except !== 'donate'    && !donateMatch(s))    return false;
+        if (except !== 'type'      && !typeMatchLocal(s)) return false;
+        if (except !== 'opened'    && !openedMatch(s))    return false;
+        return true;
+      });
+    }
+
+    function dimensionCounts(servers: any[], dimension: 'chronicle' | 'rate' | 'donate' | 'type'): Record<string, number> {
+      const out: Record<string, number> = {};
+      for (const s of servers) {
+        const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+        const set = new Set<string>();
+        if (dimension === 'chronicle') {
+          if (s.chronicle) set.add(s.chronicle);
+          for (const i of insts) if (typeof i?.chronicle === 'string') set.add(i.chronicle);
+        } else if (dimension === 'rate') {
+          set.add(rateRange(s.rateNum));
+          for (const i of insts) if (typeof i?.rateNum === 'number') set.add(rateRange(i.rateNum));
+        } else if (dimension === 'donate') {
+          for (const i of insts) {
+            if (typeof i?.donate === 'string' && i.donate !== 'free') set.add(i.donate);
+          }
+          if (set.size === 0 && s.donate && s.donate !== 'free') set.add(s.donate);
+        } else if (dimension === 'type') {
+          for (const i of insts) {
+            if (typeof i?.type === 'string') addTypeForCounts(set, i.type);
+          }
+          if (set.size === 0 && Array.isArray(s.type)) {
+            for (const t of s.type) addTypeForCounts(set, t);
+          }
+        }
+        for (const v of set) out[v] = (out[v] || 0) + 1;
+      }
+      return out;
+    }
+
+    const chronicles = dimensionCounts(applyExcept('chronicle'), 'chronicle');
+    const rateBase: Record<string, number> = { low: 0, mid: 0, high: 0, ultra: 0, mega: 0, extreme: 0 };
+    const rates    = { ...rateBase, ...dimensionCounts(applyExcept('rate'), 'rate') };
+    const donates  = dimensionCounts(applyExcept('donate'), 'donate');
+    const types    = dimensionCounts(applyExcept('type'), 'type');
 
     return { chronicles, rates, donates, types };
   }

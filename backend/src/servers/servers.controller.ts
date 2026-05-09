@@ -29,8 +29,8 @@ export class ServersController {
   }
 
   @Get('counts')
-  filterCounts() {
-    return this.srv.getFilterCounts();
+  filterCounts(@Query() filters: FilterServersDto) {
+    return this.srv.getFilterCounts(filters);
   }
 
   @Get('coming-soon')

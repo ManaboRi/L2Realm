@@ -110,6 +110,25 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     }
   }, [initialStats, initialCounts]);
 
+  // Зависимые фильтры: при изменении любого из выбранных значений пересчитываем
+  // counts с учётом активных фильтров. Для каждой dimension backend исключает
+  // её собственный фильтр — иначе при выборе хроники Interlude в фильтре хроник
+  // осталась бы только она. Skip первый рендер если initialCounts уже пришёл с SSR.
+  const firstCountsEffect = useRef(true);
+  useEffect(() => {
+    if (firstCountsEffect.current) {
+      firstCountsEffect.current = false;
+      if (initialCounts) return;
+    }
+    const params: Record<string, string> = {};
+    if (filters.chr)    params.chronicle    = filters.chr;
+    if (filters.rate)   params.rate         = filters.rate;
+    if (filters.donate) params.donate       = filters.donate;
+    if (filters.type)   params.type         = filters.type;
+    if (filters.opened) params.openedWithin = filters.opened;
+    api.servers.counts(params).then(setCounts).catch(() => {});
+  }, [filters, initialCounts]);
+
   function toggleFilter(group: string, value: string) {
     setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
     setPage(1);

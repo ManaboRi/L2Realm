@@ -28,7 +28,10 @@ export const api = {
     },
     get:    (id: string)  => request<Server>(`/servers/${id}`),
     stats:  ()            => request<Stats>('/servers/stats'),
-    counts:     ()        => request<{ chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> }>('/servers/counts'),
+    counts: (params?: Record<string, string>) => {
+      const q = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
+      return request<{ chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> }>(`/servers/counts${q}`);
+    },
     comingSoon: ()        => request<Server[]>('/servers/coming-soon'),
     create: (data: Partial<Server>, token: string) =>
       request<Server>('/servers', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
