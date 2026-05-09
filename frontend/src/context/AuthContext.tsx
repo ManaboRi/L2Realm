@@ -25,13 +25,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const t = localStorage.getItem('l2r_token');
     const u = localStorage.getItem('l2r_user');
-    if (t && u) {
+    if (t && u && t !== 'undefined' && t !== 'null') {
       try {
         setToken(t);
         setUser(JSON.parse(u));
       } catch {}
+    } else {
+      localStorage.removeItem('l2r_token');
+      localStorage.removeItem('l2r_user');
     }
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    function handleExpired() {
+      setToken(null);
+      setUser(null);
+    }
+    window.addEventListener('l2r-auth-expired', handleExpired);
+    return () => window.removeEventListener('l2r-auth-expired', handleExpired);
   }, []);
 
   const login = useCallback((t: string, u: User) => {

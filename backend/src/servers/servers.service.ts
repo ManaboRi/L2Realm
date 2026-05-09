@@ -281,8 +281,8 @@ export class ServersService {
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());
       }
-      // Обычные серверы по умолчанию — по голосам за неделю
-      return (b.weeklyVotes ?? 0) - (a.weeklyVotes ?? 0);
+      // Обычные серверы по умолчанию — по голосам за всё время
+      return (b.totalVotes ?? 0) - (a.totalVotes ?? 0);
     });
 
     const total = decorated.length;

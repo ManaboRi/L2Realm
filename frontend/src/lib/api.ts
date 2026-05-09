@@ -14,6 +14,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    const isLoginFlow = path.startsWith('/auth/login') || path.startsWith('/auth/register') || path.startsWith('/auth/vk/callback');
+    if (res.status === 401 && typeof window !== 'undefined' && !isLoginFlow) {
+      localStorage.removeItem('l2r_token');
+      localStorage.removeItem('l2r_user');
+      window.dispatchEvent(new Event('l2r-auth-expired'));
+      throw new Error('Сессия истекла. Войдите заново.');
+    }
     throw new Error(err.message || `HTTP ${res.status}`);
   }
   return res.json();

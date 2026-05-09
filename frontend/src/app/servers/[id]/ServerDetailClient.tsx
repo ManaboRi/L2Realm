@@ -14,10 +14,6 @@ function normalizedDonate(value?: string | null) {
   return value && value !== 'free' && donateLabels.has(value as any) ? value : null;
 }
 
-function fmtDate(s?: string | null) {
-  if (!s) return '—';
-  return new Date(s).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-}
 function relativeOpened(s?: string | null): string {
   if (!s) return '—';
   const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
@@ -433,6 +429,53 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
 
+          {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
+          {server.instances && server.instances.length > 0 && (
+            <div className={styles.dblock}>
+              <div className={styles.dblockBody}>
+                <p className={styles.instSubtitle}>
+                  {server.instances.length} {server.instances.length === 1 ? 'сервер' : server.instances.length < 5 ? 'сервера' : 'серверов'}
+                </p>
+                <div className={styles.instances}>
+                  {[...server.instances]
+                    .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
+                    .map(inst => {
+                      const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
+                      const instDonate = normalizedDonate(inst.donate);
+                      return (
+                        <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
+                          <div className={styles.instTileHead}>
+                            <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
+                            {isFuture && <span className={styles.instTileSoonBadge}>⏳ Скоро</span>}
+                          </div>
+                          <div className={styles.instTileTags}>
+                            <span className="tag tr">{inst.rates}</span>
+                            <span className="tag tc">{inst.chronicle}</span>
+                            {inst.type && <span className="tag tn">{typeLabels.get(inst.type as any) ?? inst.type}</span>}
+                            {instDonate && <span className="tag tn">{donateLabels.get(instDonate as any) ?? instDonate}</span>}
+                          </div>
+                          {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                          {isFuture && (
+                            <div className={styles.instTileDate}>
+                              {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                            </div>
+                          )}
+                          <a
+                            href={inst.url}
+                            target="_blank"
+                            rel="noopener nofollow"
+                            className={styles.instTileBtn}
+                          >
+                            На сайт →
+                          </a>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.dblock}>
             <div className={styles.votePanelHead}>
               <div>
@@ -493,53 +536,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               )}
             </div>
           </div>
-
-          {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
-          {server.instances && server.instances.length > 0 && (
-            <div className={styles.dblock}>
-              <div className={styles.dblockBody}>
-                <p className={styles.instSubtitle}>
-                  {server.instances.length} {server.instances.length === 1 ? 'сервер' : server.instances.length < 5 ? 'сервера' : 'серверов'}
-                </p>
-                <div className={styles.instances}>
-                  {[...server.instances]
-                    .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
-                    .map(inst => {
-                      const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
-                      const instDonate = normalizedDonate(inst.donate);
-                      return (
-                        <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
-                          <div className={styles.instTileHead}>
-                            <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
-                            {isFuture && <span className={styles.instTileSoonBadge}>⏳ Скоро</span>}
-                          </div>
-                          <div className={styles.instTileTags}>
-                            <span className="tag tr">{inst.rates}</span>
-                            <span className="tag tc">{inst.chronicle}</span>
-                            {inst.type && <span className="tag tn">{typeLabels.get(inst.type as any) ?? inst.type}</span>}
-                            {instDonate && <span className="tag tn">{donateLabels.get(instDonate as any) ?? instDonate}</span>}
-                          </div>
-                          {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
-                          {isFuture && (
-                            <div className={styles.instTileDate}>
-                              {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                            </div>
-                          )}
-                          <a
-                            href={inst.url}
-                            target="_blank"
-                            rel="noopener nofollow"
-                            className={styles.instTileBtn}
-                          >
-                            На сайт →
-                          </a>
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Аптайм-график */}
           {daily && (
@@ -637,27 +633,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </div>
               ) : (
                 <p className={styles.empty}>Отзывов пока нет — будьте первым!</p>
-              )}
-            </div>
-          </div>
-
-          {/* Новости */}
-          <div className={styles.dblock}>
-            <div className={styles.dblockTitle}>Новости и обновления</div>
-            <div className={styles.dblockBody}>
-              {server.news && server.news.length > 0 ? (
-                <div className={styles.newsList}>
-                  {server.news.map(n => (
-                    <div key={n.id} className={styles.newsCard}>
-                      <div className={styles.newsSrc}>{server.name}</div>
-                      <h3 className={styles.newsTitle}>{n.title}</h3>
-                      <p className={styles.newsBody}>{n.body}</p>
-                      <p className={styles.newsDate}>{fmtDate(n.date)}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.empty}>Новостей пока нет</p>
               )}
             </div>
           </div>
