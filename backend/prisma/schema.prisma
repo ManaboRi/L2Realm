@@ -69,6 +69,7 @@ model Server {
   fullDesc    String?
   rating       Float    @default(0)
   ratingCount  Int      @default(0)
+  totalVotes   Int      @default(0)
   monthlyVotes Int      @default(0)
   weeklyVotes  Int      @default(0)
   status      String   @default("online") // online | offline | unknown
@@ -179,15 +180,17 @@ model MonitorLog {
 // ── Голоса ────────────────────────────────────
 model Vote {
   id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   serverId  String
   server    Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
   ip        String
+  nickname  String   @default("")
   createdAt DateTime @default(now())
 
   @@index([serverId, userId, createdAt])
   @@index([serverId, ip, createdAt])
+  @@index([serverId, nickname, createdAt])
 }
 
 // ── Заявки на добавление ──────────────────────

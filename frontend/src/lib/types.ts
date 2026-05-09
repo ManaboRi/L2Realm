@@ -48,6 +48,7 @@ export interface Server {
   boost?:      Boost | null;
   reviews?:    Review[];
   news?:       NewsItem[];
+  totalVotes?:   number;
   monthlyVotes?: number;
   weeklyVotes?:  number;
   _isVip?:     boolean;

@@ -83,7 +83,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
   const rateTags = [...rateSet];
   const typeTags = [...typeSet];
   const donateTags = [...donateSet];
-  const votes = s.weeklyVotes ?? 0;
+  const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
 
   const rowClass = [
     styles.row,
@@ -178,11 +178,13 @@ export function ServerCard({ server: s, vipBlock }: Props) {
             ? <span className={styles.rating} title="Средняя оценка">★ {s.rating.toFixed(1)} ({s.ratingCount})</span>
             : <span className={styles.noRating}>Нет оценок</span>}
           {/* Счётчик голосов */}
-          <span className={styles.voteCount} title="Голосов за месяц">
-            <img src="/images/vote-icon.png" alt="Голоса сервера" className={styles.voteIco} />
-            <span>{votes}</span>
-            <span>{voteWord(votes)}</span>
-          </span>
+          {votes > 0 && (
+            <span className={styles.voteCount} title="Голосов за всё время">
+              <img src="/images/vote-icon.png" alt="Голоса сервера" className={styles.voteIco} />
+              <span>{votes}</span>
+              <span>{voteWord(votes)}</span>
+            </span>
+          )}
         </div>
 
         <div className={styles.btns}>

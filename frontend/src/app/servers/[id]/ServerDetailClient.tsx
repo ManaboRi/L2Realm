@@ -50,6 +50,14 @@ function cooldownText(cooldownEnds: string | null): string {
   return `Следующий голос через ${m} мин.`;
 }
 
+function voteWord(value: number) {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'голос';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'голоса';
+  return 'голосов';
+}
+
 function formatDesc(text: string) {
   if (!text) return null;
   const lines = text.split(/\\n|\n/);
@@ -110,6 +118,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [favBusy,     setFavBusy]     = useState(false);
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
   const [voting,      setVoting]      = useState(false);
+  const [voteNickname, setVoteNickname] = useState('');
+  const [voteFormOpen, setVoteFormOpen] = useState(false);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
   // поэтому отзывы и рейтинг обновляем сразу при монтировании.
@@ -125,22 +135,35 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [token, id]);
 
   useEffect(() => {
-    if (!token) { setVoteStatus(null); return; }
     api.votes.status(id, token).then(setVoteStatus).catch(() => {});
   }, [token, id]);
 
   async function handleVote() {
-    if (!token) return showToast('Войдите, чтобы проголосовать');
+    if (!voteFormOpen) {
+      setVoteFormOpen(true);
+      return;
+    }
+    const nickname = voteNickname.trim();
+    if (nickname.length < 2) {
+      showToast('Укажи ник персонажа на сервере');
+      return;
+    }
     setVoting(true);
     try {
-      await api.votes.vote(id, token);
-      showToast('Голос принят! ▲ +1 к рейтингу сервера');
-      setServer(prev => ({ ...prev, weeklyVotes: (prev.weeklyVotes ?? 0) + 1, monthlyVotes: (prev.monthlyVotes ?? 0) + 1 }));
+      await api.votes.vote(id, nickname, token);
+      showToast('Голос принят! Бонус можно получить по нику на сервере');
+      setServer(prev => ({
+        ...prev,
+        totalVotes: (prev.totalVotes ?? prev.weeklyVotes ?? 0) + 1,
+        weeklyVotes: (prev.weeklyVotes ?? 0) + 1,
+        monthlyVotes: (prev.monthlyVotes ?? 0) + 1,
+      }));
       const fresh = await api.votes.status(id, token);
       setVoteStatus(fresh);
+      setVoteFormOpen(false);
     } catch {
       // Обновляем статус чтобы показать cooldown, если голосование заблокировано
-      if (token) api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+      api.votes.status(id, token).then(setVoteStatus).catch(() => {});
       showToast('Голос уже учтён — следующий через 24 ч.');
     }
     setVoting(false);
@@ -201,6 +224,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const hasInstances = (server.instances?.length ?? 0) > 0;
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const mainDonate = normalizedDonate(server.donate);
+  const totalVotes = server.totalVotes ?? server.weeklyVotes ?? 0;
 
   return (
     <div className={styles.page}>
@@ -256,14 +280,16 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
               {/* Быстрая статистика: голоса / рейтинг / отзывы */}
               <div className={styles.headerStats}>
-                <span className={styles.hstat}>
-                  <img src="/images/vote-icon.png" alt="Голоса сервера" style={{ width: 16, height: 16, objectFit: 'contain' }} />
-                  {server.weeklyVotes ?? 0} голосов
-                  <span className={styles.voteTip}>?</span>
-                </span>
+                {totalVotes > 0 && (
+                  <span className={styles.hstat}>
+                    <img src="/images/vote-icon.png" alt="Голоса сервера" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                    {totalVotes} {voteWord(totalVotes)}
+                    <span className={styles.voteTip}>?</span>
+                  </span>
+                )}
                 {server.ratingCount > 0 && (
                   <>
-                    <span className={styles.hstatDot}>·</span>
+                    {totalVotes > 0 && <span className={styles.hstatDot}>·</span>}
                     <span className={styles.hstat}>★ {server.rating.toFixed(1)} / 5</span>
                     <span className={styles.hstatDot}>·</span>
                     <span className={styles.hstat}>{server.ratingCount} {server.ratingCount === 1 ? 'отзыв' : server.ratingCount < 5 ? 'отзыва' : 'отзывов'}</span>
@@ -286,11 +312,24 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : <><img src="/images/vote-icon.png" alt="Проголосовать за сервер" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />Проголосовать</>}
+                    : <><img src="/images/vote-icon.png" alt="Проголосовать за сервер" style={{ width: 32, height: 32, objectFit: 'contain', marginRight: '.4rem', verticalAlign: 'middle' }} />{voteFormOpen ? 'Подтвердить голос' : totalVotes > 0 ? 'Проголосовать' : 'Стать первым кто оценит'}</>}
                 </button>
-                {(server.weeklyVotes ?? 0) > 0 && (
+                {voteFormOpen && !voteStatus?.voted && (
+                  <div className={styles.voteNickForm}>
+                    <input
+                      className="input"
+                      value={voteNickname}
+                      onChange={e => setVoteNickname(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
+                      placeholder="Ник персонажа на сервере"
+                      maxLength={32}
+                    />
+                    <span>Ник нужен, чтобы сервер мог выдать бонус за голос.</span>
+                  </div>
+                )}
+                {totalVotes > 0 && (
                   <span className={styles.weeklyCount}>
-                    {server.weeklyVotes} голосов за 7 дн.
+                    {totalVotes} {voteWord(totalVotes)} за всё время
                   </span>
                 )}
                 {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) && (

@@ -51,6 +51,9 @@
 .headerActions  { display: flex; gap: .45rem; align-items: stretch; }
 .voteWrap       { display: flex; flex-direction: column; gap: .18rem; flex: 1; }
 .weeklyCount    { font-size: .65rem; color: var(--text3); text-align: center; line-height: 1.4; }
+.voteNickForm   { display: flex; flex-direction: column; gap: .25rem; margin-top: .25rem; }
+.voteNickForm input { min-height: 38px; text-align: center; }
+.voteNickForm span { font-size: .62rem; color: var(--text3); text-align: center; line-height: 1.35; }
 .btnSiteLarge   { display: block; text-align: center; background: rgba(200,168,75,.08); border: 1px solid var(--gold-d); color: var(--gold); padding: .52rem 1rem; border-radius: 3px; font-size: .8rem; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; transition: background .18s; }
 .btnSiteLarge:hover { background: rgba(200,168,75,.18); }
 
