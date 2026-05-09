@@ -67,6 +67,11 @@
   line-height: 1.35;
   text-align: center;
 }
+.voteIntegrationOn {
+  border-color: rgba(90,180,130,.34);
+  background: rgba(90,180,130,.08);
+  color: #8ED9A7;
+}
 .btnSiteLarge   { display: block; text-align: center; background: rgba(200,168,75,.08); border: 1px solid var(--gold-d); color: var(--gold); padding: .52rem 1rem; border-radius: 3px; font-size: .8rem; font-weight: 500; letter-spacing: .05em; text-transform: uppercase; transition: background .18s; }
 .btnSiteLarge:hover { background: rgba(200,168,75,.18); }
 
@@ -95,6 +100,47 @@
 .dblockTitle { font-family: 'Cinzel', serif; font-size: .78rem; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .14em; padding: .85rem 1.2rem; border-bottom: 1px solid var(--border); }
 .dblockBody  { padding: 1.1rem 1.2rem; }
 .empty { color: var(--text3); font-family: 'Almendra', serif; font-style: italic; font-size: .9rem; }
+
+.votePanelHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .85rem 1.2rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(200,168,75,.045), transparent);
+}
+.dblockTitleInline { font-family: 'Cinzel', serif; font-size: .86rem; font-weight: 700; color: #F0E8C8; letter-spacing: .02em; }
+.votePanelMeta { margin-top: .18rem; color: var(--text3); font-size: .78rem; }
+.rewardBadge {
+  display: inline-flex; align-items: center; min-height: 26px; padding: .22rem .55rem;
+  border: 1px solid rgba(200,168,75,.24); border-radius: 999px;
+  background: rgba(200,168,75,.06); color: var(--gold-d);
+  font-size: .66rem; white-space: nowrap;
+}
+.rewardBadgeOn { border-color: rgba(90,180,130,.36); background: rgba(90,180,130,.08); color: #8ED9A7; }
+.voteTabs { display: flex; gap: .9rem; border-bottom: 1px solid var(--border); margin: -.2rem 0 .9rem; }
+.voteTabs button {
+  appearance: none; background: transparent; border: 0; border-bottom: 2px solid transparent;
+  color: var(--text3); padding: .25rem 0 .55rem; cursor: pointer;
+  font-size: .78rem; transition: color .15s, border-color .15s;
+}
+.voteTabs button:hover { color: var(--text); }
+.voteTabs .voteTabActive { color: var(--gold); border-bottom-color: var(--gold-d); }
+.voteTableWrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 4px; }
+.voteTable { width: 100%; border-collapse: collapse; min-width: 620px; font-size: .78rem; }
+.voteTable th, .voteTable td { padding: .55rem .7rem; border-bottom: 1px solid var(--border); text-align: left; }
+.voteTable th { color: var(--text3); background: rgba(255,255,255,.02); font-weight: 500; }
+.voteTable tr:last-child td { border-bottom: 0; }
+.voterName { color: #F0E8C8; font-weight: 600; }
+.voterRank {
+  display: inline-flex; padding: .12rem .5rem; border-radius: 999px;
+  background: rgba(200,168,75,.1); border: 1px solid rgba(200,168,75,.22);
+  color: var(--gold); font-size: .7rem; white-space: nowrap;
+}
+.recentVotes { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .45rem; }
+.recentVoteItem {
+  display: flex; align-items: center; gap: .45rem; justify-content: space-between;
+  border: 1px solid var(--border); background: rgba(255,255,255,.015);
+  padding: .55rem .65rem; border-radius: 4px; color: var(--text3); font-size: .78rem;
+}
+.recentVoteIcon { color: var(--gold-d); flex-shrink: 0; }
 
 /* Сервера проекта — компактные плитки в сетке */
 .instSubtitle {
@@ -282,6 +328,11 @@
   .rowVal { font-size: .8rem; }
   .dblockTitle { padding: .75rem 1rem; font-size: .72rem; }
   .dblockBody { padding: .9rem 1rem; }
+  .votePanelHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .55rem; }
+  .voteTabs { gap: .7rem; overflow-x: auto; padding-bottom: 0; }
+  .voteTabs button { white-space: nowrap; font-size: .74rem; }
+  .voteTable { min-width: 560px; }
+  .recentVotes { grid-template-columns: 1fr; }
   .descHeading { padding: .45rem .7rem; font-size: .72rem; }
   .descPara, .descBullet { font-size: .84rem; }
   .reviewCard, .newsCard { padding: .8rem .9rem; }

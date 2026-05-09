@@ -14,6 +14,7 @@ export class CreateServerDto {
   @IsOptional() @IsString() donate?: string;
   @IsOptional() @IsArray() type?: string[];
   @IsOptional() @IsBoolean() vip?: boolean;
+  @IsOptional() @IsBoolean() voteRewardsEnabled?: boolean;
   @IsOptional() @IsDateString() openedDate?: string;
   @IsOptional() @IsString() country?: string;
   @IsOptional() @IsString() icon?: string;

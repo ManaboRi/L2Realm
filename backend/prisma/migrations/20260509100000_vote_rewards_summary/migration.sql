@@ -1,0 +1,2 @@
+ALTER TABLE "Server"
+ADD COLUMN "voteRewardsEnabled" BOOLEAN NOT NULL DEFAULT false;

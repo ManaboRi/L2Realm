@@ -95,6 +95,55 @@ export class VotesService {
 
   // Сброс месячного счётчика оставлен для совместимости старой статистики.
   // totalVotes не сбрасывается: публично теперь показываем голоса за всё время.
+  async getSummary(serverId: string) {
+    const server = await this.prisma.server.findUnique({
+      where: { id: serverId },
+      select: { id: true, totalVotes: true, voteRewardsEnabled: true },
+    });
+    if (!server) throw new NotFoundException('Server not found');
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [monthlyVotes, todayVotes, topGroups, recent] = await Promise.all([
+      this.prisma.vote.count({ where: { serverId, createdAt: { gte: monthStart } } }),
+      this.prisma.vote.count({ where: { serverId, createdAt: { gte: todayStart } } }),
+      this.prisma.vote.groupBy({
+        by: ['nickname'],
+        where: { serverId, createdAt: { gte: monthStart }, nickname: { not: '' } },
+        _count: { nickname: true },
+        _max: { createdAt: true },
+        orderBy: [{ _count: { nickname: 'desc' } }, { _max: { createdAt: 'desc' } }],
+        take: 10,
+      }),
+      this.prisma.vote.findMany({
+        where: { serverId, nickname: { not: '' } },
+        select: { nickname: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 12,
+      }),
+    ]);
+
+    return {
+      totalVotes: server.totalVotes,
+      monthlyVotes,
+      todayVotes,
+      rewardsEnabled: server.voteRewardsEnabled,
+      top: topGroups.map((item, index) => ({
+        place: index + 1,
+        nickname: item.nickname,
+        votes: item._count.nickname,
+        lastVoteAt: item._max.createdAt?.toISOString() ?? null,
+      })),
+      recent: recent.map(item => ({
+        nickname: item.nickname,
+        votedAt: item.createdAt.toISOString(),
+      })),
+    };
+  }
+
   @Cron('0 0 1 * *')
   async resetMonthlyVotes() {
     await this.prisma.server.updateMany({ data: { monthlyVotes: 0, weeklyVotes: 0 } });

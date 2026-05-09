@@ -31,6 +31,7 @@ const serverPayloadSchema = z.object({
   donate: z.enum(['free', 'cosmetic', 'convenience', 'p2w']).optional(),
   type: z.array(safeText(1, 40)).max(20).optional(),
   vip: z.coerce.boolean().optional(),
+  voteRewardsEnabled: z.coerce.boolean().optional(),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   country: optionalSafeText(8),
   icon: optionalSafeAssetUrl,

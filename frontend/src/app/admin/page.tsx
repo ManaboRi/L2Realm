@@ -94,7 +94,7 @@ export default function AdminPage() {
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
     url:'', openedDate:'', country:'RU', statusOverride: 'auto',
     serverType: 'pvp-pve', donate: 'cosmetic',
-    type_new: false, type_featured: false, vip: false,
+    type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
@@ -180,6 +180,7 @@ export default function AdminPage() {
       serverType: 'pvp-pve',
       donate: 'cosmetic',
       type_new: false, type_featured: false, vip: false,
+      voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
       instances: [],
@@ -259,6 +260,7 @@ export default function AdminPage() {
       donate:      s.donate === 'free' ? '' : (s.donate ?? ''),
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
+      voteRewardsEnabled: !!s.voteRewardsEnabled,
       icon:        s.icon        ?? '',
       banner:      s.banner      ?? '',
       telegram:    s.telegram    ?? '',
@@ -297,6 +299,7 @@ export default function AdminPage() {
         openedDate:  editForm.openedDate || undefined,
         country:     editForm.country,
         donate:      editForm.donate || undefined,
+        voteRewardsEnabled: !!editForm.voteRewardsEnabled,
         statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
         icon:        editForm.icon || undefined,
@@ -335,6 +338,7 @@ export default function AdminPage() {
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
         url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
         type: types, donate: addForm.donate, vip: addForm.vip,
+        voteRewardsEnabled: !!addForm.voteRewardsEnabled,
         openedDate: addForm.openedDate || undefined, country: addForm.country,
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
@@ -427,6 +431,12 @@ export default function AdminPage() {
                     <option value="unknown">Неизвестно</option>
                   </select>
                 </AField>
+                <AField label="Vote Manager">
+                  <label style={{ display:'flex', alignItems:'center', gap:'.5rem', minHeight:38, color:'var(--text2)', fontSize:'.84rem' }}>
+                    <input type="checkbox" checked={!!editForm.voteRewardsEnabled} onChange={e => setEditForm((p:any) => ({...p,voteRewardsEnabled:e.target.checked}))} />
+                    Бонусы за голос подключены
+                  </label>
+                </AField>
                 <ImageUpload label="Иконка" value={editForm.icon} type="icon" token={token!} onChange={url => setEditForm((p:any) => ({...p,icon:url}))} />
                 <ImageUpload label="Баннер" value={editForm.banner} type="banner" token={token!} onChange={url => setEditForm((p:any) => ({...p,banner:url}))} />
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
@@ -505,7 +515,8 @@ export default function AdminPage() {
                               {s._isVip && <span className={styles.planBadge}>◆ VIP{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
                               {s._isBoosted && <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>🔥 Буст{s._boostEnd ? ` · до ${new Date(s._boostEnd).toLocaleDateString('ru-RU')}` : ''}</span>}
                               {s.statusOverride && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#5AB482', borderColor:'rgba(90,180,130,.25)' }}>Статус: {s.statusOverride}</span>}
-                              {!s._isVip && !s._isBoosted && !s.statusOverride && <span style={{ color:'var(--text3)' }}>—</span>}
+                              {s.voteRewardsEnabled && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#8ED9A7', borderColor:'rgba(90,180,130,.25)' }}>Vote Manager</span>}
+                              {!s._isVip && !s._isBoosted && !s.statusOverride && !s.voteRewardsEnabled && <span style={{ color:'var(--text3)' }}>—</span>}
                             </div>
                           </td>
                           <td>
@@ -825,6 +836,12 @@ export default function AdminPage() {
                         <option value="offline">Всегда offline</option>
                         <option value="unknown">Неизвестно</option>
                       </select>
+                    </AField>
+                    <AField label="Vote Manager">
+                      <label style={{ display:'flex', alignItems:'center', gap:'.5rem', minHeight:38, color:'var(--text2)', fontSize:'.84rem' }}>
+                        <input type="checkbox" checked={!!addForm.voteRewardsEnabled} onChange={e => setAddForm(p => ({...p,voteRewardsEnabled:e.target.checked}))} />
+                        Бонусы за голос подключены
+                      </label>
                     </AField>
                     {/* Строка 4 */}
                     <ImageUpload label="Иконка" value={addForm.icon} type="icon" token={token!} onChange={url => setAddForm(p => ({...p,icon:url}))} />

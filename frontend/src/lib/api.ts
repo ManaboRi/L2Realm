@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus, Article } from './types';
+import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -203,6 +203,8 @@ export const api = {
       }),
     status: (serverId: string, token?: string | null) =>
       request<VoteStatus>(`/votes/${serverId}/status`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined),
+    summary: (serverId: string) =>
+      request<VoteSummary>(`/votes/${serverId}/summary`),
   },
 
   // ── Избранное ─────────────────────────────────

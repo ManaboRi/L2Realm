@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import type { Server, Review, VoteStatus } from '@/lib/types';
+import type { Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -56,6 +56,25 @@ function voteWord(value: number) {
   if (mod10 === 1 && mod100 !== 11) return 'голос';
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'голоса';
   return 'голосов';
+}
+
+function compactVoteDate(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  const today = new Date();
+  const startToday = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  const startDate = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.round((startToday - startDate) / 86400000);
+  if (diffDays === 0) return 'Сегодня';
+  if (diffDays === 1) return 'Вчера';
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+function voterRankLabel(votes: number, place: number) {
+  if (place === 1) return 'Властелин голосов';
+  if (votes >= 5) return 'Легенда голосования';
+  if (votes >= 3) return 'Активный игрок';
+  return 'Новичок';
 }
 
 function formatDesc(text: string) {
@@ -117,6 +136,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [isFav,       setIsFav]       = useState(false);
   const [favBusy,     setFavBusy]     = useState(false);
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
+  const [voteSummary, setVoteSummary] = useState<VoteSummary | null>(null);
+  const [voteTab, setVoteTab] = useState<'top' | 'recent'>('top');
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
   const [voteFormOpen, setVoteFormOpen] = useState(false);
@@ -136,6 +157,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
   useEffect(() => {
     api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+    api.votes.summary(id).then(setVoteSummary).catch(() => {});
   }, [token, id]);
 
   async function handleVote() {
@@ -160,6 +182,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
       }));
       const fresh = await api.votes.status(id, token);
       setVoteStatus(fresh);
+      api.votes.summary(id).then(setVoteSummary).catch(() => {});
       setVoteFormOpen(false);
     } catch {
       // Обновляем статус чтобы показать cooldown, если голосование заблокировано
@@ -224,7 +247,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const hasInstances = (server.instances?.length ?? 0) > 0;
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const mainDonate = normalizedDonate(server.donate);
-  const totalVotes = server.totalVotes ?? server.weeklyVotes ?? 0;
+  const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
+  const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
 
   return (
     <div className={styles.page}>
@@ -332,8 +356,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     {totalVotes} {voteWord(totalVotes)} за всё время
                   </span>
                 )}
-                <span className={styles.voteIntegrationNote}>
-                  Голос учитывается на L2Realm. Бонус выдаётся только у проектов с подключённым Vote Manager.
+                <span className={`${styles.voteIntegrationNote} ${voteRewardsEnabled ? styles.voteIntegrationOn : ''}`}>
+                  {voteRewardsEnabled
+                    ? 'Бонусы за голос подключены: награда выдаётся по нику на сервере.'
+                    : 'Голос учитывается на L2Realm. Бонус выдаётся только после подключения Vote Manager проектом.'}
                 </span>
                 {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) && (
                   <span className={styles.weeklyCount}>{cooldownText(voteStatus.cooldownEnds)}</span>
@@ -414,6 +440,67 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {server.fullDesc
                 ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
                 : <p className={styles.empty}>Описание отсутствует</p>}
+            </div>
+          </div>
+
+          <div className={styles.dblock}>
+            <div className={styles.votePanelHead}>
+              <div>
+                <div className={styles.dblockTitleInline}>Голоса за сервер</div>
+                <div className={styles.votePanelMeta}>
+                  Всего: {voteSummary?.totalVotes ?? totalVotes}, за месяц: {voteSummary?.monthlyVotes ?? 0}, сегодня: {voteSummary?.todayVotes ?? 0}
+                </div>
+              </div>
+              <span className={`${styles.rewardBadge} ${voteRewardsEnabled ? styles.rewardBadgeOn : ''}`}>
+                {voteRewardsEnabled ? 'Бонусы подключены' : 'Бонусы не подключены'}
+              </span>
+            </div>
+            <div className={styles.dblockBody}>
+              <div className={styles.voteTabs}>
+                <button type="button" className={voteTab === 'top' ? styles.voteTabActive : ''} onClick={() => setVoteTab('top')}>
+                  Топ голосующих за месяц
+                </button>
+                <button type="button" className={voteTab === 'recent' ? styles.voteTabActive : ''} onClick={() => setVoteTab('recent')}>
+                  Последние голоса
+                </button>
+              </div>
+
+              {voteTab === 'top' ? (
+                voteSummary?.top?.length ? (
+                  <div className={styles.voteTableWrap}>
+                    <table className={styles.voteTable}>
+                      <thead><tr><th>#</th><th>Игрок</th><th>Голосов</th><th>Ранг</th><th>Последний голос</th></tr></thead>
+                      <tbody>
+                        {voteSummary.top.map(row => (
+                          <tr key={`${row.place}-${row.nickname}`}>
+                            <td>{row.place}</td>
+                            <td className={styles.voterName}>{row.nickname}</td>
+                            <td>{row.votes}</td>
+                            <td><span className={styles.voterRank}>{voterRankLabel(row.votes, row.place)}</span></td>
+                            <td>{compactVoteDate(row.lastVoteAt)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className={styles.empty}>Топ появится после первых голосов в этом месяце.</p>
+                )
+              ) : (
+                voteSummary?.recent?.length ? (
+                  <div className={styles.recentVotes}>
+                    {voteSummary.recent.map((row, index) => (
+                      <div key={`${row.nickname}-${row.votedAt}-${index}`} className={styles.recentVoteItem}>
+                        <span className={styles.recentVoteIcon}>◆</span>
+                        <span className={styles.voterName}>{row.nickname}</span>
+                        <span>{compactVoteDate(row.votedAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className={styles.empty}>Последних голосов пока нет.</p>
+                )
+              )}
             </div>
           </div>
 

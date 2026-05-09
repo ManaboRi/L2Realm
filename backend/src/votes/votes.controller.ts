@@ -42,6 +42,11 @@ export class VotesController {
     const ip = req.ip ?? '0.0.0.0';
     return this.votes.getStatus(userId, serverId, ip);
   }
+
+  @Get(':serverId/summary')
+  async summary(@Param('serverId') serverId: string) {
+    return this.votes.getSummary(serverId);
+  }
 }
 
 @Controller('vote')

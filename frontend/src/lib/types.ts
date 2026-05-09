@@ -51,6 +51,7 @@ export interface Server {
   totalVotes?:   number;
   monthlyVotes?: number;
   weeklyVotes?:  number;
+  voteRewardsEnabled?: boolean;
   _isVip?:     boolean;
   _isBoosted?: boolean;
   _isSod?:     boolean;
@@ -60,6 +61,15 @@ export interface Server {
 export interface VoteStatus {
   voted:       boolean;
   cooldownEnds: string | null;
+}
+
+export interface VoteSummary {
+  totalVotes: number;
+  monthlyVotes: number;
+  todayVotes: number;
+  rewardsEnabled: boolean;
+  top: Array<{ place: number; nickname: string; votes: number; lastVoteAt: string | null }>;
+  recent: Array<{ nickname: string; votedAt: string }>;
 }
 
 export interface Subscription {
