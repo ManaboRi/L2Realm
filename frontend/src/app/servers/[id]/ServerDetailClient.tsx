@@ -151,7 +151,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     setVoting(true);
     try {
       await api.votes.vote(id, nickname, token);
-      showToast('Голос принят! Бонус можно получить по нику на сервере');
+      showToast('Голос принят! Если проект подключил бонусы, награда придёт по нику');
       setServer(prev => ({
         ...prev,
         totalVotes: (prev.totalVotes ?? prev.weeklyVotes ?? 0) + 1,
@@ -324,7 +324,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                       placeholder="Ник персонажа на сервере"
                       maxLength={32}
                     />
-                    <span>Ник нужен, чтобы сервер мог выдать бонус за голос.</span>
+                    <span>Ник нужен для бонуса, если проект подключил выдачу наград.</span>
                   </div>
                 )}
                 {totalVotes > 0 && (
@@ -332,6 +332,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     {totalVotes} {voteWord(totalVotes)} за всё время
                   </span>
                 )}
+                <span className={styles.voteIntegrationNote}>
+                  Голос учитывается на L2Realm. Бонус выдаётся только у проектов с подключённым Vote Manager.
+                </span>
                 {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) && (
                   <span className={styles.weeklyCount}>{cooldownText(voteStatus.cooldownEnds)}</span>
                 )}
