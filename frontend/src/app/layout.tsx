@@ -7,8 +7,11 @@ import { AuthProvider } from '@/context/AuthContext';
 import { YandexMetrika } from '@/components/YandexMetrika';
 import { VKPixel } from '@/components/VKPixel';
 
+const SITE = 'https://l2realm.ru';
+const DEFAULT_SHARE_IMAGE = '/images/nav-servers.png';
+
 export const metadata: Metadata = {
-  metadataBase: new URL('https://l2realm.ru'),
+  metadataBase: new URL(SITE),
   title: {
     default: 'L2Realm — Каталог серверов Lineage 2',
     template: '%s | L2Realm',
@@ -19,13 +22,29 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'ru_RU',
     siteName: 'L2Realm',
+    images: [
+      {
+        url: DEFAULT_SHARE_IMAGE,
+        width: 1024,
+        height: 1024,
+        alt: 'L2Realm — каталог серверов Lineage 2',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: [DEFAULT_SHARE_IMAGE],
   },
   verification: {
     yandex: 'cef19d9162540d2b',
   },
   icons: {
-    icon: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    icon: [
+      { url: '/favicon.png', type: 'image/png', sizes: '96x96' },
+      { url: '/favicon.ico', sizes: '32x32' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],
   },
 };
 
@@ -41,8 +60,9 @@ const organizationSchema = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: 'L2Realm',
-  url: 'https://l2realm.ru',
-  logo: 'https://l2realm.ru/icon.svg',
+  url: SITE,
+  logo: `${SITE}/favicon.png`,
+  image: `${SITE}${DEFAULT_SHARE_IMAGE}`,
   description: 'Каталог приватных серверов Lineage 2. Фильтры, отзывы, рейтинг.',
   sameAs: [
     'https://t.me/l2realm_ru',

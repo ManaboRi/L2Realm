@@ -4,6 +4,7 @@ import { HomeClient, type FilterCounts } from './HomeClient';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
+const DEFAULT_SHARE_IMAGE = '/images/nav-servers.png';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,20 @@ export const metadata: Metadata = {
     url: SITE,
     siteName: 'L2Realm',
     locale: 'ru_RU',
+    images: [
+      {
+        url: DEFAULT_SHARE_IMAGE,
+        width: 1024,
+        height: 1024,
+        alt: 'L2Realm — каталог серверов Lineage 2',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'L2Realm — Каталог серверов Lineage 2',
+    description: 'Лучший каталог приватных серверов Lineage 2. Фильтры, честные отзывы, рейтинг.',
+    images: [DEFAULT_SHARE_IMAGE],
   },
 };
 

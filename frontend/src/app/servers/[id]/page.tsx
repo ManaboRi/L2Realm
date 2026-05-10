@@ -76,10 +76,11 @@ export default async function Page({ params }: Props) {
   const server = await fetchServer(id);
   if (!server) notFound();
 
+  const canonical = `${SITE}/servers/${id}`;
+
   // Product schema (JSON-LD) — даёт Google возможность показать звёздочки
-  // и количество отзывов прямо в выдаче. AggregateRating только если есть
-  // реальные отзывы (ratingCount > 0), иначе блок скрываем — Google не любит
-  // фейковые ratings.
+  // и количество отзывов прямо в выдаче. Offer нужен Google для страниц без
+  // отзывов, а AggregateRating добавляем только когда есть реальные оценки.
   const productSchema: any = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -88,6 +89,14 @@ export default async function Page({ params }: Props) {
     image: server.banner || server.icon || `${SITE}/icon.svg`,
     brand: { '@type': 'Brand', name: 'L2Realm' },
     category: `Lineage 2 ${server.chronicle}`,
+    offers: {
+      '@type': 'Offer',
+      url: canonical,
+      price: '0',
+      priceCurrency: 'RUB',
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+    },
   };
   if (server.ratingCount > 0) {
     productSchema.aggregateRating = {
