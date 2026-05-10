@@ -42,6 +42,34 @@
   transition: opacity .2s, filter .2s;
 }
 .navLink:hover .navIcon { opacity: 1; filter: drop-shadow(0 0 4px rgba(200,168,75,.4)); }
+.navMark {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  flex-shrink: 0;
+  position: relative;
+  opacity: .85;
+}
+.navMark::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 8px;
+  height: 10px;
+  border-left: 2px solid var(--gold-d);
+  border-bottom: 2px solid var(--gold-d);
+  transform: rotate(-45deg);
+}
+.navMark::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  right: 3px;
+  bottom: 1px;
+  border-bottom: 2px solid var(--gold-d);
+}
+.navLink:hover .navMark { opacity: 1; filter: drop-shadow(0 0 4px rgba(200,168,75,.4)); }
 .navAdmin { color: var(--gold-d); }
 .navTextFull { display: inline; }
 .navTextShort { display: none; }
@@ -210,7 +238,9 @@
     gap: .75rem;
     border-radius: 3px;
   }
-  .navIcon { width: 22px; height: 22px; opacity: .9; }
+  .navIcon, .navMark { width: 22px; height: 22px; opacity: .9; }
+  .navMark::before { left: 6px; top: 2px; width: 10px; height: 13px; }
+  .navMark::after { left: 4px; right: 4px; bottom: 2px; }
   .navTextShort { display: none; }
   .navTextFull { display: inline; }
 
