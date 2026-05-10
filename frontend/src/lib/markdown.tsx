@@ -4,11 +4,9 @@ import DOMPurify from 'isomorphic-dompurify';
 /**
  * Минималистичный Markdown-парсер для статей блога.
  * Поддерживает: # ## ### заголовки, **жирный**, *курсив*, [текст](url),
- * - списки, --- разделители, > цитаты, ``` блоки кода, ` инлайн-код `,
- * GFM-таблицы (| Header | ... |). Абзацы по CommonMark — соседние строки
+ * ![alt](url), - списки, --- разделители, > цитаты, ``` блоки кода,
+ * ` инлайн-код `, GFM-таблицы (| Header | ... |). Абзацы по CommonMark — соседние строки
  * склеиваются в один <p>, разделитель — пустая строка.
- *
- * Если нужны картинки, footnotes, nested блоки — вынести в react-markdown.
  */
 
 // Whitelist тегов и атрибутов для DOMPurify — последняя линия защиты
@@ -27,6 +25,17 @@ const PURIFY_OPTS = {
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function isSafeImageUrl(url: string): boolean {
+  const value = url.trim();
+  if (/^\/(?:uploads|images)\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+$/.test(value)) return true;
+  try {
+    const u = new URL(value);
+    return u.protocol === 'https:' || u.protocol === 'http:';
+  } catch {
+    return false;
+  }
 }
 
 // inline: **bold**, *italic*, `code`, [link](url) → возвращает HTML-строку
@@ -159,6 +168,21 @@ export function renderMarkdown(text: string): React.ReactNode[] {
       continue;
     }
 
+    // block image: ![alt](/uploads/file.webp). Держим картинку отдельным блоком,
+    // чтобы не ломать абзацы и переносы в существующих статьях.
+    const img = line.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);
+    if (img && isSafeImageUrl(img[2])) {
+      flushAll();
+      const alt = img[1].trim();
+      out.push(
+        <figure key={`fig-${key++}`}>
+          <img src={img[2].trim()} alt={alt} loading="lazy" />
+          {alt && <figcaption>{alt}</figcaption>}
+        </figure>,
+      );
+      continue;
+    }
+
     // table (GFM): ищем header + separator вперёд
     const headerCells = parseTableRow(line);
     if (headerCells && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
@@ -256,6 +280,7 @@ export function readingTime(text: string): number {
   const clean = text
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`[^`]+`/g, '')
+    .replace(/!\[[^\]]*]\([^)]+\)/g, ' ')
     .replace(/[#>*_\[\]\(\)\-]/g, ' ');
   const words = clean.split(/\s+/).filter(Boolean).length;
   return Math.max(1, Math.round(words / 200));
@@ -268,6 +293,7 @@ export function firstParagraph(text: string, maxChars = 220): string {
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;
+    if (/^!\[[^\]]*]\([^)]+\)$/.test(t)) continue;
     if (/^[#`>\-*|]/.test(t)) continue; // пропускаем заголовки/код/цитаты/списки/таблицы
     // снимаем bold/italic/links для preview
     const clean = t

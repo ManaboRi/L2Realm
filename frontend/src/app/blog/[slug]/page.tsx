@@ -36,6 +36,15 @@ async function fetchRelatedArticles(currentSlug: string): Promise<Article[]> {
   }
 }
 
+function absoluteUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url, SITE).toString();
+  } catch {
+    return undefined;
+  }
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const article = await fetchArticle(slug);
@@ -43,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: 'Статья не найдена', robots: { index: false, follow: false } };
   }
   const canonical = `${SITE}/blog/${article.slug}`;
-  const image = article.image || `${SITE}/apple-touch-icon.png`;
+  const image = absoluteUrl(article.image) || `${SITE}/apple-touch-icon.png`;
   return {
     title: article.title,
     description: article.description,
@@ -81,6 +90,7 @@ export default async function BlogPostPage({ params }: Props) {
 
   // Параллельно подгружаем 2 другие статьи для блока «Читать ещё».
   const related = await fetchRelatedArticles(article.slug);
+  const articleImage = absoluteUrl(article.image);
 
   // Article schema (JSON-LD) — даёт Google/Яндексу понять что это статья,
   // подтягивает картинку, дату публикации, автора. Может дать rich snippet.
@@ -89,7 +99,7 @@ export default async function BlogPostPage({ params }: Props) {
     '@type': 'Article',
     headline: article.title,
     description: article.description,
-    image: article.image ? [article.image] : undefined,
+    image: articleImage ? [articleImage] : undefined,
     datePublished: article.publishedAt ?? article.createdAt,
     dateModified: article.updatedAt ?? article.publishedAt ?? article.createdAt,
     author: { '@type': 'Organization', name: 'L2Realm' },

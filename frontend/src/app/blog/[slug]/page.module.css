@@ -266,6 +266,28 @@
   margin: 2.5rem 0;
 }
 
+.body figure {
+  margin: 1.7rem 0 1.9rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.body figure img {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+  object-fit: cover;
+}
+.body figcaption {
+  padding: .65rem .9rem;
+  border-top: 1px solid var(--border);
+  color: var(--text3);
+  font-size: .82rem;
+  line-height: 1.45;
+  font-family: 'DM Sans', sans-serif;
+}
+
 /* Pill-бейджи: **Сайт:** value, **Рейт:** value и т.п.
    Класс md-pill ставится парсером (lib/markdown.tsx). :global() нужен,
    потому что CSS Modules иначе хешируют имя класса, а в HTML мы
@@ -345,6 +367,8 @@
   .body p { margin-bottom: 1rem; }
   .lead { font-size: 1.05rem; }
   .banner { aspect-ratio: 16 / 9; }
+  .body figure { margin: 1.2rem 0 1.35rem; }
+  .body figure img { max-height: 360px; }
   .body table { font-size: .9rem; }
   .body thead th, .body tbody td { padding: 8px 10px; }
 }

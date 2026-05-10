@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
+import { renderMarkdown, readingTime } from '@/lib/markdown';
 import type { Article } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -32,6 +33,7 @@ function toLocalInput(iso: string | null | undefined): string {
 
 export default function AdminArticlesPage() {
   const { user, token, isAdmin } = useAuth();
+  const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading,  setLoading]  = useState(true);
@@ -75,6 +77,47 @@ export default function AdminArticlesPage() {
       publishedAt: toLocalInput(a.publishedAt),
     });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setCursor(start: number, end = start) {
+    requestAnimationFrame(() => {
+      const el = contentRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(start, end);
+    });
+  }
+
+  function insertAtSelection(before: string, after = '', placeholder = 'текст') {
+    const value = form.content;
+    const el = contentRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const selected = value.slice(start, end);
+    const body = selected || placeholder;
+    const next = value.slice(0, start) + before + body + after + value.slice(end);
+    setForm(p => ({ ...p, content: next }));
+    const cursorStart = start + before.length;
+    setCursor(cursorStart, cursorStart + body.length);
+  }
+
+  function insertBlock(block: string) {
+    const value = form.content;
+    const el = contentRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const prefix = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+    const suffix = after && !after.startsWith('\n\n') ? (after.startsWith('\n') ? '\n' : '\n\n') : '';
+    const insertion = `${prefix}${block}${suffix}`;
+    const next = before + insertion + after;
+    setForm(p => ({ ...p, content: next }));
+    setCursor(before.length + insertion.length);
+  }
+
+  function insertArticleImage(url: string) {
+    insertBlock(`![Описание изображения](${url})`);
   }
 
   async function save() {
@@ -242,21 +285,57 @@ export default function AdminArticlesPage() {
         )}
 
         <Field label="Текст статьи (Markdown) *">
-          <textarea
-            className={`input ${styles.contentArea}`}
-            value={form.content}
-            onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-            placeholder={
-              '# Заголовок раздела\n\n' +
-              'Обычный абзац. Поддерживается **жирный**, *курсив*, [ссылка](https://example.com), `код`.\n\n' +
-              '## Подзаголовок\n\n' +
-              '- пункт списка\n' +
-              '- ещё пункт\n\n' +
-              '> Цитата\n\n' +
-              '```\nблок кода\n```'
-            }
-            rows={20}
-          />
+          <div className={styles.editorShell}>
+            <div className={styles.editorTools}>
+              <button type="button" className={styles.toolBtn} onClick={() => insertBlock('## Подзаголовок')}>H2</button>
+              <button type="button" className={styles.toolBtn} onClick={() => insertAtSelection('**', '**')}>B</button>
+              <button type="button" className={styles.toolBtn} onClick={() => insertAtSelection('*', '*')}>I</button>
+              <button type="button" className={styles.toolBtn} onClick={() => insertBlock('- пункт списка')}>•</button>
+              <button type="button" className={styles.toolBtn} onClick={() => insertBlock('> Важная мысль')}>”</button>
+              <button type="button" className={styles.toolBtn} onClick={() => insertBlock('---')}>—</button>
+              {token && (
+                <div className={styles.inlineUpload}>
+                  <ImageUpload
+                    label="Картинка в текст"
+                    value=""
+                    type="banner"
+                    token={token}
+                    onChange={insertArticleImage}
+                  />
+                </div>
+              )}
+              <span className={styles.editorStat}>{readingTime(form.content)} мин</span>
+            </div>
+
+            <div className={styles.editorGrid}>
+              <textarea
+                ref={contentRef}
+                className={`input ${styles.contentArea}`}
+                value={form.content}
+                onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
+                placeholder={
+                  '# Заголовок раздела\n\n' +
+                  'Обычный абзац. Поддерживается **жирный**, *курсив*, [ссылка](https://example.com), `код`.\n\n' +
+                  '![Описание изображения](/uploads/example.webp)\n\n' +
+                  '## Подзаголовок\n\n' +
+                  '- пункт списка\n' +
+                  '- ещё пункт\n\n' +
+                  '> Цитата\n\n' +
+                  '```\nблок кода\n```'
+                }
+                rows={22}
+              />
+
+              <div className={styles.previewPane}>
+                <div className={styles.previewTitle}>Превью</div>
+                <div className={styles.previewBody}>
+                  {form.content.trim()
+                    ? renderMarkdown(form.content)
+                    : <p className={styles.previewEmpty}>Текст появится здесь.</p>}
+                </div>
+              </div>
+            </div>
+          </div>
         </Field>
 
         <Field label="Дата публикации (если пусто — черновик, не виден на /blog)">
