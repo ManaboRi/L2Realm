@@ -20,6 +20,15 @@ async function fetchServer(id: string): Promise<Server | null> {
   }
 }
 
+function absoluteUrl(url: string | null | undefined): string | undefined {
+  if (!url) return undefined;
+  try {
+    return new URL(url, SITE).toString();
+  } catch {
+    return undefined;
+  }
+}
+
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -46,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const description = (server.shortDesc && server.shortDesc.trim())
     || `Приватный сервер Lineage 2 «${server.name}» — хроника ${server.chronicle}, рейты ${server.rates}${typeStr ? ', ' + typeStr : ''}.${ratingStr} Честные отзывы и онлайн-статус на L2Realm.`;
 
-  const ogImage = server.banner || server.icon;
+  const ogImage = absoluteUrl(server.banner || server.icon);
   const canonical = `${SITE}/servers/${id}`;
 
   return {
@@ -77,6 +86,7 @@ export default async function Page({ params }: Props) {
   if (!server) notFound();
 
   const canonical = `${SITE}/servers/${id}`;
+  const image = absoluteUrl(server.banner || server.icon) || `${SITE}/icon.svg`;
 
   // Product schema (JSON-LD) — даёт Google возможность показать звёздочки
   // и количество отзывов прямо в выдаче. Offer нужен Google для страниц без
@@ -86,7 +96,7 @@ export default async function Page({ params }: Props) {
     '@type': 'Product',
     name: server.name,
     description: server.shortDesc || `Приватный сервер Lineage 2 ${server.chronicle} ${server.rates}`,
-    image: server.banner || server.icon || `${SITE}/icon.svg`,
+    image,
     brand: { '@type': 'Brand', name: 'L2Realm' },
     category: `Lineage 2 ${server.chronicle}`,
     offers: {
