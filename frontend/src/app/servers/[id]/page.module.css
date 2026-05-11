@@ -157,60 +157,67 @@
   font-size: .66rem; white-space: nowrap;
 }
 .rewardBadgeOn { border-color: rgba(90,180,130,.36); background: rgba(90,180,130,.08); color: #8ED9A7; }
-.startHead {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: .9rem 1.2rem; border-bottom: 1px solid var(--border);
-  background: linear-gradient(90deg, rgba(200,168,75,.06), transparent);
-}
-.startMeta { margin-top: .22rem; color: var(--text3); font-size: .78rem; }
-.startLinks {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: .55rem;
-}
-.startLink {
+.startInline {
+  margin-top: .95rem;
+  padding-top: .8rem;
+  border-top: 1px solid rgba(200,168,75,.16);
   display: flex;
   flex-direction: column;
-  gap: .2rem;
-  min-height: 68px;
-  justify-content: center;
-  border: 1px solid rgba(200,168,75,.28);
-  border-left: 2px solid var(--gold-d);
-  border-radius: 4px;
-  background: rgba(200,168,75,.055);
-  padding: .7rem .85rem;
+  gap: .65rem;
+}
+.startGroup {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: .85rem;
+  align-items: baseline;
+}
+.startGroupTitle {
+  font-family: 'Cinzel', serif;
+  font-size: .64rem;
+  font-weight: 700;
+  color: var(--gold-d);
+  text-transform: uppercase;
+  letter-spacing: .14em;
+}
+.startGroupLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .65rem;
+}
+.startLink {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35rem;
+  min-width: 0;
+  border-bottom: 1px solid rgba(200,168,75,.28);
+  color: var(--text2);
+  padding-bottom: .05rem;
   text-decoration: none;
-  transition: background .15s, border-color .15s, transform .15s;
+  transition: color .15s, border-color .15s;
 }
 .startLink:hover {
-  background: rgba(200,168,75,.1);
-  border-color: rgba(200,168,75,.48);
-  transform: translateY(-1px);
-}
-.startLinkMuted {
-  border-color: var(--border);
-  border-left-color: var(--text3);
-  background: rgba(255,255,255,.018);
+  color: var(--gold);
+  border-color: var(--gold-d);
 }
 .startLinkTitle {
-  font-family: 'Cinzel', serif;
-  font-size: .82rem;
-  font-weight: 700;
-  color: #F0E8C8;
+  font-size: .86rem;
+  font-weight: 600;
+  color: inherit;
 }
 .startLinkHost {
-  color: var(--gold-d);
-  font-size: .72rem;
+  color: var(--text3);
+  font-size: .74rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.startLinkMuted .startLinkHost { color: var(--text3); }
 .installGuide {
-  margin-top: .9rem;
-  border-top: 1px solid var(--border);
-  padding-top: .85rem;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: .85rem;
+  align-items: start;
 }
+.installGuideBody { min-width: 0; }
 .installGuide .descPara:first-child,
 .installGuide .descHeading:first-child,
 .installGuide .descBullets:first-child {
@@ -433,8 +440,9 @@
   .rowVal { font-size: .8rem; }
   .dblockTitle { padding: .75rem 1rem; font-size: .72rem; }
   .dblockBody { padding: .9rem 1rem; }
-  .startHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .4rem; }
-  .startLinks { grid-template-columns: 1fr; }
+  .startGroup,
+  .installGuide { grid-template-columns: 1fr; gap: .3rem; }
+  .startGroupLinks { flex-direction: column; align-items: flex-start; gap: .35rem; }
   .votePanelHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .55rem; }
   .voteTabs { gap: .7rem; overflow-x: auto; padding-bottom: 0; }
   .voteTabs button { white-space: nowrap; font-size: .74rem; }

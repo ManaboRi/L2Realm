@@ -90,10 +90,10 @@ function linkHostLabel(url: string) {
 }
 
 const DOWNLOAD_LABELS: Record<string, string> = {
-  client: 'Скачать клиент',
-  patch: 'Скачать патч',
-  updater: 'Скачать апдейтер',
-  torrent: 'Скачать torrent',
+  client: 'Скачать',
+  patch: 'Скачать',
+  updater: 'Скачать',
+  torrent: 'Скачать',
   mirror: 'Скачать',
 };
 
@@ -112,6 +112,14 @@ function serverDownloadLinks(server: Server): DownloadLink[] {
     server.updaterUrl && { kind: 'updater' as const, label: null, url: server.updaterUrl },
   ].filter(Boolean) as DownloadLink[];
 }
+
+const DOWNLOAD_GROUPS = [
+  { kind: 'client', title: 'Клиент' },
+  { kind: 'updater', title: 'Апдейтер' },
+  { kind: 'patch', title: 'Патч' },
+  { kind: 'torrent', title: 'Torrent' },
+  { kind: 'mirror', title: 'Ссылки' },
+] as const;
 
 function formatDesc(text: string) {
   if (!text) return null;
@@ -282,6 +290,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
   const startLinks = serverDownloadLinks(server);
   const hasStartGuide = startLinks.length > 0 || !!server.installGuide;
+  const startGroups = DOWNLOAD_GROUPS
+    .map(group => ({
+      ...group,
+      links: startLinks.filter(link => link.kind === group.kind),
+    }))
+    .filter(group => group.links.length > 0);
 
   return (
     <div className={styles.page}>
@@ -468,40 +482,32 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {server.fullDesc
                 ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
                 : <p className={styles.empty}>Описание отсутствует</p>}
+
+              {hasStartGuide && (
+                <div className={styles.startInline}>
+                  {startGroups.map(group => (
+                    <div key={group.kind} className={styles.startGroup}>
+                      <div className={styles.startGroupTitle}>{group.title}</div>
+                      <div className={styles.startGroupLinks}>
+                        {group.links.map((link, index) => (
+                          <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
+                            <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
+                            <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  {server.installGuide && (
+                    <div className={styles.installGuide}>
+                      <div className={styles.startGroupTitle}>Инструкция</div>
+                      <div className={styles.installGuideBody}>{formatDesc(server.installGuide)}</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
-
-          {hasStartGuide && (
-            <div className={styles.dblock}>
-              <div className={styles.startHead}>
-                <div>
-                  <div className={styles.dblockTitleInline}>Как начать играть на {server.name}</div>
-                  <div className={styles.startMeta}>Клиент, патч, апдейтер и инструкция запуска</div>
-                </div>
-              </div>
-              <div className={styles.dblockBody}>
-                {startLinks.length > 0 && (
-                  <div className={styles.startLinks}>
-                    {startLinks.map((link, index) => (
-                      <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
-                        <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
-                        <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
-                      </a>
-                    ))}
-                    <a href={server.url} target="_blank" rel="noopener nofollow" className={`${styles.startLink} ${styles.startLinkMuted}`}>
-                      <span className={styles.startLinkTitle}>Официальный сайт</span>
-                      <span className={styles.startLinkHost}>{linkHostLabel(server.url)}</span>
-                    </a>
-                  </div>
-                )}
-                {server.installGuide && (
-                  <div className={styles.installGuide}>
-                    {formatDesc(server.installGuide)}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
           {server.instances && server.instances.length > 0 && (

@@ -79,12 +79,18 @@ const DOWNLOAD_KIND_OPTIONS: Array<{ value: DownloadLinkKind; label: string }> =
 ];
 
 const DEFAULT_DOWNLOAD_LABEL: Record<DownloadLinkKind, string> = {
-  client: 'Скачать клиент',
-  patch: 'Скачать патч',
-  updater: 'Скачать апдейтер',
-  torrent: 'Скачать torrent',
-  mirror: 'Скачать',
+  client: 'Яндекс Диск',
+  patch: 'Патч',
+  updater: 'Апдейтер',
+  torrent: 'Torrent',
+  mirror: 'Зеркало',
 };
+
+const ADMIN_DOWNLOAD_GROUPS: Array<{ kind: DownloadLinkKind; title: string; hint: string }> = [
+  { kind: 'client', title: 'Клиент', hint: 'Яндекс Диск, Google Drive, Torrent' },
+  { kind: 'updater', title: 'Апдейтер', hint: 'Апдейтер, launcher, updater' },
+  { kind: 'patch', title: 'Патч', hint: 'Патч, system, файл обновления' },
+];
 
 function normalizeDownloadLinks(value: unknown): DownloadLink[] {
   if (!Array.isArray(value)) return [];
@@ -996,42 +1002,56 @@ function DownloadLinksEditor({
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:'.55rem', marginBottom:'.65rem' }}>
-      {links.length === 0 ? (
-        <div style={{ color:'var(--text3)', fontSize:'.8rem', border:'1px dashed var(--border)', padding:'.7rem .8rem', borderRadius:4 }}>
-          Добавь ссылки на клиент, патч, апдейтер, torrent или зеркало. Можно несколько ссылок одного типа.
-        </div>
-      ) : (
-        links.map((link, index) => (
-          <div key={index} style={{ display:'grid', gridTemplateColumns:'130px minmax(130px, .7fr) minmax(220px, 1fr) auto', gap:'.45rem', alignItems:'center' }}>
-            <select className="input" value={link.kind} onChange={e => update(index, { kind: e.target.value as DownloadLinkKind })}>
-              {DOWNLOAD_KIND_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-            <input
-              className="input"
-              value={link.label ?? ''}
-              onChange={e => update(index, { label: e.target.value })}
-              placeholder={DEFAULT_DOWNLOAD_LABEL[link.kind]}
-            />
-            <input
-              className="input"
-              type="url"
-              value={link.url}
-              onChange={e => update(index, { url: e.target.value })}
-              placeholder="https://disk.yandex.ru/... или magnet/torrent-ссылка"
-            />
-            <button type="button" className="btn-ghost" onClick={() => remove(index)} style={{ minHeight:38, padding:'0 .7rem' }}>
-              ×
+    <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap:'.65rem', marginBottom:'.65rem' }}>
+      {ADMIN_DOWNLOAD_GROUPS.map(group => {
+        const groupLinks = links
+          .map((link, index) => ({ link, index }))
+          .filter(item => group.kind === 'client'
+            ? item.link.kind === 'client' || item.link.kind === 'torrent' || item.link.kind === 'mirror'
+            : item.link.kind === group.kind);
+
+        return (
+          <div key={group.kind} style={{ border:'1px solid var(--border)', background:'rgba(255,255,255,.018)', borderRadius:4, padding:'.65rem', display:'flex', flexDirection:'column', gap:'.5rem', minWidth:0 }}>
+            <div>
+              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em' }}>{group.title}</div>
+              <div style={{ color:'var(--text3)', fontSize:'.72rem', marginTop:'.18rem', lineHeight:1.35 }}>{group.hint}</div>
+            </div>
+
+            {groupLinks.length === 0 ? (
+              <div style={{ color:'var(--text3)', fontSize:'.78rem', border:'1px dashed var(--border)', padding:'.55rem .6rem', borderRadius:3 }}>
+                Ссылок пока нет
+              </div>
+            ) : (
+              groupLinks.map(({ link, index }) => (
+                <div key={index} style={{ display:'flex', flexDirection:'column', gap:'.35rem' }}>
+                  <input
+                    className="input"
+                    value={link.label ?? ''}
+                    onChange={e => update(index, { label: e.target.value })}
+                    placeholder={DEFAULT_DOWNLOAD_LABEL[group.kind]}
+                  />
+                  <div style={{ display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', gap:'.35rem' }}>
+                    <input
+                      className="input"
+                      type="url"
+                      value={link.url}
+                      onChange={e => update(index, { url: e.target.value })}
+                      placeholder="https://..."
+                    />
+                    <button type="button" className="btn-ghost" onClick={() => remove(index)} style={{ minHeight:38, padding:'0 .7rem' }}>
+                      ×
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <button type="button" className="btn-ghost" onClick={() => add(group.kind)} style={{ alignSelf:'flex-start' }}>
+              + ссылка
             </button>
           </div>
-        ))
-      )}
-      <div style={{ display:'flex', gap:'.45rem', flexWrap:'wrap' }}>
-        <button type="button" className="btn-ghost" onClick={() => add('client')}>+ Клиент</button>
-        <button type="button" className="btn-ghost" onClick={() => add('patch')}>+ Патч</button>
-        <button type="button" className="btn-ghost" onClick={() => add('torrent')}>+ Torrent</button>
-        <button type="button" className="btn-ghost" onClick={() => add('mirror')}>+ Зеркало</button>
-      </div>
+        );
+      })}
     </div>
   );
 }
