@@ -8,7 +8,7 @@ import { YandexMetrika } from '@/components/YandexMetrika';
 import { VKPixel } from '@/components/VKPixel';
 
 const SITE = 'https://l2realm.ru';
-const DEFAULT_SHARE_IMAGE = '/images/nav-servers.png';
+const DEFAULT_SHARE_IMAGE = '/images/og-default.jpg';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -25,8 +25,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: DEFAULT_SHARE_IMAGE,
-        width: 1024,
-        height: 1024,
+        width: 1200,
+        height: 630,
         alt: 'L2Realm — каталог серверов Lineage 2',
       },
     ],

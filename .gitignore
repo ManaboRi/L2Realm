@@ -18,6 +18,7 @@ build/
 # Logs
 *.log
 npm-debug.log*
+.local-logs/
 
 # OS
 .DS_Store

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Server } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './ServerCard.module.css';
@@ -180,7 +181,7 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           {/* Счётчик голосов */}
           {votes > 0 && (
             <span className={styles.voteCount} title="Голосов за всё время">
-              <img src="/images/vote-icon.png" alt="Голоса сервера" className={styles.voteIco} />
+              <Image src="/images/vote-icon.png" alt="Голоса сервера" width={16} height={16} className={styles.voteIco} />
               <span>{votes}</span>
               <span>{voteWord(votes)}</span>
             </span>

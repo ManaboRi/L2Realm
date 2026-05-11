@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
@@ -113,6 +114,13 @@ function serverDownloadLinks(server: Server): DownloadLink[] {
   ].filter(Boolean) as DownloadLink[];
 }
 
+function renderDescInline(text: string) {
+  return text.split(/(\*\*[^*]+?\*\*)/g).map((part, index) => {
+    const match = part.match(/^\*\*([^*]+?)\*\*$/);
+    return match ? <strong key={index}>{match[1]}</strong> : <React.Fragment key={index}>{part}</React.Fragment>;
+  });
+}
+
 const DOWNLOAD_GROUPS = [
   { kind: 'client', title: 'Клиент' },
   { kind: 'updater', title: 'Апдейтер' },
@@ -129,7 +137,7 @@ function formatDesc(text: string) {
     if (!bullets.length) return;
     result.push(
       <div key={result.length} className={styles.descBullets}>
-        {bullets.map((b, i) => <div key={i} className={styles.descBullet} dangerouslySetInnerHTML={{ __html: b.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />)}
+        {bullets.map((b, i) => <div key={i} className={styles.descBullet}>{renderDescInline(b)}</div>)}
       </div>
     );
     bullets = [];
@@ -156,7 +164,7 @@ function formatDesc(text: string) {
       flushBullets();
     } else {
       flushBullets();
-      result.push(<p key={result.length} className={styles.descPara} dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>') }} />);
+      result.push(<p key={result.length} className={styles.descPara}>{renderDescInline(line)}</p>);
     }
   }
   flushBullets();
@@ -353,7 +361,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div className={styles.headerStats}>
                 {totalVotes > 0 && (
                   <span className={styles.hstat}>
-                    <img src="/images/vote-icon.png" alt="Голоса сервера" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                    <Image src="/images/vote-icon.png" alt="Голоса сервера" width={16} height={16} style={{ objectFit: 'contain' }} />
                     {totalVotes} {voteWord(totalVotes)}
                     <span className={styles.voteTip}>?</span>
                   </span>

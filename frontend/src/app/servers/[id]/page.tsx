@@ -130,6 +130,30 @@ export default async function Page({ params }: Props) {
       worstRating: 1,
     };
   }
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'L2Realm',
+        item: SITE,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Серверы Lineage 2',
+        item: `${SITE}/`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: server.name,
+        item: canonical,
+      },
+    ],
+  };
 
   return (
     <>
@@ -137,6 +161,11 @@ export default async function Page({ params }: Props) {
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
       <ServerDetailClient initialServer={server} />
     </>

@@ -110,6 +110,30 @@ export default async function BlogPostPage({ params }: Props) {
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/blog/${article.slug}` },
   };
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'L2Realm',
+        item: SITE,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Статьи',
+        item: `${SITE}/blog`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: article.title,
+        item: `${SITE}/blog/${article.slug}`,
+      },
+    ],
+  };
 
   return (
     <div className={styles.page}>
@@ -117,6 +141,11 @@ export default async function BlogPostPage({ params }: Props) {
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       <div className={styles.bread}>

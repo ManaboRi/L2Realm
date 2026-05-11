@@ -4,7 +4,7 @@ import { HomeClient, type FilterCounts } from './HomeClient';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
-const DEFAULT_SHARE_IMAGE = '/images/nav-servers.png';
+const DEFAULT_SHARE_IMAGE = '/images/og-default.jpg';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,8 +22,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: DEFAULT_SHARE_IMAGE,
-        width: 1024,
-        height: 1024,
+        width: 1200,
+        height: 630,
         alt: 'L2Realm — каталог серверов Lineage 2',
       },
     ],

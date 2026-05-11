@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
@@ -57,22 +58,22 @@ export function Header() {
         <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
           <nav className={styles.nav}>
             <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`} onClick={closeMenu}>
-              <img src="/images/nav-servers.png" alt="Каталог серверов Lineage 2" className={styles.navIcon} />
+              <Image src="/images/nav-servers.webp" alt="Каталог серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Все серверы</span>
             </Link>
             <Link href="/coming-soon" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-coming-soon.png" alt="Скоро открытие серверов Lineage 2" className={styles.navIcon} />
+              <Image src="/images/nav-coming-soon.webp" alt="Скоро открытие серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>
                 <span className={styles.navTextFull}>Скоро открытие</span>
                 <span className={styles.navTextShort}>Скоро</span>
               </span>
             </Link>
             <Link href="/pricing" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-pricing.png" alt="Тарифы L2Realm" className={styles.navIcon} />
+              <Image src="/images/nav-pricing.webp" alt="Тарифы L2Realm" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Тарифы</span>
             </Link>
             <Link href="/blog" className={styles.navLink} onClick={closeMenu}>
-              <img src="/images/nav-blog.png" alt="Статьи L2Realm" className={styles.navIcon} />
+              <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
             </Link>
             {isAdmin && (

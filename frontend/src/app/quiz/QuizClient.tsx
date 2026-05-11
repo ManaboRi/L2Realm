@@ -1,5 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { Server } from '@/lib/types';
 import { ServerCard } from '@/components/ServerCard';
 import styles from './page.module.css';
@@ -187,7 +188,7 @@ export function QuizClient({ servers }: { servers: Server[] }) {
           ) : (
             <div className={styles.empty}>
               <p>Точных совпадений пока нет. Попробуйте смягчить хронику, донат или стадию проекта.</p>
-              <a href="/" className="btn-gold">В каталог</a>
+              <Link href="/" className="btn-gold">В каталог</Link>
             </div>
           )}
         </div>
