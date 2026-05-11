@@ -90,15 +90,15 @@ function linkHostLabel(url: string) {
 }
 
 const DOWNLOAD_LABELS: Record<string, string> = {
-  client: 'Скачать',
-  patch: 'Скачать',
-  updater: 'Скачать',
-  torrent: 'Скачать',
-  mirror: 'Скачать',
+  client: '',
+  patch: '',
+  updater: '',
+  torrent: '',
+  mirror: '',
 };
 
 function downloadLinkLabel(link: DownloadLink) {
-  return link.label?.trim() || DOWNLOAD_LABELS[link.kind] || 'Скачать';
+  return link.label?.trim() || linkHostLabel(link.url) || DOWNLOAD_LABELS[link.kind] || 'Скачать';
 }
 
 function serverDownloadLinks(server: Server): DownloadLink[] {
@@ -295,6 +295,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         ? link.kind === 'client' || link.kind === 'torrent' || link.kind === 'mirror'
         : link.kind === group.kind),
     }))
+    .filter(group => group.links.length > 0);
 
   return (
     <div className={styles.page}>
@@ -488,14 +489,11 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     <div key={group.kind} className={styles.startGroup}>
                       <div className={styles.startGroupTitle}>{group.title}</div>
                       <div className={styles.startGroupLinks}>
-                        {group.links.length > 0
-                          ? group.links.map((link, index) => (
-                            <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
-                              <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
-                              <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
-                            </a>
-                          ))
-                          : <span className={styles.startEmpty}>—</span>}
+                        {group.links.map((link, index) => (
+                          <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
+                            <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
+                          </a>
+                        ))}
                       </div>
                     </div>
                   ))}
