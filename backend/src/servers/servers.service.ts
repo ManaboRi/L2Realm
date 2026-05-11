@@ -46,7 +46,7 @@ const serverPayloadSchema = z.object({
   updaterUrl: optionalSafeUrl,
   installGuide: optionalSafeMarkdownText(2_000),
   shortDesc: optionalSafeText(300),
-  fullDesc: optionalSafeText(10_000),
+  fullDesc: optionalSafeMarkdownText(10_000),
   statusOverride: z.union([z.enum(['online', 'offline', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
   instances: z.array(serverInstanceSchema).max(50).optional(),
 });
