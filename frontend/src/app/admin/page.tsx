@@ -96,6 +96,7 @@ export default function AdminPage() {
     serverType: 'pvp-pve', donate: 'cosmetic',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
+    clientUrl:'', patchUrl:'', updaterUrl:'', installGuide:'',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
   });
@@ -182,6 +183,7 @@ export default function AdminPage() {
       type_new: false, type_featured: false, vip: false,
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
+      clientUrl:'', patchUrl:'', updaterUrl:'', installGuide:'',
       shortDesc:'', fullDesc:'',
       instances: [],
     });
@@ -266,6 +268,10 @@ export default function AdminPage() {
       telegram:    s.telegram    ?? '',
       discord:     s.discord     ?? '',
       vk:          s.vk          ?? '',
+      clientUrl:   s.clientUrl   ?? '',
+      patchUrl:    s.patchUrl    ?? '',
+      updaterUrl:  s.updaterUrl  ?? '',
+      installGuide: s.installGuide ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
       instances:   Array.isArray(s.instances) ? s.instances : [],
@@ -307,6 +313,10 @@ export default function AdminPage() {
         telegram:    editForm.telegram || undefined,
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
+        clientUrl:   editForm.clientUrl || null,
+        patchUrl:    editForm.patchUrl || null,
+        updaterUrl:  editForm.updaterUrl || null,
+        installGuide: editForm.installGuide || null,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         instances:   editForm.instances ?? [],
@@ -343,6 +353,8 @@ export default function AdminPage() {
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
+        clientUrl: addForm.clientUrl || null, patchUrl: addForm.patchUrl || null, updaterUrl: addForm.updaterUrl || null,
+        installGuide: addForm.installGuide || null,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         instances: addForm.instances ?? [],
       } as any, token);
@@ -442,6 +454,26 @@ export default function AdminPage() {
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
+              </div>
+
+              <div style={{ marginTop:'.4rem', padding:'.9rem', border:'1px solid var(--border)', background:'rgba(200,168,75,.035)', borderRadius:4 }}>
+                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
+                  Как начать играть
+                </div>
+                <div className={styles.formGrid}>
+                  <AField label="Клиент">
+                    <input className="input" type="url" value={editForm.clientUrl} onChange={e => setEditForm((p:any) => ({...p,clientUrl:e.target.value}))} placeholder="https://disk.yandex.ru/…" />
+                  </AField>
+                  <AField label="Патч">
+                    <input className="input" type="url" value={editForm.patchUrl} onChange={e => setEditForm((p:any) => ({...p,patchUrl:e.target.value}))} placeholder="https://drive.google.com/…" />
+                  </AField>
+                  <AField label="Апдейтер">
+                    <input className="input" type="url" value={editForm.updaterUrl} onChange={e => setEditForm((p:any) => ({...p,updaterUrl:e.target.value}))} placeholder="https://…" />
+                  </AField>
+                </div>
+                <AField label="Инструкция">
+                  <textarea className="input" rows={4} value={editForm.installGuide} onChange={e => setEditForm((p:any) => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
+                </AField>
               </div>
 
               <AField label="Краткое описание">
@@ -850,6 +882,26 @@ export default function AdminPage() {
                     <AField label="Telegram"><input className="input" type="url" value={addForm.telegram} onChange={e => setAddForm(p => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                     <AField label="Discord"><input className="input" type="url" value={addForm.discord} onChange={e => setAddForm(p => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
+                  </div>
+
+                  <div style={{ padding:'.9rem', border:'1px solid var(--border)', background:'rgba(200,168,75,.035)', borderRadius:4 }}>
+                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
+                      Как начать играть
+                    </div>
+                    <div className={styles.formGrid}>
+                      <AField label="Клиент">
+                        <input className="input" type="url" value={addForm.clientUrl} onChange={e => setAddForm(p => ({...p,clientUrl:e.target.value}))} placeholder="https://disk.yandex.ru/…" />
+                      </AField>
+                      <AField label="Патч">
+                        <input className="input" type="url" value={addForm.patchUrl} onChange={e => setAddForm(p => ({...p,patchUrl:e.target.value}))} placeholder="https://drive.google.com/…" />
+                      </AField>
+                      <AField label="Апдейтер">
+                        <input className="input" type="url" value={addForm.updaterUrl} onChange={e => setAddForm(p => ({...p,updaterUrl:e.target.value}))} placeholder="https://…" />
+                      </AField>
+                    </div>
+                    <AField label="Инструкция">
+                      <textarea className="input" rows={4} value={addForm.installGuide} onChange={e => setAddForm(p => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
+                    </AField>
                   </div>
 
                   <AField label="Краткое описание">

@@ -11,6 +11,10 @@ export const safeMarkdownText = (min: number, max: number) =>
 export const optionalSafeText = (max: number) =>
   z.string().transform(sanitizeText).pipe(z.string().max(max)).optional();
 
+export const optionalSafeMarkdownText = (max: number) =>
+  z.union([z.string().transform(sanitizeMarkdownText).pipe(z.string().max(max)), z.literal(''), z.null()]).optional()
+    .transform(value => value || null);
+
 export const safeSlug = z
   .string()
   .trim()

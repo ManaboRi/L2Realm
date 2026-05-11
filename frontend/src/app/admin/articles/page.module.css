@@ -153,12 +153,14 @@
 .previewBody h4 {
   font-family: 'Cinzel', serif;
   color: #F0E8C8;
-  line-height: 1.25;
-  margin: 1.35rem 0 .65rem;
+  line-height: 1.2;
+  margin: 1.6rem 0 .75rem;
 }
 .previewBody h2 {
-  font-size: 1.25rem;
-  padding-bottom: .45rem;
+  font-size: 1.48rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  padding-bottom: .55rem;
   border-bottom: 1px solid var(--border);
 }
 .previewBody h3 { font-size: 1.08rem; color: var(--gold); }

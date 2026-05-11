@@ -157,6 +157,65 @@
   font-size: .66rem; white-space: nowrap;
 }
 .rewardBadgeOn { border-color: rgba(90,180,130,.36); background: rgba(90,180,130,.08); color: #8ED9A7; }
+.startHead {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .9rem 1.2rem; border-bottom: 1px solid var(--border);
+  background: linear-gradient(90deg, rgba(200,168,75,.06), transparent);
+}
+.startMeta { margin-top: .22rem; color: var(--text3); font-size: .78rem; }
+.startLinks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: .55rem;
+}
+.startLink {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-height: 68px;
+  justify-content: center;
+  border: 1px solid rgba(200,168,75,.28);
+  border-left: 2px solid var(--gold-d);
+  border-radius: 4px;
+  background: rgba(200,168,75,.055);
+  padding: .7rem .85rem;
+  text-decoration: none;
+  transition: background .15s, border-color .15s, transform .15s;
+}
+.startLink:hover {
+  background: rgba(200,168,75,.1);
+  border-color: rgba(200,168,75,.48);
+  transform: translateY(-1px);
+}
+.startLinkMuted {
+  border-color: var(--border);
+  border-left-color: var(--text3);
+  background: rgba(255,255,255,.018);
+}
+.startLinkTitle {
+  font-family: 'Cinzel', serif;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #F0E8C8;
+}
+.startLinkHost {
+  color: var(--gold-d);
+  font-size: .72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.startLinkMuted .startLinkHost { color: var(--text3); }
+.installGuide {
+  margin-top: .9rem;
+  border-top: 1px solid var(--border);
+  padding-top: .85rem;
+}
+.installGuide .descPara:first-child,
+.installGuide .descHeading:first-child,
+.installGuide .descBullets:first-child {
+  margin-top: 0;
+}
 .voteTabs { display: flex; gap: .9rem; border-bottom: 1px solid var(--border); margin: -.2rem 0 .9rem; }
 .voteTabs button {
   appearance: none; background: transparent; border: 0; border-bottom: 2px solid transparent;
@@ -374,6 +433,8 @@
   .rowVal { font-size: .8rem; }
   .dblockTitle { padding: .75rem 1rem; font-size: .72rem; }
   .dblockBody { padding: .9rem 1rem; }
+  .startHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .4rem; }
+  .startLinks { grid-template-columns: 1fr; }
   .votePanelHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .55rem; }
   .voteTabs { gap: .7rem; overflow-x: auto; padding-bottom: 0; }
   .voteTabs button { white-space: nowrap; font-size: .74rem; }

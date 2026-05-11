@@ -65,6 +65,10 @@ model Server {
   vk          String?
   youtube     String?
   site        String?
+  clientUrl   String?
+  patchUrl    String?
+  updaterUrl  String?
+  installGuide String?
   shortDesc   String?
   fullDesc    String?
   rating       Float    @default(0)

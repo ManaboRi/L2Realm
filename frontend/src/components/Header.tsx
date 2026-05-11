@@ -75,13 +75,6 @@ export function Header() {
               <img src="/images/nav-blog.png" alt="Статьи L2Realm" className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
             </Link>
-            <Link href="/download" className={styles.navLink} onClick={closeMenu}>
-              <span className={styles.navMark} aria-hidden="true" />
-              <span className={styles.navText}>
-                <span className={styles.navTextFull}>Скачать L2</span>
-                <span className={styles.navTextShort}>Скачать</span>
-              </span>
-            </Link>
             {isAdmin && (
               <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`} onClick={closeMenu}>
                 <span className={styles.navText}>Admin</span>

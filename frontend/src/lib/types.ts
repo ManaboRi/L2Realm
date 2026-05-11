@@ -38,6 +38,10 @@ export interface Server {
   vk?:         string;
   youtube?:    string;
   site?:       string;
+  clientUrl?:  string | null;
+  patchUrl?:   string | null;
+  updaterUrl?: string | null;
+  installGuide?: string | null;
   shortDesc?:  string;
   fullDesc?:   string;
   rating:      number;
