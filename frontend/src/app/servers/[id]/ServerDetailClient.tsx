@@ -117,8 +117,6 @@ const DOWNLOAD_GROUPS = [
   { kind: 'client', title: 'Клиент' },
   { kind: 'updater', title: 'Апдейтер' },
   { kind: 'patch', title: 'Патч' },
-  { kind: 'torrent', title: 'Torrent' },
-  { kind: 'mirror', title: 'Ссылки' },
 ] as const;
 
 function formatDesc(text: string) {
@@ -293,9 +291,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const startGroups = DOWNLOAD_GROUPS
     .map(group => ({
       ...group,
-      links: startLinks.filter(link => link.kind === group.kind),
+      links: startLinks.filter(link => group.kind === 'client'
+        ? link.kind === 'client' || link.kind === 'torrent' || link.kind === 'mirror'
+        : link.kind === group.kind),
     }))
-    .filter(group => group.links.length > 0);
 
   return (
     <div className={styles.page}>
@@ -489,12 +488,14 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     <div key={group.kind} className={styles.startGroup}>
                       <div className={styles.startGroupTitle}>{group.title}</div>
                       <div className={styles.startGroupLinks}>
-                        {group.links.map((link, index) => (
-                          <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
-                            <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
-                            <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
-                          </a>
-                        ))}
+                        {group.links.length > 0
+                          ? group.links.map((link, index) => (
+                            <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
+                              <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
+                              <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
+                            </a>
+                          ))
+                          : <span className={styles.startEmpty}>—</span>}
                       </div>
                     </div>
                   ))}

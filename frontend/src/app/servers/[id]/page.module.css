@@ -159,17 +159,17 @@
 .rewardBadgeOn { border-color: rgba(90,180,130,.36); background: rgba(90,180,130,.08); color: #8ED9A7; }
 .startInline {
   margin-top: .95rem;
-  padding-top: .8rem;
-  border-top: 1px solid rgba(200,168,75,.16);
-  display: flex;
-  flex-direction: column;
-  gap: .65rem;
+  border: 1px solid rgba(200,168,75,.16);
+  background: rgba(255,255,255,.012);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .startGroup {
-  display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: .85rem;
-  align-items: baseline;
+  min-width: 0;
+  border-right: 1px solid rgba(200,168,75,.12);
+}
+.startGroup:last-child {
+  border-right: 0;
 }
 .startGroupTitle {
   font-family: 'Cinzel', serif;
@@ -178,11 +178,16 @@
   color: var(--gold-d);
   text-transform: uppercase;
   letter-spacing: .14em;
+  padding: .55rem .7rem;
+  border-bottom: 1px solid rgba(200,168,75,.14);
+  background: rgba(200,168,75,.035);
 }
 .startGroupLinks {
   display: flex;
-  flex-wrap: wrap;
-  gap: .35rem .65rem;
+  flex-direction: column;
+  gap: .4rem;
+  min-height: 44px;
+  padding: .65rem .7rem;
 }
 .startLink {
   display: inline-flex;
@@ -211,11 +216,18 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.startEmpty {
+  color: var(--text3);
+  font-size: .85rem;
+}
 .installGuide {
   display: grid;
-  grid-template-columns: 96px minmax(0, 1fr);
-  gap: .85rem;
+  grid-column: 1 / -1;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: .75rem;
   align-items: start;
+  border-top: 1px solid rgba(200,168,75,.14);
+  padding: .65rem .7rem;
 }
 .installGuideBody { min-width: 0; }
 .installGuide .descPara:first-child,
@@ -440,9 +452,10 @@
   .rowVal { font-size: .8rem; }
   .dblockTitle { padding: .75rem 1rem; font-size: .72rem; }
   .dblockBody { padding: .9rem 1rem; }
-  .startGroup,
+  .startInline { grid-template-columns: 1fr; }
+  .startGroup { border-right: 0; border-bottom: 1px solid rgba(200,168,75,.12); }
+  .startGroupLinks { align-items: flex-start; gap: .35rem; min-height: 0; }
   .installGuide { grid-template-columns: 1fr; gap: .3rem; }
-  .startGroupLinks { flex-direction: column; align-items: flex-start; gap: .35rem; }
   .votePanelHead { align-items: flex-start; flex-direction: column; padding: .75rem 1rem; gap: .55rem; }
   .voteTabs { gap: .7rem; overflow-x: auto; padding-bottom: 0; }
   .voteTabs button { white-space: nowrap; font-size: .74rem; }
