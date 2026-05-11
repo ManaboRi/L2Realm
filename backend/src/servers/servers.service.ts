@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
-import { dateString, optionalSafeAssetUrl, optionalSafeMarkdownText, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
+import { dateString, optionalSafeAssetUrl, optionalSafeMarkdownText, optionalSafeText, optionalSafeUrl, parseOrThrow, safeDownloadUrl, safeSlug, safeText, safeUrl } from '../common/input-validation';
 import { z } from 'zod';
 
 const serverInstanceSchema = z.object({
@@ -19,6 +19,16 @@ const serverInstanceSchema = z.object({
   soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipPaymentId: optionalSafeText(120),
 }).passthrough();
+
+const downloadLinkSchema = z.object({
+  kind: z.enum(['client', 'patch', 'updater', 'torrent', 'mirror']).optional(),
+  label: optionalSafeText(80),
+  url: safeDownloadUrl,
+}).transform(link => ({
+  kind: link.kind || 'mirror',
+  label: link.label || null,
+  url: link.url,
+}));
 
 const serverPayloadSchema = z.object({
   id: safeSlug.max(64),
@@ -44,6 +54,7 @@ const serverPayloadSchema = z.object({
   clientUrl: optionalSafeUrl,
   patchUrl: optionalSafeUrl,
   updaterUrl: optionalSafeUrl,
+  downloadLinks: z.array(downloadLinkSchema).max(20).optional(),
   installGuide: optionalSafeMarkdownText(2_000),
   shortDesc: optionalSafeText(300),
   fullDesc: optionalSafeMarkdownText(10_000),

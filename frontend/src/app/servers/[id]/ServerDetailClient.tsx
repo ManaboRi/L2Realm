@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
-import type { Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
+import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -74,6 +74,7 @@ function voterRankLabel(votes: number, place: number) {
 }
 
 function linkHostLabel(url: string) {
+  if (url.toLowerCase().startsWith('magnet:')) return 'Magnet';
   try {
     const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
     if (host.includes('disk.yandex') || host.includes('yadi.sk')) return 'Яндекс Диск';
@@ -86,6 +87,30 @@ function linkHostLabel(url: string) {
   } catch {
     return 'Внешняя ссылка';
   }
+}
+
+const DOWNLOAD_LABELS: Record<string, string> = {
+  client: 'Скачать клиент',
+  patch: 'Скачать патч',
+  updater: 'Скачать апдейтер',
+  torrent: 'Скачать torrent',
+  mirror: 'Скачать',
+};
+
+function downloadLinkLabel(link: DownloadLink) {
+  return link.label?.trim() || DOWNLOAD_LABELS[link.kind] || 'Скачать';
+}
+
+function serverDownloadLinks(server: Server): DownloadLink[] {
+  const links = Array.isArray(server.downloadLinks)
+    ? server.downloadLinks.filter(link => link?.url)
+    : [];
+  if (links.length > 0) return links;
+  return [
+    server.clientUrl && { kind: 'client' as const, label: null, url: server.clientUrl },
+    server.patchUrl && { kind: 'patch' as const, label: null, url: server.patchUrl },
+    server.updaterUrl && { kind: 'updater' as const, label: null, url: server.updaterUrl },
+  ].filter(Boolean) as DownloadLink[];
 }
 
 function formatDesc(text: string) {
@@ -255,11 +280,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
-  const startLinks = [
-    server.clientUrl && { label: 'Скачать клиент', url: server.clientUrl },
-    server.patchUrl && { label: 'Скачать патч', url: server.patchUrl },
-    server.updaterUrl && { label: 'Скачать апдейтер', url: server.updaterUrl },
-  ].filter(Boolean) as Array<{ label: string; url: string }>;
+  const startLinks = serverDownloadLinks(server);
   const hasStartGuide = startLinks.length > 0 || !!server.installGuide;
 
   return (
@@ -450,6 +471,38 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </div>
 
+          {hasStartGuide && (
+            <div className={styles.dblock}>
+              <div className={styles.startHead}>
+                <div>
+                  <div className={styles.dblockTitleInline}>Как начать играть на {server.name}</div>
+                  <div className={styles.startMeta}>Клиент, патч, апдейтер и инструкция запуска</div>
+                </div>
+              </div>
+              <div className={styles.dblockBody}>
+                {startLinks.length > 0 && (
+                  <div className={styles.startLinks}>
+                    {startLinks.map((link, index) => (
+                      <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
+                        <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
+                        <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
+                      </a>
+                    ))}
+                    <a href={server.url} target="_blank" rel="noopener nofollow" className={`${styles.startLink} ${styles.startLinkMuted}`}>
+                      <span className={styles.startLinkTitle}>Официальный сайт</span>
+                      <span className={styles.startLinkHost}>{linkHostLabel(server.url)}</span>
+                    </a>
+                  </div>
+                )}
+                {server.installGuide && (
+                  <div className={styles.installGuide}>
+                    {formatDesc(server.installGuide)}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
           {server.instances && server.instances.length > 0 && (
             <div className={styles.dblock}>
@@ -493,38 +546,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                       );
                     })}
                 </div>
-              </div>
-            </div>
-          )}
-
-          {hasStartGuide && (
-            <div className={styles.dblock}>
-              <div className={styles.startHead}>
-                <div>
-                  <div className={styles.dblockTitleInline}>Как начать играть на {server.name}</div>
-                  <div className={styles.startMeta}>Клиент, патч, апдейтер и инструкция запуска</div>
-                </div>
-              </div>
-              <div className={styles.dblockBody}>
-                {startLinks.length > 0 && (
-                  <div className={styles.startLinks}>
-                    {startLinks.map(link => (
-                      <a key={link.label} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
-                        <span className={styles.startLinkTitle}>{link.label}</span>
-                        <span className={styles.startLinkHost}>{linkHostLabel(link.url)}</span>
-                      </a>
-                    ))}
-                    <a href={server.url} target="_blank" rel="noopener nofollow" className={`${styles.startLink} ${styles.startLinkMuted}`}>
-                      <span className={styles.startLinkTitle}>Официальный сайт</span>
-                      <span className={styles.startLinkHost}>{linkHostLabel(server.url)}</span>
-                    </a>
-                  </div>
-                )}
-                {server.installGuide && (
-                  <div className={styles.installGuide}>
-                    {formatDesc(server.installGuide)}
-                  </div>
-                )}
               </div>
             </div>
           )}

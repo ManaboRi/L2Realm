@@ -68,6 +68,7 @@ model Server {
   clientUrl   String?
   patchUrl    String?
   updaterUrl  String?
+  downloadLinks Json    @default("[]")
   installGuide String?
   shortDesc   String?
   fullDesc    String?

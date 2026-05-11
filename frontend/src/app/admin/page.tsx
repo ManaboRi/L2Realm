@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
-import type { VipStatus } from '@/lib/types';
+import type { DownloadLink, DownloadLinkKind, VipStatus } from '@/lib/types';
 import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -70,6 +70,51 @@ function hasProjectLaunches(s: any): boolean {
   return Array.isArray(s?.instances) && s.instances.length > 0;
 }
 
+const DOWNLOAD_KIND_OPTIONS: Array<{ value: DownloadLinkKind; label: string }> = [
+  { value: 'client', label: 'Клиент' },
+  { value: 'patch', label: 'Патч' },
+  { value: 'updater', label: 'Апдейтер' },
+  { value: 'torrent', label: 'Torrent' },
+  { value: 'mirror', label: 'Зеркало' },
+];
+
+const DEFAULT_DOWNLOAD_LABEL: Record<DownloadLinkKind, string> = {
+  client: 'Скачать клиент',
+  patch: 'Скачать патч',
+  updater: 'Скачать апдейтер',
+  torrent: 'Скачать torrent',
+  mirror: 'Скачать',
+};
+
+function normalizeDownloadLinks(value: unknown): DownloadLink[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item: any) => ({
+      kind: DOWNLOAD_KIND_OPTIONS.some(o => o.value === item?.kind) ? item.kind as DownloadLinkKind : 'mirror',
+      label: typeof item?.label === 'string' ? item.label : '',
+      url: typeof item?.url === 'string' ? item.url : '',
+    }))
+    .filter(link => link.url.trim().length > 0);
+}
+
+function downloadLinksFromServer(s: any): DownloadLink[] {
+  const links = normalizeDownloadLinks(s?.downloadLinks);
+  if (links.length > 0) return links;
+  return [
+    s?.clientUrl && { kind: 'client' as const, label: '', url: s.clientUrl },
+    s?.patchUrl && { kind: 'patch' as const, label: '', url: s.patchUrl },
+    s?.updaterUrl && { kind: 'updater' as const, label: '', url: s.updaterUrl },
+  ].filter(Boolean) as DownloadLink[];
+}
+
+function legacyUrlsFromLinks(links: DownloadLink[]) {
+  return {
+    clientUrl: links.find(link => link.kind === 'client')?.url || null,
+    patchUrl: links.find(link => link.kind === 'patch')?.url || null,
+    updaterUrl: links.find(link => link.kind === 'updater')?.url || null,
+  };
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -96,7 +141,7 @@ export default function AdminPage() {
     serverType: 'pvp-pve', donate: 'cosmetic',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
-    clientUrl:'', patchUrl:'', updaterUrl:'', installGuide:'',
+    clientUrl:'', patchUrl:'', updaterUrl:'', downloadLinks: [] as DownloadLink[], installGuide:'',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
   });
@@ -183,7 +228,7 @@ export default function AdminPage() {
       type_new: false, type_featured: false, vip: false,
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
-      clientUrl:'', patchUrl:'', updaterUrl:'', installGuide:'',
+      clientUrl:'', patchUrl:'', updaterUrl:'', downloadLinks: [] as DownloadLink[], installGuide:'',
       shortDesc:'', fullDesc:'',
       instances: [],
     });
@@ -271,6 +316,7 @@ export default function AdminPage() {
       clientUrl:   s.clientUrl   ?? '',
       patchUrl:    s.patchUrl    ?? '',
       updaterUrl:  s.updaterUrl  ?? '',
+      downloadLinks: downloadLinksFromServer(s),
       installGuide: s.installGuide ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
@@ -294,6 +340,8 @@ export default function AdminPage() {
     const baseChron = sortedInsts.length > 0 ? sortedInsts[0].chronicle : editForm.chronicle;
     const baseRates = sortedInsts.length > 0 ? sortedInsts[0].rates     : editForm.rates;
     const baseRateN = sortedInsts.length > 0 ? sortedInsts[0].rateNum   : Number(editForm.rateNum);
+    const downloadLinks = normalizeDownloadLinks(editForm.downloadLinks);
+    const legacyDownloads = legacyUrlsFromLinks(downloadLinks);
     try {
       await api.servers.update(editServer.id, {
         name:        editForm.name,
@@ -313,9 +361,8 @@ export default function AdminPage() {
         telegram:    editForm.telegram || undefined,
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
-        clientUrl:   editForm.clientUrl || null,
-        patchUrl:    editForm.patchUrl || null,
-        updaterUrl:  editForm.updaterUrl || null,
+        ...legacyDownloads,
+        downloadLinks,
         installGuide: editForm.installGuide || null,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
@@ -343,6 +390,8 @@ export default function AdminPage() {
     const aChron  = aSorted.length > 0 ? aSorted[0].chronicle : addForm.chronicle;
     const aRates  = aSorted.length > 0 ? aSorted[0].rates     : addForm.rates;
     const aRateN  = aSorted.length > 0 ? aSorted[0].rateNum   : Number(addForm.rateNum);
+    const downloadLinks = normalizeDownloadLinks(addForm.downloadLinks);
+    const legacyDownloads = legacyUrlsFromLinks(downloadLinks);
     try {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
@@ -353,7 +402,8 @@ export default function AdminPage() {
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
-        clientUrl: addForm.clientUrl || null, patchUrl: addForm.patchUrl || null, updaterUrl: addForm.updaterUrl || null,
+        ...legacyDownloads,
+        downloadLinks,
         installGuide: addForm.installGuide || null,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         instances: addForm.instances ?? [],
@@ -460,17 +510,10 @@ export default function AdminPage() {
                 <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
                   Как начать играть
                 </div>
-                <div className={styles.formGrid}>
-                  <AField label="Клиент">
-                    <input className="input" type="url" value={editForm.clientUrl} onChange={e => setEditForm((p:any) => ({...p,clientUrl:e.target.value}))} placeholder="https://disk.yandex.ru/…" />
-                  </AField>
-                  <AField label="Патч">
-                    <input className="input" type="url" value={editForm.patchUrl} onChange={e => setEditForm((p:any) => ({...p,patchUrl:e.target.value}))} placeholder="https://drive.google.com/…" />
-                  </AField>
-                  <AField label="Апдейтер">
-                    <input className="input" type="url" value={editForm.updaterUrl} onChange={e => setEditForm((p:any) => ({...p,updaterUrl:e.target.value}))} placeholder="https://…" />
-                  </AField>
-                </div>
+                <DownloadLinksEditor
+                  value={editForm.downloadLinks ?? []}
+                  onChange={downloadLinks => setEditForm((p:any) => ({ ...p, downloadLinks }))}
+                />
                 <AField label="Инструкция">
                   <textarea className="input" rows={4} value={editForm.installGuide} onChange={e => setEditForm((p:any) => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
                 </AField>
@@ -888,17 +931,10 @@ export default function AdminPage() {
                     <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
                       Как начать играть
                     </div>
-                    <div className={styles.formGrid}>
-                      <AField label="Клиент">
-                        <input className="input" type="url" value={addForm.clientUrl} onChange={e => setAddForm(p => ({...p,clientUrl:e.target.value}))} placeholder="https://disk.yandex.ru/…" />
-                      </AField>
-                      <AField label="Патч">
-                        <input className="input" type="url" value={addForm.patchUrl} onChange={e => setAddForm(p => ({...p,patchUrl:e.target.value}))} placeholder="https://drive.google.com/…" />
-                      </AField>
-                      <AField label="Апдейтер">
-                        <input className="input" type="url" value={addForm.updaterUrl} onChange={e => setAddForm(p => ({...p,updaterUrl:e.target.value}))} placeholder="https://…" />
-                      </AField>
-                    </div>
+                    <DownloadLinksEditor
+                      value={addForm.downloadLinks ?? []}
+                      onChange={downloadLinks => setAddForm(p => ({ ...p, downloadLinks }))}
+                    />
                     <AField label="Инструкция">
                       <textarea className="input" rows={4} value={addForm.installGuide} onChange={e => setAddForm(p => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
                     </AField>
@@ -934,6 +970,68 @@ function AField({ label, children }: { label: string; children: React.ReactNode 
     <div style={{ display:'flex', flexDirection:'column', gap:'.25rem' }}>
       <label style={{ fontFamily:"'Cinzel',serif", fontSize:'.58rem', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'.12em' }}>{label}</label>
       {children}
+    </div>
+  );
+}
+
+function DownloadLinksEditor({
+  value,
+  onChange,
+}: {
+  value: DownloadLink[];
+  onChange: (value: DownloadLink[]) => void;
+}) {
+  const links = value.length > 0 ? value : [];
+
+  function update(index: number, patch: Partial<DownloadLink>) {
+    onChange(links.map((link, i) => i === index ? { ...link, ...patch } : link));
+  }
+
+  function add(kind: DownloadLinkKind = 'client') {
+    onChange([...links, { kind, label: '', url: '' }]);
+  }
+
+  function remove(index: number) {
+    onChange(links.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:'.55rem', marginBottom:'.65rem' }}>
+      {links.length === 0 ? (
+        <div style={{ color:'var(--text3)', fontSize:'.8rem', border:'1px dashed var(--border)', padding:'.7rem .8rem', borderRadius:4 }}>
+          Добавь ссылки на клиент, патч, апдейтер, torrent или зеркало. Можно несколько ссылок одного типа.
+        </div>
+      ) : (
+        links.map((link, index) => (
+          <div key={index} style={{ display:'grid', gridTemplateColumns:'130px minmax(130px, .7fr) minmax(220px, 1fr) auto', gap:'.45rem', alignItems:'center' }}>
+            <select className="input" value={link.kind} onChange={e => update(index, { kind: e.target.value as DownloadLinkKind })}>
+              {DOWNLOAD_KIND_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+            <input
+              className="input"
+              value={link.label ?? ''}
+              onChange={e => update(index, { label: e.target.value })}
+              placeholder={DEFAULT_DOWNLOAD_LABEL[link.kind]}
+            />
+            <input
+              className="input"
+              type="url"
+              value={link.url}
+              onChange={e => update(index, { url: e.target.value })}
+              placeholder="https://disk.yandex.ru/... или magnet/torrent-ссылка"
+            />
+            <button type="button" className="btn-ghost" onClick={() => remove(index)} style={{ minHeight:38, padding:'0 .7rem' }}>
+              ×
+            </button>
+          </div>
+        ))
+      )}
+      <div style={{ display:'flex', gap:'.45rem', flexWrap:'wrap' }}>
+        <button type="button" className="btn-ghost" onClick={() => add('client')}>+ Клиент</button>
+        <button type="button" className="btn-ghost" onClick={() => add('patch')}>+ Патч</button>
+        <button type="button" className="btn-ghost" onClick={() => add('torrent')}>+ Torrent</button>
+        <button type="button" className="btn-ghost" onClick={() => add('mirror')}>+ Зеркало</button>
+      </div>
     </div>
   );
 }

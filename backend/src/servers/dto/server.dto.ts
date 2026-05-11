@@ -27,6 +27,7 @@ export class CreateServerDto {
   @IsOptional() @IsString() clientUrl?: string;
   @IsOptional() @IsString() patchUrl?: string;
   @IsOptional() @IsString() updaterUrl?: string;
+  @IsOptional() downloadLinks?: any[];
   @IsOptional() @IsString() installGuide?: string;
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;

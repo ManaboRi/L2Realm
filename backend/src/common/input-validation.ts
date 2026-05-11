@@ -35,6 +35,19 @@ export const safeUrl = z
     }
   }, 'URL must use http or https');
 
+export const safeDownloadUrl = z
+  .string()
+  .trim()
+  .url()
+  .refine(value => {
+    try {
+      const u = new URL(value);
+      return u.protocol === 'https:' || u.protocol === 'http:' || u.protocol === 'magnet:';
+    } catch {
+      return false;
+    }
+  }, 'URL must use http, https or magnet');
+
 export const safeAssetUrl = z.union([
   safeUrl,
   z
