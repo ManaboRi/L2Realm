@@ -29,15 +29,15 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: .78;
+  opacity: .75;
   filter: saturate(.98) contrast(1.06);
 }
 .headerOverlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(7,9,13,.78) 0%, rgba(7,9,13,.46) 27%, rgba(7,9,13,.14) 56%, rgba(7,9,13,.58) 100%),
-    linear-gradient(to bottom, rgba(7,9,13,.02) 0%, rgba(7,9,13,.14) 48%, rgba(7,9,13,.74) 100%);
+    linear-gradient(90deg, rgba(7,9,13,.84) 0%, rgba(7,9,13,.54) 27%, rgba(7,9,13,.18) 56%, rgba(7,9,13,.68) 100%),
+    linear-gradient(to bottom, rgba(7,9,13,.04) 0%, rgba(7,9,13,.18) 48%, rgba(7,9,13,.84) 100%);
 }
 .headerPh {
   position: absolute;
@@ -476,8 +476,8 @@
   .headerInner { padding: .9rem 1rem; gap: .8rem; }
   .headerOverlay {
     background:
-      linear-gradient(90deg, rgba(7,9,13,.76), rgba(7,9,13,.42)),
-      linear-gradient(to bottom, rgba(7,9,13,.1), rgba(7,9,13,.78));
+      linear-gradient(90deg, rgba(7,9,13,.82), rgba(7,9,13,.5)),
+      linear-gradient(to bottom, rgba(7,9,13,.12), rgba(7,9,13,.84));
   }
   .headerLeft { gap: .7rem; align-items: flex-start; }
   .icon { width: 54px; height: 54px; font-size: 1.1rem; }
