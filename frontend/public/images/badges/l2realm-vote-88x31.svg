@@ -1,0 +1,9 @@
+<svg width="88" height="31" viewBox="0 0 88 31" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Vote on L2Realm</title>
+  <desc id="desc">Small L2Realm vote badge</desc>
+  <rect x="0.5" y="0.5" width="87" height="30" rx="3" fill="#090B10" stroke="#9A7A19"/>
+  <path d="M10 15.5L16.5 6.5L23 15.5L16.5 24.5L10 15.5Z" fill="#090B10" stroke="#C9A227" stroke-width="2"/>
+  <path d="M16.5 10.8L20 15.5L16.5 20.2L13 15.5L16.5 10.8Z" fill="#C9A227"/>
+  <text x="30" y="13" fill="#F0E8C8" font-family="Georgia, serif" font-size="9" font-weight="700">L2Realm</text>
+  <text x="30" y="24" fill="#C9A227" font-family="Arial, sans-serif" font-size="8" font-weight="700">VOTE</text>
+</svg>

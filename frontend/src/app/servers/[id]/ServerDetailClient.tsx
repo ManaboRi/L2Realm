@@ -318,16 +318,17 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         <span>{server.name}</span>
       </div>
 
-      {/* Баннер */}
-      <div className={styles.banner}>
-        {server.banner
-          ? <><img src={server.banner} alt={server.name} /><div className={styles.bannerOverlay} /></>
-          : <div className={styles.bannerPh}><span>{server.name.toUpperCase()}</span></div>}
-      </div>
-
       {/* Шапка сервера */}
       <div className={styles.header}>
         <div className={styles.headerInner}>
+          {server.banner ? (
+            <>
+              <img src={server.banner} alt="" className={styles.headerBg} aria-hidden="true" />
+              <div className={styles.headerOverlay} />
+            </>
+          ) : (
+            <div className={styles.headerPh}><span>{server.name.toUpperCase()}</span></div>
+          )}
           <div className={styles.headerLeft}>
             <div className={styles.icon}>
               {server.icon
