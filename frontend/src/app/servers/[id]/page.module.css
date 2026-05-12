@@ -29,15 +29,15 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: .64;
-  filter: saturate(.9) contrast(1.04);
+  opacity: .78;
+  filter: saturate(.98) contrast(1.06);
 }
 .headerOverlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(7,9,13,.92) 0%, rgba(7,9,13,.62) 27%, rgba(7,9,13,.25) 56%, rgba(7,9,13,.72) 100%),
-    linear-gradient(to bottom, rgba(7,9,13,.05) 0%, rgba(7,9,13,.22) 48%, rgba(7,9,13,.9) 100%);
+    linear-gradient(90deg, rgba(7,9,13,.78) 0%, rgba(7,9,13,.46) 27%, rgba(7,9,13,.14) 56%, rgba(7,9,13,.58) 100%),
+    linear-gradient(to bottom, rgba(7,9,13,.02) 0%, rgba(7,9,13,.14) 48%, rgba(7,9,13,.74) 100%);
 }
 .headerPh {
   position: absolute;
@@ -476,8 +476,8 @@
   .headerInner { padding: .9rem 1rem; gap: .8rem; }
   .headerOverlay {
     background:
-      linear-gradient(90deg, rgba(7,9,13,.88), rgba(7,9,13,.54)),
-      linear-gradient(to bottom, rgba(7,9,13,.18), rgba(7,9,13,.92));
+      linear-gradient(90deg, rgba(7,9,13,.76), rgba(7,9,13,.42)),
+      linear-gradient(to bottom, rgba(7,9,13,.1), rgba(7,9,13,.78));
   }
   .headerLeft { gap: .7rem; align-items: flex-start; }
   .icon { width: 54px; height: 54px; font-size: 1.1rem; }
