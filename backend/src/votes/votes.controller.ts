@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
@@ -32,6 +32,7 @@ export class VotesController {
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async vote(@Param('serverId') serverId: string, @Body() body: { nickname?: string }, @Req() req: Request) {
     const userId = await optionalUserId(req, this.jwt, this.prisma);
+    if (!userId) throw new UnauthorizedException('Войдите, чтобы проголосовать');
     const ip = req.ip ?? '0.0.0.0';
     return this.votes.vote(userId, serverId, ip, body.nickname);
   }

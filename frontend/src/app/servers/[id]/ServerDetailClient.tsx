@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { AuthModal } from '@/components/AuthModal';
 import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
@@ -190,6 +191,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteTab, setVoteTab] = useState<'top' | 'recent'>('top');
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
+  const [authOpen, setAuthOpen] = useState(false);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
   // поэтому отзывы и рейтинг обновляем сразу при монтировании.
@@ -210,6 +212,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [token, id]);
 
   async function handleVote() {
+    if (!token) {
+      setAuthOpen(true);
+      return;
+    }
     const nickname = voteNickname.trim();
     if (nickname.length < 2) {
       showToast('Укажи ник персонажа на сервере');
@@ -308,6 +314,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   return (
     <div className={styles.page}>
       {toast && <div className={`${styles.toast} ${toast.includes('Ошибка') ? styles.toastError : ''}`}>{toast}</div>}
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       {/* Breadcrumb */}
       <div className={styles.bread}>
@@ -385,7 +392,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   <span className={styles.voteBoxDot} />
                   {monthlyVotes > 0 ? `${monthlyVotes} ${voteWord(monthlyVotes)} за месяц` : 'Голосов за месяц пока нет'}
                 </span>
-                <span>{voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) ? cooldownText(voteStatus.cooldownEnds) : '1 голос / 24ч IP'}</span>
+                <span>{voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) ? cooldownText(voteStatus.cooldownEnds) : '1 голос / 24ч IP + аккаунт'}</span>
               </div>
 
               <div className={styles.voteInline}>
@@ -396,7 +403,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
                   placeholder="Ник на сервере"
                   maxLength={32}
-                  disabled={!!voteStatus?.voted}
+                  disabled={!token || !!voteStatus?.voted}
                   title={voteRewardsEnabled ? 'Ник нужен для выдачи бонуса на сервере' : 'Голос учтётся на L2Realm. Бонусы зависят от подключения Vote Manager проектом'}
                 />
                 <button
@@ -408,7 +415,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
+                    : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
                 </button>
               </div>
 

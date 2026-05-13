@@ -202,11 +202,11 @@ export const api = {
 
   // ── Голосование ──────────────────────────────
   votes: {
-    vote: (serverId: string, nickname: string, token?: string | null) =>
+    vote: (serverId: string, nickname: string, token: string) =>
       request<{ success: boolean; nickname: string }>(`/votes/${serverId}`, {
         method: 'POST',
         body: JSON.stringify({ nickname }),
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        headers: { Authorization: `Bearer ${token}` },
       }),
     status: (serverId: string, token?: string | null) =>
       request<VoteStatus>(`/votes/${serverId}/status`, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined),
