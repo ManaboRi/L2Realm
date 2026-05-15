@@ -15,6 +15,7 @@ export const BOOST_DAYS        = 7;
 export const COMING_SOON_PRICE = 500;
 export const SOON_VIP_PRICE    = 2000;
 export const SOON_VIP_MAX      = 5;
+const OPENING_DAY_MS           = 24 * 60 * 60 * 1000;
 
 type PurchaseKind = 'vip' | 'boost' | 'soon_vip';
 
@@ -326,7 +327,7 @@ export class PaymentsService {
     if (ip) parseOrThrow(safeIp, ip.replace(/^::ffff:/, ''));
     if (!userEmail) throw new BadRequestException('Email покупателя обязателен для чека');
     const opened = new Date(clean.openedDate);
-    if (isNaN(opened.getTime()) || opened <= new Date()) {
+    if (isNaN(opened.getTime()) || opened.getTime() + OPENING_DAY_MS <= Date.now()) {
       throw new BadRequestException('«Скоро открытие» — только для серверов с датой открытия в будущем');
     }
 
@@ -651,11 +652,17 @@ function isComingSoonServer(server: any): boolean {
   return !!nextOpeningDate(server);
 }
 
+function isOpeningStillSoon(value?: Date | string | null, nowTs = Date.now()): boolean {
+  if (!value) return false;
+  const t = new Date(value).getTime();
+  return !isNaN(t) && t + OPENING_DAY_MS > nowTs;
+}
+
 function hasOpenedLaunch(server: any): boolean {
   const now = Date.now();
   if (server?.openedDate) {
     const t = new Date(server.openedDate).getTime();
-    if (!isNaN(t) && t <= now) return true;
+    if (!isNaN(t) && t + OPENING_DAY_MS <= now) return true;
   }
 
   const insts = Array.isArray(server?.instances) ? server.instances : [];
@@ -665,7 +672,7 @@ function hasOpenedLaunch(server: any): boolean {
     const t = new Date(inst.openedDate).getTime();
     if (isNaN(t)) continue;
     hasDatedInstance = true;
-    if (t <= now) return true;
+    if (t + OPENING_DAY_MS <= now) return true;
   }
 
   if (insts.length === 0 && !server?.openedDate) return true;
@@ -684,13 +691,13 @@ function findSoonOpening(server: any, instanceId?: string | null): { instanceId:
     const inst = insts.find((i: any) => i?.id === instanceId);
     if (!inst?.openedDate) return null;
     const openedAt = new Date(inst.openedDate);
-    if (isNaN(openedAt.getTime()) || openedAt.getTime() <= now) return null;
+    if (!isOpeningStillSoon(openedAt, now)) return null;
     return { instanceId, openedAt };
   }
 
   if (server?.openedDate) {
     const openedAt = new Date(server.openedDate);
-    if (!isNaN(openedAt.getTime()) && openedAt.getTime() > now) {
+    if (isOpeningStillSoon(openedAt, now)) {
       return { instanceId: null, openedAt };
     }
   }
@@ -713,13 +720,13 @@ function nextOpeningDate(server: any): Date | null {
   const dates: Date[] = [];
   if (server?.openedDate) {
     const d = new Date(server.openedDate);
-    if (!isNaN(d.getTime()) && d.getTime() > now) dates.push(d);
+    if (isOpeningStillSoon(d, now)) dates.push(d);
   }
   const insts = Array.isArray(server?.instances) ? server.instances : [];
   for (const i of insts) {
     if (!i?.openedDate) continue;
     const d = new Date(i.openedDate);
-    if (!isNaN(d.getTime()) && d.getTime() > now) dates.push(d);
+    if (isOpeningStillSoon(d, now)) dates.push(d);
   }
   dates.sort((a, b) => a.getTime() - b.getTime());
   return dates[0] ?? null;

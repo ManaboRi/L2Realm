@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { isOpeningStillSoon } from '@/lib/opening';
 import type { Server, ServerInstance, VipStatus } from '@/lib/types';
 import { VIP_PRICE, VIP_DAYS, VIP_MAX, BOOST_PRICE, BOOST_DAYS, COMING_SOON_PRICE, SOON_VIP_PRICE, SOON_VIP_MAX } from '@/lib/types';
 import styles from './page.module.css';
@@ -23,7 +24,7 @@ function hasOpenedLaunch(s: Server): boolean {
   const now = Date.now();
   if (s.openedDate) {
     const t = new Date(s.openedDate).getTime();
-    if (!Number.isNaN(t) && t <= now) return true;
+    if (!Number.isNaN(t) && !isOpeningStillSoon(s.openedDate, now)) return true;
   }
 
   const insts = s.instances ?? [];
@@ -33,7 +34,7 @@ function hasOpenedLaunch(s: Server): boolean {
     const t = new Date(i.openedDate).getTime();
     if (Number.isNaN(t)) continue;
     hasDatedInstance = true;
-    if (t <= now) return true;
+    if (!isOpeningStillSoon(i.openedDate, now)) return true;
   }
 
   if (insts.length === 0 && !s.openedDate) return true;
@@ -71,7 +72,7 @@ function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
   const result: SoonOpening[] = [];
   for (const s of servers) {
     const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
-    const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
+    const futureInsts = insts.filter(i => isOpeningStillSoon(i.openedDate, now));
     const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate).getTime() > now;
 
     if (futureInsts.length > 0) {
@@ -88,7 +89,7 @@ function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
           isVip: !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
         });
       }
-    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+    } else if (isOpeningStillSoon(s.openedDate, now)) {
       result.push({
         key: s.id,
         serverId: s.id,
@@ -96,7 +97,7 @@ function flattenSoonOpenings(servers: Server[]): SoonOpening[] {
         projectName: s.name,
         chronicle: s.chronicle,
         rates: s.rates,
-        openedAt: s.openedDate,
+        openedAt: s.openedDate!,
         isVip: serverVip,
       });
     }

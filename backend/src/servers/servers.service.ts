@@ -74,6 +74,14 @@ const serverRequestSchema = z.object({
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
 });
 
+const OPENING_DAY_MS = 24 * 60 * 60 * 1000;
+
+function isOpeningStillSoon(value?: Date | string | null, nowTs = Date.now()): boolean {
+  if (!value) return false;
+  const t = new Date(value).getTime();
+  return !isNaN(t) && t + OPENING_DAY_MS > nowTs;
+}
+
 function rateRange(n: number): string {
   if (n <= 5)     return 'low';
   if (n <= 49)    return 'mid';
@@ -84,15 +92,15 @@ function rateRange(n: number): string {
 }
 
 function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
-  if (s.openedDate && new Date(s.openedDate).getTime() > nowTs) return true;
+  if (isOpeningStillSoon(s.openedDate, nowTs)) return true;
   const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
-  return insts.some(i => i?.openedDate && new Date(i.openedDate).getTime() > nowTs);
+  return insts.some(i => isOpeningStillSoon(i?.openedDate, nowTs));
 }
 
 function hasOpenedLaunch(s: any, nowTs = Date.now()): boolean {
   if (s.openedDate) {
     const t = new Date(s.openedDate).getTime();
-    if (!isNaN(t) && t <= nowTs) return true;
+    if (!isNaN(t) && t + OPENING_DAY_MS <= nowTs) return true;
   }
 
   const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
@@ -102,7 +110,7 @@ function hasOpenedLaunch(s: any, nowTs = Date.now()): boolean {
     const t = new Date(i.openedDate).getTime();
     if (isNaN(t)) continue;
     hasDatedInstance = true;
-    if (t <= nowTs) return true;
+    if (t + OPENING_DAY_MS <= nowTs) return true;
   }
 
   if (insts.length === 0 && !s.openedDate) return true;
@@ -448,21 +456,22 @@ export class ServersService {
   // либо хотя бы один instance с openedDate в будущем (новый запуск проекта).
   async getComingSoon() {
     const now = new Date();
+    const nowTs = now.getTime();
     const all = await this.prisma.server.findMany({
       include: { subscription: true },
       orderBy: { openedDate: 'asc' },
     });
     const filtered = all.filter(s => {
-      if (s.openedDate && s.openedDate > now) return true;
+      if (isOpeningStillSoon(s.openedDate, nowTs)) return true;
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
-      return insts.some(i => i?.openedDate && new Date(i.openedDate) > now);
+      return insts.some(i => isOpeningStillSoon(i?.openedDate, nowTs));
     });
     // Сортируем по ближайшему будущему openedDate (свой или из instances)
     filtered.sort((a, b) => {
       const aDates = [a.openedDate, ...(Array.isArray(a.instances) ? (a.instances as any[]).map(i => i?.openedDate) : [])]
-        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t > now.getTime());
+        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t + OPENING_DAY_MS > nowTs);
       const bDates = [b.openedDate, ...(Array.isArray(b.instances) ? (b.instances as any[]).map(i => i?.openedDate) : [])]
-        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t > now.getTime());
+        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t + OPENING_DAY_MS > nowTs);
       return Math.min(...aDates) - Math.min(...bDates);
     });
     return filtered;

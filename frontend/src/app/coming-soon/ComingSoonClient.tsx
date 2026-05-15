@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import type { Server, ServerInstance } from '@/lib/types';
+import { isOpeningStillSoon } from '@/lib/opening';
 import styles from './page.module.css';
 
 // «Опенинг» — атомная сущность для /coming-soon. Один проект может породить
@@ -28,7 +29,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
   const result: Opening[] = [];
   for (const s of servers) {
     const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
-    const futureInsts = insts.filter(i => i.openedDate && new Date(i.openedDate).getTime() > now);
+    const futureInsts = insts.filter(i => isOpeningStillSoon(i.openedDate, now));
     const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate) > new Date();
 
     if (futureInsts.length > 0) {
@@ -48,7 +49,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
           isVip:       !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
         });
       }
-    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+    } else if (isOpeningStillSoon(s.openedDate, now)) {
       // Одиночный сервер с собственной датой открытия
       result.push({
         key:         s.id,
@@ -59,7 +60,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
         chronicle:   s.chronicle,
         rates:       s.rates,
         shortDesc:   s.shortDesc || undefined,
-        openedAt:    s.openedDate,
+        openedAt:    s.openedDate!,
         isVip:      serverVip,
       });
     }

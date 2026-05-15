@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
+import { isOpeningStillSoon } from '@/lib/opening';
 import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
@@ -535,7 +536,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   {[...server.instances]
                     .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
                     .map(inst => {
-                      const isFuture = inst.openedDate && new Date(inst.openedDate) > new Date();
+                      const isFuture = isOpeningStillSoon(inst.openedDate);
                       const instDonate = normalizedDonate(inst.donate);
                       return (
                         <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>

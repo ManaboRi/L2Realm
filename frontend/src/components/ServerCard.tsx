@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Server } from '@/lib/types';
 import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
+import { isOpeningStillSoon } from '@/lib/opening';
 import styles from './ServerCard.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
@@ -49,7 +50,7 @@ function relativeOpened(s?: string | null): string {
 interface Props { server: Server; vipBlock?: boolean; }
 
 export function ServerCard({ server: s, vipBlock }: Props) {
-  const isSoon    = s.openedDate ? new Date(s.openedDate) > new Date() : false;
+  const isSoon    = isOpeningStillSoon(s.openedDate);
   const plan      = s.subscription?.plan ?? 'FREE';
   const isVip     = plan === 'VIP' && !isSoon;
   const isBoosted = !!s._isBoosted;

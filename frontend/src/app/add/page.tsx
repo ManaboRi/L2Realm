@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { isOpeningStillSoon } from '@/lib/opening';
 import { CHRONICLES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -23,7 +24,7 @@ export default function AddServerPage() {
   });
 
   // Платный flow активен, если дата открытия в будущем
-  const isFutureDate = !!(form.openedDate && new Date(form.openedDate) > new Date());
+  const isFutureDate = isOpeningStillSoon(form.openedDate);
 
   function upd(k: string, v: string) { setForm(p => ({ ...p, [k]: v })); }
 

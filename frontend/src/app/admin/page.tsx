@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
+import { isOpeningStillSoon } from '@/lib/opening';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { DownloadLink, DownloadLinkKind, VipStatus } from '@/lib/types';
@@ -42,7 +43,7 @@ function futureOpenings(servers: any[]) {
   const result: Array<{ key: string; serverId: string; instanceId?: string | null; label: string; openedAt: string }> = [];
   for (const s of servers) {
     const insts = Array.isArray(s.instances) ? s.instances : [];
-    const futureInsts = insts.filter((i: any) => i?.openedDate && new Date(i.openedDate).getTime() > now);
+    const futureInsts = insts.filter((i: any) => isOpeningStillSoon(i?.openedDate, now));
     if (futureInsts.length > 0) {
       for (const i of futureInsts) {
         result.push({
@@ -53,7 +54,7 @@ function futureOpenings(servers: any[]) {
           openedAt: i.openedDate,
         });
       }
-    } else if (s.openedDate && new Date(s.openedDate).getTime() > now) {
+    } else if (isOpeningStillSoon(s.openedDate, now)) {
       result.push({
         key: soonVipKey(s.id, null),
         serverId: s.id,
