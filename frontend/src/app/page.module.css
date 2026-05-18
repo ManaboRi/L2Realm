@@ -319,10 +319,6 @@
   color: #f6edd0;
 }
 
-.catalogAnchor {
-  scroll-margin-top: 76px;
-}
-
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

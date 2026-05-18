@@ -151,11 +151,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     setPage(1);
   }
 
-  function showFilteredResults() {
-    setMobileFiltersOpen(false);
-    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
   async function toggleFavorite(serverId: string) {
     if (!token || favoriteBusyId) return;
     const wasFavorite = favoriteIds.has(serverId);
@@ -237,8 +232,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <button type="button" className={styles.showBtn} onClick={showFilteredResults}>
-              Показать {totalServers.toLocaleString('ru-RU')} серверов
+            <button type="button" className={styles.showBtn} onClick={resetFilters}>
+              Сбросить фильтры
             </button>
           </aside>
 
@@ -275,8 +270,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" />
               </div>
             </section>
-
-            <div id="catalog" className={styles.catalogAnchor} />
 
             {loading ? (
               <div className={styles.grid}>
@@ -355,7 +348,7 @@ function HomeServerCard({
   canFavorite: boolean;
   onFavorite: () => void;
 }) {
-  const tags = collectTags(s).slice(0, 5);
+  const tags = collectTags(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const isVip = !!s._isVip || !!s.vip;
   const badge = getServerBadge(s);
