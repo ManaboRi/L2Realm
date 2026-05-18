@@ -38,6 +38,24 @@ function soonVipKey(serverId: string, instanceId?: string | null) {
   return `${serverId}::${instanceId ?? ''}`;
 }
 
+function toDateTimeLocal(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const utcMidnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+  if (utcMidnight) {
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T00:00`;
+  }
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function fromDateTimeLocal(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 function futureOpenings(servers: any[]) {
   const now = Date.now();
   const result: Array<{ key: string; serverId: string; instanceId?: string | null; label: string; openedAt: string }> = [];
@@ -227,7 +245,7 @@ export default function AdminPage() {
       rates:       r.rates,
       rateNum:     String((r.rates?.match(/\d+/) ?? ['1'])[0]),
       url:         r.url,
-      openedDate:  r.openedDate ? r.openedDate.slice(0, 10) : '',
+      openedDate:  toDateTimeLocal(r.openedDate),
       country:     'RU',
       statusOverride: 'auto',
       serverType: 'pvp-pve',
@@ -307,7 +325,7 @@ export default function AdminPage() {
       rates:       s.rates       ?? '',
       rateNum:     String(s.rateNum ?? '1'),
       url:         s.url         ?? '',
-      openedDate:  s.openedDate  ? s.openedDate.slice(0, 10) : '',
+      openedDate:  toDateTimeLocal(s.openedDate),
       country:     s.country     ?? 'RU',
       statusOverride: s.statusOverride ?? 'auto',
       serverType:  (s.type ?? []).find((t: string) => SERVER_TYPES.some(st => st.v === t)) ?? 'pvp-pve',
@@ -357,7 +375,7 @@ export default function AdminPage() {
         rates:       baseRates,
         rateNum:     baseRateN,
         url:         editForm.url,
-        openedDate:  editForm.openedDate || undefined,
+        openedDate:  fromDateTimeLocal(editForm.openedDate) || undefined,
         country:     editForm.country,
         donate:      editForm.donate || undefined,
         voteRewardsEnabled: !!editForm.voteRewardsEnabled,
@@ -405,7 +423,7 @@ export default function AdminPage() {
         url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
         type: types, donate: addForm.donate, vip: addForm.vip,
         voteRewardsEnabled: !!addForm.voteRewardsEnabled,
-        openedDate: addForm.openedDate || undefined, country: addForm.country,
+        openedDate: fromDateTimeLocal(addForm.openedDate) || undefined, country: addForm.country,
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
@@ -486,7 +504,7 @@ export default function AdminPage() {
                   </>
                 )}
                 <AField label="Сайт *"><input className="input" required type="url" value={editForm.url} onChange={e => setEditForm((p:any) => ({...p,url:e.target.value}))} /></AField>
-                <AField label="Дата открытия"><input className="input" type="date" value={editForm.openedDate} onChange={e => setEditForm((p:any) => ({...p,openedDate:e.target.value}))} /></AField>
+                <AField label="Дата и время открытия"><input className="input" type="datetime-local" value={editForm.openedDate} onChange={e => setEditForm((p:any) => ({...p,openedDate:e.target.value}))} /></AField>
                 <AField label="Страна">
                   <select className="input" value={editForm.country} onChange={e => setEditForm((p:any) => ({...p,country:e.target.value}))}>
                     {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
@@ -905,7 +923,7 @@ export default function AdminPage() {
                     )}
                     {/* Строка 3 */}
                     <AField label="Сайт *"><input className="input" required type="url" value={addForm.url} onChange={e => setAddForm(p => ({...p,url:e.target.value}))} placeholder="https://…" /></AField>
-                    <AField label="Дата открытия"><input className="input" type="date" value={addForm.openedDate} onChange={e => setAddForm(p => ({...p,openedDate:e.target.value}))} /></AField>
+                    <AField label="Дата и время открытия"><input className="input" type="datetime-local" value={addForm.openedDate} onChange={e => setAddForm(p => ({...p,openedDate:e.target.value}))} /></AField>
                     <AField label="Страна">
                       <select className="input" value={addForm.country} onChange={e => setAddForm(p => ({...p,country:e.target.value}))}>
                         {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}

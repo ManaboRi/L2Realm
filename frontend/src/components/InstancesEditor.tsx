@@ -29,6 +29,24 @@ function emptyInstance(): ServerInstance {
   };
 }
 
+function toDateTimeLocal(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const utcMidnight = date.getUTCHours() === 0 && date.getUTCMinutes() === 0 && date.getUTCSeconds() === 0;
+  if (utcMidnight) {
+    return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T00:00`;
+  }
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function fromDateTimeLocal(value: string) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 export function InstancesEditor({ value, onChange }: Props) {
   const uid = useId();
   const list = useMemo(() => Array.isArray(value) ? value : [], [value]);
@@ -161,12 +179,12 @@ export function InstancesEditor({ value, onChange }: Props) {
                   />
                 </label>
                 <label className={styles.field}>
-                  <span>Дата открытия (если в будущем — попадёт в «Скоро»)</span>
+                  <span>Дата и время открытия (если в будущем — попадёт в «Скоро»)</span>
                   <input
                     className="input"
-                    type="date"
-                    value={inst.openedDate ? String(inst.openedDate).slice(0, 10) : ''}
-                    onChange={e => update(idx, { openedDate: e.target.value || null })}
+                    type="datetime-local"
+                    value={toDateTimeLocal(inst.openedDate)}
+                    onChange={e => update(idx, { openedDate: fromDateTimeLocal(e.target.value) })}
                   />
                 </label>
               </div>

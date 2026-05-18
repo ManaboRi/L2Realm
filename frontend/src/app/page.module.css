@@ -516,7 +516,9 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: .32rem;
+  gap: .26rem;
+  max-height: 43px;
+  overflow: hidden;
 }
 
 .cardTags span {
@@ -531,6 +533,12 @@
   font-size: .58rem;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.cardTags .tagMore {
+  border-color: rgba(232, 221, 186, .16) !important;
+  color: rgba(232, 221, 186, .72) !important;
+  background: rgba(232, 221, 186, .06) !important;
 }
 
 .tagChronicle {

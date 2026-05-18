@@ -349,6 +349,8 @@ function HomeServerCard({
   onFavorite: () => void;
 }) {
   const tags = collectTags(s);
+  const visibleTags = tags.slice(0, 7);
+  const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const isVip = !!s._isVip || !!s.vip;
   const badge = getServerBadge(s);
@@ -379,7 +381,8 @@ function HomeServerCard({
           <div>
             <h2>{s.name}</h2>
             <div className={styles.cardTags}>
-              {tags.map(tag => <span key={`${tag.tone}-${tag.label}`} className={styles[`tag${capitalize(tag.tone)}`]}>{tag.label}</span>)}
+              {visibleTags.map(tag => <span key={`${tag.tone}-${tag.label}`} className={styles[`tag${capitalize(tag.tone)}`]}>{tag.label}</span>)}
+              {hiddenTagsCount > 0 && <span className={styles.tagMore}>+{hiddenTagsCount}</span>}
             </div>
           </div>
         </Link>

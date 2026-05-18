@@ -1,193 +1,403 @@
 'use client';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import type { Server, ServerInstance } from '@/lib/types';
+import type { DonateType, Server, ServerInstance, ServerType } from '@/lib/types';
+import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
 import { isOpeningStillSoon } from '@/lib/opening';
 import styles from './page.module.css';
 
-// «Опенинг» — атомная сущность для /coming-soon. Один проект может породить
-// несколько опенингов (по одному на каждый future-instance), либо один
-// опенинг по самому серверу (если у него есть собственный openedDate без instances).
 type Opening = {
-  key:        string;            // уникальный ключ для React
-  serverId:   string;            // куда вести по клику (/servers/{id})
-  projectName:string;            // название проекта-родителя
-  icon:       string | null | undefined;
-  abbr:       string | null | undefined;
-  chronicle:  string;
-  rates:      string;
-  label?:     string;             // лейбл instance, если есть
-  shortDesc?: string;             // описание instance или сервера
-  openedAt:   string;
-  isVip:      boolean;
+  key: string;
+  serverId: string;
+  projectName: string;
+  icon?: string | null;
+  abbr?: string | null;
+  chronicle: string;
+  rates: string;
+  rateNum: number;
+  type: string[];
+  donate?: DonateType | 'free' | null;
+  label?: string;
+  shortDesc?: string;
+  openedAt: string;
+  isVip: boolean;
 };
 
-type Group = { label: string; emoji: string; openings: Opening[] };
+type Filters = {
+  chronicle: string;
+  rate: string;
+  type: string;
+  donate: string;
+  opens: string;
+};
+
+const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
+const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
 function flattenOpenings(servers: Server[]): Opening[] {
   const now = Date.now();
   const result: Opening[] = [];
+
   for (const s of servers) {
     const insts: ServerInstance[] = Array.isArray(s.instances) ? s.instances : [];
     const futureInsts = insts.filter(i => isOpeningStillSoon(i.openedDate, now));
-    const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate) > new Date();
+    const serverVip = s.subscription?.plan === 'VIP' && !!s.subscription.endDate && new Date(s.subscription.endDate).getTime() > now;
 
     if (futureInsts.length > 0) {
-      // Проект с future-instance: каждый запуск — отдельная карточка
       for (const i of futureInsts) {
         result.push({
-          key:         `${s.id}::${i.id}`,
-          serverId:    s.id,
+          key: `${s.id}::${i.id}`,
+          serverId: s.id,
           projectName: s.name,
-          icon:        s.icon,
-          abbr:        s.abbr,
-          chronicle:   i.chronicle,
-          rates:       i.rates,
-          label:       i.label,
-          shortDesc:   i.shortDesc || s.shortDesc || undefined,
-          openedAt:    i.openedDate!,
-          isVip:       !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
+          icon: s.icon,
+          abbr: s.abbr,
+          chronicle: i.chronicle,
+          rates: i.rates,
+          rateNum: i.rateNum,
+          type: i.type ? [i.type] : [],
+          donate: i.donate ?? null,
+          label: i.label,
+          shortDesc: i.shortDesc || s.shortDesc || undefined,
+          openedAt: i.openedDate!,
+          isVip: !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
         });
       }
     } else if (isOpeningStillSoon(s.openedDate, now)) {
-      // Одиночный сервер с собственной датой открытия
       result.push({
-        key:         s.id,
-        serverId:    s.id,
+        key: s.id,
+        serverId: s.id,
         projectName: s.name,
-        icon:        s.icon,
-        abbr:        s.abbr,
-        chronicle:   s.chronicle,
-        rates:       s.rates,
-        shortDesc:   s.shortDesc || undefined,
-        openedAt:    s.openedDate!,
-        isVip:      serverVip,
+        icon: s.icon,
+        abbr: s.abbr,
+        chronicle: s.chronicle,
+        rates: s.rates,
+        rateNum: s.rateNum,
+        type: s.type ?? [],
+        donate: s.donate,
+        shortDesc: s.shortDesc || undefined,
+        openedAt: s.openedDate!,
+        isVip: serverVip,
       });
     }
   }
-  // Сортируем по ближайшей дате
-  result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
-  return result;
+
+  return result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
 }
 
-function groupByOpenDate(openings: Opening[]): Group[] {
-  const now      = new Date();
-  const today    = new Date(now); today.setHours(23, 59, 59, 999);
-  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1); tomorrow.setHours(23, 59, 59, 999);
-  const week     = new Date(now); week.setDate(week.getDate() + 7);
-  const month    = new Date(now); month.setDate(month.getDate() + 30);
+function rateRange(rateNum: number) {
+  if (rateNum <= 5) return 'low';
+  if (rateNum <= 30) return 'mid';
+  if (rateNum <= 100) return 'high';
+  if (rateNum <= 999) return 'ultra';
+  if (rateNum <= 9999) return 'mega';
+  return 'extreme';
+}
 
-  const groups: Group[] = [
-    { label: 'Сегодня',        emoji: '🔥', openings: [] },
-    { label: 'Завтра',         emoji: '⚡', openings: [] },
-    { label: 'На этой неделе', emoji: '📅', openings: [] },
-    { label: 'В этом месяце',  emoji: '📆', openings: [] },
-    { label: 'Позже',          emoji: '⏳', openings: [] },
-  ];
+function daysUntilValue(openedAt: string, now: number) {
+  return Math.max(0, Math.ceil((new Date(openedAt).getTime() - now) / 86400000));
+}
 
+function openingBucket(openedAt: string, now: number) {
+  const days = daysUntilValue(openedAt, now);
+  if (days <= 3) return '3';
+  if (days <= 7) return '7';
+  if (days <= 14) return '14';
+  return 'more';
+}
+
+function typeMatches(types: string[], value: string) {
+  if (!value) return true;
+  if (value === 'craft') return types.includes('multicraft');
+  if (value === 'no-donate') return true;
+  return types.includes(value);
+}
+
+function donateMatches(donate: Opening['donate'], value: string) {
+  if (!value) return true;
+  if (value === 'no-donate') return donate === 'cosmetic' || donate === 'free' || !donate;
+  return donate === value;
+}
+
+function applyFilters(openings: Opening[], filters: Filters, now: number) {
+  return openings.filter(o => {
+    if (filters.chronicle && o.chronicle !== filters.chronicle) return false;
+    if (filters.rate && rateRange(o.rateNum) !== filters.rate) return false;
+    if (filters.type && !typeMatches(o.type, filters.type)) return false;
+    if (filters.donate && !donateMatches(o.donate, filters.donate)) return false;
+    if (filters.opens && openingBucket(o.openedAt, now) !== filters.opens) return false;
+    return true;
+  });
+}
+
+function countBy(openings: Opening[], getKey: (o: Opening) => string | string[] | null | undefined) {
+  const counts: Record<string, number> = {};
   for (const o of openings) {
-    const d = new Date(o.openedAt);
-    if (d <= today)         groups[0].openings.push(o);
-    else if (d <= tomorrow) groups[1].openings.push(o);
-    else if (d <= week)     groups[2].openings.push(o);
-    else if (d <= month)    groups[3].openings.push(o);
-    else                    groups[4].openings.push(o);
+    const raw = getKey(o);
+    const keys = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    for (const key of new Set(keys)) counts[key] = (counts[key] ?? 0) + 1;
   }
-
-  return groups.filter(g => g.openings.length > 0);
+  return counts;
 }
 
-function daysUntil(dateStr: string) {
-  const diff = new Date(dateStr).getTime() - Date.now();
-  const days = Math.ceil(diff / 86400000);
-  if (days <= 0)  return 'Открывается сегодня';
-  if (days === 1) return 'Завтра';
-  return `Через ${days} дн.`;
+function countdownParts(openedAt: string, now: number) {
+  const total = Math.max(0, Math.floor((new Date(openedAt).getTime() - now) / 1000));
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const seconds = total % 60;
+  return [days, hours, minutes, seconds].map(v => String(v).padStart(2, '0'));
 }
 
-function OpeningCard({ o, vip = false }: { o: Opening; vip?: boolean }) {
+function formatOpenDate(value: string) {
+  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s?г\.$/, '');
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <Link href={`/servers/${o.serverId}`} className={`${styles.card} ${vip ? styles.vipCard : ''}`}>
-      <div className={styles.cardLeft}>
-        {o.icon
-          ? <img src={o.icon} alt={o.projectName} className={styles.icon} />
-          : <div className={styles.iconFallback}>{(o.abbr || o.projectName.slice(0,2)).toUpperCase()}</div>
-        }
-        <div>
-          <div className={styles.cardName}>
-            {o.projectName}
-            {o.label && <span className={styles.cardLabel}> · {o.label}</span>}
-            {vip && <span className={styles.vipBadge}>VIP</span>}
-          </div>
-          <div className={styles.cardMeta}>
-            <span className="tag tc">{o.chronicle}</span>
-            <span className="tag tn">{o.rates}</span>
-          </div>
-          {o.shortDesc && <div className={styles.cardDesc}>{o.shortDesc}</div>}
+    <div className={styles.filterGroup}>
+      <span className={styles.filterLabel}>{label}</span>
+      <div className={styles.filterList}>{children}</div>
+    </div>
+  );
+}
+
+function FilterItem({ label, count, active, onClick }: { label: string; count?: number; active: boolean; onClick: () => void }) {
+  return (
+    <button type="button" className={`${styles.filterItem} ${active ? styles.filterItemActive : ''}`} onClick={onClick}>
+      <span className={styles.filterDot} />
+      <span>{label}</span>
+      {typeof count === 'number' && <em>{count}</em>}
+    </button>
+  );
+}
+
+function OpeningRow({ opening, place, now }: { opening: Opening; place: number; now: number }) {
+  const parts = countdownParts(opening.openedAt, now);
+  const types = opening.type.map(t => typeLabels.get(t as ServerType)).filter(Boolean).slice(0, 2);
+  const donateLabel = opening.donate === 'cosmetic' || opening.donate === 'free' || !opening.donate
+    ? 'No Donate'
+    : donateLabels.get(opening.donate as DonateType);
+
+  return (
+    <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''}`}>
+      <div className={styles.rankBadge}>🔥 топ {place}</div>
+      <Link href={`/servers/${opening.serverId}`} className={styles.identity}>
+        <span className={styles.iconBox}>
+          {opening.icon
+            ? <img src={opening.icon} alt="" />
+            : <span>{(opening.abbr || opening.projectName.slice(0, 2)).toUpperCase()}</span>}
+        </span>
+        <span className={styles.copy}>
+          <strong>{opening.projectName}{opening.label ? <em> · {opening.label}</em> : null}</strong>
+          <span className={styles.tags}>
+            <i className={styles.tagChronicle}>{opening.chronicle}</i>
+            <i className={styles.tagRate}>{opening.rates}</i>
+            {types.map(type => <i key={type} className={styles.tagType}>{type}</i>)}
+            {donateLabel && <i className={styles.tagDonate}>{donateLabel}</i>}
+          </span>
+          {opening.shortDesc && <small>{opening.shortDesc}</small>}
+        </span>
+      </Link>
+
+      <div className={styles.countdown}>
+        <span className={styles.miniTitle}>До открытия</span>
+        <div className={styles.timeGrid}>
+          {[
+            ['дня', parts[0]],
+            ['часов', parts[1]],
+            ['минут', parts[2]],
+            ['секунд', parts[3]],
+          ].map(([label, value]) => (
+            <span key={label} className={styles.timeCell}>
+              <strong>{value}</strong>
+              <small>{label}</small>
+            </span>
+          ))}
         </div>
       </div>
-      <div className={styles.cardRight}>
-        <div className={styles.countdown}>{daysUntil(o.openedAt)}</div>
-        <div className={styles.openDate}>
-          {new Date(o.openedAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+
+      <div className={styles.openInfo}>
+        <span className={styles.miniTitle}>Открытие</span>
+        <strong>{formatOpenDate(opening.openedAt)}</strong>
+        <div className={styles.actions}>
+          <Link href={`/servers/${opening.serverId}`} className={styles.followBtn}>Следить</Link>
+          <button type="button" className={styles.bellBtn} title="Уведомление" aria-label="Уведомление">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+            </svg>
+          </button>
         </div>
       </div>
-    </Link>
+    </article>
   );
 }
 
 export function ComingSoonClient({ initialServers }: { initialServers: Server[] }) {
-  const servers = initialServers;
-  const openings = useMemo(() => flattenOpenings(servers), [servers]);
-  const vipOpenings = useMemo(() => openings.filter(o => o.isVip), [openings]);
-  const regularOpenings = useMemo(() => openings.filter(o => !o.isVip), [openings]);
-  const groups = useMemo(() => groupByOpenDate(regularOpenings), [regularOpenings]);
+  const openings = useMemo(() => flattenOpenings(initialServers), [initialServers]);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(8);
+  const [sort, setSort] = useState('date');
+  const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', donate: '', opens: '' });
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+  const counts = useMemo(() => ({
+    chronicle: countBy(openings, o => o.chronicle),
+    rate: countBy(openings, o => rateRange(o.rateNum)),
+    type: countBy(openings, o => o.type),
+    donate: countBy(openings, o => (o.donate === 'cosmetic' || o.donate === 'free' || !o.donate) ? 'no-donate' : o.donate),
+    opens: countBy(openings, o => openingBucket(o.openedAt, now)),
+  }), [openings, now]);
+
+  const filtered = useMemo(() => {
+    const data = applyFilters(openings, filters, now);
+    return [...data].sort((a, b) => {
+      if (sort === 'name') return a.projectName.localeCompare(b.projectName, 'ru');
+      return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
+    });
+  }, [filters, now, openings, sort]);
+
+  const visible = filtered.slice(0, visibleCount);
+
+  function toggleFilter(group: keyof Filters, value: string) {
+    setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
+    setVisibleCount(8);
+  }
+
+  function resetFilters() {
+    setFilters({ chronicle: '', rate: '', type: '', donate: '', opens: '' });
+    setVisibleCount(8);
+  }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.hero}>
-        <p className={styles.heroEye}>◆ Скоро открытие ◆</p>
-        <h1 className={styles.heroTitle}>Ожидаемые <em>серверы</em></h1>
-        <p className={styles.heroSub}>Серверы которые откроются в ближайшее время — следите и не пропустите</p>
-      </div>
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <button
+          type="button"
+          className={`${styles.filtersToggle} ${filtersOpen ? styles.filtersToggleOpen : ''}`}
+          onClick={() => setFiltersOpen(v => !v)}
+          aria-expanded={filtersOpen}
+        >
+          <span>Фильтры</span>
+          {activeFiltersCount > 0 && <span className={styles.filtersCount}>{activeFiltersCount}</span>}
+          <span className={styles.filtersToggleIcon}>▾</span>
+        </button>
 
-      <div className={styles.wrap}>
-        {openings.length === 0 ? (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon}>⏳</div>
-            <div className={styles.emptyTitle}>Пока нет ожидаемых серверов</div>
-            <p className={styles.emptySub}>Когда владельцы добавят серверы с датой открытия — они появятся здесь</p>
-            <Link href="/" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>← Все серверы</Link>
-          </div>
-        ) : (
-          <>
-            {vipOpenings.length > 0 && (
-              <div className={`${styles.group} ${styles.vipGroup}`}>
-                <div className={styles.vipHead}>
-                  <span className={styles.vipMark}>◆</span>
-                  <span>VIP Скоро открытие</span>
-                  <span className={styles.groupCount}>{vipOpenings.length}</span>
-                </div>
-                <div className={styles.cards}>
-                  {vipOpenings.map(o => <OpeningCard key={o.key} o={o} vip />)}
-                </div>
+        <div className={styles.layout}>
+          <aside className={`${styles.sidebar} ${filtersOpen ? styles.sidebarOpen : ''}`}>
+            <div className={styles.sidebarHead}>
+              <span>Фильтры</span>
+              {activeFiltersCount > 0 && <button type="button" onClick={resetFilters}>Сбросить</button>}
+            </div>
+
+            <FilterGroup label="Хроники">
+              {CHRONICLES.filter(c => counts.chronicle[c] > 0).slice(0, 8).map(c => (
+                <FilterItem key={c} label={c} count={counts.chronicle[c]} active={filters.chronicle === c} onClick={() => toggleFilter('chronicle', c)} />
+              ))}
+            </FilterGroup>
+
+            <FilterGroup label="Рейты">
+              {RATES.filter(r => counts.rate[r.v] > 0).map(r => (
+                <FilterItem key={r.v} label={r.l} count={counts.rate[r.v]} active={filters.rate === r.v} onClick={() => toggleFilter('rate', r.v)} />
+              ))}
+            </FilterGroup>
+
+            <FilterGroup label="Тип сервера">
+              {[
+                { v: 'pvp', l: 'PvP' },
+                { v: 'pve', l: 'PvE' },
+                { v: 'pvp-pve', l: 'PvP / PvE' },
+                { v: 'multicraft', l: 'Craft-PvP' },
+                { v: 'rvr', l: 'RolePlay' },
+              ].filter(t => counts.type[t.v] > 0).map(t => (
+                <FilterItem key={t.v} label={t.l} count={counts.type[t.v]} active={filters.type === t.v} onClick={() => toggleFilter('type', t.v)} />
+              ))}
+              {counts.donate['no-donate'] > 0 && (
+                <FilterItem label="No Donate" count={counts.donate['no-donate']} active={filters.donate === 'no-donate'} onClick={() => toggleFilter('donate', 'no-donate')} />
+              )}
+            </FilterGroup>
+
+            <FilterGroup label="До даты открытия">
+              {[
+                { v: '3', l: 'До 3 дней' },
+                { v: '7', l: '3 - 7 дней' },
+                { v: '14', l: '7 - 14 дней' },
+                { v: 'more', l: 'Больше 14 дней' },
+              ].filter(o => counts.opens[o.v] > 0).map(o => (
+                <FilterItem key={o.v} label={o.l} count={counts.opens[o.v]} active={filters.opens === o.v} onClick={() => toggleFilter('opens', o.v)} />
+              ))}
+            </FilterGroup>
+
+            <button type="button" className={styles.resetBtn} onClick={resetFilters}>Сбросить фильтры</button>
+          </aside>
+
+          <section className={styles.content}>
+            <section className={styles.hero}>
+              <div className={styles.heroCopy}>
+                <h1>Скоро открытие серверов <span>Lineage 2</span></h1>
+                <p>Новые миры уже на подходе. Выбери сервер, следи за новостями и стань одним из первых!</p>
               </div>
+
+              <div className={styles.quickBar}>
+                {[
+                  ['Все сервера', '', 'type'],
+                  ['PvP', 'pvp', 'type'],
+                  ['PvE', 'pve', 'type'],
+                  ['Craft', 'multicraft', 'type'],
+                  ['RolePlay', 'rvr', 'type'],
+                  ['No Donate', 'no-donate', 'donate'],
+                ].map(([label, value, group]) => (
+                  <button
+                    key={`${group}-${value}`}
+                    type="button"
+                    className={(group === 'donate' ? filters.donate : filters.type) === value ? styles.quickActive : ''}
+                    onClick={() => value ? toggleFilter(group as keyof Filters, value) : resetFilters()}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <label className={styles.sortWrap}>
+                <span>Сортировать:</span>
+                <select value={sort} onChange={e => setSort(e.target.value)}>
+                  <option value="date">По дате открытия</option>
+                  <option value="name">По названию</option>
+                </select>
+              </label>
+            </section>
+
+            {openings.length === 0 ? (
+              <div className={styles.empty}>
+                <strong>Пока нет ожидаемых серверов</strong>
+                <span>Когда появятся будущие открытия, они будут здесь.</span>
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className={styles.empty}>
+                <strong>По фильтрам ничего не найдено</strong>
+                <button type="button" onClick={resetFilters}>Сбросить фильтры</button>
+              </div>
+            ) : (
+              <>
+                <div className={styles.rows}>
+                  {visible.map((opening, index) => <OpeningRow key={opening.key} opening={opening} place={index + 1} now={now} />)}
+                </div>
+                {visible.length < filtered.length && (
+                  <button type="button" className={styles.moreBtn} onClick={() => setVisibleCount(v => v + 8)}>
+                    Загрузить еще <span>⊙</span>
+                  </button>
+                )}
+              </>
             )}
-
-            {groups.map(group => (
-              <div key={group.label} className={styles.group}>
-                <div className={styles.groupTitle}>
-                  <span>{group.emoji}</span> {group.label}
-                  <span className={styles.groupCount}>{group.openings.length}</span>
-                </div>
-                <div className={styles.cards}>
-                  {group.openings.map(o => <OpeningCard key={o.key} o={o} />)}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
+          </section>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
