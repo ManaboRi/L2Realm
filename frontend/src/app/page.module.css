@@ -503,7 +503,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .78)) drop-shadow(0 0 8px rgba(0, 0, 0, .45));
+  filter: none;
 }
 
 .cardIdentity h2 {

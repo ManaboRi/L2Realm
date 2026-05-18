@@ -93,7 +93,10 @@ export function Header() {
               <span>Избранное</span>
             </Link>
             <button type="button" className={styles.notifyBtn} title="Уведомления" aria-label="Уведомления">
-              <span className={styles.bellIcon} />
+              <svg className={styles.bellIcon} viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+              </svg>
             </button>
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>

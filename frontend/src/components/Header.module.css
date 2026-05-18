@@ -169,6 +169,7 @@
   min-height: 36px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: .45rem;
   padding: 0 .75rem;
   border: 1px solid var(--border);
@@ -179,6 +180,7 @@
   font-size: .66rem;
   letter-spacing: .08em;
   text-transform: uppercase;
+  line-height: 1;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
 .favoritesChip:hover {
@@ -189,9 +191,15 @@
 .favoritesChip:active,
 .notifyBtn:active { transform: translateY(1px); }
 .favoritesIcon {
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--gold);
   font-size: 1.05rem;
   line-height: 1;
+  transform: translateY(-.5px);
 }
 
 .notifyBtn {
@@ -204,6 +212,7 @@
   border-radius: 7px;
   background: rgba(255,255,255,.02);
   color: var(--text2);
+  line-height: 0;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
 .notifyBtn:hover {
@@ -212,33 +221,14 @@
   background: rgba(200,168,75,.07);
 }
 .bellIcon {
-  position: relative;
-  width: 15px;
-  height: 16px;
-  display: inline-block;
-  border: 1.6px solid currentColor;
-  border-bottom: 0;
-  border-radius: 9px 9px 3px 3px;
-}
-.bellIcon::before {
-  content: '';
-  position: absolute;
-  left: -3px;
-  right: -3px;
-  bottom: -4px;
-  border-bottom: 1.6px solid currentColor;
-  border-radius: 999px;
-}
-.bellIcon::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: -7px;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-  transform: translateX(-50%);
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .loginBtn { white-space: nowrap; }
