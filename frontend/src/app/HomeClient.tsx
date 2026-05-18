@@ -4,13 +4,17 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { ServerCard } from '@/components/ServerCard';
-import { ServerCardSkeleton } from '@/components/ServerCardSkeleton';
+import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
-export type FilterCounts = { chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> };
+export type FilterCounts = {
+  chronicles: Record<string, number>;
+  rates: Record<string, number>;
+  donates: Record<string, number>;
+  types: Record<string, number>;
+};
 
 type HomeClientProps = {
   initialServers: Server[];
@@ -19,6 +23,9 @@ type HomeClientProps = {
   initialPages: number;
   initialOk: boolean;
 };
+
+const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
+const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
 export function HomeClient(props: HomeClientProps) {
   return (
@@ -29,48 +36,49 @@ export function HomeClient(props: HomeClientProps) {
 }
 
 function HomeContent({ initialServers, initialStats, initialCounts, initialPages, initialOk }: HomeClientProps) {
-  const router   = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
-  const sp       = useSearchParams();
+  const sp = useSearchParams();
+  const { token } = useAuth();
 
-  const [servers,  setServers]  = useState<Server[]>(initialServers);
-  const [stats,    setStats]    = useState<Stats | null>(initialStats);
-  const [counts,   setCounts]   = useState<FilterCounts | null>(initialCounts);
-  const [loading,  setLoading]  = useState(!initialOk);
-  const [pages,    setPages]    = useState(initialPages);
+  const [servers, setServers] = useState<Server[]>(initialServers);
+  const [stats, setStats] = useState<Stats | null>(initialStats);
+  const [counts, setCounts] = useState<FilterCounts | null>(initialCounts);
+  const [loading, setLoading] = useState(!initialOk);
+  const [pages, setPages] = useState(initialPages);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-
-  // Автодополнение поиска
   const [suggestions, setSuggestions] = useState<Server[]>([]);
   const [showSuggest, setShowSuggest] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+  const [favoriteBusyId, setFavoriteBusyId] = useState('');
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const firstListEffect = useRef(true);
+  const firstCountsEffect = useRef(true);
 
-  // Инициализация состояния из URL
-  const [search,  setSearch]  = useState(() => sp.get('q')      ?? '');
-  // sort = '' (default) даёт пьедестал VIP → СоД → Буст → остальные.
-  // Любое явное значение ('opened'/'name'/'rating'/'votes') пиннит только VIP.
-  const [sort,    setSort]    = useState(() => sp.get('sort')   ?? '');
-  const [page,    setPage]    = useState(() => Number(sp.get('page') ?? 1));
+  const [search, setSearch] = useState(() => sp.get('q') ?? '');
+  const [sort, setSort] = useState(() => sp.get('sort') ?? '');
+  const [page, setPage] = useState(() => Number(sp.get('page') ?? 1));
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
-    chr:    sp.get('chr')    ?? '',
-    rate:   sp.get('rate')   ?? '',
+    chr: sp.get('chr') ?? '',
+    rate: sp.get('rate') ?? '',
     donate: sp.get('donate') ?? '',
-    type:   sp.get('type')   ?? '',
+    type: sp.get('type') ?? '',
   }));
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
+  const totalProjects = stats?.total ?? servers.length;
+  const totalServers = stats?.launchCount ?? totalProjects;
+  const addedThisWeek = stats?.newCount ?? 0;
 
-  // Синхронизация состояния → URL
   useEffect(() => {
     const params = new URLSearchParams();
-    if (search)           params.set('q',      search);
-    if (sort)             params.set('sort',   sort);
-    if (filters.chr)      params.set('chr',    filters.chr);
-    if (filters.rate)     params.set('rate',   filters.rate);
-    if (filters.donate)   params.set('donate', filters.donate);
-    if (filters.type)     params.set('type',   filters.type);
-    if (page > 1)         params.set('page',   String(page));
+    if (search) params.set('q', search);
+    if (sort) params.set('sort', sort);
+    if (filters.chr) params.set('chr', filters.chr);
+    if (filters.rate) params.set('rate', filters.rate);
+    if (filters.donate) params.set('donate', filters.donate);
+    if (filters.type) params.set('type', filters.type);
+    if (page > 1) params.set('page', String(page));
     const query = params.toString();
     router.replace(`${pathname}${query ? '?' + query : ''}`, { scroll: false } as any);
   }, [search, sort, filters, page, pathname, router]);
@@ -79,18 +87,20 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     setLoading(true);
     try {
       const params: Record<string, string> = { page: String(page), limit: '30' };
-      if (sort)            params.sort        = sort;
-      if (search)          params.search      = search;
-      if (filters.chr)     params.chronicle   = filters.chr;
-      if (filters.rate)    params.rate        = filters.rate;
-      if (filters.donate)  params.donate      = filters.donate;
-      if (filters.type)    params.type        = filters.type;
+      if (sort) params.sort = sort;
+      if (search) params.search = search;
+      if (filters.chr) params.chronicle = filters.chr;
+      if (filters.rate) params.rate = filters.rate;
+      if (filters.donate) params.donate = filters.donate;
+      if (filters.type) params.type = filters.type;
 
       const res = await api.servers.list(params);
       setServers(res.data);
       setPages(res.pages);
-    } catch {}
-    finally { setLoading(false); }
+    } catch {
+    } finally {
+      setLoading(false);
+    }
   }, [search, sort, filters, page]);
 
   useEffect(() => {
@@ -102,42 +112,39 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }, [load, initialOk]);
 
   useEffect(() => {
-    if (!initialStats) {
-      api.servers.stats().then(setStats).catch(() => {});
-    }
-    if (!initialCounts) {
-      api.servers.counts().then(setCounts).catch(() => {});
-    }
+    if (!initialStats) api.servers.stats().then(setStats).catch(() => {});
+    if (!initialCounts) api.servers.counts().then(setCounts).catch(() => {});
   }, [initialStats, initialCounts]);
 
-  // Зависимые фильтры: при изменении любого из выбранных значений пересчитываем
-  // counts с учётом активных фильтров. Для каждой dimension backend исключает
-  // её собственный фильтр — иначе при выборе хроники Interlude в фильтре хроник
-  // осталась бы только она. Skip первый рендер если initialCounts уже пришёл с SSR.
-  const firstCountsEffect = useRef(true);
+  useEffect(() => {
+    if (!token) {
+      setFavoriteIds(new Set());
+      return;
+    }
+    api.favorites.ids(token)
+      .then(ids => setFavoriteIds(new Set(ids)))
+      .catch(() => {});
+  }, [token]);
+
   useEffect(() => {
     if (firstCountsEffect.current) {
       firstCountsEffect.current = false;
       if (initialCounts) return;
     }
     const params: Record<string, string> = {};
-    if (filters.chr)    params.chronicle    = filters.chr;
-    if (filters.rate)   params.rate         = filters.rate;
-    if (filters.donate) params.donate       = filters.donate;
-    if (filters.type)   params.type         = filters.type;
-    if (filters.opened) params.openedWithin = filters.opened;
+    if (filters.chr) params.chronicle = filters.chr;
+    if (filters.rate) params.rate = filters.rate;
+    if (filters.donate) params.donate = filters.donate;
+    if (filters.type) params.type = filters.type;
     api.servers.counts(params).then(setCounts).catch(() => {});
   }, [filters, initialCounts]);
 
-  function toggleFilter(group: string, value: string) {
-    setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
-    setPage(1);
-  }
-
-  // Автодополнение: дёргаем API при изменении текста (debounce 200ms)
   useEffect(() => {
     const q = search.trim();
-    if (q.length < 2) { setSuggestions([]); return; }
+    if (q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     const t = setTimeout(() => {
       api.servers.list({ search: q, limit: '6' })
         .then(r => setSuggestions(r.data.slice(0, 6)))
@@ -146,7 +153,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     return () => clearTimeout(t);
   }, [search]);
 
-  // Скрываем подсказки по клику вне блока поиска
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
@@ -157,121 +163,151 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  function toggleFilter(group: string, value: string) {
+    setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
+    setPage(1);
+  }
+
+  function resetFilters() {
+    setFilters({ chr: '', rate: '', donate: '', type: '' });
+    setSearch('');
+    setSort('');
+    setPage(1);
+  }
+
+  async function toggleFavorite(serverId: string) {
+    if (!token || favoriteBusyId) return;
+    const wasFavorite = favoriteIds.has(serverId);
+    setFavoriteBusyId(serverId);
+    setFavoriteIds(prev => {
+      const next = new Set(prev);
+      if (wasFavorite) next.delete(serverId);
+      else next.add(serverId);
+      return next;
+    });
+    try {
+      if (wasFavorite) await api.favorites.remove(serverId, token);
+      else await api.favorites.add(serverId, token);
+    } catch {
+      setFavoriteIds(prev => {
+        const next = new Set(prev);
+        if (wasFavorite) next.add(serverId);
+        else next.delete(serverId);
+        return next;
+      });
+    } finally {
+      setFavoriteBusyId('');
+    }
+  }
+
   return (
-    <div className={styles.page}>
-      <div className={styles.pageInner}>
+    <main className={styles.page}>
+      <div className={styles.shell}>
+        <button
+          type="button"
+          className={`${styles.filtersToggle} ${mobileFiltersOpen ? styles.filtersToggleOpen : ''}`}
+          onClick={() => setMobileFiltersOpen(v => !v)}
+          aria-expanded={mobileFiltersOpen}
+        >
+          <span>Фильтры</span>
+          {activeFiltersCount > 0 && <span className={styles.filtersCount}>{activeFiltersCount}</span>}
+          <span className={styles.filtersToggleIcon}>▾</span>
+        </button>
 
-      <section className={styles.hero}>
-        <div className={styles.heroLeft}>
-          <h1 className={styles.heroTitle}>Каталог Серверов <em>Lineage 2</em></h1>
-          {stats && (
-            <div className={styles.heroStats}>
-              <div className={styles.statItem}><span className={styles.statNum}>{stats.total}</span><span className={styles.statLbl}>Проектов</span></div>
-              <div className={styles.statDivider} />
-              <div className={styles.statItem}><span className={styles.statNum}>{stats.launchCount ?? stats.total}</span><span className={styles.statLbl}>Серверов</span></div>
-            </div>
-          )}
-          <p className={styles.heroSub}>
-            Твой главный навигатор в мире Адена. Мы собираем и обновляем данные в реальном времени,
-            чтобы ты видел реальную картину. Выбирай сервер с умом, а не по рекламному баннеру.
-          </p>
-        </div>
-      </section>
-
-      <div className={styles.quizHint}>
-        <span>Не знаешь что выбрать? →</span>
-        <Link href="/quiz">Тест за 1 минуту</Link>
-      </div>
-
-      <button
-        type="button"
-        className={`${styles.filtersToggle} ${mobileFiltersOpen ? styles.filtersToggleOpen : ''}`}
-        onClick={() => setMobileFiltersOpen(v => !v)}
-        aria-expanded={mobileFiltersOpen}
-      >
-        <span>Фильтры</span>
-        {activeFiltersCount > 0 && <span className={styles.filtersCount}>{activeFiltersCount}</span>}
-        <span className={styles.filtersToggleIcon} style={{ marginLeft: activeFiltersCount > 0 ? 0 : 'auto' }}>▾</span>
-      </button>
-
-      <div className={styles.layout}>
-
-        {/* Сайдбар фильтров */}
-        <aside className={`${styles.sidebar} ${mobileFiltersOpen ? styles.sidebarOpen : ''}`}>
-          <div className={styles.sidebarHead}><span className={styles.sideLabel}>Фильтры</span></div>
-
-          <FilterGroup label="Хроника">
-            {/* Хроники: показываем только те, у которых хотя бы 1 сервер,
-                плюс активную (если выбрана и серверов сейчас 0). */}
-            {CHRONICLES
-              .filter(v => (counts?.chronicles[v] ?? 0) > 0 || filters.chr === v)
-              .map(v => <FilterChip key={v} label={v} active={filters.chr === v} count={counts?.chronicles[v]} onClick={() => toggleFilter('chr', v)} />)}
-          </FilterGroup>
-          <FilterGroup label="Рейты">
-            {RATES
-              .filter(({ v }) => (counts?.rates[v] ?? 0) > 0 || filters.rate === v)
-              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />)}
-          </FilterGroup>
-          <FilterGroup label="Тип сервера">
-            {SERVER_TYPES
-              .filter(({ v }) => v !== 'pvp-pve' && ((counts?.types[v] ?? 0) > 0 || filters.type === v))
-              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.type === v} count={counts?.types[v]} onClick={() => toggleFilter('type', v)} />)}
-          </FilterGroup>
-          <FilterGroup label="Донат">
-            {DONATE_OPTIONS
-              .filter(({ v }) => (counts?.donates[v] ?? 0) > 0 || filters.donate === v)
-              .map(({ v, l }) => <FilterChip key={v} label={l} active={filters.donate === v} count={counts?.donates[v]} onClick={() => toggleFilter('donate', v)} />)}
-          </FilterGroup>
-
-          {Object.values(filters).some(Boolean) && (
-            <button className={styles.clearBtn} onClick={() => { setFilters({ chr: '', rate: '', donate: '', type: '' }); setPage(1); }}>
-              ✕ Сбросить фильтры
-            </button>
-          )}
-        </aside>
-
-        {/* Контент */}
-        <div className={styles.content}>
-          <div className={styles.searchBar}>
-            <div className={styles.searchWrap} ref={searchBoxRef}>
-              <span className={styles.searchIcon}>⌕</span>
-              <input
-                className={styles.searchInput}
-                placeholder="Поиск по названию сервера..."
-                value={search}
-                onFocus={() => setShowSuggest(true)}
-                onChange={e => { setSearch(e.target.value); setPage(1); setShowSuggest(true); }}
-                onKeyDown={e => { if (e.key === 'Escape') setShowSuggest(false); }}
-              />
-              {search && <button className={styles.searchClear} onClick={() => { setSearch(''); setShowSuggest(false); }}>✕</button>}
-
-              {showSuggest && suggestions.length > 0 && (
-                <div className={styles.suggestList}>
-                  {suggestions.map(s => (
-                    <Link
-                      key={s.id}
-                      href={`/servers/${s.id}`}
-                      className={styles.suggestItem}
-                      onClick={() => setShowSuggest(false)}
-                    >
-                      <span className={styles.suggestIcon}>
-                        {s.icon
-                          ? <img src={s.icon} alt={`Иконка сервера ${s.name}`} />
-                          : <span>{s.abbr ?? s.name.slice(0, 2).toUpperCase()}</span>}
-                      </span>
-                      <span className={styles.suggestMain}>
-                        <span className={styles.suggestName}>{s.name}</span>
-                        <span className={styles.suggestMeta}>{s.chronicle} · {s.rates}</span>
-                      </span>
-                      <span className={styles.suggestArr}>›</span>
-                    </Link>
-                  ))}
-                </div>
+        <div className={styles.layout}>
+          <aside className={`${styles.sidebar} ${mobileFiltersOpen ? styles.sidebarOpen : ''}`}>
+            <div className={styles.sidebarHead}>
+              <span>Фильтры</span>
+              {(activeFiltersCount > 0 || search || sort) && (
+                <button type="button" onClick={resetFilters}>Сбросить</button>
               )}
             </div>
-            <div className={styles.sortWrap}>
-              <span className={styles.sortLabel}>Сортировка</span>
-              <select className="input" style={{ width: 'auto' }} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
+
+            <FilterGroup label="Хроники">
+              {CHRONICLES
+                .filter(v => (counts?.chronicles[v] ?? 0) > 0 || filters.chr === v)
+                .slice(0, 8)
+                .map(v => (
+                  <FilterItem key={v} label={v} active={filters.chr === v} count={counts?.chronicles[v]} onClick={() => toggleFilter('chr', v)} />
+                ))}
+            </FilterGroup>
+
+            <FilterGroup label="Рейты">
+              {RATES
+                .filter(({ v }) => (counts?.rates[v] ?? 0) > 0 || filters.rate === v)
+                .map(({ v, l }) => (
+                  <FilterItem key={v} label={l} active={filters.rate === v} count={counts?.rates[v]} onClick={() => toggleFilter('rate', v)} />
+                ))}
+            </FilterGroup>
+
+            <FilterGroup label="Тип сервера">
+              {SERVER_TYPES
+                .filter(({ v }) => v !== 'pvp-pve' && ((counts?.types[v] ?? 0) > 0 || filters.type === v))
+                .map(({ v, l }) => (
+                  <FilterItem key={v} label={l} active={filters.type === v} count={counts?.types[v]} onClick={() => toggleFilter('type', v)} />
+                ))}
+            </FilterGroup>
+
+            <FilterGroup label="Донат">
+              {DONATE_OPTIONS
+                .filter(({ v }) => (counts?.donates[v] ?? 0) > 0 || filters.donate === v)
+                .map(({ v, l }) => (
+                  <FilterItem key={v} label={l} active={filters.donate === v} count={counts?.donates[v]} onClick={() => toggleFilter('donate', v)} />
+                ))}
+            </FilterGroup>
+
+            <button type="button" className={styles.showBtn} onClick={() => setMobileFiltersOpen(false)}>
+              Показать {totalServers.toLocaleString('ru-RU')} серверов
+            </button>
+          </aside>
+
+          <section className={styles.content}>
+            <section className={styles.hero}>
+              <div className={styles.heroCopy}>
+                <h1>Найди свой мир <span>Lineage 2</span></h1>
+                <p>Каталог приватных серверов с фильтрами, отзывами, голосованием и живыми страницами проектов.</p>
+
+                <div className={styles.searchWrap} ref={searchBoxRef}>
+                  <span className={styles.searchIcon}>⌕</span>
+                  <input
+                    className={styles.searchInput}
+                    placeholder="Поиск серверов, хроник, рейтов..."
+                    value={search}
+                    onFocus={() => setShowSuggest(true)}
+                    onChange={e => { setSearch(e.target.value); setPage(1); setShowSuggest(true); }}
+                    onKeyDown={e => { if (e.key === 'Escape') setShowSuggest(false); }}
+                  />
+                  {search && <button type="button" className={styles.searchClear} onClick={() => { setSearch(''); setShowSuggest(false); }}>×</button>}
+
+                  {showSuggest && suggestions.length > 0 && (
+                    <div className={styles.suggestList}>
+                      {suggestions.map(s => (
+                        <Link key={s.id} href={`/servers/${s.id}`} className={styles.suggestItem} onClick={() => setShowSuggest(false)}>
+                          <ServerIcon server={s} small />
+                          <span>
+                            <strong>{s.name}</strong>
+                            <small>{s.chronicle} · {s.rates}</small>
+                          </span>
+                          <em>›</em>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className={styles.heroStats}>
+                <Metric label="Всего серверов" value={totalServers} note={`+${addedThisWeek} за неделю`} />
+                <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" chart />
+              </div>
+            </section>
+
+            <div className={styles.toolbar}>
+              <div>
+                <span className={styles.toolbarEyebrow}>Каталог</span>
+                <strong>{loading ? 'Обновляем список...' : `${servers.length} ${serverWord(servers.length)} на странице`}</strong>
+              </div>
+              <select className={styles.sortSelect} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
                 <option value="">По умолчанию</option>
                 <option value="opened">По дате открытия</option>
                 <option value="name">По алфавиту</option>
@@ -279,58 +315,40 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 <option value="votes">По голосам</option>
               </select>
             </div>
-          </div>
 
-          {loading ? (
-            <div className={styles.list}>
-              {Array.from({ length: 5 }).map((_, i) => <ServerCardSkeleton key={i} />)}
-            </div>
-          ) : (() => {
-            const vipServers  = servers.filter(s => s._isVip);
-            const mainServers = servers.filter(s => !s._isVip);
-            return (
-              <>
-                {/* VIP-блок — показываем только когда есть хотя бы один активный VIP.
-                    Свободные места показываются как «занять место», но не перетягивают
-                    внимание когда никто ещё не купил. */}
-                {vipServers.length > 0 && (
-                  <div className={styles.vipSection}>
-                    <div className={styles.vipHeader}>
-                      <span className={styles.vipHeaderStar}>★</span>
-                      <span className={styles.vipHeaderTitle}>VIP Серверы</span>
-                      <span className={styles.vipHeaderSlots}>
-                        {vipServers.length} активн{vipServers.length === 1 ? 'ый' : 'ых'}
-                      </span>
-                    </div>
-                    <div className={styles.list}>
-                      {vipServers.map(s => <ServerCard key={s.id} server={s} vipBlock />)}
-                    </div>
-                  </div>
-                )}
+            {loading ? (
+              <div className={styles.grid}>
+                {Array.from({ length: 6 }).map((_, i) => <div className={styles.cardSkeleton} key={i} />)}
+              </div>
+            ) : servers.length === 0 ? (
+              <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
+            ) : (
+              <div className={styles.grid}>
+                {servers.map((s, index) => (
+                  <HomeServerCard
+                    key={s.id}
+                    server={s}
+                    position={index + 1}
+                    isFavorite={favoriteIds.has(s.id)}
+                    favoriteBusy={favoriteBusyId === s.id}
+                    canFavorite={!!token}
+                    onFavorite={() => toggleFavorite(s.id)}
+                  />
+                ))}
+              </div>
+            )}
 
-                {/* Основной список */}
-                {mainServers.length === 0 ? (
-                  <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
-                ) : (
-                  <div className={styles.list}>
-                    {mainServers.map(s => <ServerCard key={s.id} server={s} />)}
-                  </div>
-                )}
-              </>
-            );
-          })()}
-
-          {pages > 1 && (
-            <div className={styles.pagination}>
-              {Array.from({ length: pages }, (_, i) => i + 1).map(p => (
-                <button key={p} className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`} onClick={() => setPage(p)}>{p}</button>
-              ))}
-            </div>
-          )}
+            {pages > 1 && (
+              <div className={styles.pagination}>
+                {Array.from({ length: pages }, (_, i) => i + 1).map(p => (
+                  <button key={p} className={`${styles.pageBtn} ${p === page ? styles.pageBtnActive : ''}`} onClick={() => setPage(p)}>{p}</button>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
       </div>
-      </div>
-    </div>
+    </main>
   );
 }
 
@@ -338,15 +356,141 @@ function FilterGroup({ label, children }: { label: string; children: React.React
   return (
     <div className={styles.filterGroup}>
       <span className={styles.filterLabel}>{label}</span>
-      <div className={styles.chips}>{children}</div>
+      <div className={styles.filterList}>{children}</div>
     </div>
   );
 }
-function FilterChip({ label, active, count, onClick }: { label: string; active: boolean; count?: number; onClick: () => void }) {
+
+function FilterItem({ label, active, count, onClick }: { label: string; active: boolean; count?: number; onClick: () => void }) {
   return (
-    <button className={`${styles.chip} ${active ? styles.chipActive : ''}`} onClick={onClick}>
-      <span className={styles.chipDot} />{label}
-      {count !== undefined && count > 0 && <span className={styles.chipCount}>{count}</span>}
+    <button type="button" className={`${styles.filterItem} ${active ? styles.filterItemActive : ''}`} onClick={onClick}>
+      <span className={styles.filterDot} />
+      <span>{label}</span>
+      {typeof count === 'number' && <em>{count}</em>}
     </button>
   );
+}
+
+function Metric({ label, value, note, chart }: { label: string; value: number; note: string; chart?: boolean }) {
+  return (
+    <div className={styles.metric}>
+      <span>{label}</span>
+      <strong>{value.toLocaleString('ru-RU')}</strong>
+      <small>{note}</small>
+      {chart && (
+        <svg viewBox="0 0 150 44" aria-hidden="true">
+          <polyline points="0,36 18,31 31,34 45,25 59,28 74,18 89,22 105,10 120,14 137,6 150,2" />
+        </svg>
+      )}
+    </div>
+  );
+}
+
+function HomeServerCard({
+  server: s,
+  position,
+  isFavorite,
+  favoriteBusy,
+  canFavorite,
+  onFavorite,
+}: {
+  server: Server;
+  position: number;
+  isFavorite: boolean;
+  favoriteBusy: boolean;
+  canFavorite: boolean;
+  onFavorite: () => void;
+}) {
+  const tags = collectTags(s).slice(0, 3);
+  const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
+  const isVip = !!s._isVip;
+
+  return (
+    <article className={`${styles.serverCard} ${isVip ? styles.serverCardVip : ''}`}>
+      <div className={styles.cardMedia}>
+        {s.banner ? (
+          <img src={s.banner} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        ) : (
+          <span className={styles.cardMediaFallback} />
+        )}
+        <span className={styles.cardShade} />
+        <span className={styles.cardBottomFade} />
+        <span className={styles.cardBadge}>🔥 ТОП {position}</span>
+        <button
+          type="button"
+          className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
+          onClick={onFavorite}
+          disabled={favoriteBusy}
+          title={canFavorite ? (isFavorite ? 'Убрать из избранного' : 'Добавить в избранное') : 'Войдите, чтобы добавить в избранное'}
+          aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
+        >
+          {isFavorite ? '♥' : '♡'}
+        </button>
+        <Link href={`/servers/${s.id}`} className={styles.cardIdentity} aria-label={`Открыть сервер ${s.name}`}>
+          <ServerIcon server={s} />
+          <div>
+            <h2>{s.name}</h2>
+            <div className={styles.cardTags}>
+              {tags.map(tag => <span key={tag}>{tag}</span>)}
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <div className={styles.cardBody}>
+        <p>{s.shortDesc || 'Проект Lineage 2 с отдельной страницей, голосами, описанием и ссылками для старта.'}</p>
+
+        <div className={styles.cardFooter}>
+          <div className={styles.cardMeta}>
+            <span>
+              <small>Голоса</small>
+              <strong className={styles.online}>{votes.toLocaleString('ru-RU')}</strong>
+            </span>
+            <span>
+              <small>Старт</small>
+              <strong>{formatDate(s.openedDate)}</strong>
+            </span>
+          </div>
+
+          <Link href={`/servers/${s.id}`} className={styles.detailsBtn}>Подробнее</Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ServerIcon({ server, small }: { server: Server; small?: boolean }) {
+  return (
+    <span className={`${styles.serverIcon} ${small ? styles.serverIconSmall : ''}`}>
+      {server.icon
+        ? <img src={server.icon} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        : <span>{server.abbr ?? server.name.slice(0, 2).toUpperCase()}</span>}
+    </span>
+  );
+}
+
+function collectTags(server: Server): string[] {
+  const tags = new Set<string>();
+  if (server.chronicle) tags.add(server.chronicle);
+  if (server.rates) tags.add(server.rates);
+  for (const type of server.type ?? []) {
+    const label = typeLabels.get(type as any);
+    if (label) tags.add(label);
+  }
+  const donate = donateLabels.get(server.donate as any);
+  if (donate) tags.add(donate);
+  return [...tags];
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function serverWord(value: number) {
+  const mod10 = value % 10;
+  const mod100 = value % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'сервер';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'сервера';
+  return 'серверов';
 }

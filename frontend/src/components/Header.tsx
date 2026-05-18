@@ -16,6 +16,10 @@ export function Header() {
 
   const displayName = user?.nickname || user?.name || user?.email || '';
   const initial = displayName[0]?.toUpperCase() || '?';
+  const navClass = (href: string, extra = '') => {
+    const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+    return [styles.navLink, active ? styles.navLinkActive : '', extra].filter(Boolean).join(' ');
+  };
 
   // Закрываем мобильное меню при переходе на другую страницу
   useEffect(() => { setMenuOpen(false); }, [pathname]);
@@ -57,27 +61,27 @@ export function Header() {
 
         <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
           <nav className={styles.nav}>
-            <Link href="/" className={`${styles.navLink} ${styles.navLinkHome}`} onClick={closeMenu}>
+            <Link href="/" className={navClass('/', styles.navLinkHome)} onClick={closeMenu}>
               <Image src="/images/nav-servers.webp" alt="Каталог серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Все серверы</span>
             </Link>
-            <Link href="/coming-soon" className={styles.navLink} onClick={closeMenu}>
+            <Link href="/coming-soon" className={navClass('/coming-soon')} onClick={closeMenu}>
               <Image src="/images/nav-coming-soon.webp" alt="Скоро открытие серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>
                 <span className={styles.navTextFull}>Скоро открытие</span>
                 <span className={styles.navTextShort}>Скоро</span>
               </span>
             </Link>
-            <Link href="/pricing" className={styles.navLink} onClick={closeMenu}>
+            <Link href="/pricing" className={navClass('/pricing')} onClick={closeMenu}>
               <Image src="/images/nav-pricing.webp" alt="Тарифы L2Realm" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Тарифы</span>
             </Link>
-            <Link href="/blog" className={styles.navLink} onClick={closeMenu}>
+            <Link href="/blog" className={navClass('/blog')} onClick={closeMenu}>
               <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
             </Link>
             {isAdmin && (
-              <Link href="/admin" className={`${styles.navLink} ${styles.navAdmin}`} onClick={closeMenu}>
+              <Link href="/admin" className={navClass('/admin', styles.navAdmin)} onClick={closeMenu}>
                 <span className={styles.navText}>Admin</span>
               </Link>
             )}
