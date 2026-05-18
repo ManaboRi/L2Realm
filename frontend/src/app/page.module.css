@@ -475,8 +475,8 @@
 
 .serverIcon {
   position: relative;
-  width: 104px;
-  height: 104px;
+  width: 118px;
+  height: 118px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -488,15 +488,6 @@
   font-family: 'Cinzel', serif;
   font-weight: 700;
   flex-shrink: 0;
-}
-
-.serverIcon::before {
-  content: '';
-  position: absolute;
-  inset: 8%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(4, 7, 11, .58), rgba(4, 7, 11, .28) 48%, transparent 72%);
-  filter: blur(4px);
 }
 
 .serverIconSmall {
@@ -512,7 +503,7 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .72)) drop-shadow(0 0 10px rgba(0, 0, 0, .35));
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, .78)) drop-shadow(0 0 8px rgba(0, 0, 0, .45));
 }
 
 .cardIdentity h2 {
@@ -588,8 +579,8 @@
 
 .cardMeta {
   display: grid;
-  grid-template-columns: 43px minmax(0, 1fr);
-  gap: .42rem;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 1.18rem;
   align-items: end;
 }
 
@@ -767,5 +758,5 @@
 @media (max-width: 430px) {
   .filterList { grid-template-columns: 1fr; }
   .cardMeta { grid-template-columns: 1fr; }
-  .serverIcon { width: 72px; height: 72px; }
+  .serverIcon { width: 86px; height: 86px; }
 }
