@@ -27,6 +27,9 @@ type HomeClientProps = {
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
 const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
+type CardTagTone = 'chronicle' | 'rate' | 'type' | 'donate';
+type CardTag = { label: string; tone: CardTagTone };
+
 export function HomeClient(props: HomeClientProps) {
   return (
     <Suspense>
@@ -355,7 +358,7 @@ function HomeServerCard({
   const tags = collectTags(s).slice(0, 5);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const isVip = !!s._isVip || !!s.vip;
-  const badge = isVip ? 'VIP' : s._isBoosted ? 'БУСТ' : '';
+  const badge = getServerBadge(s);
 
   return (
     <article className={`${styles.serverCard} ${isVip ? styles.serverCardVip : ''}`}>
@@ -383,7 +386,7 @@ function HomeServerCard({
           <div>
             <h2>{s.name}</h2>
             <div className={styles.cardTags}>
-              {tags.map(tag => <span key={tag}>{tag}</span>)}
+              {tags.map(tag => <span key={`${tag.tone}-${tag.label}`} className={styles[`tag${capitalize(tag.tone)}`]}>{tag.label}</span>)}
             </div>
           </div>
         </Link>
@@ -421,36 +424,47 @@ function ServerIcon({ server, small }: { server: Server; small?: boolean }) {
   );
 }
 
-function collectTags(server: Server): string[] {
-  const tags: string[] = [];
+function getServerBadge(server: Server) {
+  if (server._isVip || server.vip) return '★ VIP';
+  if (server._isSod) return 'СЕРВЕР НЕДЕЛИ';
+  if (server._isBoosted) return '🔥 БУСТ';
+  return '';
+}
+
+function collectTags(server: Server): CardTag[] {
+  const tags: CardTag[] = [];
   const seen = new Set<string>();
   const instances = server.instances ?? [];
 
-  const add = (value?: string | null) => {
+  const add = (tone: CardTagTone, value?: string | null) => {
     const clean = value?.trim();
     if (!clean || seen.has(clean)) return;
     seen.add(clean);
-    tags.push(clean);
+    tags.push({ label: clean, tone });
   };
 
-  add(server.chronicle);
-  for (const instance of instances) add(instance.chronicle);
+  add('chronicle', server.chronicle);
+  for (const instance of instances) add('chronicle', instance.chronicle);
 
-  add(server.rates);
-  for (const instance of instances) add(instance.rates);
+  add('rate', server.rates);
+  for (const instance of instances) add('rate', instance.rates);
 
-  for (const type of server.type ?? []) add(typeLabels.get(type as any));
+  for (const type of server.type ?? []) add('type', typeLabels.get(type as any));
   for (const instance of instances) {
-    if (instance.type) add(typeLabels.get(instance.type as any));
+    if (instance.type) add('type', typeLabels.get(instance.type as any));
   }
 
   const donate = donateLabels.get(server.donate as any);
-  if (donate) add(donate);
+  if (donate) add('donate', donate);
   for (const instance of instances) {
-    if (instance.donate) add(donateLabels.get(instance.donate as any));
+    if (instance.donate) add('donate', donateLabels.get(instance.donate as any));
   }
 
   return tags;
+}
+
+function capitalize(value: CardTagTone) {
+  return (value.charAt(0).toUpperCase() + value.slice(1)) as Capitalize<CardTagTone>;
 }
 
 function formatDate(value?: string | null) {

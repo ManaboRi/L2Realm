@@ -280,6 +280,31 @@ export function PricingClient() {
 
         <div className={styles.tiers}>
 
+          {/* Бесплатное добавление */}
+          <div className={`${styles.tier} ${styles.tierFree}`}>
+            <div className={styles.tierHead}>
+              <span className={`${styles.tierBadge} ${styles.badgeFree}`}>Бесплатно</span>
+              <span className={styles.tierPrice}>0 ₽<span className={styles.priceSub}> / навсегда</span></span>
+            </div>
+            <h2 className={styles.tierTitle}>Добавить сервер в каталог</h2>
+            <p className={styles.tierDesc}>
+              Базовое размещение проекта в L2Realm: страница сервера, описание, хроники, рейты, ссылки, голосование и место в общем каталоге.
+            </p>
+            <ul className={styles.tierList}>
+              <li>Публичная страница проекта с SEO-адресом</li>
+              <li>Карточка в каталоге и фильтрах по хроникам, рейтам и типу</li>
+              <li>Голосование, избранное и базовая статистика</li>
+              <li>Можно позже подключить VIP, БУСТ или «Скоро открытие»</li>
+            </ul>
+            <Link
+              href="/add"
+              className="btn-primary"
+              style={{ padding: '.6rem 1.4rem', alignSelf: 'flex-start', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}
+            >
+              Добавить сервер →
+            </Link>
+          </div>
+
           {/* VIP */}
           <div className={`${styles.tier} ${styles.tierVip} ${regularBuyLocked ? styles.tierDisabled : ''}`}>
             <div className={styles.tierHead}>

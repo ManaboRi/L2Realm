@@ -64,6 +64,7 @@
   position: relative; overflow: hidden;
 }
 .tierVip   { border-color: var(--gold-d); box-shadow: 0 0 18px rgba(200,168,75,.08); }
+.tierFree  { border-color: rgba(120, 174, 232, .35); }
 .tierBoost { border-color: rgba(240,140,70,.4); }
 .tierSod   { border-color: rgba(90,180,130,.35); }
 .tierSoonVip { border-color: rgba(200,168,75,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 22px rgba(200,168,75,.07); overflow: visible; z-index: 5; }
@@ -81,6 +82,7 @@
   letter-spacing: .1em; text-transform: uppercase;
 }
 .badgeBoost { background: linear-gradient(135deg, #F08C46, #CC4A2A); color: #fff; }
+.badgeFree  { background: linear-gradient(135deg, #385f8f, #78aee8); color: #fff; }
 .badgeSod   { background: linear-gradient(135deg, #5AB482, #2D8A58); color: #fff; }
 .badgeSoonVip { background: linear-gradient(135deg, #E8DDBA, #C9A84C); color: #090B10; }
 .tierPrice { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); font-weight: 600; white-space: nowrap; }

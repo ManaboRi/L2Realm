@@ -302,11 +302,16 @@
   border-radius: 9px;
   background: rgba(5, 9, 14, .78);
   color: #f6edd0;
-  padding: 0 .85rem;
+  padding: 0 2.15rem 0 .85rem;
   font-family: 'DM Sans', sans-serif;
   color-scheme: dark;
   outline: 0;
+  appearance: none;
+  -webkit-appearance: none;
   backdrop-filter: blur(10px);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 9 6'%3E%3Cpath d='M1 1l3.5 3.5L8 1' fill='none' stroke='%23c8a84b' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .9rem center;
 }
 
 .sortSelect option {
@@ -406,9 +411,10 @@
   background: rgba(5, 8, 12, .82);
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: .59rem;
-  letter-spacing: .1em;
+  font-size: .57rem;
+  letter-spacing: .08em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .favoriteBtn {
@@ -451,9 +457,9 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  gap: .42rem;
+  gap: .34rem;
   align-self: stretch;
-  padding: .9rem 2.7rem .78rem;
+  padding: .72rem 2.7rem .74rem;
   color: inherit;
   text-align: center;
   text-decoration: none;
@@ -468,8 +474,9 @@
 }
 
 .serverIcon {
-  width: 88px;
-  height: 88px;
+  position: relative;
+  width: 104px;
+  height: 104px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -483,6 +490,15 @@
   flex-shrink: 0;
 }
 
+.serverIcon::before {
+  content: '';
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(4, 7, 11, .58), rgba(4, 7, 11, .28) 48%, transparent 72%);
+  filter: blur(4px);
+}
+
 .serverIconSmall {
   width: 34px;
   height: 34px;
@@ -491,10 +507,12 @@
 }
 
 .serverIcon img {
+  position: relative;
+  z-index: 1;
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, .58));
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .72)) drop-shadow(0 0 10px rgba(0, 0, 0, .35));
 }
 
 .cardIdentity h2 {
@@ -528,6 +546,25 @@
   text-transform: uppercase;
 }
 
+.tagChronicle {
+  border-color: rgba(210, 171, 82, .28) !important;
+  color: var(--gold) !important;
+  background: rgba(210, 171, 82, .09) !important;
+}
+
+.tagRate {
+  border-color: rgba(94, 208, 140, .24) !important;
+  color: #5ed08c !important;
+  background: rgba(94, 208, 140, .08) !important;
+}
+
+.tagType,
+.tagDonate {
+  border-color: rgba(92, 151, 216, .24) !important;
+  color: #78aee8 !important;
+  background: rgba(92, 151, 216, .08) !important;
+}
+
 .cardBody p {
   min-height: 40px;
   margin: 0;
@@ -551,7 +588,7 @@
 
 .cardMeta {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 43px minmax(0, 1fr);
   gap: .42rem;
   align-items: end;
 }
@@ -730,5 +767,5 @@
 @media (max-width: 430px) {
   .filterList { grid-template-columns: 1fr; }
   .cardMeta { grid-template-columns: 1fr; }
-  .serverIcon { width: 52px; height: 52px; }
+  .serverIcon { width: 72px; height: 72px; }
 }

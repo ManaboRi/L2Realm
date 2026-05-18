@@ -88,6 +88,13 @@ export function Header() {
           </nav>
 
           <div className={styles.right}>
+            <Link href="/profile#favorites" className={styles.favoritesChip} title="Избранные серверы" onClick={closeMenu}>
+              <span className={styles.favoritesIcon}>♡</span>
+              <span>Избранное</span>
+            </Link>
+            <button type="button" className={styles.notifyBtn} title="Уведомления" aria-label="Уведомления">
+              <span className={styles.bellIcon} />
+            </button>
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>
                 {user.avatar ? (
@@ -102,8 +109,6 @@ export function Header() {
                 Войти
               </button>
             )}
-            <Link href="/add" className={`btn-primary ${styles.addBtn}`} onClick={closeMenu}>+ Добавить сервер</Link>
-            <Link href="/add" className={`btn-primary ${styles.addBtnShort}`} title="Добавить сервер" onClick={closeMenu}>+</Link>
           </div>
         </div>
       </header>

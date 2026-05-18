@@ -165,8 +165,82 @@
   white-space: nowrap;
 }
 
-.addBtn { display: inline-block; }
-.addBtnShort { display: none; padding: .38rem .65rem; }
+.favoritesChip {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: 0 .75rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(255,255,255,.02);
+  color: var(--text2);
+  font-family: 'Cinzel', serif;
+  font-size: .66rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  transition: border-color .18s, background .18s, color .18s, transform .08s;
+}
+.favoritesChip:hover {
+  color: var(--gold);
+  border-color: rgba(200,168,75,.34);
+  background: rgba(200,168,75,.07);
+}
+.favoritesChip:active,
+.notifyBtn:active { transform: translateY(1px); }
+.favoritesIcon {
+  color: var(--gold);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.notifyBtn {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: rgba(255,255,255,.02);
+  color: var(--text2);
+  transition: border-color .18s, background .18s, color .18s, transform .08s;
+}
+.notifyBtn:hover {
+  color: var(--gold);
+  border-color: rgba(200,168,75,.34);
+  background: rgba(200,168,75,.07);
+}
+.bellIcon {
+  position: relative;
+  width: 15px;
+  height: 16px;
+  display: inline-block;
+  border: 1.6px solid currentColor;
+  border-bottom: 0;
+  border-radius: 9px 9px 3px 3px;
+}
+.bellIcon::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  right: -3px;
+  bottom: -4px;
+  border-bottom: 1.6px solid currentColor;
+  border-radius: 999px;
+}
+.bellIcon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
 .loginBtn { white-space: nowrap; }
 
 /* Бургер — иконка три полоски, видим только на mobile */
@@ -288,15 +362,15 @@
     font-size: .82rem;
   }
 
-  /* «+ Добавить сервер» — полная ширина */
-  .addBtn {
-    display: block;
+  .favoritesChip {
     width: 100%;
-    text-align: center;
-    padding: .55rem 1rem;
-    font-size: .8rem;
+    justify-content: center;
+    min-height: 42px;
   }
-  .addBtnShort { display: none; }
+  .notifyBtn {
+    width: 100%;
+    min-height: 42px;
+  }
 }
 
 @media (max-width: 380px) {

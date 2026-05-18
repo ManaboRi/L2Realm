@@ -211,7 +211,7 @@ export default function ProfilePage() {
       })()}
 
       {/* ── Избранное ────────────────────────────── */}
-      <section style={cardStyle}>
+      <section id="favorites" style={{ ...cardStyle, scrollMarginTop: '72px' }}>
         <div style={sectionTitleStyle}>Избранные серверы</div>
         {favLoading ? (
           <p style={{ color: 'var(--text3)', margin: 0 }}>Загрузка...</p>
