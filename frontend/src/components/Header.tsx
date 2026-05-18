@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
+import type { OpeningReminder } from '@/lib/types';
 import { AuthModal } from './AuthModal';
 import styles from './Header.module.css';
 
 export function Header() {
-  const { user, isAdmin } = useAuth();
+  const { user, token, isAdmin } = useAuth();
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [dueReminders, setDueReminders] = useState<OpeningReminder[]>([]);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
@@ -23,6 +26,25 @@ export function Header() {
 
   // Закрываем мобильное меню при переходе на другую страницу
   useEffect(() => { setMenuOpen(false); }, [pathname]);
+
+  useEffect(() => {
+    if (!token) {
+      setDueReminders([]);
+      return;
+    }
+    let alive = true;
+    const load = () => {
+      api.openingReminders.due(token)
+        .then(items => { if (alive) setDueReminders(items); })
+        .catch(() => { if (alive) setDueReminders([]); });
+    };
+    load();
+    const timer = window.setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [token]);
 
   // Закрываем по клику снаружи и по Escape
   useEffect(() => {
@@ -92,11 +114,22 @@ export function Header() {
               <span className={styles.favoritesIcon}>♡</span>
               <span>Избранное</span>
             </Link>
-            <button type="button" className={styles.notifyBtn} title="Уведомления" aria-label="Уведомления">
+            <button
+              type="button"
+              className={`${styles.notifyBtn} ${dueReminders.length > 0 ? styles.notifyBtnActive : ''}`}
+              title={dueReminders.length > 0 ? `Напоминаний: ${dueReminders.length}` : 'Уведомления'}
+              aria-label={dueReminders.length > 0 ? `Напоминаний: ${dueReminders.length}` : 'Уведомления'}
+              onClick={() => {
+                if (dueReminders.length > 0) {
+                  alert(dueReminders.map(item => `${item.server?.name || 'Сервер'} скоро открывается`).join('\n'));
+                }
+              }}
+            >
               <svg className={styles.bellIcon} viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
                 <path d="M13.7 21a2 2 0 0 1-3.4 0" />
               </svg>
+              {dueReminders.length > 0 && <span className={styles.notifyBadge}>{Math.min(dueReminders.length, 9)}</span>}
             </button>
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>

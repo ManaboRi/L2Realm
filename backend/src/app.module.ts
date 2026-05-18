@@ -13,6 +13,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { UploadModule }    from './upload/upload.module';
 import { VotesModule }     from './votes/votes.module';
 import { ArticlesModule }  from './articles/articles.module';
+import { OpeningRemindersModule } from './opening-reminders/opening-reminders.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ArticlesModule }  from './articles/articles.module';
     UploadModule,
     VotesModule,
     ArticlesModule,
+    OpeningRemindersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

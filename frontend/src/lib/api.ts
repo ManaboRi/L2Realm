@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article } from './types';
+import type { Server, ServersResponse, Stats, Review, FavoriteServer, User, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -224,5 +224,22 @@ export const api = {
       request<any>(`/favorites/${serverId}`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }),
     remove: (serverId: string, token: string) =>
       request<any>(`/favorites/${serverId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  },
+
+  openingReminders: {
+    keys: (token: string) =>
+      request<string[]>('/opening-reminders/keys', { headers: { Authorization: `Bearer ${token}` } }),
+    due: (token: string) =>
+      request<OpeningReminder[]>('/opening-reminders/due', { headers: { Authorization: `Bearer ${token}` } }),
+    add: (data: { serverId: string; instanceId?: string | null }, token: string) =>
+      request<OpeningReminder>('/opening-reminders', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    remove: (serverId: string, instanceId: string | null | undefined, token: string) => {
+      const q = instanceId ? `?instanceId=${encodeURIComponent(instanceId)}` : '';
+      return request<any>(`/opening-reminders/${serverId}${q}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+    },
   },
 };

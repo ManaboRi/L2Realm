@@ -1,6 +1,8 @@
 'use client';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
+import { api } from '@/lib/api';
 import type { DonateType, Server, ServerInstance, ServerType } from '@/lib/types';
 import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
 import { isOpeningStillSoon } from '@/lib/opening';
@@ -9,6 +11,7 @@ import styles from './page.module.css';
 type Opening = {
   key: string;
   serverId: string;
+  instanceId?: string | null;
   projectName: string;
   icon?: string | null;
   abbr?: string | null;
@@ -34,6 +37,10 @@ type Filters = {
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
 const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
+function reminderKey(serverId: string, instanceId?: string | null) {
+  return instanceId ? `${serverId}::${instanceId}` : serverId;
+}
+
 function flattenOpenings(servers: Server[]): Opening[] {
   const now = Date.now();
   const result: Opening[] = [];
@@ -46,8 +53,9 @@ function flattenOpenings(servers: Server[]): Opening[] {
     if (futureInsts.length > 0) {
       for (const i of futureInsts) {
         result.push({
-          key: `${s.id}::${i.id}`,
+          key: reminderKey(s.id, i.id),
           serverId: s.id,
+          instanceId: i.id,
           projectName: s.name,
           icon: s.icon,
           abbr: s.abbr,
@@ -64,8 +72,9 @@ function flattenOpenings(servers: Server[]): Opening[] {
       }
     } else if (isOpeningStillSoon(s.openedDate, now)) {
       result.push({
-        key: s.id,
+        key: reminderKey(s.id),
         serverId: s.id,
+        instanceId: null,
         projectName: s.name,
         icon: s.icon,
         abbr: s.abbr,
@@ -171,7 +180,19 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
   );
 }
 
-function OpeningRow({ opening, place, now }: { opening: Opening; place: number; now: number }) {
+function OpeningRow({
+  opening,
+  now,
+  reminderActive,
+  reminderBusy,
+  onToggleReminder,
+}: {
+  opening: Opening;
+  now: number;
+  reminderActive: boolean;
+  reminderBusy: boolean;
+  onToggleReminder: (opening: Opening) => void;
+}) {
   const parts = countdownParts(opening.openedAt, now);
   const types = opening.type.map(t => typeLabels.get(t as ServerType)).filter(Boolean).slice(0, 2);
   const donateLabel = opening.donate === 'cosmetic' || opening.donate === 'free' || !opening.donate
@@ -180,7 +201,7 @@ function OpeningRow({ opening, place, now }: { opening: Opening; place: number; 
 
   return (
     <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''}`}>
-      <div className={styles.rankBadge}>🔥 топ {place}</div>
+      {opening.isVip && <div className={styles.vipBadge}>VIP</div>}
       <Link href={`/servers/${opening.serverId}`} className={styles.identity}>
         <span className={styles.iconBox}>
           {opening.icon
@@ -220,8 +241,15 @@ function OpeningRow({ opening, place, now }: { opening: Opening; place: number; 
         <span className={styles.miniTitle}>Открытие</span>
         <strong>{formatOpenDate(opening.openedAt)}</strong>
         <div className={styles.actions}>
-          <Link href={`/servers/${opening.serverId}`} className={styles.followBtn}>Следить</Link>
-          <button type="button" className={styles.bellBtn} title="Уведомление" aria-label="Уведомление">
+          <Link href={`/servers/${opening.serverId}`} className={styles.followBtn}>Подробнее</Link>
+          <button
+            type="button"
+            className={`${styles.bellBtn} ${reminderActive ? styles.bellBtnActive : ''}`}
+            title={reminderActive ? 'Напоминание включено' : 'Напомнить за час до открытия'}
+            aria-label={reminderActive ? 'Отключить напоминание' : 'Напомнить за час до открытия'}
+            disabled={reminderBusy}
+            onClick={() => onToggleReminder(opening)}
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
               <path d="M13.7 21a2 2 0 0 1-3.4 0" />
@@ -235,16 +263,30 @@ function OpeningRow({ opening, place, now }: { opening: Opening; place: number; 
 
 export function ComingSoonClient({ initialServers }: { initialServers: Server[] }) {
   const openings = useMemo(() => flattenOpenings(initialServers), [initialServers]);
+  const { token } = useAuth();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
   const [sort, setSort] = useState('date');
   const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', donate: '', opens: '' });
   const [now, setNow] = useState(Date.now());
+  const [reminderKeys, setReminderKeys] = useState<Set<string>>(new Set());
+  const [reminderBusy, setReminderBusy] = useState('');
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!token) {
+      setReminderKeys(new Set());
+      return;
+    }
+    api.openingReminders.keys(token)
+      .then(keys => setReminderKeys(new Set(keys)))
+      .catch(() => {});
+  }, [token]);
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
   const counts = useMemo(() => ({
@@ -265,6 +307,11 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
 
   const visible = filtered.slice(0, visibleCount);
 
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2600);
+  }
+
   function toggleFilter(group: keyof Filters, value: string) {
     setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
     setVisibleCount(8);
@@ -275,8 +322,39 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
     setVisibleCount(8);
   }
 
+  async function toggleReminder(opening: Opening) {
+    if (!token) {
+      showToast('Войдите, чтобы включить напоминание');
+      return;
+    }
+    if (reminderBusy) return;
+    const key = opening.key;
+    const active = reminderKeys.has(key);
+    setReminderBusy(key);
+    try {
+      if (active) {
+        await api.openingReminders.remove(opening.serverId, opening.instanceId, token);
+        setReminderKeys(prev => {
+          const next = new Set(prev);
+          next.delete(key);
+          return next;
+        });
+        showToast('Напоминание отключено');
+      } else {
+        await api.openingReminders.add({ serverId: opening.serverId, instanceId: opening.instanceId }, token);
+        setReminderKeys(prev => new Set(prev).add(key));
+        showToast('Напомним за час до открытия');
+      }
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Не удалось сохранить напоминание');
+    } finally {
+      setReminderBusy('');
+    }
+  }
+
   return (
     <main className={styles.page}>
+      {toast && <div className={styles.toast}>{toast}</div>}
       <div className={styles.shell}>
         <button
           type="button"
@@ -344,26 +422,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
                 <p>Новые миры уже на подходе. Выбери сервер, следи за новостями и стань одним из первых!</p>
               </div>
 
-              <div className={styles.quickBar}>
-                {[
-                  ['Все сервера', '', 'type'],
-                  ['PvP', 'pvp', 'type'],
-                  ['PvE', 'pve', 'type'],
-                  ['Craft', 'multicraft', 'type'],
-                  ['RolePlay', 'rvr', 'type'],
-                  ['No Donate', 'no-donate', 'donate'],
-                ].map(([label, value, group]) => (
-                  <button
-                    key={`${group}-${value}`}
-                    type="button"
-                    className={(group === 'donate' ? filters.donate : filters.type) === value ? styles.quickActive : ''}
-                    onClick={() => value ? toggleFilter(group as keyof Filters, value) : resetFilters()}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
               <label className={styles.sortWrap}>
                 <span>Сортировать:</span>
                 <select value={sort} onChange={e => setSort(e.target.value)}>
@@ -386,7 +444,16 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
             ) : (
               <>
                 <div className={styles.rows}>
-                  {visible.map((opening, index) => <OpeningRow key={opening.key} opening={opening} place={index + 1} now={now} />)}
+                  {visible.map(opening => (
+                    <OpeningRow
+                      key={opening.key}
+                      opening={opening}
+                      now={now}
+                      reminderActive={reminderKeys.has(opening.key)}
+                      reminderBusy={reminderBusy === opening.key}
+                      onToggleReminder={toggleReminder}
+                    />
+                  ))}
                 </div>
                 {visible.length < filtered.length && (
                   <button type="button" className={styles.moreBtn} onClick={() => setVisibleCount(v => v + 8)}>

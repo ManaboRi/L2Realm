@@ -160,7 +160,6 @@
 }
 
 .heroCopy,
-.quickBar,
 .sortWrap {
   position: relative;
   z-index: 1;
@@ -174,8 +173,9 @@
   margin: 0;
   font-family: 'Cinzel', serif;
   color: #f6edd0;
-  font-size: clamp(1.9rem, 2.7vw, 2.55rem);
+  font-size: clamp(1.75rem, 2.45vw, 2.38rem);
   line-height: 1.08;
+  white-space: nowrap;
 }
 
 .hero h1 span {
@@ -190,14 +190,6 @@
   font-size: .95rem;
 }
 
-.quickBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .55rem;
-  padding-right: 260px;
-}
-
-.quickBar button,
 .sortWrap select {
   min-height: 38px;
   border: 1px solid rgba(210, 171, 82, .15);
@@ -208,13 +200,6 @@
   text-transform: uppercase;
   font-size: .72rem;
   letter-spacing: .06em;
-}
-
-.quickBar .quickActive,
-.quickBar button:hover {
-  color: #f6edd0;
-  border-color: rgba(210, 171, 82, .45);
-  background: linear-gradient(135deg, rgba(139, 105, 20, .72), rgba(200, 168, 75, .36));
 }
 
 .sortWrap {
@@ -270,7 +255,7 @@
   border-color: rgba(210, 171, 82, .32);
 }
 
-.rankBadge {
+.vipBadge {
   position: absolute;
   left: 1rem;
   top: .8rem;
@@ -297,7 +282,7 @@
   align-items: center;
   color: inherit;
   text-decoration: none;
-  padding-left: 2rem;
+  padding-left: 1.35rem;
 }
 
 .iconBox {
@@ -470,6 +455,18 @@
   border-radius: 0 6px 6px 0;
 }
 
+.bellBtnActive {
+  color: #f6edd0;
+  border-color: rgba(210, 171, 82, .55);
+  background: linear-gradient(135deg, rgba(139, 105, 20, .42), rgba(200, 168, 75, .16));
+  box-shadow: inset 0 0 0 1px rgba(246, 237, 208, .05);
+}
+
+.bellBtn:disabled {
+  cursor: wait;
+  opacity: .72;
+}
+
 .bellBtn svg {
   width: 16px;
   height: 16px;
@@ -528,6 +525,21 @@
   color: var(--gold);
 }
 
+.toast {
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 120;
+  max-width: min(360px, calc(100vw - 2rem));
+  padding: .78rem 1rem;
+  border: 1px solid rgba(210, 171, 82, .24);
+  border-radius: 7px;
+  background: rgba(10, 15, 22, .96);
+  color: #f6edd0;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, .42);
+  font-size: .86rem;
+}
+
 .filtersToggle {
   display: none;
   width: 100%;
@@ -583,7 +595,6 @@
   .filtersToggle { display: flex; }
   .sidebar { display: none; position: static; min-height: 0; }
   .sidebarOpen { display: flex; }
-  .quickBar { padding-right: 0; }
   .sortWrap {
     position: relative;
     right: auto;
@@ -596,10 +607,10 @@
 @media (max-width: 620px) {
   .shell { padding-inline: .65rem; }
   .hero { padding: 1.35rem .85rem .95rem; }
-  .hero h1 { font-size: clamp(1.55rem, 8vw, 2.1rem); }
+  .hero h1 { font-size: clamp(1.4rem, 6.7vw, 1.85rem); white-space: normal; }
   .identity { grid-template-columns: 72px minmax(0, 1fr); gap: .75rem; padding-left: 0; }
   .iconBox { width: 68px; height: 68px; }
-  .rankBadge { position: static; width: max-content; margin-bottom: .5rem; }
+  .vipBadge { position: static; width: max-content; margin-bottom: .5rem; }
   .rowCard { padding: .85rem; }
   .copy strong { font-size: 1.1rem; }
   .timeGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

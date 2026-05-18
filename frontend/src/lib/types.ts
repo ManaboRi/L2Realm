@@ -173,6 +173,20 @@ export interface FavoriteServer {
   };
 }
 
+export interface OpeningReminder {
+  id: string;
+  serverId: string;
+  instanceId: string;
+  openingAt: string;
+  notifyAt: string;
+  createdAt: string;
+  server?: {
+    id: string;
+    name: string;
+    icon: string | null;
+  };
+}
+
 export interface ServersResponse {
   data:  Server[];
   total: number;

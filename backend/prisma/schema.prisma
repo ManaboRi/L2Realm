@@ -35,6 +35,7 @@ model User {
 
   reviews        Review[]
   favorites      Favorite[]
+  openingReminders OpeningReminder[]
   serverRequests ServerRequest[]
   votes          Vote[]
 }
@@ -92,6 +93,7 @@ model Server {
   news         News[]
   monitorLogs  MonitorLog[]
   favorites    Favorite[]
+  openingReminders OpeningReminder[]
   boosts       Boost[]
   votes        Vote[]
 }
@@ -107,6 +109,24 @@ model Favorite {
 
   @@unique([userId, serverId])
   @@index([userId])
+}
+
+model OpeningReminder {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serverId   String
+  server     Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  instanceId String    @default("")
+  openingAt  DateTime
+  notifyAt   DateTime
+  notifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@unique([userId, serverId, instanceId])
+  @@index([userId, notifyAt])
+  @@index([notifyAt, notifiedAt])
 }
 
 // ── Подписки / Тарифы ─────────────────────────

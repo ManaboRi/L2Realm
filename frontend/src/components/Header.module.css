@@ -213,12 +213,31 @@
   background: rgba(255,255,255,.02);
   color: var(--text2);
   line-height: 0;
+  position: relative;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
-.notifyBtn:hover {
+.notifyBtn:hover,
+.notifyBtnActive {
   color: var(--gold);
   border-color: rgba(200,168,75,.34);
   background: rgba(200,168,75,.07);
+}
+.notifyBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(9,11,16,.95);
+  border-radius: 999px;
+  background: var(--gold);
+  color: #090b10;
+  font-size: .65rem;
+  font-weight: 700;
+  line-height: 1;
 }
 .bellIcon {
   width: 18px;
