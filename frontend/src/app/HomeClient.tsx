@@ -47,11 +47,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const [loading, setLoading] = useState(!initialOk);
   const [pages, setPages] = useState(initialPages);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [suggestions, setSuggestions] = useState<Server[]>([]);
-  const [showSuggest, setShowSuggest] = useState(false);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoriteBusyId, setFavoriteBusyId] = useState('');
-  const searchBoxRef = useRef<HTMLDivElement>(null);
   const firstListEffect = useRef(true);
   const firstCountsEffect = useRef(true);
 
@@ -139,30 +136,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     api.servers.counts(params).then(setCounts).catch(() => {});
   }, [filters, initialCounts]);
 
-  useEffect(() => {
-    const q = search.trim();
-    if (q.length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    const t = setTimeout(() => {
-      api.servers.list({ search: q, limit: '6' })
-        .then(r => setSuggestions(r.data.slice(0, 6)))
-        .catch(() => {});
-    }, 200);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target as Node)) {
-        setShowSuggest(false);
-      }
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
   function toggleFilter(group: string, value: string) {
     setFilters(prev => ({ ...prev, [group]: prev[group] === value ? '' : value }));
     setPage(1);
@@ -173,6 +146,11 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     setSearch('');
     setSort('');
     setPage(1);
+  }
+
+  function showFilteredResults() {
+    setMobileFiltersOpen(false);
+    document.getElementById('catalog')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function toggleFavorite(serverId: string) {
@@ -256,7 +234,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <button type="button" className={styles.showBtn} onClick={() => setMobileFiltersOpen(false)}>
+            <button type="button" className={styles.showBtn} onClick={showFilteredResults}>
               Показать {totalServers.toLocaleString('ru-RU')} серверов
             </button>
           </aside>
@@ -267,54 +245,35 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 <h1>Найди свой мир <span>Lineage 2</span></h1>
                 <p>Каталог приватных серверов с фильтрами, отзывами, голосованием и живыми страницами проектов.</p>
 
-                <div className={styles.searchWrap} ref={searchBoxRef}>
-                  <span className={styles.searchIcon}>⌕</span>
-                  <input
-                    className={styles.searchInput}
-                    placeholder="Поиск серверов, хроник, рейтов..."
-                    value={search}
-                    onFocus={() => setShowSuggest(true)}
-                    onChange={e => { setSearch(e.target.value); setPage(1); setShowSuggest(true); }}
-                    onKeyDown={e => { if (e.key === 'Escape') setShowSuggest(false); }}
-                  />
-                  {search && <button type="button" className={styles.searchClear} onClick={() => { setSearch(''); setShowSuggest(false); }}>×</button>}
+                <div className={styles.searchControls}>
+                  <div className={styles.searchWrap}>
+                    <span className={styles.searchIcon}>⌕</span>
+                    <input
+                      className={styles.searchInput}
+                      placeholder="Поиск серверов, хроник, рейтов..."
+                      value={search}
+                      onChange={e => { setSearch(e.target.value); setPage(1); }}
+                    />
+                    {search && <button type="button" className={styles.searchClear} onClick={() => setSearch('')}>×</button>}
+                  </div>
 
-                  {showSuggest && suggestions.length > 0 && (
-                    <div className={styles.suggestList}>
-                      {suggestions.map(s => (
-                        <Link key={s.id} href={`/servers/${s.id}`} className={styles.suggestItem} onClick={() => setShowSuggest(false)}>
-                          <ServerIcon server={s} small />
-                          <span>
-                            <strong>{s.name}</strong>
-                            <small>{s.chronicle} · {s.rates}</small>
-                          </span>
-                          <em>›</em>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <select className={styles.sortSelect} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
+                    <option value="">По умолчанию</option>
+                    <option value="opened">По дате открытия</option>
+                    <option value="name">По алфавиту</option>
+                    <option value="rating">По рейтингу</option>
+                    <option value="votes">По голосам</option>
+                  </select>
                 </div>
               </div>
 
               <div className={styles.heroStats}>
                 <Metric label="Всего серверов" value={totalServers} note={`+${addedThisWeek} за неделю`} />
-                <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" chart />
+                <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" />
               </div>
             </section>
 
-            <div className={styles.toolbar}>
-              <div>
-                <span className={styles.toolbarEyebrow}>Каталог</span>
-                <strong>{loading ? 'Обновляем список...' : `${servers.length} ${serverWord(servers.length)} на странице`}</strong>
-              </div>
-              <select className={styles.sortSelect} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
-                <option value="">По умолчанию</option>
-                <option value="opened">По дате открытия</option>
-                <option value="name">По алфавиту</option>
-                <option value="rating">По рейтингу</option>
-                <option value="votes">По голосам</option>
-              </select>
-            </div>
+            <div id="catalog" className={styles.catalogAnchor} />
 
             {loading ? (
               <div className={styles.grid}>
@@ -324,11 +283,10 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
             ) : (
               <div className={styles.grid}>
-                {servers.map((s, index) => (
+                {servers.map(s => (
                   <HomeServerCard
                     key={s.id}
                     server={s}
-                    position={index + 1}
                     isFavorite={favoriteIds.has(s.id)}
                     favoriteBusy={favoriteBusyId === s.id}
                     canFavorite={!!token}
@@ -371,39 +329,33 @@ function FilterItem({ label, active, count, onClick }: { label: string; active: 
   );
 }
 
-function Metric({ label, value, note, chart }: { label: string; value: number; note: string; chart?: boolean }) {
+function Metric({ label, value, note }: { label: string; value: number; note: string }) {
   return (
     <div className={styles.metric}>
       <span>{label}</span>
       <strong>{value.toLocaleString('ru-RU')}</strong>
       <small>{note}</small>
-      {chart && (
-        <svg viewBox="0 0 150 44" aria-hidden="true">
-          <polyline points="0,36 18,31 31,34 45,25 59,28 74,18 89,22 105,10 120,14 137,6 150,2" />
-        </svg>
-      )}
     </div>
   );
 }
 
 function HomeServerCard({
   server: s,
-  position,
   isFavorite,
   favoriteBusy,
   canFavorite,
   onFavorite,
 }: {
   server: Server;
-  position: number;
   isFavorite: boolean;
   favoriteBusy: boolean;
   canFavorite: boolean;
   onFavorite: () => void;
 }) {
-  const tags = collectTags(s).slice(0, 3);
+  const tags = collectTags(s).slice(0, 5);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
-  const isVip = !!s._isVip;
+  const isVip = !!s._isVip || !!s.vip;
+  const badge = isVip ? 'VIP' : s._isBoosted ? 'БУСТ' : '';
 
   return (
     <article className={`${styles.serverCard} ${isVip ? styles.serverCardVip : ''}`}>
@@ -415,7 +367,7 @@ function HomeServerCard({
         )}
         <span className={styles.cardShade} />
         <span className={styles.cardBottomFade} />
-        <span className={styles.cardBadge}>🔥 ТОП {position}</span>
+        {badge && <span className={styles.cardBadge}>{badge}</span>}
         <button
           type="button"
           className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
@@ -470,27 +422,40 @@ function ServerIcon({ server, small }: { server: Server; small?: boolean }) {
 }
 
 function collectTags(server: Server): string[] {
-  const tags = new Set<string>();
-  if (server.chronicle) tags.add(server.chronicle);
-  if (server.rates) tags.add(server.rates);
-  for (const type of server.type ?? []) {
-    const label = typeLabels.get(type as any);
-    if (label) tags.add(label);
+  const tags: string[] = [];
+  const seen = new Set<string>();
+  const instances = server.instances ?? [];
+
+  const add = (value?: string | null) => {
+    const clean = value?.trim();
+    if (!clean || seen.has(clean)) return;
+    seen.add(clean);
+    tags.push(clean);
+  };
+
+  add(server.chronicle);
+  for (const instance of instances) add(instance.chronicle);
+
+  add(server.rates);
+  for (const instance of instances) add(instance.rates);
+
+  for (const type of server.type ?? []) add(typeLabels.get(type as any));
+  for (const instance of instances) {
+    if (instance.type) add(typeLabels.get(instance.type as any));
   }
+
   const donate = donateLabels.get(server.donate as any);
-  if (donate) tags.add(donate);
-  return [...tags];
+  if (donate) add(donate);
+  for (const instance of instances) {
+    if (instance.donate) add(donateLabels.get(instance.donate as any));
+  }
+
+  return tags;
 }
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
-  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
-}
-
-function serverWord(value: number) {
-  const mod10 = value % 10;
-  const mod100 = value % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'сервер';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'сервера';
-  return 'серверов';
+  return new Date(value)
+    .toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })
+    .replace(/\s?г\.$/, '');
 }

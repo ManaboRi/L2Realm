@@ -23,10 +23,7 @@
 html   { scroll-behavior: smooth; }
 body   {
   font-family: 'DM Sans', sans-serif;
-  background:
-    linear-gradient(180deg, rgba(5,7,11,.93), rgba(5,7,11,.97)),
-    url('/images/hero-bg.webp') center top / cover fixed no-repeat,
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   min-height: 100vh;
   overflow-x: hidden;
