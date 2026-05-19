@@ -218,10 +218,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <button type="button" className={styles.showBtn} onClick={resetFilters}>
-              Сбросить фильтры
-            </button>
-
             <FilterFooter />
           </aside>
 

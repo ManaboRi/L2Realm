@@ -66,7 +66,17 @@
 
 .sidebarHead button:hover { color: var(--gold); }
 .sidebarHead:empty { display: none; }
-.filterGroup { display: flex; flex-direction: column; gap: .38rem; }
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: .42rem;
+  padding: .55rem .5rem .58rem;
+  border: 1px solid rgba(118, 141, 151, .1);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, .008)),
+    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .05), transparent 42%);
+}
 .filterList { display: flex; flex-direction: column; gap: .16rem; }
 
 .filterItem {
@@ -76,9 +86,9 @@
   gap: .56rem;
   width: 100%;
   min-height: 27px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
+  border: 1px solid rgba(118, 141, 151, .07);
+  border-radius: 5px;
+  background: rgba(4, 8, 13, .18);
   color: var(--text2);
   padding: .22rem .4rem;
   text-align: left;
@@ -89,8 +99,8 @@
 .filterItem:hover,
 .filterItemActive {
   color: #f4e8c5;
-  background: rgba(255, 255, 255, .035);
-  border-color: rgba(210, 171, 82, .12);
+  background: linear-gradient(90deg, rgba(210, 171, 82, .13), rgba(255, 255, 255, .025));
+  border-color: rgba(210, 171, 82, .2);
 }
 
 .filterDot {
@@ -107,31 +117,18 @@
 
 .filterItem em {
   min-width: 25px;
-  padding: .1rem .32rem;
-  border-radius: 5px;
-  background: rgba(255, 255, 255, .05);
+  padding: .08rem .34rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .055);
   color: var(--text3);
   font-style: normal;
-  font-size: .72rem;
+  font-size: .68rem;
   text-align: center;
 }
 
-.showBtn {
-  margin-top: .05rem;
-  min-height: 36px;
-  border: 1px solid rgba(210, 171, 82, .22);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, .025);
-  color: #f4e8c5;
-  font-family: 'Cinzel', serif;
-  font-size: .66rem;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-}
-
-.showBtn:hover {
-  border-color: rgba(210, 171, 82, .46);
-  background: rgba(210, 171, 82, .08);
+.filterItemActive em {
+  background: rgba(210, 171, 82, .16);
+  color: var(--gold);
 }
 
 .filterFooter {

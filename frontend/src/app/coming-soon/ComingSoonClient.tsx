@@ -398,7 +398,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
               ))}
             </FilterGroup>
 
-            <button type="button" className={styles.resetBtn} onClick={resetFilters}>Сбросить фильтры</button>
             <FilterFooter />
           </aside>
 
@@ -426,7 +425,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
             ) : filtered.length === 0 ? (
               <div className={styles.empty}>
                 <strong>По фильтрам ничего не найдено</strong>
-                <button type="button" onClick={resetFilters}>Сбросить фильтры</button>
+                <span>Измени параметры или убери активные фильтры сверху.</span>
               </div>
             ) : (
               <>
