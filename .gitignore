@@ -19,6 +19,7 @@ build/
 *.log
 npm-debug.log*
 .local-logs/
+.codex-screenshots/
 
 # OS
 .DS_Store

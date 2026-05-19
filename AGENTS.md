@@ -2,6 +2,10 @@
 
 Guidance for Codex when working in L2Realm.
 
+## Read First
+
+Open `docs/codex-quick-context.md` before starting normal work. It is the short operational memory for this project: deploy rules, checks, critical invariants, and the file map. Use the longer docs only when needed.
+
 ## Project
 
 L2Realm is a private Lineage 2 server catalog: https://l2realm.ru.

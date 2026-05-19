@@ -8,24 +8,24 @@
 .shell {
   max-width: none;
   margin: 0 auto;
-  padding: 1rem 1rem 3rem;
+  padding: .9rem .9rem 3rem;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 218px minmax(0, 1fr);
+  gap: .95rem;
   align-items: start;
 }
 
 .sidebar {
   position: sticky;
-  top: 72px;
+  top: 68px;
   display: flex;
   flex-direction: column;
   gap: .66rem;
   min-height: calc(100vh - 96px);
-  padding: .82rem .76rem;
+  padding: .78rem .72rem;
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
   background:
@@ -171,8 +171,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 205px;
   gap: 1.15rem;
-  min-height: 224px;
-  padding: 1.55rem 1.35rem 1.05rem;
+  min-height: 220px;
+  padding: 1.62rem 1.35rem 1.05rem;
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid rgba(210, 171, 82, .08);
@@ -210,11 +210,12 @@
   margin: 0;
   font-family: 'Cinzel', serif;
   color: #f6edd0;
-  font-size: clamp(2rem, 3vw, 2.85rem);
+  font-size: clamp(2rem, 2.85vw, 2.75rem);
   line-height: 1.08;
   letter-spacing: 0;
   max-width: 100%;
   overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 .hero h1 span {
@@ -223,10 +224,10 @@
 
 .hero p {
   max-width: 560px;
-  margin: .8rem 0 1.05rem;
+  margin: .78rem 0 1.05rem;
   color: rgba(232, 221, 186, .78);
-  line-height: 1.65;
-  font-size: .98rem;
+  line-height: 1.6;
+  font-size: .96rem;
 }
 
 .searchWrap {
@@ -775,12 +776,12 @@
 }
 
 @media (max-width: 980px) {
-  .shell { padding: 1rem .8rem 3rem; }
+  .shell { padding: .9rem .8rem 3rem; }
   .layout { grid-template-columns: 1fr; }
   .filtersToggle { display: flex; }
   .sidebar { display: none; position: static; min-height: 0; }
   .sidebarOpen { display: flex; }
-  .hero { grid-template-columns: 1fr; padding-top: 2rem; }
+  .hero { grid-template-columns: 1fr; padding-top: 1.55rem; }
   .heroCopy { max-width: none; }
   .heroStats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -789,7 +790,7 @@
   .shell { padding-inline: .65rem; }
   .hero { min-height: 0; padding: 1.35rem .85rem .9rem; }
   .hero h1 { font-size: clamp(1.65rem, 9vw, 2.2rem); }
-  .hero h1 span { display: block; }
+  .hero h1 span { display: inline; }
   .hero p { font-size: .9rem; }
   .searchControls { grid-template-columns: 1fr; width: 100%; }
   .searchWrap { width: 100%; min-height: 44px; }

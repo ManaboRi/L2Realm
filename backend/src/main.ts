@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 
@@ -26,7 +25,7 @@ async function bootstrap() {
     .filter(Boolean);
   app.enableCors({
     origin: (origin, cb) => {
-      if (!origin || allowedOrigins.some(o => origin.startsWith(o))) cb(null, true);
+      if (!origin || allowedOrigins.includes(origin)) cb(null, true);
       else cb(new Error('Not allowed by CORS'));
     },
     credentials: true,
@@ -40,6 +39,7 @@ async function bootstrap() {
 
   // Swagger — только в dev. В проде не раскрываем карту endpoints.
   if (!isProd) {
+    const { DocumentBuilder, SwaggerModule } = await import('@nestjs/swagger');
     const config = new DocumentBuilder()
       .setTitle('L2Realm API')
       .setDescription('API каталога серверов Lineage 2')

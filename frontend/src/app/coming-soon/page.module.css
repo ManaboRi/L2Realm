@@ -6,24 +6,24 @@
 }
 
 .shell {
-  padding: 1rem 1rem 3rem;
+  padding: .9rem .9rem 3rem;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 1rem;
+  grid-template-columns: 218px minmax(0, 1fr);
+  gap: .95rem;
   align-items: start;
 }
 
 .sidebar {
   position: sticky;
-  top: 72px;
+  top: 68px;
   display: flex;
   flex-direction: column;
   gap: .66rem;
   min-height: calc(100vh - 96px);
-  padding: .82rem .76rem;
+  padding: .78rem .72rem;
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
   background:
@@ -168,8 +168,8 @@
 
 .hero {
   position: relative;
-  min-height: 214px;
-  padding: 1.85rem 1.8rem 1.35rem;
+  min-height: 220px;
+  padding: 1.62rem 1.35rem 1.05rem;
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid rgba(210, 171, 82, .08);
@@ -196,16 +196,19 @@
 }
 
 .heroCopy {
-  max-width: 620px;
+  max-width: 700px;
+  padding-top: .32rem;
 }
 
 .hero h1 {
   margin: 0;
   font-family: 'Cinzel', serif;
   color: #f6edd0;
-  font-size: clamp(1.75rem, 2.45vw, 2.38rem);
+  font-size: clamp(2rem, 2.85vw, 2.75rem);
   line-height: 1.08;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  text-wrap: balance;
 }
 
 .hero h1 span {
@@ -214,10 +217,10 @@
 
 .hero p {
   max-width: 560px;
-  margin: .8rem 0 1.45rem;
+  margin: .78rem 0 1.05rem;
   color: rgba(232, 221, 186, .78);
-  line-height: 1.55;
-  font-size: .95rem;
+  line-height: 1.6;
+  font-size: .96rem;
 }
 
 .sortWrap select {
@@ -235,7 +238,7 @@
 .sortWrap {
   position: absolute;
   right: 1.35rem;
-  bottom: 1.35rem;
+  bottom: 1.05rem;
   display: flex;
   align-items: center;
   gap: .65rem;
@@ -620,7 +623,7 @@
 }
 
 @media (max-width: 980px) {
-  .shell { padding: 1rem .8rem 3rem; }
+  .shell { padding: .9rem .8rem 3rem; }
   .layout { grid-template-columns: 1fr; }
   .filtersToggle { display: flex; }
   .sidebar { display: none; position: static; min-height: 0; }
@@ -637,7 +640,7 @@
 @media (max-width: 620px) {
   .shell { padding-inline: .65rem; }
   .hero { padding: 1.35rem .85rem .95rem; }
-  .hero h1 { font-size: clamp(1.4rem, 6.7vw, 1.85rem); white-space: normal; }
+  .hero h1 { font-size: clamp(1.65rem, 9vw, 2.2rem); }
   .identity { grid-template-columns: 72px minmax(0, 1fr); gap: .75rem; padding-left: 0; }
   .iconBox { width: 68px; height: 68px; }
   .vipBadge { position: static; width: max-content; margin-bottom: .5rem; }

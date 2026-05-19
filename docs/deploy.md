@@ -11,6 +11,20 @@ git pull
 docker compose up -d --build backend frontend
 ```
 
+If Prisma migrations were added, make a database backup first and deploy migrations before recreating the app containers:
+
+```bash
+mkdir -p backups
+docker compose exec -T postgres pg_dump -U l2realm l2realm > backups/l2realm-pre-change-YYYYMMDD-HHMM.sql
+
+git pull
+docker compose build backend frontend
+docker compose run --rm backend npx prisma migrate deploy
+docker compose up -d backend frontend
+```
+
+Current production database service name is `postgres`, not `db`.
+
 If env variables changed, force recreate the affected container:
 
 ```bash
@@ -24,6 +38,7 @@ Keep the `--force-recreate` note. Docker Compose can otherwise keep the old envi
 ```bash
 docker compose logs backend --tail 50
 docker compose exec backend node -e "fetch('http://backend:4000/api/servers?limit=3').then(r=>r.text()).then(console.log)"
+docker compose ps
 ```
 
 ## Env Files

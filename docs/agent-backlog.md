@@ -19,6 +19,7 @@ Working notes for the user and Codex. Update when a task changes status.
 
 ## Planned
 
+- Backend security upgrade: move Docker backend from Node 18 to Node 20 and upgrade Nest 10 -> Nest 11 to clear the remaining moderate production audit findings. See `docs/security-audit.md`.
 - JSON-LD structured data with Product schema and rating for search result stars.
 - Slugs instead of IDs in `/servers/[id]`, e.g. `/servers/newworld-interlude-x100`; needs 301 redirects and should wait until there is meaningful organic traffic.
 - Clean old/noisy Prisma migrations or data-fix scripts in `backend/prisma/` when convenient.
