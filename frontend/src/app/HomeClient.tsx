@@ -337,10 +337,17 @@ function HomeServerCard({
   const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const isVip = !!s._isVip || !!s.vip;
+  const isBoosted = !!s._isBoosted;
+  const isWeek = !!s._isSod;
   const badge = getServerBadge(s);
 
   return (
-    <article className={`${styles.serverCard} ${isVip ? styles.serverCardVip : ''}`}>
+    <article className={[
+      styles.serverCard,
+      isVip ? styles.serverCardVip : '',
+      isBoosted ? styles.serverCardBoost : '',
+      isWeek ? styles.serverCardWeek : '',
+    ].filter(Boolean).join(' ')}>
       <div className={styles.cardMedia}>
         {s.banner ? (
           <img src={s.banner} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />

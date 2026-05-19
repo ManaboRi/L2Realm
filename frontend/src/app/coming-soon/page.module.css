@@ -172,11 +172,13 @@
   padding: 1.85rem 1.8rem 1.35rem;
   overflow: hidden;
   border-radius: 8px;
-  border: 1px solid rgba(210, 171, 82, .11);
+  border: 1px solid rgba(210, 171, 82, .08);
+  border-bottom-color: rgba(210, 171, 82, .045);
   background:
-    linear-gradient(90deg, rgba(5, 8, 12, .85) 0%, rgba(5, 8, 12, .46) 45%, rgba(5, 8, 12, .76) 100%),
-    url('/images/home-hero-bg.jpg') center 42% / cover no-repeat;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .035);
+    linear-gradient(90deg, rgba(5, 8, 12, .86) 0%, rgba(5, 8, 12, .52) 45%, rgba(5, 8, 12, .78) 100%),
+    linear-gradient(180deg, rgba(12, 20, 30, .12), rgba(5, 8, 12, .38)),
+    url('/images/hero-bg.webp') center 47% / cover no-repeat;
+  box-shadow: 0 18px 56px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .025);
 }
 
 .hero::after {

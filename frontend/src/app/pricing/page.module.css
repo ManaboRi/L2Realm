@@ -23,11 +23,12 @@
   min-height: 190px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(201, 168, 76, .12);
+  border-bottom: 1px solid rgba(201, 168, 76, .055);
   background:
-    linear-gradient(90deg, rgba(5, 8, 12, .92) 0%, rgba(5, 8, 12, .42) 48%, rgba(5, 8, 12, .92) 100%),
-    linear-gradient(180deg, transparent 55%, rgba(5, 8, 12, .96)),
-    url('/images/home-hero-bg.jpg') center 43% / cover no-repeat;
+    linear-gradient(90deg, rgba(5, 8, 12, .94) 0%, rgba(5, 8, 12, .5) 48%, rgba(5, 8, 12, .9) 100%),
+    linear-gradient(180deg, transparent 50%, rgba(5, 8, 12, .96)),
+    radial-gradient(circle at 72% 24%, rgba(201, 168, 76, .12), transparent 34%),
+    url('/images/og-default.jpg') right 40% / cover no-repeat;
 }
 
 .heroInner {
@@ -95,8 +96,14 @@
 }
 
 .plan_free { border-color: rgba(120, 174, 232, .24); }
-.plan_vip { border-color: rgba(141, 101, 223, .4); }
-.plan_boost { border-color: rgba(240, 140, 70, .38); }
+.plan_vip {
+  border-color: rgba(141, 101, 223, .42);
+  box-shadow: 0 0 0 1px rgba(141, 101, 223, .06), 0 20px 66px rgba(141, 101, 223, .06);
+}
+.plan_boost {
+  border-color: rgba(240, 140, 70, .42);
+  box-shadow: 0 0 0 1px rgba(240, 140, 70, .06), 0 20px 66px rgba(240, 140, 70, .06);
+}
 .plan_soon { border-color: rgba(90, 180, 130, .3); }
 .plan_soonVip {
   border-color: rgba(201, 168, 76, .55);
