@@ -28,7 +28,7 @@
     linear-gradient(90deg, rgba(5, 8, 12, .94) 0%, rgba(5, 8, 12, .5) 48%, rgba(5, 8, 12, .9) 100%),
     linear-gradient(180deg, transparent 50%, rgba(5, 8, 12, .96)),
     radial-gradient(circle at 72% 24%, rgba(201, 168, 76, .12), transparent 34%),
-    url('/images/og-default.jpg') right 40% / cover no-repeat;
+    url('/images/hero-pricing-bg.webp') center 48% / cover no-repeat;
 }
 
 .heroInner {
