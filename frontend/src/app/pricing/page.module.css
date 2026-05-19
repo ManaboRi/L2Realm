@@ -23,10 +23,10 @@
   min-height: 190px;
   display: flex;
   align-items: center;
-  border-bottom: 1px solid rgba(201, 168, 76, .055);
+  border-bottom: 0;
   background:
     linear-gradient(90deg, rgba(5, 8, 12, .94) 0%, rgba(5, 8, 12, .5) 48%, rgba(5, 8, 12, .9) 100%),
-    linear-gradient(180deg, transparent 50%, rgba(5, 8, 12, .96)),
+    linear-gradient(180deg, rgba(5, 8, 12, 0) 42%, rgba(5, 8, 12, .72) 72%, #05070b 100%),
     radial-gradient(circle at 72% 24%, rgba(201, 168, 76, .12), transparent 34%),
     url('/images/hero-pricing-bg.webp') center 48% / cover no-repeat;
 }
