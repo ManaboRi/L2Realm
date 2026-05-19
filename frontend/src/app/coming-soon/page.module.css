@@ -196,7 +196,7 @@
 }
 
 .heroCopy {
-  max-width: 700px;
+  max-width: 840px;
   padding-top: .32rem;
 }
 
@@ -209,6 +209,7 @@
   max-width: 100%;
   overflow-wrap: break-word;
   text-wrap: balance;
+  white-space: nowrap;
 }
 
 .hero h1 span {
@@ -640,7 +641,7 @@
 @media (max-width: 620px) {
   .shell { padding-inline: .65rem; }
   .hero { padding: 1.35rem .85rem .95rem; }
-  .hero h1 { font-size: clamp(1.65rem, 9vw, 2.2rem); }
+  .hero h1 { font-size: clamp(1.65rem, 9vw, 2.2rem); white-space: normal; }
   .identity { grid-template-columns: 72px minmax(0, 1fr); gap: .75rem; padding-left: 0; }
   .iconBox { width: 68px; height: 68px; }
   .vipBadge { position: static; width: max-content; margin-bottom: .5rem; }

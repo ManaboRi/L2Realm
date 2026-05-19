@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-20
 
+- Kept `/coming-soon` hero title on one desktop line while preserving mobile wrapping.
 - Added quick project memory in `docs/codex-quick-context.md` and linked it from `AGENTS.md`.
 - Added deploy/security notes: DB backup before Prisma migrations, remaining backend Nest 10 audit risk, and Vote Manager owner guide cleanup.
 - Hardened backend CORS origin matching and disabled Swagger imports in production runtime.
