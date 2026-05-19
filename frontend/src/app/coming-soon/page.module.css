@@ -21,9 +21,9 @@
   top: 72px;
   display: flex;
   flex-direction: column;
-  gap: .78rem;
+  gap: .54rem;
   min-height: calc(100vh - 96px);
-  padding: .92rem .82rem;
+  padding: .72rem .68rem;
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
   background:
@@ -36,9 +36,10 @@
 .sidebarHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
-  padding-bottom: .68rem;
+  min-height: 22px;
+  padding-bottom: .35rem;
   border-bottom: 1px solid rgba(210, 171, 82, .14);
 }
 
@@ -60,32 +61,33 @@
   text-transform: uppercase;
   letter-spacing: .08em;
 }
+.sidebarHead:empty { display: none; }
 
 .filterGroup {
   display: flex;
   flex-direction: column;
-  gap: .45rem;
+  gap: .32rem;
 }
 
 .filterList {
   display: flex;
   flex-direction: column;
-  gap: .18rem;
+  gap: .12rem;
 }
 
 .filterItem {
   display: grid;
   grid-template-columns: 8px minmax(0, 1fr) auto;
   align-items: center;
-  gap: .65rem;
-  min-height: 27px;
+  gap: .5rem;
+  min-height: 24px;
   border: 1px solid transparent;
   border-radius: 6px;
   background: transparent;
   color: var(--text2);
-  padding: .24rem .42rem;
+  padding: .18rem .36rem;
   text-align: left;
-  font-size: .82rem;
+  font-size: .78rem;
 }
 
 .filterItem:hover,
@@ -119,8 +121,8 @@
 }
 
 .resetBtn {
-  margin-top: .15rem;
-  min-height: 38px;
+  margin-top: .05rem;
+  min-height: 34px;
   border: 1px solid rgba(210, 171, 82, .22);
   border-radius: 6px;
   background: rgba(255, 255, 255, .025);
@@ -129,6 +131,61 @@
   font-size: .66rem;
   letter-spacing: .12em;
   text-transform: uppercase;
+}
+
+.resetBtn:hover {
+  border-color: rgba(210, 171, 82, .46);
+  background: rgba(210, 171, 82, .08);
+}
+
+.filterFooter {
+  margin-top: auto;
+  padding-top: .62rem;
+  border-top: 1px solid rgba(210, 171, 82, .12);
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+}
+
+.filterSocials {
+  display: flex;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 32px;
+}
+
+.filterSocials span {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(118, 141, 151, .2);
+  border-radius: 6px;
+  color: rgba(232, 221, 186, .52);
+  background: rgba(255, 255, 255, .018);
+  font-family: 'Cinzel', serif;
+  font-size: .62rem;
+}
+
+.filterAddBtn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(210, 171, 82, .32);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(210, 171, 82, .14), rgba(210, 171, 82, .04));
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .66rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.filterAddBtn:hover {
+  border-color: rgba(210, 171, 82, .55);
+  background: rgba(210, 171, 82, .1);
 }
 
 .content {

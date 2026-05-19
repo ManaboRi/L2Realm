@@ -210,12 +210,12 @@ export type DonateType = 'cosmetic' | 'convenience' | 'p2w';
 
 export const VIP_PRICE   = 5000;
 export const VIP_DAYS    = 31;
-export const VIP_MAX     = 5;
+export const VIP_MAX     = 8;
 export const BOOST_PRICE = 500;
 export const BOOST_DAYS  = 7;
 export const COMING_SOON_PRICE = 500;
 export const SOON_VIP_PRICE = 2000;
-export const SOON_VIP_MAX = 5;
+export const SOON_VIP_MAX = 8;
 
 // Канонический список хроник в хронологическом порядке выпуска.
 // Используется в формах /add и админки (selects) и для упорядочивания

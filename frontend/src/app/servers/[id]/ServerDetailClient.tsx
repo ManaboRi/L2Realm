@@ -7,15 +7,10 @@ import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
 import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
-import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
+import { SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
-const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
-
-function normalizedDonate(value?: string | null) {
-  return value && value !== 'free' && donateLabels.has(value as any) ? value : null;
-}
 
 function relativeOpened(s?: string | null): string {
   if (!s) return '—';
@@ -297,7 +292,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const isOnline = status?.status === 'online';
   const hasInstances = (server.instances?.length ?? 0) > 0;
   const mainType = server.type?.find(t => typeLabels.has(t as any));
-  const mainDonate = normalizedDonate(server.donate);
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
@@ -356,7 +350,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 {!hasInstances && mainType && (
                   <span className="tag tn">{typeLabels.get(mainType as any)}</span>
                 )}
-                {!hasInstances && mainDonate && <span className="tag tn">{donateLabels.get(mainDonate as any) ?? mainDonate}</span>}
               </div>
               <div className={styles.statusRow}>
                 <span className={isOnline ? styles.dotOnline : styles.dotOffline} />
@@ -537,7 +530,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
                     .map(inst => {
                       const isFuture = isOpeningStillSoon(inst.openedDate);
-                      const instDonate = normalizedDonate(inst.donate);
                       return (
                         <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
                           <div className={styles.instTileHead}>
@@ -548,7 +540,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                             <span className="tag tr">{inst.rates}</span>
                             <span className="tag tc">{inst.chronicle}</span>
                             {inst.type && <span className="tag tn">{typeLabels.get(inst.type as any) ?? inst.type}</span>}
-                            {instDonate && <span className="tag tn">{donateLabels.get(instDonate as any) ?? instDonate}</span>}
                           </div>
                           {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
                           {isFuture && (

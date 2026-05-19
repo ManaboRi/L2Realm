@@ -54,7 +54,6 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
   const chronicle = firstParam(searchParams.chr);
   const rate = firstParam(searchParams.rate);
   const opened = firstParam(searchParams.opened);
-  const donate = firstParam(searchParams.donate);
   const type = firstParam(searchParams.type);
 
   if (sort) params.sort = sort;
@@ -62,7 +61,6 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
   if (chronicle) params.chronicle = chronicle;
   if (rate) params.rate = rate;
   if (opened) params.openedWithin = opened;
-  if (donate) params.donate = donate;
   if (type) params.type = type;
 
   return params;

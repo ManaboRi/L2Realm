@@ -3,8 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import type { DonateType, Server, ServerInstance, ServerType } from '@/lib/types';
-import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
+import type { Server, ServerInstance, ServerType } from '@/lib/types';
+import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
 import { isOpeningStillSoon } from '@/lib/opening';
 import styles from './page.module.css';
 
@@ -19,7 +19,6 @@ type Opening = {
   rates: string;
   rateNum: number;
   type: string[];
-  donate?: DonateType | 'free' | null;
   label?: string;
   shortDesc?: string;
   openedAt: string;
@@ -30,12 +29,10 @@ type Filters = {
   chronicle: string;
   rate: string;
   type: string;
-  donate: string;
   opens: string;
 };
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
-const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
 function reminderKey(serverId: string, instanceId?: string | null) {
   return instanceId ? `${serverId}::${instanceId}` : serverId;
@@ -63,7 +60,6 @@ function flattenOpenings(servers: Server[]): Opening[] {
           rates: i.rates,
           rateNum: i.rateNum,
           type: i.type ? [i.type] : [],
-          donate: i.donate ?? null,
           label: i.label,
           shortDesc: i.shortDesc || s.shortDesc || undefined,
           openedAt: i.openedDate!,
@@ -82,7 +78,6 @@ function flattenOpenings(servers: Server[]): Opening[] {
         rates: s.rates,
         rateNum: s.rateNum,
         type: s.type ?? [],
-        donate: s.donate,
         shortDesc: s.shortDesc || undefined,
         openedAt: s.openedDate!,
         isVip: serverVip,
@@ -117,14 +112,7 @@ function openingBucket(openedAt: string, now: number) {
 function typeMatches(types: string[], value: string) {
   if (!value) return true;
   if (value === 'craft') return types.includes('multicraft');
-  if (value === 'no-donate') return true;
   return types.includes(value);
-}
-
-function donateMatches(donate: Opening['donate'], value: string) {
-  if (!value) return true;
-  if (value === 'no-donate') return donate === 'cosmetic' || donate === 'free' || !donate;
-  return donate === value;
 }
 
 function applyFilters(openings: Opening[], filters: Filters, now: number) {
@@ -132,7 +120,6 @@ function applyFilters(openings: Opening[], filters: Filters, now: number) {
     if (filters.chronicle && o.chronicle !== filters.chronicle) return false;
     if (filters.rate && rateRange(o.rateNum) !== filters.rate) return false;
     if (filters.type && !typeMatches(o.type, filters.type)) return false;
-    if (filters.donate && !donateMatches(o.donate, filters.donate)) return false;
     if (filters.opens && openingBucket(o.openedAt, now) !== filters.opens) return false;
     return true;
   });
@@ -180,6 +167,18 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
   );
 }
 
+function FilterFooter() {
+  return (
+    <div className={styles.filterFooter}>
+      <div className={styles.filterSocials} aria-label="Социальные сети L2Realm">
+        <span title="Telegram">TG</span>
+        <span title="ВКонтакте">VK</span>
+      </div>
+      <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
+    </div>
+  );
+}
+
 function OpeningRow({
   opening,
   now,
@@ -195,9 +194,6 @@ function OpeningRow({
 }) {
   const parts = countdownParts(opening.openedAt, now);
   const types = opening.type.map(t => typeLabels.get(t as ServerType)).filter(Boolean).slice(0, 2);
-  const donateLabel = opening.donate === 'cosmetic' || opening.donate === 'free' || !opening.donate
-    ? 'No Donate'
-    : donateLabels.get(opening.donate as DonateType);
 
   return (
     <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''}`}>
@@ -214,7 +210,6 @@ function OpeningRow({
             <i className={styles.tagChronicle}>{opening.chronicle}</i>
             <i className={styles.tagRate}>{opening.rates}</i>
             {types.map(type => <i key={type} className={styles.tagType}>{type}</i>)}
-            {donateLabel && <i className={styles.tagDonate}>{donateLabel}</i>}
           </span>
           {opening.shortDesc && <small>{opening.shortDesc}</small>}
         </span>
@@ -267,7 +262,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
   const [sort, setSort] = useState('date');
-  const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', donate: '', opens: '' });
+  const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', opens: '' });
   const [now, setNow] = useState(Date.now());
   const [reminderKeys, setReminderKeys] = useState<Set<string>>(new Set());
   const [reminderBusy, setReminderBusy] = useState('');
@@ -293,7 +288,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
     chronicle: countBy(openings, o => o.chronicle),
     rate: countBy(openings, o => rateRange(o.rateNum)),
     type: countBy(openings, o => o.type),
-    donate: countBy(openings, o => (o.donate === 'cosmetic' || o.donate === 'free' || !o.donate) ? 'no-donate' : o.donate),
     opens: countBy(openings, o => openingBucket(o.openedAt, now)),
   }), [openings, now]);
 
@@ -318,7 +312,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
   }
 
   function resetFilters() {
-    setFilters({ chronicle: '', rate: '', type: '', donate: '', opens: '' });
+    setFilters({ chronicle: '', rate: '', type: '', opens: '' });
     setVisibleCount(8);
   }
 
@@ -370,7 +364,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
         <div className={styles.layout}>
           <aside className={`${styles.sidebar} ${filtersOpen ? styles.sidebarOpen : ''}`}>
             <div className={styles.sidebarHead}>
-              <span>Фильтры</span>
               {activeFiltersCount > 0 && <button type="button" onClick={resetFilters}>Сбросить</button>}
             </div>
 
@@ -396,9 +389,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
               ].filter(t => counts.type[t.v] > 0).map(t => (
                 <FilterItem key={t.v} label={t.l} count={counts.type[t.v]} active={filters.type === t.v} onClick={() => toggleFilter('type', t.v)} />
               ))}
-              {counts.donate['no-donate'] > 0 && (
-                <FilterItem label="No Donate" count={counts.donate['no-donate']} active={filters.donate === 'no-donate'} onClick={() => toggleFilter('donate', 'no-donate')} />
-              )}
             </FilterGroup>
 
             <FilterGroup label="До даты открытия">
@@ -413,6 +403,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
             </FilterGroup>
 
             <button type="button" className={styles.resetBtn} onClick={resetFilters}>Сбросить фильтры</button>
+            <FilterFooter />
           </aside>
 
           <section className={styles.content}>

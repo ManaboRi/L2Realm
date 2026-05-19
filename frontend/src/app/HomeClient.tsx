@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
-import { CHRONICLES, DONATE_OPTIONS, RATES, SERVER_TYPES } from '@/lib/types';
+import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -25,9 +25,8 @@ type HomeClientProps = {
 };
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
-const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
 
-type CardTagTone = 'chronicle' | 'rate' | 'type' | 'donate';
+type CardTagTone = 'chronicle' | 'rate' | 'type';
 type CardTag = { label: string; tone: CardTagTone };
 
 export function HomeClient(props: HomeClientProps) {
@@ -61,7 +60,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
     chr: sp.get('chr') ?? '',
     rate: sp.get('rate') ?? '',
-    donate: sp.get('donate') ?? '',
     type: sp.get('type') ?? '',
   }));
 
@@ -76,7 +74,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (sort) params.set('sort', sort);
     if (filters.chr) params.set('chr', filters.chr);
     if (filters.rate) params.set('rate', filters.rate);
-    if (filters.donate) params.set('donate', filters.donate);
     if (filters.type) params.set('type', filters.type);
     if (page > 1) params.set('page', String(page));
     const query = params.toString();
@@ -91,7 +88,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       if (search) params.search = search;
       if (filters.chr) params.chronicle = filters.chr;
       if (filters.rate) params.rate = filters.rate;
-      if (filters.donate) params.donate = filters.donate;
       if (filters.type) params.type = filters.type;
 
       const res = await api.servers.list(params);
@@ -134,7 +130,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     const params: Record<string, string> = {};
     if (filters.chr) params.chronicle = filters.chr;
     if (filters.rate) params.rate = filters.rate;
-    if (filters.donate) params.donate = filters.donate;
     if (filters.type) params.type = filters.type;
     api.servers.counts(params).then(setCounts).catch(() => {});
   }, [filters, initialCounts]);
@@ -145,7 +140,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }
 
   function resetFilters() {
-    setFilters({ chr: '', rate: '', donate: '', type: '' });
+    setFilters({ chr: '', rate: '', type: '' });
     setSearch('');
     setSort('');
     setPage(1);
@@ -193,7 +188,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
         <div className={styles.layout}>
           <aside className={`${styles.sidebar} ${mobileFiltersOpen ? styles.sidebarOpen : ''}`}>
             <div className={styles.sidebarHead}>
-              <span>Фильтры</span>
               {(activeFiltersCount > 0 || search || sort) && (
                 <button type="button" onClick={resetFilters}>Сбросить</button>
               )}
@@ -224,17 +218,11 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <FilterGroup label="Донат">
-              {DONATE_OPTIONS
-                .filter(({ v }) => (counts?.donates[v] ?? 0) > 0 || filters.donate === v)
-                .map(({ v, l }) => (
-                  <FilterItem key={v} label={l} active={filters.donate === v} count={counts?.donates[v]} onClick={() => toggleFilter('donate', v)} />
-                ))}
-            </FilterGroup>
-
             <button type="button" className={styles.showBtn} onClick={resetFilters}>
               Сбросить фильтры
             </button>
+
+            <FilterFooter />
           </aside>
 
           <section className={styles.content}>
@@ -450,17 +438,23 @@ function collectTags(server: Server): CardTag[] {
     if (instance.type) add('type', typeLabels.get(instance.type as any));
   }
 
-  const donate = donateLabels.get(server.donate as any);
-  if (donate) add('donate', donate);
-  for (const instance of instances) {
-    if (instance.donate) add('donate', donateLabels.get(instance.donate as any));
-  }
-
   return tags;
 }
 
 function capitalize(value: CardTagTone) {
   return (value.charAt(0).toUpperCase() + value.slice(1)) as Capitalize<CardTagTone>;
+}
+
+function FilterFooter() {
+  return (
+    <div className={styles.filterFooter}>
+      <div className={styles.filterSocials} aria-label="Социальные сети L2Realm">
+        <span title="Telegram">TG</span>
+        <span title="ВКонтакте">VK</span>
+      </div>
+      <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
+    </div>
+  );
 }
 
 function formatDate(value?: string | null) {

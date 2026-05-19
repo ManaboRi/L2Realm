@@ -2,16 +2,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Server } from '@/lib/types';
-import { DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
+import { SERVER_TYPES } from '@/lib/types';
 import { isOpeningStillSoon } from '@/lib/opening';
 import styles from './ServerCard.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
-const donateLabels = new Map(DONATE_OPTIONS.map(d => [d.v, d.l]));
-
-function normalizedDonate(value?: string | null) {
-  return value && value !== 'free' && donateLabels.has(value as any) ? value : null;
-}
 
 function voteWord(value: number) {
   const mod10 = value % 10;
@@ -59,15 +54,12 @@ export function ServerCard({ server: s, vipBlock }: Props) {
   const chronSet  = new Set<string>();
   const rateSet   = new Set<string>();
   const typeSet   = new Set<string>();
-  const donateSet = new Set<string>();
 
   if (insts.length > 0) {
     for (const i of insts) {
       if (i.chronicle) chronSet.add(i.chronicle);
       if (i.rates)     rateSet.add(i.rates);
       if (i.type)      typeSet.add(i.type);
-      const instDonate = normalizedDonate(i.donate);
-      if (instDonate) donateSet.add(instDonate);
     }
   }
   if (chronSet.size === 0 && s.chronicle) chronSet.add(s.chronicle);
@@ -77,14 +69,9 @@ export function ServerCard({ server: s, vipBlock }: Props) {
       if (typeLabels.has(t as any)) typeSet.add(t);
     }
   }
-  if (donateSet.size === 0) {
-    const ownDonate = normalizedDonate(s.donate);
-    if (ownDonate) donateSet.add(ownDonate);
-  }
   const chronTags = [...chronSet];
   const rateTags = [...rateSet];
   const typeTags = [...typeSet];
-  const donateTags = [...donateSet];
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
 
   const rowClass = [
@@ -119,10 +106,9 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           </div>
           <div className={styles.tagStack}>
             <div className={styles.tagLine}>{rateTags.map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}</div>
-            {(typeTags.length > 0 || donateTags.length > 0 || isSoon) && (
+            {(typeTags.length > 0 || isSoon) && (
               <div className={styles.tagLine}>
                 {typeTags.map(t => <span key={`t-${t}`} className="tag tn">{typeLabels.get(t as any) ?? t}</span>)}
-                {donateTags.map(d => <span key={`d-${d}`} className="tag tn">{donateLabels.get(d as any) ?? d}</span>)}
                 {isSoon && <span className={styles.soonBadge}>⏳ Скоро</span>}
               </div>
             )}

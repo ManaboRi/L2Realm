@@ -14,6 +14,7 @@ export function Header() {
   const [authOpen, setAuthOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dueReminders, setDueReminders] = useState<OpeningReminder[]>([]);
+  const [favoriteCount, setFavoriteCount] = useState(0);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
@@ -44,6 +45,18 @@ export function Header() {
       alive = false;
       window.clearInterval(timer);
     };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setFavoriteCount(0);
+      return;
+    }
+    let alive = true;
+    api.favorites.ids(token)
+      .then(ids => { if (alive) setFavoriteCount(ids.length); })
+      .catch(() => { if (alive) setFavoriteCount(0); });
+    return () => { alive = false; };
   }, [token]);
 
   // Закрываем по клику снаружи и по Escape
@@ -94,10 +107,6 @@ export function Header() {
                 <span className={styles.navTextShort}>Скоро</span>
               </span>
             </Link>
-            <Link href="/pricing" className={navClass('/pricing')} onClick={closeMenu}>
-              <Image src="/images/nav-pricing.webp" alt="Тарифы L2Realm" width={24} height={24} className={styles.navIcon} />
-              <span className={styles.navText}>Тарифы</span>
-            </Link>
             <Link href="/blog" className={navClass('/blog')} onClick={closeMenu}>
               <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} />
               <span className={styles.navText}>Статьи</span>
@@ -111,8 +120,9 @@ export function Header() {
 
           <div className={styles.right}>
             <Link href="/profile#favorites" className={styles.favoritesChip} title="Избранные серверы" onClick={closeMenu}>
-              <span className={styles.favoritesIcon}>♡</span>
+              <span className={styles.favoritesIcon}>☆</span>
               <span>Избранное</span>
+              {favoriteCount > 0 && <span className={styles.headerBadge}>{Math.min(favoriteCount, 99)}</span>}
             </Link>
             <button
               type="button"
@@ -129,7 +139,8 @@ export function Header() {
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
                 <path d="M13.7 21a2 2 0 0 1-3.4 0" />
               </svg>
-              {dueReminders.length > 0 && <span className={styles.notifyBadge}>{Math.min(dueReminders.length, 9)}</span>}
+              <span>Уведомления</span>
+              {dueReminders.length > 0 && <span className={styles.headerBadge}>{Math.min(dueReminders.length, 99)}</span>}
             </button>
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>
@@ -138,7 +149,11 @@ export function Header() {
                 ) : (
                   <span className={styles.profileAvatarFallback}>{initial}</span>
                 )}
-                <span className={styles.profileName}>{displayName}</span>
+                <span className={styles.profileText}>
+                  <span className={styles.profileName}>{displayName}</span>
+                  {isAdmin && <span className={styles.profileRole}>Админ</span>}
+                </span>
+                <span className={styles.profileArrow}>⌄</span>
               </Link>
             ) : (
               <button className={`btn-ghost ${styles.loginBtn}`} onClick={() => { setAuthOpen(true); closeMenu(); }}>

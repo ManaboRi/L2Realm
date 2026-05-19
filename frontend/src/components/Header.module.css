@@ -124,69 +124,79 @@
 }
 
 .profileChip {
-  display: flex; align-items: center; gap: .5rem;
-  padding: .25rem .7rem .25rem .3rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
+  display: flex; align-items: center; gap: .6rem;
+  min-height: 42px;
+  padding: 0 .65rem 0 .25rem;
+  border-left: 1px solid rgba(118, 141, 151, .16);
   color: var(--text1);
   text-decoration: none;
-  transition: border-color .18s, background .18s, transform .08s;
+  transition: color .18s, transform .08s;
 }
 .profileChip:hover {
-  border-color: var(--gold);
-  background: rgba(200,168,75,.07);
+  color: var(--gold);
 }
 .profileChip:active { transform: translateY(1px); }
 
 .profileAvatar {
-  width: 26px; height: 26px; border-radius: 50%;
+  width: 36px; height: 36px; border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--border2);
+  border: 1px solid rgba(200,168,75,.68);
   flex-shrink: 0;
 }
 .profileAvatarFallback {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--bg1);
-  border: 1px solid var(--border2);
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(180deg, rgba(22,27,35,.95), rgba(8,10,14,.95));
+  border: 1px solid rgba(200,168,75,.68);
   display: flex; align-items: center; justify-content: center;
   font-family: 'Cinzel', serif;
-  font-size: .7rem;
-  color: var(--gold);
+  font-size: 1rem;
+  color: #f6edd0;
   flex-shrink: 0;
+}
+.profileText {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+  min-width: 0;
 }
 .profileName {
   font-family: 'Cinzel', serif;
-  font-size: .7rem;
+  font-size: .72rem;
   letter-spacing: .08em;
   text-transform: uppercase;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
+}
+.profileRole {
+  color: var(--gold);
+  font-size: .72rem;
+  line-height: 1;
+}
+.profileArrow {
+  color: rgba(232, 221, 186, .52);
+  font-size: .9rem;
+  line-height: 1;
 }
 
 .favoritesChip {
-  min-height: 36px;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .45rem;
-  padding: 0 .75rem;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: rgba(255,255,255,.02);
+  gap: .42rem;
+  padding: 0 .25rem;
+  border: 0;
+  background: transparent;
   color: var(--text2);
-  font-family: 'Cinzel', serif;
-  font-size: .66rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
+  font-size: .78rem;
   line-height: 1;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
 .favoritesChip:hover {
   color: var(--gold);
-  border-color: rgba(200,168,75,.34);
-  background: rgba(200,168,75,.07);
 }
 .favoritesChip:active,
 .notifyBtn:active { transform: translateY(1px); }
@@ -197,51 +207,46 @@
   align-items: center;
   justify-content: center;
   color: var(--gold);
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   line-height: 1;
-  transform: translateY(-.5px);
 }
 
 .notifyBtn {
-  width: 36px;
-  height: 36px;
+  min-height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  background: rgba(255,255,255,.02);
+  gap: .42rem;
+  border: 0;
+  background: transparent;
   color: var(--text2);
-  line-height: 0;
+  font-size: .78rem;
+  line-height: 1;
   position: relative;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
 .notifyBtn:hover,
 .notifyBtnActive {
   color: var(--gold);
-  border-color: rgba(200,168,75,.34);
-  background: rgba(200,168,75,.07);
+  background: transparent;
 }
-.notifyBadge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
+.headerBadge {
   min-width: 18px;
   height: 18px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(9,11,16,.95);
   border-radius: 999px;
-  background: var(--gold);
-  color: #090b10;
-  font-size: .65rem;
+  background: rgba(200,168,75,.18);
+  color: var(--gold);
+  font-size: .62rem;
   font-weight: 700;
   line-height: 1;
+  padding: 0 .35rem;
 }
 .bellIcon {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   display: block;
   fill: none;
   stroke: currentColor;
@@ -359,7 +364,11 @@
     width: 100%;
     justify-content: flex-start;
     padding: .4rem .8rem .4rem .35rem;
+    border-left: 0;
+    border: 1px solid var(--border);
+    border-radius: 7px;
   }
+  .profileChip:hover { background: rgba(200,168,75,.07); }
   .profileName {
     display: inline;
     max-width: none;
@@ -375,10 +384,14 @@
     width: 100%;
     justify-content: center;
     min-height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
   }
   .notifyBtn {
     width: 100%;
     min-height: 42px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
   }
 }
 
