@@ -170,10 +170,6 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
 function FilterFooter() {
   return (
     <div className={styles.filterFooter}>
-      <div className={styles.filterSocials} aria-label="Социальные сети L2Realm">
-        <span title="Telegram">TG</span>
-        <span title="ВКонтакте">VK</span>
-      </div>
       <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
     </div>
   );

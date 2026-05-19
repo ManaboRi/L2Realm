@@ -448,10 +448,6 @@ function capitalize(value: CardTagTone) {
 function FilterFooter() {
   return (
     <div className={styles.filterFooter}>
-      <div className={styles.filterSocials} aria-label="Социальные сети L2Realm">
-        <span title="Telegram">TG</span>
-        <span title="ВКонтакте">VK</span>
-      </div>
       <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
     </div>
   );
