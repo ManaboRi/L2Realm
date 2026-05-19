@@ -18,6 +18,12 @@ export class ArticlesController {
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 120 } })
+  @Get(':slug/view')
+  bySlugWithView(@Param('slug') slug: string) {
+    return this.articles.findBySlug(slug, true);
+  }
+
+  @Throttle({ default: { ttl: 60_000, limit: 120 } })
   @Get(':slug')
   bySlug(@Param('slug') slug: string) {
     return this.articles.findBySlug(slug);

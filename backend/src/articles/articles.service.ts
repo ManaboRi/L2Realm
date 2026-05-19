@@ -52,11 +52,17 @@ export class ArticlesService {
   }
 
   // ── Публичная одна (только опубликованная) ───
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, incrementView = false) {
     const article = await this.prisma.article.findUnique({ where: { slug } });
     if (!article) throw new NotFoundException('Статья не найдена');
     if (!article.publishedAt || article.publishedAt > new Date()) {
       throw new NotFoundException('Статья не найдена');
+    }
+    if (incrementView) {
+      return this.prisma.article.update({
+        where: { id: article.id },
+        data: { views: { increment: 1 } },
+      });
     }
     return article;
   }

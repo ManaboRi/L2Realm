@@ -12,9 +12,12 @@ export const dynamic = 'force-dynamic';
 
 type Props = { params: Promise<{ slug: string }> };
 
-async function fetchArticle(slug: string): Promise<Article | null> {
+async function fetchArticle(slug: string, countView = false): Promise<Article | null> {
   try {
-    const res = await fetch(`${BACKEND}/api/articles/${encodeURIComponent(slug)}`, {
+    const endpoint = countView
+      ? `/api/articles/${encodeURIComponent(slug)}/view`
+      : `/api/articles/${encodeURIComponent(slug)}`;
+    const res = await fetch(`${BACKEND}${endpoint}`, {
       cache: 'no-store',
     });
     if (!res.ok) return null;
@@ -85,7 +88,7 @@ function fmtDate(s: string | null): string {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const article = await fetchArticle(slug);
+  const article = await fetchArticle(slug, true);
   if (!article) notFound();
 
   // Параллельно подгружаем 2 другие статьи для блока «Читать ещё».

@@ -73,6 +73,7 @@ function buildBlogHref(params: { category?: string; q?: string; page?: number })
 }
 
 function ArticleCard({ a, large = false }: { a: Article; large?: boolean }) {
+  const views = formatMetric(articleViews(a));
   return (
     <Link href={`/blog/${a.slug}`} className={`${styles.articleCard} ${large ? styles.articleLarge : ''}`}>
       <div className={styles.cover}>
@@ -95,8 +96,8 @@ function ArticleCard({ a, large = false }: { a: Article; large?: boolean }) {
           {a.description || firstParagraph(a.content, large ? 230 : 170)}
         </p>
         <div className={styles.cardStats}>
-          <span title="Просмотры">◉ {formatMetric(articleViews(a))}</span>
-          <span title="Комментарии">□ 0</span>
+          <span title="Просмотры"><i className={`${styles.statIcon} ${styles.statEye}`} aria-hidden="true" />{views}</span>
+          <span title="Комментарии"><i className={`${styles.statIcon} ${styles.statComment}`} aria-hidden="true" />0</span>
         </div>
       </div>
     </Link>
@@ -104,6 +105,7 @@ function ArticleCard({ a, large = false }: { a: Article; large?: boolean }) {
 }
 
 function SidebarArticle({ a }: { a: Article }) {
+  const views = formatMetric(articleViews(a));
   return (
     <Link href={`/blog/${a.slug}`} className={styles.sideArticle}>
       <span className={styles.sideThumb}>
@@ -111,7 +113,7 @@ function SidebarArticle({ a }: { a: Article }) {
       </span>
       <span>
         <strong>{a.title}</strong>
-        <small>◉ {formatMetric(articleViews(a))}</small>
+        <small><i className={`${styles.statIcon} ${styles.statEye}`} aria-hidden="true" />{views}</small>
       </span>
     </Link>
   );

@@ -13,7 +13,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
   gap: 2rem;
   align-items: center;
-  padding: 2.2rem max(1rem, calc((100vw - 1450px) / 2)) 2.15rem;
+  padding: 2.2rem max(.75rem, calc((100vw - 1720px) / 2)) 2.15rem;
   overflow: hidden;
   background:
     linear-gradient(90deg, rgba(5, 8, 12, .94) 0%, rgba(5, 8, 12, .52) 48%, rgba(5, 8, 12, .88) 100%),
@@ -101,7 +101,7 @@
 }
 
 .layout {
-  width: min(1450px, calc(100% - 2rem));
+  width: min(1720px, calc(100% - 1.4rem));
   margin: 1.1rem auto 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -208,11 +208,12 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  padding: 1.05rem 1rem 1rem;
+  padding: 2.35rem 1rem 1rem;
+  background: linear-gradient(180deg, rgba(5, 8, 12, 0), rgba(5, 8, 12, .76) 24%, rgba(5, 8, 12, .94));
 }
 
 .articleLarge .cardBody {
-  padding: 1.25rem 1.25rem 1.15rem;
+  padding: 2.8rem 1.25rem 1.15rem;
 }
 
 .meta {
@@ -221,7 +222,7 @@
   gap: .5rem;
   flex-wrap: wrap;
   margin-bottom: .55rem;
-  color: var(--gold-d);
+  color: #d2ab52;
   font-family: 'Cinzel', serif;
   font-size: .6rem;
   letter-spacing: .12em;
@@ -264,6 +265,65 @@
   margin-top: .95rem;
   color: rgba(232, 221, 186, .66);
   font-size: .78rem;
+}
+
+.cardStats span,
+.sideArticle small {
+  display: inline-flex;
+  align-items: center;
+  gap: .32rem;
+}
+
+.statIcon {
+  width: .9rem;
+  height: .9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(232, 221, 186, .72);
+  line-height: 1;
+  font-style: normal;
+  position: relative;
+  flex: 0 0 .9rem;
+}
+
+.statEye::before {
+  content: '';
+  width: .82rem;
+  height: .52rem;
+  border: 1.5px solid currentColor;
+  border-radius: 999px 999px 999px 999px / 72% 72% 72% 72%;
+  transform: rotate(-8deg);
+}
+
+.statEye::after {
+  content: '';
+  position: absolute;
+  width: .22rem;
+  height: .22rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.statComment::before {
+  content: '';
+  width: .78rem;
+  height: .58rem;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+}
+
+.statComment::after {
+  content: '';
+  position: absolute;
+  left: .23rem;
+  bottom: .1rem;
+  width: .22rem;
+  height: .22rem;
+  border-left: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  background: transparent;
+  transform: rotate(-18deg);
 }
 
 .sidebar {
@@ -427,7 +487,7 @@
     padding: 1.8rem .85rem 1.4rem;
   }
   .searchBox { justify-self: stretch; width: 100%; }
-  .layout { width: min(100% - 1.3rem, 1450px); }
+  .layout { width: min(100% - 1.3rem, 1720px); }
   .cardsGrid { grid-template-columns: 1fr; }
   .articleCard,
   .articleLarge {

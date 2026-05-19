@@ -251,6 +251,7 @@ model Article {
   image       String?                           // URL обложки (загружается через /upload?type=banner)
   category    String    @default("Новости")
   publishedAt DateTime?                         // null = черновик, дата = опубликовано
+  views       Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
