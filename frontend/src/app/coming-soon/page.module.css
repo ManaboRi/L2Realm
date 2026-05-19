@@ -27,8 +27,8 @@
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
   background:
-    linear-gradient(180deg, rgba(15, 21, 29, .92), rgba(7, 12, 18, .88)),
-    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .1), transparent 35%);
+    linear-gradient(180deg, rgba(11, 16, 23, .94), rgba(5, 9, 14, .92)),
+    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .065), transparent 35%);
   box-shadow: 0 22px 58px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .03);
   backdrop-filter: blur(10px);
 }
@@ -71,8 +71,8 @@
   border: 1px solid rgba(118, 141, 151, .1);
   border-radius: 7px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, .025), rgba(255, 255, 255, .008)),
-    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .05), transparent 42%);
+    linear-gradient(180deg, rgba(255, 255, 255, .014), rgba(255, 255, 255, .004)),
+    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .032), transparent 42%);
 }
 
 .filterList {
@@ -89,7 +89,7 @@
   min-height: 27px;
   border: 1px solid rgba(118, 141, 151, .07);
   border-radius: 5px;
-  background: rgba(4, 8, 13, .18);
+  background: rgba(4, 8, 13, .24);
   color: var(--text2);
   padding: .22rem .4rem;
   text-align: left;
@@ -99,8 +99,8 @@
 .filterItem:hover,
 .filterItemActive {
   color: #f4e8c5;
-  background: linear-gradient(90deg, rgba(210, 171, 82, .13), rgba(255, 255, 255, .025));
-  border-color: rgba(210, 171, 82, .2);
+  background: linear-gradient(90deg, rgba(210, 171, 82, .105), rgba(255, 255, 255, .018));
+  border-color: rgba(210, 171, 82, .16);
 }
 
 .filterDot {
