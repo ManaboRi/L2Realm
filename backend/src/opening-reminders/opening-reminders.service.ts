@@ -31,8 +31,10 @@ export class OpeningRemindersService {
     return this.prisma.openingReminder.findMany({
       where: {
         userId,
-        notifyAt: { lte: now },
-        openingAt: { gt: new Date(now.getTime() - OPENING_DAY_MS) },
+        openingAt: {
+          lte: new Date(now.getTime() + OPENING_DAY_MS),
+          gt: new Date(now.getTime() - OPENING_DAY_MS),
+        },
       },
       orderBy: { openingAt: 'asc' },
       take: 10,

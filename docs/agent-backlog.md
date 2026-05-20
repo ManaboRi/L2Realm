@@ -19,6 +19,9 @@ Working notes for the user and Codex. Update when a task changes status.
 
 ## Planned
 
+- Profile follow-up: move saved articles and recent views from localStorage to backend tables if cross-device sync becomes important.
+- Profile follow-up: add calm avatar upload/change UX, with image size limits and moderation-safe storage.
+- Auth follow-up: add a second registration/login path beyond VK ID when the site is ready for that work.
 - Backend security upgrade: move Docker backend from Node 18 to Node 20 and upgrade Nest 10 -> Nest 11 to clear the remaining moderate production audit findings. See `docs/security-audit.md`.
 - JSON-LD structured data with Product schema and rating for search result stars.
 - Slugs instead of IDs in `/servers/[id]`, e.g. `/servers/newworld-interlude-x100`; needs 301 redirects and should wait until there is meaningful organic traffic.

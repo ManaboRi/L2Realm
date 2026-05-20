@@ -78,6 +78,12 @@ export class VotesService {
     return { voted: true, cooldownEnds: new Date(last.createdAt.getTime() + COOLDOWN_MS) };
   }
 
+  async countByUser(userId: string) {
+    return {
+      total: await this.prisma.vote.count({ where: { userId } }),
+    };
+  }
+
   async checkExternalVote(serverId: string, rawNickname?: string) {
     const nickname = normalizeNickname(rawNickname);
     const since = new Date(Date.now() - COOLDOWN_MS);

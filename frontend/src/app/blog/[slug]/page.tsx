@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Article } from '@/lib/types';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
+import { ArticleSaveButton } from './ArticleSaveButton';
 import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -178,6 +179,17 @@ export default async function BlogPostPage({ params }: Props) {
           {article.description && (
             <p className={styles.lead}>{article.description}</p>
           )}
+          <div className={styles.articleActions}>
+            <ArticleSaveButton
+              article={{
+                slug: article.slug,
+                title: article.title,
+                description: article.description,
+                image: article.image,
+                category: article.category,
+              }}
+            />
+          </div>
         </header>
 
         <div className={styles.body}>

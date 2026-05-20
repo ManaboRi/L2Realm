@@ -207,6 +207,25 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     api.votes.summary(id).then(setVoteSummary).catch(() => {});
   }, [token, id]);
 
+  useEffect(() => {
+    try {
+      const key = 'l2r_recent_servers';
+      const item = {
+        id: server.id,
+        name: server.name,
+        icon: server.icon ?? null,
+        banner: server.banner ?? null,
+        chronicle: server.chronicle,
+        rates: server.rates,
+        viewedAt: new Date().toISOString(),
+      };
+      const current = JSON.parse(localStorage.getItem(key) || '[]');
+      const list = Array.isArray(current) ? current : [];
+      const next = [item, ...list.filter(entry => entry?.id !== server.id)].slice(0, 12);
+      localStorage.setItem(key, JSON.stringify(next));
+    } catch {}
+  }, [server.id, server.name, server.icon, server.banner, server.chronicle, server.rates]);
+
   async function handleVote() {
     if (!token) {
       setAuthOpen(true);

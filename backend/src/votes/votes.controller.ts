@@ -37,6 +37,13 @@ export class VotesController {
     return this.votes.vote(userId, serverId, ip, body.nickname);
   }
 
+  @Get('my/count')
+  async myCount(@Req() req: Request) {
+    const userId = await optionalUserId(req, this.jwt, this.prisma);
+    if (!userId) throw new UnauthorizedException('Войдите, чтобы посмотреть голоса');
+    return this.votes.countByUser(userId);
+  }
+
   @Get(':serverId/status')
   async status(@Param('serverId') serverId: string, @Req() req: Request) {
     const userId = await optionalUserId(req, this.jwt, this.prisma);

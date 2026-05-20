@@ -202,6 +202,8 @@ export const api = {
 
   // ── Голосование ──────────────────────────────
   votes: {
+    myCount: (token: string) =>
+      request<{ total: number }>('/votes/my/count', { headers: { Authorization: `Bearer ${token}` } }),
     vote: (serverId: string, nickname: string, token: string) =>
       request<{ success: boolean; nickname: string }>(`/votes/${serverId}`, {
         method: 'POST',

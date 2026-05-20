@@ -155,6 +155,37 @@
 }
 
 /* Тело: rendered Markdown — типографика для длинного чтения */
+.articleActions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.saveArticleButton {
+  min-height: 38px;
+  padding: 0 .95rem;
+  border: 1px solid rgba(200,168,75,.28);
+  border-radius: 4px;
+  background: rgba(200,168,75,.07);
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .15s;
+}
+
+.saveArticleButton:hover,
+.saveArticleButtonActive {
+  border-color: rgba(200,168,75,.55);
+  background: rgba(200,168,75,.14);
+}
+
+.saveArticleButton:active {
+  transform: translateY(1px);
+}
+
 .body {
   font-family: 'DM Sans', sans-serif;
   font-size: 1.08rem;       /* ~17.3px на 16px корне */

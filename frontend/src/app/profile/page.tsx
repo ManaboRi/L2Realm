@@ -1,10 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
-import type { FavoriteServer } from '@/lib/types';
+import type { FavoriteServer, OpeningReminder } from '@/lib/types';
+import styles from './page.module.css';
+
+type ProfileTab = 'overview' | 'security';
 
 type MyReview = {
   id: string;
@@ -15,41 +19,90 @@ type MyReview = {
   server: { id: string; name: string; icon: string | null };
 };
 
-const NICK_RE = /^[a-zA-Zа-яА-ЯёЁ0-9_\-]{3,16}$/;
-
-const labelStyle: React.CSSProperties = {
-  fontFamily: "'Cinzel',serif",
-  fontSize: '.58rem',
-  color: 'var(--text3)',
-  textTransform: 'uppercase',
-  letterSpacing: '.1em',
+type SavedArticle = {
+  slug: string;
+  title: string;
+  description?: string;
+  image?: string | null;
+  category?: string;
+  savedAt: string;
 };
 
-const cardStyle: React.CSSProperties = {
-  background: 'var(--bg2)',
-  border: '1px solid var(--border)',
-  borderRadius: '.8rem',
-  padding: 'clamp(1rem, 4vw, 2rem)',
+type RecentServer = {
+  id: string;
+  name: string;
+  icon?: string | null;
+  banner?: string | null;
+  chronicle?: string;
+  rates?: string;
+  viewedAt: string;
 };
 
-const sectionTitleStyle: React.CSSProperties = {
-  fontFamily: "'Cinzel',serif",
-  fontSize: '.65rem',
-  color: 'var(--gold)',
-  textTransform: 'uppercase',
-  letterSpacing: '.15em',
-  marginBottom: '1rem',
-};
+const NICK_RE = /^[a-zA-Zа-яА-ЯёЁ0-9_-]{3,16}$/;
+const SAVED_ARTICLES_KEY = 'l2r_saved_articles';
+const RECENT_SERVERS_KEY = 'l2r_recent_servers';
+
+function readStorageList<T>(key: string): T[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(value) ? value : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function compactDate(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  const diff = Date.now() - date.getTime();
+  if (diff < 60_000) return 'только что';
+  if (diff < 3_600_000) return `${Math.max(1, Math.floor(diff / 60_000))} мин назад`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)} ч назад`;
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+}
+
+function openingText(value: string) {
+  const diff = new Date(value).getTime() - Date.now();
+  if (diff <= 0) return 'открытие уже началось';
+  const hoursTotal = Math.ceil(diff / 3_600_000);
+  if (hoursTotal <= 1) return 'меньше часа до открытия';
+  if (hoursTotal <= 5) return `примерно ${hoursTotal} ч до открытия`;
+  const days = Math.floor(hoursTotal / 24);
+  const hours = hoursTotal % 24;
+  if (days > 0) return hours ? `${days} д ${hours} ч до открытия` : `${days} д до открытия`;
+  return `${hoursTotal} ч до открытия`;
+}
+
+function statusLabel(status?: string) {
+  if (status === 'online') return 'Онлайн';
+  if (status === 'offline') return 'Оффлайн';
+  return 'Статус неизвестен';
+}
+
+function Stars({ rating }: { rating: number }) {
+  const safe = Math.max(0, Math.min(5, Math.round(rating)));
+  return <span className={styles.stars}>{'★'.repeat(safe)}{'☆'.repeat(5 - safe)}</span>;
+}
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user, token, loading, logout, updateUser } = useAuth();
+  const [tab, setTab] = useState<ProfileTab>('overview');
 
   const [reviews, setReviews] = useState<MyReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-
   const [favorites, setFavorites] = useState<FavoriteServer[]>([]);
   const [favLoading, setFavLoading] = useState(true);
+  const [reminders, setReminders] = useState<OpeningReminder[]>([]);
+  const [voteCount, setVoteCount] = useState(0);
+  const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
+  const [recentServers, setRecentServers] = useState<RecentServer[]>([]);
 
   const [nick, setNick] = useState('');
   const [nickSaving, setNickSaving] = useState(false);
@@ -65,16 +118,47 @@ export default function ProfilePage() {
   }, [user?.nickname]);
 
   useEffect(() => {
+    setSavedArticles(readStorageList<SavedArticle>(SAVED_ARTICLES_KEY).slice(0, 8));
+    setRecentServers(readStorageList<RecentServer>(RECENT_SERVERS_KEY).slice(0, 8));
+  }, []);
+
+  useEffect(() => {
     if (!token) return;
+    let alive = true;
+    setReviewsLoading(true);
+    setFavLoading(true);
+
     api.reviews.my(token)
-      .then(setReviews)
-      .catch(() => setReviews([]))
-      .finally(() => setReviewsLoading(false));
+      .then(items => { if (alive) setReviews(items); })
+      .catch(() => { if (alive) setReviews([]); })
+      .finally(() => { if (alive) setReviewsLoading(false); });
+
     api.favorites.list(token)
-      .then(setFavorites)
-      .catch(() => setFavorites([]))
-      .finally(() => setFavLoading(false));
+      .then(items => { if (alive) setFavorites(items); })
+      .catch(() => { if (alive) setFavorites([]); })
+      .finally(() => { if (alive) setFavLoading(false); });
+
+    api.openingReminders.due(token)
+      .then(items => { if (alive) setReminders(items); })
+      .catch(() => { if (alive) setReminders([]); });
+
+    api.votes.myCount(token)
+      .then(result => { if (alive) setVoteCount(result.total || 0); })
+      .catch(() => { if (alive) setVoteCount(0); });
+
+    return () => { alive = false; };
   }, [token]);
+
+  const displayName = user?.nickname || user?.name || user?.email || 'Игрок';
+  const initial = displayName[0]?.toUpperCase() || '?';
+  const joinedAt = user?.createdAt ? formatDate(user.createdAt) : 'недавно';
+
+  const stats = useMemo(() => [
+    { label: 'Избранных серверов', value: favorites.length },
+    { label: 'Голосов', value: voteCount },
+    { label: 'Отзывов', value: reviews.length },
+    { label: 'Статей сохранено', value: savedArticles.length },
+  ], [favorites.length, voteCount, reviews.length, savedArticles.length]);
 
   async function handleNickSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -82,11 +166,11 @@ export default function ProfilePage() {
     setNickSuccess(false);
     const trimmed = nick.trim();
     if (!NICK_RE.test(trimmed)) {
-      setNickError('3–16 символов, только буквы / цифры / _ / -');
+      setNickError('3-16 символов: буквы, цифры, _ или -');
       return;
     }
     if (trimmed === user?.nickname) {
-      setNickError('Этот никнейм уже твой');
+      setNickError('Это уже твой никнейм');
       return;
     }
     setNickSaving(true);
@@ -96,8 +180,9 @@ export default function ProfilePage() {
       setNickSuccess(true);
     } catch (err) {
       setNickError(err instanceof Error ? err.message : 'Не удалось сохранить');
+    } finally {
+      setNickSaving(false);
     }
-    setNickSaving(false);
   }
 
   async function removeFavorite(serverId: string) {
@@ -108,204 +193,253 @@ export default function ProfilePage() {
     } catch {}
   }
 
+  function removeSavedArticle(slug: string) {
+    const next = savedArticles.filter(item => item.slug !== slug);
+    setSavedArticles(next);
+    localStorage.setItem(SAVED_ARTICLES_KEY, JSON.stringify(next));
+  }
+
+  function removeRecentServer(id: string) {
+    const next = recentServers.filter(item => item.id !== id);
+    setRecentServers(next);
+    localStorage.setItem(RECENT_SERVERS_KEY, JSON.stringify(next));
+  }
+
   if (loading || !user) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        Загрузка...
-      </div>
-    );
+    return <main className={styles.loading}>Загрузка профиля...</main>;
   }
 
   return (
-    <div style={{ maxWidth: '780px', margin: '0 auto', padding: 'clamp(1rem, 3vw, 2rem) clamp(.7rem, 2vw, 1rem)', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-
-      {/* ── Карточка профиля ─────────────────────── */}
-      <section style={cardStyle}>
-        <div style={sectionTitleStyle}>Личный кабинет</div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(.8rem, 2.5vw, 1.2rem)', marginBottom: '1.4rem', flexWrap: 'wrap' }}>
+    <main className={styles.page}>
+      <section className={styles.hero}>
+        <div className={styles.avatarWrap}>
           {user.avatar ? (
-            <img
-              src={user.avatar}
-              alt={`Аватар ${user.nickname || user.name || user.email}`}
-              style={{ width: 'clamp(56px, 14vw, 72px)', height: 'clamp(56px, 14vw, 72px)', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border2)', flexShrink: 0 }}
-            />
+            <img src={user.avatar} alt={`Аватар ${displayName}`} className={styles.avatar} />
           ) : (
-            <div style={{
-              width: 'clamp(56px, 14vw, 72px)', height: 'clamp(56px, 14vw, 72px)', borderRadius: '50%',
-              background: 'var(--bg1)', border: '1px solid var(--border2)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontFamily: "'Cinzel',serif", fontSize: 'clamp(1.2rem, 4vw, 1.6rem)', color: 'var(--gold)', flexShrink: 0,
-            }}>
-              {(user.nickname || user.name || user.email)[0]?.toUpperCase()}
-            </div>
+            <span className={styles.avatarFallback}>{initial}</span>
           )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.25rem', minWidth: 0, flex: 1, wordBreak: 'break-word' }}>
-            <div style={{ fontFamily: "'Cinzel',serif", fontSize: '1.1rem', color: 'var(--text1)' }}>
-              {user.nickname || user.name || 'Без ника'}
-            </div>
-            <div style={{ fontSize: '.7rem', color: 'var(--text3)' }}>
-              {user.vkId ? 'VK ID: ' : 'Email: '}{user.email}
-            </div>
-            <div style={{ fontSize: '.72rem', color: 'var(--text3)' }}>
-              {user.role === 'ADMIN' ? 'Администратор' : 'Игрок L2Realm'}
-            </div>
+        </div>
+
+        <div className={styles.heroInfo}>
+          <div className={styles.breadcrumb}>Главная / Профиль</div>
+          <div className={styles.nameLine}>
+            <h1>{displayName}</h1>
+            <span>{user.role === 'ADMIN' ? 'Администратор' : 'Пользователь'}</span>
+          </div>
+          <p>С нами с {joinedAt}</p>
+          <div className={styles.heroStats}>
+            {stats.map(item => (
+              <div key={item.label}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        <button
-          className="btn-ghost"
-          onClick={() => { logout(); router.push('/'); }}
-        >
-          Выйти
+        <button type="button" className={styles.heroButton} onClick={() => setTab('security')}>
+          Настроить профиль
         </button>
       </section>
 
-      {/* ── Никнейм ──────────────────────────────── */}
-      {(() => {
-        const NICK_COOLDOWN_DAYS = 7;
-        const lastChanged = user.nicknameChangedAt ? new Date(user.nicknameChangedAt) : null;
-        const nextAllowed = lastChanged ? new Date(lastChanged.getTime() + NICK_COOLDOWN_DAYS * 86400000) : null;
-        const cooldownActive = !!(nextAllowed && nextAllowed > new Date());
-        const nextStr = nextAllowed?.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      <div className={styles.layout}>
+        <aside className={styles.sidebar}>
+          <button type="button" className={tab === 'overview' ? styles.navActive : ''} onClick={() => setTab('overview')}>
+            Главная
+          </button>
+          <button type="button" className={tab === 'security' ? styles.navActive : ''} onClick={() => setTab('security')}>
+            Безопасность
+          </button>
+          <button type="button" className={styles.logoutBtn} onClick={() => { logout(); router.push('/'); }}>
+            Выйти
+          </button>
+        </aside>
 
-        return (
-          <section style={cardStyle}>
-            <div style={sectionTitleStyle}>Никнейм</div>
-            <form onSubmit={handleNickSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '.3rem' }}>
-                <label style={labelStyle}>Новый никнейм</label>
-                <input
-                  className="input"
-                  type="text"
-                  maxLength={16}
-                  value={nick}
-                  onChange={e => { setNick(e.target.value); setNickSuccess(false); }}
-                  placeholder="3–16 символов"
-                  disabled={cooldownActive}
-                />
-                <div style={{ fontSize: '.7rem', color: 'var(--text3)' }}>
-                  Буквы (лат/кир), цифры, «_» и «-». Виден другим игрокам. Менять можно раз в {NICK_COOLDOWN_DAYS} дней.
+        {tab === 'overview' ? (
+          <div className={styles.content}>
+            <section className={styles.activityCard}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2>Обзор активности</h2>
+                  <p>Коротко о твоём движении на L2Realm</p>
                 </div>
-                {cooldownActive && (
-                  <div style={{ fontSize: '.75rem', color: 'var(--gold-d)' }}>
-                    🕒 Следующая смена доступна {nextStr}
+              </div>
+              <div className={styles.activityGrid}>
+                {stats.map(item => (
+                  <div key={item.label} className={styles.activityItem}>
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section id="favorites" className={styles.panel}>
+              <div className={styles.sectionHead}>
+                <h2>Избранные серверы <span>{favorites.length}</span></h2>
+                <Link href="/">Смотреть каталог</Link>
+              </div>
+              {favLoading ? (
+                <p className={styles.empty}>Загрузка...</p>
+              ) : favorites.length === 0 ? (
+                <p className={styles.empty}>Пока нет избранных серверов.</p>
+              ) : (
+                <div className={styles.favoriteGrid}>
+                  {favorites.slice(0, 4).map(f => (
+                    <article key={f.id} className={styles.favoriteCard}>
+                      <button type="button" onClick={() => removeFavorite(f.server.id)} aria-label="Убрать из избранного">×</button>
+                      <Link href={`/servers/${f.server.id}`}>
+                        <span className={styles.serverArt}>
+                          {f.server.icon ? <img src={f.server.icon} alt="" /> : <span>{f.server.name[0]}</span>}
+                        </span>
+                        <strong>{f.server.name}</strong>
+                        <small>{f.server.chronicle} · {f.server.rates}</small>
+                        <em className={f.server.status === 'online' ? styles.online : ''}>{statusLabel(f.server.status)}</em>
+                      </Link>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <div className={styles.twoColumns}>
+              <section id="notifications" className={styles.panel}>
+                <div className={styles.sectionHead}>
+                  <h2>Напоминания об открытиях <span>{reminders.length}</span></h2>
+                </div>
+                {reminders.length === 0 ? (
+                  <p className={styles.empty}>Нет ближайших открытий в ближайшие 24 часа.</p>
+                ) : (
+                  <div className={styles.list}>
+                    {reminders.map(item => (
+                      <Link key={item.id} href={`/servers/${item.serverId}`} className={styles.listRow}>
+                        {item.server?.icon ? <img src={item.server.icon} alt="" /> : <span className={styles.rowIcon}>{item.server?.name?.[0] || 'L'}</span>}
+                        <span>
+                          <strong>{item.server?.name || 'Сервер'}</strong>
+                          <small>{openingText(item.openingAt)}</small>
+                        </span>
+                      </Link>
+                    ))}
                   </div>
                 )}
+              </section>
+
+              <section className={styles.panel}>
+                <div className={styles.sectionHead}>
+                  <h2>Последние отзывы <span>{reviews.length}</span></h2>
+                </div>
+                {reviewsLoading ? (
+                  <p className={styles.empty}>Загрузка...</p>
+                ) : reviews.length === 0 ? (
+                  <p className={styles.empty}>Ты пока не оставлял отзывы.</p>
+                ) : (
+                  <div className={styles.reviewList}>
+                    {reviews.slice(0, 3).map(r => (
+                      <Link key={r.id} href={`/servers/${r.server.id}`} className={styles.reviewRow}>
+                        {r.server.icon ? <img src={r.server.icon} alt="" /> : <span className={styles.rowIcon}>{r.server.name[0]}</span>}
+                        <span>
+                          <strong>{r.server.name}</strong>
+                          <Stars rating={r.rating} />
+                          <small>{r.text}</small>
+                        </span>
+                        <time>{formatDate(r.createdAt)}</time>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className={styles.twoColumns}>
+              <section className={styles.panel}>
+                <div className={styles.sectionHead}>
+                  <h2>Недавние просмотры <span>{recentServers.length}</span></h2>
+                </div>
+                {recentServers.length === 0 ? (
+                  <p className={styles.empty}>Открой пару страниц серверов, и они появятся здесь.</p>
+                ) : (
+                  <div className={styles.recentGrid}>
+                    {recentServers.slice(0, 4).map(item => (
+                      <article key={item.id} className={styles.recentCard}>
+                        <button type="button" onClick={() => removeRecentServer(item.id)} aria-label="Убрать из истории">×</button>
+                        <Link href={`/servers/${item.id}`}>
+                          {item.banner || item.icon ? <img src={item.banner || item.icon || ''} alt="" /> : <span>{item.name[0]}</span>}
+                          <strong>{item.name}</strong>
+                          <small>{compactDate(item.viewedAt)}</small>
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className={styles.panel}>
+                <div className={styles.sectionHead}>
+                  <h2>Сохранённые статьи <span>{savedArticles.length}</span></h2>
+                  <Link href="/blog">Все статьи</Link>
+                </div>
+                {savedArticles.length === 0 ? (
+                  <p className={styles.empty}>На странице статьи нажми “Сохранить”, чтобы вернуться к ней позже.</p>
+                ) : (
+                  <div className={styles.articleList}>
+                    {savedArticles.slice(0, 5).map(item => (
+                      <div key={item.slug} className={styles.articleRow}>
+                        <Link href={`/blog/${item.slug}`}>
+                          {item.image && <img src={item.image} alt="" />}
+                          <span>
+                            <strong>{item.title}</strong>
+                            <small>{compactDate(item.savedAt)}</small>
+                          </span>
+                        </Link>
+                        <button type="button" onClick={() => removeSavedArticle(item.slug)} aria-label="Убрать статью">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.content}>
+            <section className={styles.panel}>
+              <div className={styles.sectionHead}>
+                <div>
+                  <h2>Безопасность и имя</h2>
+                  <p>Здесь можно поменять публичный никнейм.</p>
+                </div>
               </div>
 
-              {nickError && <p style={{ color: '#e55', fontSize: '.82rem', margin: 0 }}>{nickError}</p>}
-              {nickSuccess && <p style={{ color: '#5c5', fontSize: '.82rem', margin: 0 }}>✅ Никнейм сохранён</p>}
-
-              <button
-                className="btn-primary"
-                type="submit"
-                disabled={nickSaving || cooldownActive}
-                style={{ padding: '.5rem', alignSelf: 'flex-start', minWidth: '180px' }}
-              >
-                {nickSaving ? 'Сохраняем...' : 'Сохранить'}
-              </button>
-            </form>
-          </section>
-        );
-      })()}
-
-      {/* ── Избранное ────────────────────────────── */}
-      <section id="favorites" style={{ ...cardStyle, scrollMarginTop: '72px' }}>
-        <div style={sectionTitleStyle}>Избранные серверы</div>
-        {favLoading ? (
-          <p style={{ color: 'var(--text3)', margin: 0 }}>Загрузка...</p>
-        ) : favorites.length === 0 ? (
-          <p style={{ color: 'var(--text3)', margin: 0 }}>Пока ничего не добавлено. Открой страницу сервера и нажми «⚔ В избранное».</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
-            {favorites.map(f => (
-              <div
-                key={f.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '.8rem',
-                  padding: '.65rem .9rem',
-                  background: 'var(--bg1)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '.5rem',
-                }}
-              >
-                {f.server.icon && (
-                  <img
-                    src={f.server.icon}
-                    alt={`Иконка сервера ${f.server.name}`}
-                    style={{ width: 36, height: 36, borderRadius: '.3rem', objectFit: 'cover' }}
+              <form onSubmit={handleNickSubmit} className={styles.securityForm}>
+                <label>
+                  <span>Никнейм</span>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={nick}
+                    onChange={e => { setNick(e.target.value); setNickSuccess(false); }}
+                    placeholder="3-16 символов"
                   />
-                )}
-                <Link
-                  href={`/servers/${f.server.id}`}
-                  style={{ flex: 1, textDecoration: 'none', color: 'var(--text1)' }}
-                >
-                  <div style={{ fontWeight: 600 }}>{f.server.name}</div>
-                  <div style={{ fontSize: '.72rem', color: 'var(--text3)' }}>
-                    {f.server.chronicle} · {f.server.rates} ·{' '}
-                    <span style={{
-                      color: f.server.status === 'online' ? '#5c5' : f.server.status === 'offline' ? '#e55' : 'var(--text3)',
-                    }}>
-                      {f.server.status === 'online' ? 'онлайн' : f.server.status === 'offline' ? 'оффлайн' : '—'}
-                    </span>
-                  </div>
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => removeFavorite(f.server.id)}
-                  className="btn-ghost"
-                  style={{ padding: '.35rem .7rem', fontSize: '.72rem' }}
-                  title="Убрать из избранного"
-                >
-                  ✕
-                </button>
+                </label>
+                <p className={styles.hint}>Буквы, цифры, “_” и “-”. Менять можно не чаще одного раза в 7 дней.</p>
+                {nickError && <p className={styles.error}>{nickError}</p>}
+                {nickSuccess && <p className={styles.success}>Никнейм сохранён</p>}
+                <button type="submit" disabled={nickSaving}>{nickSaving ? 'Сохраняем...' : 'Сохранить имя'}</button>
+              </form>
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.sectionHead}>
+                <h2>Аккаунт</h2>
               </div>
-            ))}
+              <div className={styles.accountRows}>
+                <div><span>Email</span><strong>{user.email}</strong></div>
+                <div><span>Вход</span><strong>{user.vkId ? 'VK ID' : 'Email'}</strong></div>
+                <div><span>Роль</span><strong>{user.role === 'ADMIN' ? 'Админ' : 'Пользователь'}</strong></div>
+              </div>
+            </section>
           </div>
         )}
-      </section>
-
-      {/* ── Мои отзывы ──────────────────────────── */}
-      <section style={cardStyle}>
-        <div style={sectionTitleStyle}>Мои отзывы</div>
-        {reviewsLoading ? (
-          <p style={{ color: 'var(--text3)', margin: 0 }}>Загрузка...</p>
-        ) : reviews.length === 0 ? (
-          <p style={{ color: 'var(--text3)', margin: 0 }}>У тебя пока нет отзывов.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
-            {reviews.map(r => (
-              <Link
-                key={r.id}
-                href={`/servers/${r.server.id}`}
-                style={{
-                  display: 'block',
-                  padding: '.75rem 1rem',
-                  background: 'var(--bg1)',
-                  border: '1px solid var(--border)',
-                  borderRadius: '.5rem',
-                  textDecoration: 'none',
-                  color: 'var(--text1)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.4rem' }}>
-                  <span style={{ fontWeight: 600 }}>{r.server.name}</span>
-                  <span style={{ fontSize: '.8rem', color: 'var(--gold)' }}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</span>
-                </div>
-                <p style={{ margin: 0, fontSize: '.88rem', color: 'var(--text2)' }}>{r.text}</p>
-                <div style={{ marginTop: '.4rem', fontSize: '.72rem', color: 'var(--text3)' }}>
-                  {new Date(r.createdAt).toLocaleDateString('ru-RU')}
-                  {r.approved ? ' · опубликован' : ' · на модерации'}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
-
-    </div>
+      </div>
+    </main>
   );
 }

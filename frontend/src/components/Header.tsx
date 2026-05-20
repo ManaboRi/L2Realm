@@ -124,16 +124,12 @@ export function Header() {
               <span>Избранное</span>
               {favoriteCount > 0 && <span className={styles.headerBadge}>{Math.min(favoriteCount, 99)}</span>}
             </Link>
-            <button
-              type="button"
+            <Link
+              href="/profile#notifications"
               className={`${styles.notifyBtn} ${dueReminders.length > 0 ? styles.notifyBtnActive : ''}`}
               title={dueReminders.length > 0 ? `Напоминаний: ${dueReminders.length}` : 'Уведомления'}
               aria-label={dueReminders.length > 0 ? `Напоминаний: ${dueReminders.length}` : 'Уведомления'}
-              onClick={() => {
-                if (dueReminders.length > 0) {
-                  alert(dueReminders.map(item => `${item.server?.name || 'Сервер'} скоро открывается`).join('\n'));
-                }
-              }}
+              onClick={closeMenu}
             >
               <svg className={styles.bellIcon} viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
@@ -141,7 +137,7 @@ export function Header() {
               </svg>
               <span>Уведомления</span>
               {dueReminders.length > 0 && <span className={styles.headerBadge}>{Math.min(dueReminders.length, 99)}</span>}
-            </button>
+            </Link>
             {user ? (
               <Link href="/profile" className={styles.profileChip} title="Личный кабинет" onClick={closeMenu}>
                 {user.avatar ? (

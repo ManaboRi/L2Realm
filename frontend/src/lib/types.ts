@@ -141,6 +141,7 @@ export interface User {
   avatar?:           string;
   vkId?:             string;
   role:              'USER' | 'ADMIN';
+  createdAt?:         string;
   nicknameChangedAt?: string | null;
 }
 
