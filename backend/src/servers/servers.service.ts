@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
@@ -18,6 +19,21 @@ const serverInstanceSchema = z.object({
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipPaymentId: optionalSafeText(120),
+  onlineMode: z.enum(['off', 'manual', 'next-json', 'html-json-var', 'html-regex']).optional(),
+  onlineManual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  onlineValue: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  onlineUpdatedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  onlineStatus: z.enum(['ok', 'error']).nullable().optional(),
+  onlineError: optionalSafeText(240),
+  onlineSourceUrl: optionalSafeUrl,
+  onlineListPath: optionalSafeText(240),
+  onlineMatchField: optionalSafeText(120),
+  onlineMatchValue: optionalSafeText(160),
+  onlineValuePath: optionalSafeText(120),
+  onlineJsonVar: optionalSafeText(160),
+  onlineItemIndex: z.coerce.number().int().min(0).max(1_000).nullable().optional(),
+  onlineRegex: optionalSafeText(500),
+  onlineRegexGroup: z.coerce.number().int().min(0).max(20).nullable().optional(),
 }).passthrough();
 
 const downloadLinkSchema = z.object({
@@ -64,6 +80,20 @@ const serverPayloadSchema = z.object({
 
 const serverUpdateSchema = serverPayloadSchema.partial().omit({ id: true }).extend({
   id: safeSlug.max(64).optional(),
+});
+
+const onlineSourceTestSchema = z.object({
+  mode: z.enum(['manual', 'next-json', 'html-json-var', 'html-regex']),
+  manual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  sourceUrl: safeUrl.optional(),
+  listPath: optionalSafeText(240),
+  matchField: optionalSafeText(120),
+  matchValue: optionalSafeText(160),
+  valuePath: optionalSafeText(120),
+  jsonVar: optionalSafeText(160),
+  itemIndex: z.coerce.number().int().min(0).max(1_000).nullable().optional(),
+  regex: optionalSafeText(500),
+  regexGroup: z.coerce.number().int().min(0).max(20).nullable().optional(),
 });
 
 const serverRequestSchema = z.object({
@@ -127,6 +157,139 @@ function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 
   return null;
 }
 
+function readPath(source: any, path?: string | null): any {
+  if (!path) return source;
+  return path
+    .split('.')
+    .map(part => part.trim())
+    .filter(Boolean)
+    .reduce((current, part) => current == null ? undefined : current[part], source);
+}
+
+function normalizeComparable(value: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function numberFromUnknown(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return Math.round(value);
+  const digits = String(value ?? '').replace(/[^\d]/g, '');
+  if (!digits) return null;
+  const parsed = Number(digits);
+  return Number.isFinite(parsed) ? Math.round(parsed) : null;
+}
+
+function extractNextData(html: string): any | null {
+  const match = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+  if (!match?.[1]) return null;
+  return JSON.parse(match[1]);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function robotsPatternToRegex(pattern: string): RegExp {
+  const escaped = pattern
+    .split('*')
+    .map(escapeRegExp)
+    .join('.*')
+    .replace(/\\\$$/, '$');
+  return new RegExp(`^${escaped}`);
+}
+
+function extractScriptVariable(html: string, variableName: string): any {
+  const cleanName = variableName
+    .trim()
+    .replace(/^window\./, '')
+    .replace(/[^\w$]/g, '');
+  if (!cleanName) throw new BadRequestException('Variable name is required');
+  const escaped = escapeRegExp(cleanName);
+  const re = new RegExp(`(?:window\\.)?${escaped}\\s*=\\s*([\\s\\S]*?);\\s*(?:<\\/script>|\\n|$)`, 'i');
+  const match = html.match(re);
+  if (!match?.[1]) throw new BadRequestException(`Variable not found: ${cleanName}`);
+  return JSON.parse(match[1]);
+}
+
+type RobotsCheck = {
+  checked: boolean;
+  allowed: boolean;
+  robotsUrl: string;
+  crawlDelay?: string | null;
+  reason?: string;
+};
+
+async function checkRobotsAllowed(sourceUrl: string): Promise<RobotsCheck> {
+  const url = new URL(sourceUrl);
+  const robotsUrl = new URL('/robots.txt', url.origin).toString();
+  let text = '';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5_000);
+    try {
+      const response = await fetch(robotsUrl, {
+        signal: controller.signal,
+        headers: { 'User-Agent': 'L2RealmBot/1.0 (+https://l2realm.ru)' },
+      });
+      if (!response.ok) return { checked: false, allowed: true, robotsUrl, reason: `robots.txt HTTP ${response.status}` };
+      text = await response.text();
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    return { checked: false, allowed: true, robotsUrl, reason: 'robots.txt unavailable' };
+  }
+
+  const groups: Array<{ agents: string[]; rules: Array<{ type: 'allow' | 'disallow'; path: string }>; crawlDelay?: string }> = [];
+  let group: { agents: string[]; rules: Array<{ type: 'allow' | 'disallow'; path: string }>; crawlDelay?: string } | null = null;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.replace(/#.*/, '').trim();
+    if (!line) continue;
+    const [rawKey, ...rest] = line.split(':');
+    const key = rawKey.trim().toLowerCase();
+    const value = rest.join(':').trim();
+    if (key === 'user-agent') {
+      if (!group || group.rules.length > 0) {
+        group = { agents: [], rules: [] };
+        groups.push(group);
+      }
+      group.agents.push(value.toLowerCase());
+    } else if (group && key === 'allow') {
+      group.rules.push({ type: 'allow', path: value });
+    } else if (group && key === 'disallow') {
+      group.rules.push({ type: 'disallow', path: value });
+    } else if (group && key === 'crawl-delay') {
+      group.crawlDelay = value;
+    }
+  }
+
+  const relevant = groups.filter(g => g.agents.includes('l2realmbot') || g.agents.includes('*'));
+  const path = `${url.pathname}${url.search}`;
+  let best: { type: 'allow' | 'disallow'; path: string } | null = null;
+  let crawlDelay: string | null = null;
+  for (const g of relevant) {
+    if (g.crawlDelay && !crawlDelay) crawlDelay = g.crawlDelay;
+    for (const rule of g.rules) {
+      if (rule.path === '') continue;
+      if (!robotsPatternToRegex(rule.path).test(path)) continue;
+      if (!best || rule.path.length > best.path.length || (rule.path.length === best.path.length && rule.type === 'allow')) {
+        best = rule;
+      }
+    }
+  }
+
+  const allowed = best?.type !== 'disallow';
+  return {
+    checked: true,
+    allowed,
+    robotsUrl,
+    crawlDelay,
+    reason: best ? `${best.type}: ${best.path}` : 'no matching rule',
+  };
+}
+
 function typeMatches(value: string | undefined, wanted: string): boolean {
   if (!value) return false;
   if (value === wanted) return true;
@@ -145,10 +308,251 @@ function addTypeForCounts(set: Set<string>, value: string | undefined) {
 
 @Injectable()
 export class ServersService {
+  private readonly logger = new Logger(ServersService.name);
+
   constructor(
     private prisma: PrismaService,
     private monitoring: MonitoringService,
   ) {}
+
+  async testOnlineSource(body: any) {
+    const clean = parseOrThrow(onlineSourceTestSchema, body) as any;
+
+    if (clean.mode === 'manual') {
+      const online = numberFromUnknown(clean.manual);
+      if (online == null) throw new BadRequestException('Manual online value is required');
+      return {
+        ok: true,
+        online,
+        source: 'manual',
+        checkedAt: new Date().toISOString(),
+      };
+    }
+
+    if (!clean.sourceUrl) throw new BadRequestException('Source URL is required');
+
+    const robots = await checkRobotsAllowed(clean.sourceUrl);
+    if (robots.checked && !robots.allowed) {
+      throw new BadRequestException(`robots.txt forbids this path (${robots.reason})`);
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    let text = '';
+    let contentType = '';
+    try {
+      const response = await fetch(clean.sourceUrl, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'text/html,application/json;q=0.9,*/*;q=0.8',
+          'User-Agent': 'L2RealmBot/1.0 (+https://l2realm.ru)',
+        },
+      });
+      if (!response.ok) throw new BadRequestException(`Source returned HTTP ${response.status}`);
+      contentType = response.headers.get('content-type') || '';
+      text = await response.text();
+    } catch (error) {
+      if (error instanceof BadRequestException) throw error;
+      throw new BadRequestException('Failed to fetch online source');
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (text.length > 2_000_000) throw new BadRequestException('Online source is too large');
+
+    if (clean.mode === 'html-regex') {
+      if (!clean.regex) throw new BadRequestException('Regex pattern is required');
+      let re: RegExp;
+      try {
+        re = new RegExp(clean.regex, 'is');
+      } catch {
+        throw new BadRequestException('Invalid regex pattern');
+      }
+      const match = text.match(re);
+      if (!match) throw new BadRequestException('Regex did not match source');
+      const group = clean.regexGroup ?? 1;
+      const online = numberFromUnknown(match[group] ?? match[0]);
+      if (online == null) throw new BadRequestException(`Regex group ${group} does not contain a number`);
+      return {
+        ok: true,
+        online,
+        source: 'html-regex',
+        checkedAt: new Date().toISOString(),
+        regexGroup: group,
+        robots,
+      };
+    }
+
+    if (clean.mode === 'html-json-var') {
+      const valuePath = clean.valuePath || 'onlineCount';
+      const variable = clean.jsonVar || '__promoServerOnline';
+      const parsedVariable = extractScriptVariable(text, variable);
+      const list = Array.isArray(parsedVariable)
+        ? parsedVariable
+        : Array.isArray(readPath(parsedVariable, clean.listPath || ''))
+          ? readPath(parsedVariable, clean.listPath || '')
+          : null;
+      if (!Array.isArray(list)) throw new BadRequestException(`Variable is not a list: ${variable}`);
+      const index = Number(clean.itemIndex ?? 0);
+      const item = list[index];
+      if (!item) throw new BadRequestException(`List item not found at index ${index}`);
+      const online = numberFromUnknown(readPath(item, valuePath));
+      if (online == null) throw new BadRequestException(`Online value not found by ${valuePath}`);
+      return {
+        ok: true,
+        online,
+        source: 'html-json-var',
+        checkedAt: new Date().toISOString(),
+        jsonVar: variable,
+        itemIndex: index,
+        valuePath,
+        robots,
+      };
+    }
+
+    let parsed: any;
+    try {
+      if (contentType.includes('application/json') || /^[\s\r\n]*[\[{]/.test(text)) {
+        parsed = JSON.parse(text);
+      } else {
+        parsed = extractNextData(text);
+      }
+    } catch {
+      throw new BadRequestException('Could not parse JSON or Next.js data');
+    }
+    if (!parsed) throw new BadRequestException('Next.js data not found on page');
+
+    const rawListPath = clean.listPath || 'props.pageProps.home.servers';
+    const listPaths = Array.from(new Set([
+      rawListPath,
+      rawListPath.replace(/^props\./, ''),
+      rawListPath.startsWith('props.') ? rawListPath : `props.${rawListPath}`,
+    ]));
+    let list: any[] | undefined;
+    let usedListPath = '';
+    for (const path of listPaths) {
+      const candidate = readPath(parsed, path);
+      if (Array.isArray(candidate)) {
+        list = candidate;
+        usedListPath = path;
+        break;
+      }
+    }
+    if (!list) throw new BadRequestException(`List path not found: ${rawListPath}`);
+
+    const matchField = clean.matchField || 'name';
+    const matchValue = normalizeComparable(clean.matchValue);
+    if (!matchValue) throw new BadRequestException('Match value is required');
+
+    const exact = list.find(item => normalizeComparable(readPath(item, matchField)) === matchValue);
+    const fuzzy = exact ?? list.find(item => {
+      const value = normalizeComparable(readPath(item, matchField));
+      return value.includes(matchValue) || matchValue.includes(value);
+    });
+    if (!fuzzy) throw new BadRequestException(`Item not found by ${matchField}`);
+
+    const valuePath = clean.valuePath || 'online';
+    const online = numberFromUnknown(readPath(fuzzy, valuePath));
+    if (online == null) throw new BadRequestException(`Online value not found by ${valuePath}`);
+
+    return {
+      ok: true,
+      online,
+      source: 'next-json',
+      checkedAt: new Date().toISOString(),
+      usedListPath,
+      matchField,
+      matchValue: readPath(fuzzy, matchField) ?? clean.matchValue,
+      valuePath,
+      robots,
+    };
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async refreshOnlineSources() {
+    const servers = await this.prisma.server.findMany({
+      select: { id: true, instances: true },
+    });
+
+    let updated = 0;
+    for (const server of servers) {
+      const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
+      if (instances.length === 0) continue;
+
+      let changed = false;
+      const next: any[] = [];
+      for (const inst of instances) {
+        const mode = inst?.onlineMode || 'off';
+        if (mode === 'off') {
+          next.push(inst);
+          continue;
+        }
+
+        if (mode === 'manual') {
+          const online = numberFromUnknown(inst.onlineManual);
+          next.push({
+            ...inst,
+            onlineValue: online,
+            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : new Date().toISOString(),
+            onlineStatus: online == null ? 'error' : 'ok',
+            onlineError: online == null ? 'Manual online value is empty' : null,
+          });
+          changed = true;
+          continue;
+        }
+
+        if (!inst.onlineSourceUrl) {
+          next.push({
+            ...inst,
+            onlineStatus: 'error',
+            onlineError: 'Online source URL is empty',
+          });
+          changed = true;
+          continue;
+        }
+
+        try {
+          const result = await this.testOnlineSource({
+            mode,
+            sourceUrl: inst.onlineSourceUrl,
+            listPath: inst.onlineListPath,
+            matchField: inst.onlineMatchField,
+            matchValue: inst.onlineMatchValue || inst.label || inst.rates,
+            valuePath: inst.onlineValuePath,
+            jsonVar: inst.onlineJsonVar,
+            itemIndex: inst.onlineItemIndex,
+            regex: inst.onlineRegex,
+            regexGroup: inst.onlineRegexGroup,
+          });
+          next.push({
+            ...inst,
+            onlineValue: result.online,
+            onlineUpdatedAt: result.checkedAt,
+            onlineStatus: 'ok',
+            onlineError: null,
+          });
+          changed = true;
+        } catch (error) {
+          next.push({
+            ...inst,
+            onlineStatus: 'error',
+            onlineError: error instanceof Error ? error.message.slice(0, 220) : 'Failed to refresh online',
+          });
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        await this.prisma.server.update({
+          where: { id: server.id },
+          data: { instances: next },
+        });
+        updated++;
+      }
+    }
+
+    if (updated > 0) this.logger.log(`Online sources refreshed for ${updated} servers`);
+  }
 
   // ── Получить все с фильтрами ─────────────────
   async findAll(filters: FilterServersDto) {

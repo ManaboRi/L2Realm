@@ -8,6 +8,7 @@ import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
 import type { Article, DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
+import { formatOnline, instanceOnlineValue, serverOnlineValue } from '@/lib/online';
 import styles from './page.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
@@ -357,6 +358,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
+  const projectOnline = serverOnlineValue(server);
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
   const startLinks = serverDownloadLinks(server);
   const hasStartGuide = startLinks.length > 0 || !!server.installGuide;
@@ -436,6 +438,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
         <aside className={styles.heroPanel}>
           <div className={styles.heroMetricGrid}>
+            {projectOnline != null && (
+              <div>
+                <span>Онлайн</span>
+                <strong className={styles.serverOnline}>{formatOnline(projectOnline)}</strong>
+              </div>
+            )}
             <div>
               <span>Голоса</span>
               <strong>{totalVotes}</strong>
@@ -505,6 +513,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <div><span>Старт проекта</span><strong>{startDate}</strong></div>
                 <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
                 <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
+                {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline)}</strong></div>}
                 <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
               </div>
             </section>
@@ -578,6 +587,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div className={styles.instancesLarge}>
                 {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
                   const isFuture = isOpeningStillSoon(inst.openedDate);
+                  const instOnline = instanceOnlineValue(inst);
                   return (
                     <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''}`}>
                       <div className={styles.instTileHead}>
@@ -590,6 +600,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                         {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
                       </div>
                       {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                      {instOnline != null && (
+                        <div className={styles.instTileOnline}>
+                          <span>Онлайн</span>
+                          {formatOnline(instOnline)}
+                        </div>
+                      )}
                       <div className={styles.instTileMeta}>
                         {inst.openedDate && <span>{formatFullDate(inst.openedDate)}</span>}
                         <a href={inst.url} target="_blank" rel="noopener nofollow">Перейти</a>

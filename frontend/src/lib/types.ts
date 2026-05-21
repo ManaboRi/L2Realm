@@ -15,6 +15,21 @@ export interface ServerInstance {
   openedDate?: string | null;
   soonVipUntil?: string | null;
   soonVipPaymentId?: string | null;
+  onlineMode?: 'off' | 'manual' | 'next-json' | 'html-json-var' | 'html-regex';
+  onlineManual?: number | null;
+  onlineValue?: number | null;
+  onlineUpdatedAt?: string | null;
+  onlineStatus?: 'ok' | 'error' | null;
+  onlineError?: string | null;
+  onlineSourceUrl?: string | null;
+  onlineListPath?: string | null;
+  onlineMatchField?: string | null;
+  onlineMatchValue?: string | null;
+  onlineValuePath?: string | null;
+  onlineJsonVar?: string | null;
+  onlineItemIndex?: number | null;
+  onlineRegex?: string | null;
+  onlineRegexGroup?: number | null;
 }
 
 export type DownloadLinkKind = 'client' | 'patch' | 'updater' | 'torrent' | 'mirror';
@@ -65,6 +80,8 @@ export interface Server {
   monthlyVotes?: number;
   weeklyVotes?:  number;
   voteRewardsEnabled?: boolean;
+  onlineValue?: number | null;
+  onlineUpdatedAt?: string | null;
   _isVip?:     boolean;
   _isBoosted?: boolean;
   _isSod?:     boolean;

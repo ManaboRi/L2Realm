@@ -574,6 +574,7 @@ export default function AdminPage() {
                 <InstancesEditor
                   value={editForm.instances ?? []}
                   onChange={v => setEditForm((p:any) => ({ ...p, instances: v }))}
+                  token={token}
                 />
               </div>
 
@@ -987,6 +988,7 @@ export default function AdminPage() {
                   <InstancesEditor
                     value={addForm.instances ?? []}
                     onChange={v => setAddForm(p => ({ ...p, instances: v }))}
+                    token={token}
                   />
 
                   <button className="btn-primary" type="submit" style={{ alignSelf:'flex-start', padding:'.5rem 1.6rem' }}>

@@ -57,6 +57,14 @@ export class ServersController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
+  @Post('admin/online/test')
+  testOnlineSource(@Body() body: any) {
+    return this.srv.testOnlineSource(body);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Post()
   create(@Body() dto: CreateServerDto) {
     return this.srv.create(dto);

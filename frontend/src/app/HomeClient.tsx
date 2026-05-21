@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
+import { formatOnline, serverOnlineValue } from '@/lib/online';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -336,6 +337,7 @@ function HomeServerCard({
   const visibleTags = tags.slice(0, 7);
   const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
+  const online = serverOnlineValue(s);
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
   const isWeek = !!s._isSod;
@@ -385,8 +387,8 @@ function HomeServerCard({
         <div className={styles.cardFooter}>
           <div className={styles.cardMeta}>
             <span>
-              <small>Голоса</small>
-              <strong className={styles.online}>{votes.toLocaleString('ru-RU')}</strong>
+              <small>{online == null ? 'Голоса' : 'Онлайн'}</small>
+              <strong className={styles.online}>{online == null ? votes.toLocaleString('ru-RU') : formatOnline(online)}</strong>
             </span>
             <span>
               <small>Старт</small>

@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-21
 
+- Added the first per-project-launch online source system: each `instances` entry can store manual, Next.js/JSON, HTML JSON-variable, or HTML/regex source settings; admin can test sources, robots.txt is checked, backend refreshes saved sources hourly, and project online is summed from launches.
 - Adjusted server overview articles to sit directly under the main information column with title/date only, removing the empty middle gap; future project launch cards now use a green strip/gradient instead of a full-card fill.
 - Tightened the profile and server overview layouts after production review: reduced oversized profile width, compacted saved-article cards, moved the server sidebar back to the top row, and made linked project articles smaller.
 - Widened `/profile` to match the newer full-width catalog/blog rhythm and aligned header/favorite icons.

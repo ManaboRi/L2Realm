@@ -46,6 +46,11 @@ export const api = {
       request<Server>(`/servers/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     delete: (id: string, token: string) =>
       request<void>(`/servers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+    testOnlineSource: (data: any, token: string) =>
+      request<{ ok: boolean; online: number; source: string; checkedAt: string; usedListPath?: string; matchValue?: string; valuePath?: string; robots?: { checked: boolean; allowed: boolean; robotsUrl: string; crawlDelay?: string | null; reason?: string } }>(
+        '/servers/admin/online/test',
+        { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } },
+      ),
     request: (data: any, token: string) =>
       request<any>('/servers/request', {
         method: 'POST',
