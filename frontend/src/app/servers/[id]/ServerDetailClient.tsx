@@ -8,7 +8,17 @@ import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
 import type { Article, DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
-import { formatOnline, instanceOnlineValue, serverOnlineValue } from '@/lib/online';
+import {
+  formatOnline,
+  instanceOnlineIsEstimated,
+  instanceOnlineValue,
+  onlineChartPath,
+  onlineSeries,
+  onlineSeriesStats,
+  serverOnlineIsEstimated,
+  serverOnlineValue,
+  type OnlineRange,
+} from '@/lib/online';
 import styles from './page.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
@@ -218,7 +228,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'servers' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'info' | 'servers' | 'reviews'>('overview');
+  const [onlineRange, setOnlineRange] = useState<OnlineRange>('24h');
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
@@ -359,6 +370,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const projectOnline = serverOnlineValue(server);
+  const estimatedProjectOnline = serverOnlineIsEstimated(server);
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
   const startLinks = serverDownloadLinks(server);
   const hasStartGuide = startLinks.length > 0 || !!server.installGuide;
@@ -391,6 +403,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
   const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
+  const projectAge = relativeOpened(server.openedDate);
+  const onlineValues = onlineSeries(projectOnline, onlineRange);
+  const onlineStats = onlineSeriesStats(onlineValues);
+  const onlinePath = onlineChartPath(onlineValues, 460, 150);
+  const onlineFillPath = onlinePath ? `${onlinePath} L 460 150 L 0 150 Z` : '';
+  const voteDisabled = voting || !!voteStatus?.voted;
 
   return (
     <div className={styles.page}>
@@ -441,7 +459,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             {projectOnline != null && (
               <div>
                 <span>Онлайн</span>
-                <strong className={styles.serverOnline}>{formatOnline(projectOnline)}</strong>
+                <strong className={styles.serverOnline}>{formatOnline(projectOnline, estimatedProjectOnline)}</strong>
               </div>
             )}
             <div>
@@ -464,27 +482,16 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <span>Рейтинг</span>
               <strong>★ {server.ratingCount > 0 ? server.rating.toFixed(1) : '—'}</strong>
             </div>
+            <div>
+              <span>Проекту</span>
+              <strong>{projectAge}</strong>
+            </div>
           </div>
-
-          <div className={styles.heroVote}>
-            <input
-              className="input"
-              value={voteNickname}
-              onChange={e => setVoteNickname(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
-              placeholder="Ник на сервере"
-              maxLength={32}
-              disabled={!token || !!voteStatus?.voted}
-            />
-            <button type="button" onClick={handleVote} disabled={voting || !!voteStatus?.voted}>
-              {voting ? <span className="spin" /> : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
-            </button>
-          </div>
-          <small>{voteRewardsEnabled ? 'Бонусы за голос подключены' : 'Голосование работает через L2Realm'}</small>
         </aside>
 
         <div className={styles.serverTabs}>
           <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
+          <button type="button" className={activeTab === 'info' ? styles.serverTabActive : ''} onClick={() => setActiveTab('info')}>Информация</button>
           <button type="button" className={activeTab === 'servers' ? styles.serverTabActive : ''} onClick={() => setActiveTab('servers')}>
             Сервера {instances.length > 0 && <span>{instances.length}</span>}
           </button>
@@ -504,17 +511,40 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           </section>
 
           <div className={styles.mainInfoStack}>
-            <section className={styles.infoCard}>
-              <h2>Основная информация</h2>
-              <div className={styles.infoRows}>
-                <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
-                <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
-                <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
-                <div><span>Старт проекта</span><strong>{startDate}</strong></div>
-                <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
-                <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
-                {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline)}</strong></div>}
-                <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
+            <section className={`${styles.infoCard} ${styles.onlineStatsCard}`}>
+              <div className={styles.cardTitleRow}>
+                <h2>Статистика онлайн</h2>
+                <div className={styles.onlineRangeTabs}>
+                  {(['24h', '7d', '30d'] as OnlineRange[]).map(range => (
+                    <button
+                      key={range}
+                      type="button"
+                      className={onlineRange === range ? styles.onlineRangeActive : ''}
+                      onClick={() => setOnlineRange(range)}
+                    >
+                      {range === '24h' ? '24 часа' : range === '7d' ? '7 дней' : '30 дней'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.onlineGraphBox}>
+                <svg viewBox="0 0 460 150" role="img" aria-label="График оценочного онлайна">
+                  <defs>
+                    <linearGradient id="serverOnlineFill" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stopColor="rgba(83,217,135,.34)" />
+                      <stop offset="100%" stopColor="rgba(83,217,135,0)" />
+                    </linearGradient>
+                  </defs>
+                  <path d="M 0 150 H 460" className={styles.onlineGraphAxis} />
+                  {onlineFillPath && <path d={onlineFillPath} className={styles.onlineGraphFill} />}
+                  {onlinePath && <path d={onlinePath} className={styles.onlineGraphLine} />}
+                </svg>
+                {!onlinePath && <div className={styles.onlineEmpty}>Онлайн появится после настройки сервера</div>}
+              </div>
+              <div className={styles.onlineFooterStats}>
+                <div><span>Текущий онлайн</span><strong>{formatOnline(onlineStats.current, estimatedProjectOnline)}</strong></div>
+                <div><span>Средний</span><strong>{formatOnline(onlineStats.average, estimatedProjectOnline)}</strong></div>
+                <div><span>Пик</span><strong>{formatOnline(onlineStats.peak, estimatedProjectOnline)}</strong></div>
               </div>
             </section>
 
@@ -554,13 +584,31 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               </section>
             )}
 
-            <section className={styles.sideCard}>
-              <h2>Голоса за сервер</h2>
+            <section className={`${styles.sideCard} ${styles.supportCard}`}>
+              <h2>Поддержать сервер</h2>
+              <p>{voteRewardsEnabled ? 'Проголосуй и получи награду по нику персонажа.' : 'Vote Manager не подключен: голос учтётся на L2Realm, но бонусы проект пока не выдаёт.'}</p>
               <div className={styles.voteCompactStats}>
                 <div><span>Всего</span><strong>{voteSummary?.totalVotes ?? totalVotes}</strong></div>
                 <div><span>За месяц</span><strong>{voteSummary?.monthlyVotes ?? 0}</strong></div>
                 <div><span>Сегодня</span><strong>{voteSummary?.todayVotes ?? 0}</strong></div>
               </div>
+              <div className={styles.supportVote}>
+                <input
+                  className="input"
+                  value={voteNickname}
+                  onChange={e => setVoteNickname(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
+                  placeholder="Ник на сервере"
+                  maxLength={32}
+                  disabled={!token || !!voteStatus?.voted}
+                />
+                <button type="button" onClick={handleVote} disabled={voteDisabled}>
+                  {voting ? <span className="spin" /> : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Проголосовать'}
+                </button>
+              </div>
+              {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds ?? null) && (
+                <small>{cooldownText(voteStatus.cooldownEnds ?? null)}</small>
+              )}
             </section>
 
             {(server.telegram || server.discord || server.vk || server.youtube) && (
@@ -579,6 +627,24 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         </div>
       )}
 
+      {activeTab === 'info' && (
+        <div className={styles.infoTabLayout}>
+          <section className={`${styles.infoCard} ${styles.infoTabCard}`}>
+            <h2>Информация</h2>
+            <div className={styles.infoRows}>
+              <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
+              <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
+              <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
+              <div><span>Старт проекта</span><strong>{startDate}</strong></div>
+              <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
+              <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
+              {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong></div>}
+              <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
+            </div>
+          </section>
+        </div>
+      )}
+
       {activeTab === 'servers' && (
         <div className={styles.serversTabLayout}>
           <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
@@ -588,6 +654,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
                   const isFuture = isOpeningStillSoon(inst.openedDate);
                   const instOnline = instanceOnlineValue(inst);
+                  const estimatedInstOnline = instanceOnlineIsEstimated(inst);
                   return (
                     <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''}`}>
                       <div className={styles.instTileHead}>
@@ -603,7 +670,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                       {instOnline != null && (
                         <div className={styles.instTileOnline}>
                           <span>Онлайн</span>
-                          {formatOnline(instOnline)}
+                          {formatOnline(instOnline, estimatedInstOnline)}
                         </div>
                       )}
                       <div className={styles.instTileMeta}>

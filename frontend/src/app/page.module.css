@@ -290,8 +290,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1rem;
-  padding: 1rem;
+  gap: .75rem;
+  padding: .85rem;
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(13, 18, 26, .86), rgba(7, 11, 16, .78));
   border: 1px solid rgba(255, 255, 255, .05);
@@ -322,6 +322,60 @@
 .metric small {
   color: var(--gold);
   font-size: .72rem;
+}
+
+.onlineMetricCard {
+  display: grid;
+  gap: .35rem;
+  padding-top: .72rem;
+  border-top: 1px solid rgba(210, 171, 82, .14);
+}
+
+.onlineMetricHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.onlineMetricHead span {
+  color: var(--text3);
+  font-family: 'Cinzel', serif;
+  font-size: .62rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.onlineMetricHead strong {
+  color: #67d894;
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
+  white-space: nowrap;
+}
+
+.onlineMiniChart {
+  width: 100%;
+  height: 46px;
+  overflow: visible;
+}
+
+.onlineAxis {
+  stroke: rgba(118, 141, 151, .18);
+  stroke-width: 1;
+}
+
+.onlineLine {
+  fill: none;
+  stroke: #57d98e;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 6px rgba(87, 217, 142, .32));
+}
+
+.onlineMetricCard small {
+  color: rgba(232, 221, 186, .46);
+  font-size: .68rem;
 }
 
 .sortSelect {

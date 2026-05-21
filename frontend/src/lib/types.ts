@@ -15,7 +15,7 @@ export interface ServerInstance {
   openedDate?: string | null;
   soonVipUntil?: string | null;
   soonVipPaymentId?: string | null;
-  onlineMode?: 'off' | 'manual' | 'next-json' | 'html-json-var' | 'html-regex';
+  onlineMode?: 'off' | 'manual' | 'estimated' | 'next-json' | 'html-json-var' | 'html-regex';
   onlineManual?: number | null;
   onlineValue?: number | null;
   onlineUpdatedAt?: string | null;
@@ -222,6 +222,8 @@ export interface Stats {
   newCount:    number;
   reviewCount: number;
   monthlyVotes?: number;
+  onlineTotal?: number;
+  onlineEstimated?: boolean;
 }
 
 export type SubscriptionPlan = 'free' | 'vip';

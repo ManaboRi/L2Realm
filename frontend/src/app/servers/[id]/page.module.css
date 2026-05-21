@@ -51,7 +51,7 @@
 
 .serverHero {
   width: min(1540px, calc(100% - 1.5rem));
-  min-height: 410px;
+  min-height: 344px;
   position: relative;
   overflow: hidden;
   margin: .8rem auto 1rem;
@@ -59,10 +59,10 @@
   border-radius: 8px;
   background: #070b10;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
-  grid-template-rows: minmax(0, 1fr) 62px;
+  grid-template-columns: minmax(0, 1fr) minmax(430px, 520px);
+  grid-template-rows: minmax(0, 1fr) 58px;
   gap: 1rem;
-  padding: 2rem;
+  padding: 1.55rem 1.65rem;
   box-shadow: 0 30px 90px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.035);
 }
 
@@ -103,15 +103,15 @@
 
 .heroMain {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 1.7rem;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 1.35rem;
   align-items: center;
   align-self: center;
 }
 
 .heroLogo {
-  width: 172px;
-  height: 172px;
+  width: 142px;
+  height: 142px;
   display: grid;
   place-items: center;
   border-radius: 10px;
@@ -119,8 +119,8 @@
 }
 
 .heroLogo img {
-  max-width: 150px;
-  max-height: 150px;
+  max-width: 126px;
+  max-height: 126px;
   object-fit: contain;
   filter: drop-shadow(0 16px 30px rgba(0,0,0,.45));
 }
@@ -175,7 +175,7 @@
   margin: 0 0 .65rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(2.1rem, 4vw, 3.7rem);
+  font-size: clamp(2rem, 3vw, 3rem);
   line-height: 1.04;
 }
 
@@ -211,7 +211,7 @@
 
 .heroCopy p {
   max-width: 560px;
-  margin: 0 0 1.35rem;
+  margin: 0 0 1rem;
   color: rgba(232,221,186,.72);
   font-size: 1rem;
   line-height: 1.7;
@@ -275,19 +275,25 @@
   border: 1px solid rgba(118,141,151,.18);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(10,15,22,.86), rgba(5,8,12,.9));
-  padding: 1.35rem;
+  padding: .95rem;
   backdrop-filter: blur(4px);
 }
 
 .heroMetricGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
 }
 
 .heroMetricGrid div {
   display: grid;
-  gap: .3rem;
+  gap: .28rem;
+  min-height: 64px;
+  align-content: center;
+  padding: .58rem .62rem;
+  border: 1px solid rgba(118,141,151,.14);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(9,13,19,.72), rgba(5,8,12,.82));
 }
 
 .heroMetricGrid span {
@@ -298,11 +304,12 @@
 .heroMetricGrid strong {
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: .95rem;
+  font-size: .88rem;
+  line-height: 1.25;
 }
 
 .heroMetricGrid div:first-child strong {
-  font-size: 1.7rem;
+  font-size: 1.2rem;
 }
 
 .serverOnline {
@@ -354,14 +361,14 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  margin: 0 -2rem -2rem;
+  margin: 0 -1.65rem -1.55rem;
   border-top: 1px solid rgba(118,141,151,.14);
   background: rgba(5,9,14,.58);
 }
 
 .serverTabs button {
   min-width: 150px;
-  min-height: 62px;
+  min-height: 58px;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -416,6 +423,15 @@
   align-self: start;
 }
 
+.infoTabLayout {
+  width: min(1540px, calc(100% - 1.5rem));
+  margin: 0 auto 4rem;
+}
+
+.infoTabCard {
+  max-width: 860px;
+}
+
 .sideStack {
   grid-column: 3;
   grid-row: 1;
@@ -455,6 +471,122 @@
 
 .sideCard {
   padding: 1.15rem;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .95rem;
+}
+
+.cardTitleRow h2 {
+  margin: 0;
+}
+
+.onlineRangeTabs {
+  display: inline-flex;
+  padding: .18rem;
+  border: 1px solid rgba(118,141,151,.14);
+  border-radius: 6px;
+  background: rgba(5,9,14,.48);
+}
+
+.onlineRangeTabs button {
+  min-height: 28px;
+  padding: 0 .6rem;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(232,221,186,.5);
+  font-size: .68rem;
+  cursor: pointer;
+}
+
+.onlineRangeTabs .onlineRangeActive {
+  background: rgba(83,217,135,.1);
+  color: #7ee5a5;
+}
+
+.onlineGraphBox {
+  position: relative;
+  overflow: hidden;
+  height: 164px;
+  border: 1px solid rgba(118,141,151,.12);
+  border-radius: 7px;
+  background:
+    linear-gradient(rgba(118,141,151,.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(118,141,151,.055) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(83,217,135,.09), transparent 48%),
+    rgba(5,9,14,.38);
+  background-size: 100% 25%, 12.5% 100%, auto, auto;
+  padding: .45rem;
+}
+
+.onlineGraphBox svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.onlineEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  color: rgba(232,221,186,.46);
+  font-size: .82rem;
+  text-align: center;
+}
+
+.onlineGraphAxis {
+  stroke: rgba(118,141,151,.22);
+  stroke-width: 1;
+}
+
+.onlineGraphFill {
+  fill: url(#serverOnlineFill);
+  stroke: none;
+}
+
+.onlineGraphLine {
+  fill: none;
+  stroke: #53d987;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 7px rgba(83,217,135,.36));
+}
+
+.onlineFooterStats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .7rem;
+  margin-top: .8rem;
+}
+
+.onlineFooterStats div {
+  display: grid;
+  gap: .18rem;
+  padding: .55rem .65rem;
+  border-left: 1px solid rgba(118,141,151,.12);
+}
+
+.onlineFooterStats div:first-child {
+  border-left: 0;
+}
+
+.onlineFooterStats span {
+  color: rgba(232,221,186,.48);
+  font-size: .7rem;
+}
+
+.onlineFooterStats strong {
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: 1.15rem;
 }
 
 .infoRows {
@@ -549,6 +681,54 @@
   color: var(--gold);
   font-family: 'Cinzel', serif;
   font-size: 1.15rem;
+}
+
+.supportCard {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(210,171,82,.12), transparent 34%),
+    linear-gradient(180deg, rgba(12,17,24,.9), rgba(6,10,15,.97));
+}
+
+.supportCard p {
+  margin: -.25rem 0 .9rem;
+  color: rgba(232,221,186,.66);
+  font-size: .84rem;
+  line-height: 1.55;
+}
+
+.supportVote {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .55rem;
+  margin-top: .85rem;
+}
+
+.supportVote input {
+  min-height: 40px;
+  border-radius: 6px;
+  background: rgba(255,255,255,.045);
+}
+
+.supportVote button {
+  min-height: 40px;
+  border: 1px solid rgba(210,171,82,.42);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(210,171,82,.28), rgba(134,91,27,.22));
+  color: #f6edd0;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.supportVote button:disabled {
+  opacity: .6;
+  cursor: default;
+}
+
+.supportCard small {
+  display: block;
+  margin-top: .5rem;
+  color: rgba(232,221,186,.44);
+  font-size: .68rem;
 }
 
 .relatedArticles {
@@ -1202,6 +1382,9 @@
     width: calc(100% - 2rem);
     grid-template-columns: minmax(0, 1fr) minmax(320px, .6fr);
   }
+  .infoTabLayout {
+    width: calc(100% - 2rem);
+  }
   .projectServersCard {
     grid-column: 1 / -1;
   }
@@ -1327,6 +1510,10 @@
     width: calc(100% - 1rem);
     margin-bottom: 2.5rem;
   }
+  .infoTabLayout {
+    width: calc(100% - 1rem);
+    margin-bottom: 2.5rem;
+  }
   .serversTabLayout {
     width: calc(100% - 1rem);
     margin-bottom: 2.5rem;
@@ -1347,6 +1534,27 @@
   }
   .voteCompactStats {
     grid-template-columns: 1fr;
+  }
+  .cardTitleRow {
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .onlineRangeTabs {
+    width: 100%;
+  }
+  .onlineRangeTabs button {
+    flex: 1;
+  }
+  .onlineFooterStats {
+    grid-template-columns: 1fr;
+    gap: .35rem;
+  }
+  .onlineFooterStats div {
+    border-left: 0;
+    border-top: 1px solid rgba(118,141,151,.1);
+  }
+  .onlineFooterStats div:first-child {
+    border-top: 0;
   }
   .relatedArticles a {
     grid-template-columns: 54px minmax(0, 1fr);

@@ -105,8 +105,8 @@ export function InstancesEditor({ value, onChange, token }: Props) {
         onlineUpdatedAt: result.checkedAt,
         onlineStatus: 'ok',
         onlineError: null,
-        onlineListPath: result.usedListPath || inst.onlineListPath || 'props.pageProps.home.servers',
-        onlineValuePath: result.valuePath || inst.onlineValuePath || 'online',
+        ...(result.usedListPath ? { onlineListPath: result.usedListPath } : {}),
+        ...(result.valuePath ? { onlineValuePath: result.valuePath } : {}),
       });
     } catch (error) {
       update(idx, {
@@ -287,6 +287,7 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                     >
                       <option value="off">Выключено</option>
                       <option value="manual">Ручной онлайн</option>
+                      <option value="estimated">Оценочный онлайн</option>
                       <option value="next-json">Next.js / JSON</option>
                       <option value="html-json-var">HTML JSON-переменная</option>
                       <option value="html-regex">HTML / regex</option>
@@ -294,7 +295,7 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                   </label>
 
                   <label className={styles.field}>
-                    <span>Ручное значение</span>
+                    <span>{(inst.onlineMode || 'off') === 'estimated' ? 'Базовый онлайн' : 'Ручное значение'}</span>
                     <input
                       className="input"
                       type="number"
@@ -306,7 +307,7 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                         onlineUpdatedAt: new Date().toISOString(),
                       })}
                       placeholder="8663"
-                      disabled={(inst.onlineMode || 'off') !== 'manual'}
+                      disabled={!['manual', 'estimated'].includes(inst.onlineMode || 'off')}
                     />
                   </label>
                 </div>

@@ -19,7 +19,7 @@ const serverInstanceSchema = z.object({
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipPaymentId: optionalSafeText(120),
-  onlineMode: z.enum(['off', 'manual', 'next-json', 'html-json-var', 'html-regex']).optional(),
+  onlineMode: z.enum(['off', 'manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']).optional(),
   onlineManual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineValue: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineUpdatedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
@@ -83,7 +83,7 @@ const serverUpdateSchema = serverPayloadSchema.partial().omit({ id: true }).exte
 });
 
 const onlineSourceTestSchema = z.object({
-  mode: z.enum(['manual', 'next-json', 'html-json-var', 'html-regex']),
+  mode: z.enum(['manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']),
   manual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   sourceUrl: safeUrl.optional(),
   listPath: optionalSafeText(240),
@@ -179,6 +179,33 @@ function numberFromUnknown(value: unknown): number | null {
   if (!digits) return null;
   const parsed = Number(digits);
   return Number.isFinite(parsed) ? Math.round(parsed) : null;
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
+function estimateOnline(baseValue: unknown, date = new Date()): number | null {
+  const base = numberFromUnknown(baseValue);
+  if (base == null) return null;
+
+  const moscowHour = (date.getUTCHours() + 3) % 24;
+  let dayFactor = 1;
+  if (moscowHour >= 1 && moscowHour < 7) dayFactor = 0.42;
+  else if (moscowHour >= 7 && moscowHour < 12) dayFactor = 0.62 + (moscowHour - 7) * 0.04;
+  else if (moscowHour >= 12 && moscowHour < 18) dayFactor = 0.82 + (moscowHour - 12) * 0.02;
+  else if (moscowHour >= 18 && moscowHour < 23) dayFactor = 0.98 + (moscowHour - 18) * 0.015;
+  else dayFactor = 0.78;
+
+  const slot = date.toISOString().slice(0, 13);
+  const jitterRaw = hashString(`${base}:${slot}`) / 0xffffffff;
+  const jitter = 0.95 + jitterRaw * 0.1;
+  return Math.max(0, Math.round(base * dayFactor * jitter));
 }
 
 function extractNextData(html: string): any | null {
@@ -325,6 +352,18 @@ export class ServersService {
         ok: true,
         online,
         source: 'manual',
+        checkedAt: new Date().toISOString(),
+      };
+    }
+
+    if (clean.mode === 'estimated') {
+      const online = estimateOnline(clean.manual);
+      if (online == null) throw new BadRequestException('Base online value is required');
+      return {
+        ok: true,
+        online,
+        source: 'estimated',
+        estimated: true,
         checkedAt: new Date().toISOString(),
       };
     }
@@ -496,6 +535,19 @@ export class ServersService {
             onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : new Date().toISOString(),
             onlineStatus: online == null ? 'error' : 'ok',
             onlineError: online == null ? 'Manual online value is empty' : null,
+          });
+          changed = true;
+          continue;
+        }
+
+        if (mode === 'estimated') {
+          const online = estimateOnline(inst.onlineManual);
+          next.push({
+            ...inst,
+            onlineValue: online,
+            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : new Date().toISOString(),
+            onlineStatus: online == null ? 'error' : 'ok',
+            onlineError: online == null ? 'Base online value is empty' : null,
           });
           changed = true;
           continue;
@@ -1014,6 +1066,19 @@ export class ServersService {
       const instances = Array.isArray(s.instances) ? s.instances : [];
       return sum + (instances.length > 0 ? instances.length : 1);
     }, 0);
+    let onlineTotal = 0;
+    let onlineEstimated = false;
+    for (const server of servers) {
+      const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
+      for (const inst of instances) {
+        const mode = inst?.onlineMode || 'off';
+        if (mode === 'off') continue;
+        const online = numberFromUnknown(mode === 'manual' ? inst.onlineManual : inst.onlineValue ?? inst.onlineManual);
+        if (online == null) continue;
+        onlineTotal += online;
+        if (mode === 'estimated') onlineEstimated = true;
+      }
+    }
     return {
       total,
       launchCount,
@@ -1021,6 +1086,8 @@ export class ServersService {
       newCount,
       reviewCount,
       monthlyVotes: monthlyVotesAgg._sum.monthlyVotes ?? 0,
+      onlineTotal,
+      onlineEstimated,
     };
   }
 }

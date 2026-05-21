@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { formatOnline, serverOnlineValue } from '@/lib/online';
+import { formatOnline, onlineChartPath, onlineSeries, onlineSeriesStats, serverOnlineIsEstimated, serverOnlineValue } from '@/lib/online';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -68,6 +68,12 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const totalProjects = stats?.total ?? servers.length;
   const totalServers = stats?.launchCount ?? totalProjects;
   const addedThisWeek = stats?.newCount ?? 0;
+  const loadedOnline = servers
+    .map(serverOnlineValue)
+    .filter((value): value is number => value != null)
+    .reduce((sum, value) => sum + value, 0);
+  const totalOnline = stats?.onlineTotal && stats.onlineTotal > 0 ? stats.onlineTotal : loadedOnline;
+  const estimatedOnline = Boolean(stats?.onlineEstimated || servers.some(serverOnlineIsEstimated));
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -253,6 +259,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.heroStats}>
                 <Metric label="Всего серверов" value={totalServers} note={`+${addedThisWeek} за неделю`} />
                 <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" />
+                <OnlineMetric value={totalOnline || null} estimated={estimatedOnline} />
               </div>
             </section>
 
@@ -320,6 +327,26 @@ function Metric({ label, value, note }: { label: string; value: number; note: st
   );
 }
 
+function OnlineMetric({ value, estimated }: { value: number | null; estimated: boolean }) {
+  const series = onlineSeries(value, '24h');
+  const stats = onlineSeriesStats(series);
+  const path = onlineChartPath(series, 190, 46);
+
+  return (
+    <div className={styles.onlineMetricCard}>
+      <div className={styles.onlineMetricHead}>
+        <span>Общий онлайн</span>
+        <strong>{formatOnline(value, estimated)}</strong>
+      </div>
+      <svg className={styles.onlineMiniChart} viewBox="0 0 190 46" role="img" aria-label="График онлайна за 24 часа">
+        <path d="M 0 45 H 190" className={styles.onlineAxis} />
+        {path && <path d={path} className={styles.onlineLine} />}
+      </svg>
+      <small>Средний за сутки: {formatOnline(stats.average, estimated)}</small>
+    </div>
+  );
+}
+
 function HomeServerCard({
   server: s,
   isFavorite,
@@ -338,6 +365,7 @@ function HomeServerCard({
   const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const online = serverOnlineValue(s);
+  const estimatedOnline = serverOnlineIsEstimated(s);
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
   const isWeek = !!s._isSod;
@@ -388,7 +416,7 @@ function HomeServerCard({
           <div className={styles.cardMeta}>
             <span>
               <small>{online == null ? 'Голоса' : 'Онлайн'}</small>
-              <strong className={styles.online}>{online == null ? votes.toLocaleString('ru-RU') : formatOnline(online)}</strong>
+              <strong className={styles.online}>{online == null ? votes.toLocaleString('ru-RU') : formatOnline(online, estimatedOnline)}</strong>
             </span>
             <span>
               <small>Старт</small>

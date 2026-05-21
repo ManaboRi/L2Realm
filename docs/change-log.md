@@ -2,6 +2,11 @@
 
 Short notes for future Codex sessions. Keep this file compact and append newest work on top.
 
+## 2026-05-22
+
+- Added estimated per-launch online mode: admins can set a base value, backend recalculates hourly with Moscow time-of-day drops/peaks and light jitter, and public pages display estimated values with an `≈` marker.
+- Reworked server detail locally around the new dashboard direction: shorter hero with stat tiles, separate `Информация` tab, overview online graph with 24h/7d/30d ranges, and a compact support/vote block that explains whether Vote Manager bonuses are connected.
+
 ## 2026-05-21
 
 - Added the first per-project-launch online source system: each `instances` entry can store manual, Next.js/JSON, HTML JSON-variable, or HTML/regex source settings; admin can test sources, robots.txt is checked, backend refreshes saved sources hourly, and project online is summed from launches.
