@@ -250,6 +250,7 @@ model Article {
   content     String                            // Markdown
   image       String?                           // URL обложки (загружается через /upload?type=banner)
   category    String    @default("Новости")
+  serverIds   String[]  @default([])            // ID проектов, к которым привязана статья
   publishedAt DateTime?                         // null = черновик, дата = опубликовано
   views       Int       @default(0)
   createdAt   DateTime  @default(now())
@@ -258,4 +259,5 @@ model Article {
   @@index([publishedAt])
   @@index([category])
   @@index([slug])
+  @@index([serverIds], type: Gin)
 }

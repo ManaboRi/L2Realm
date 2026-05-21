@@ -51,6 +51,62 @@
   margin: .2rem 0 0;
 }
 
+.serverPicker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .45rem;
+  max-height: 180px;
+  overflow: auto;
+  padding: .55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(9,11,16,.45);
+}
+
+.serverPick,
+.serverPickActive {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: .1rem .45rem;
+  align-items: center;
+  padding: .45rem .55rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: rgba(255,255,255,.018);
+  cursor: pointer;
+}
+
+.serverPickActive {
+  border-color: rgba(200,168,75,.48);
+  background: rgba(200,168,75,.08);
+}
+
+.serverPick input,
+.serverPickActive input {
+  accent-color: var(--gold);
+}
+
+.serverPick span,
+.serverPickActive span {
+  color: var(--text);
+  font-size: .82rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.serverPick small,
+.serverPickActive small {
+  grid-column: 2;
+  min-width: 0;
+  color: var(--text3);
+  font-size: .68rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .contentArea {
   font-family: ui-monospace, 'Cascadia Mono', 'Source Code Pro', Menlo, monospace;
   font-size: .88rem;

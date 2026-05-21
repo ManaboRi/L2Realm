@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { ImageUpload } from '@/components/ImageUpload';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
-import type { Article } from '@/lib/types';
+import type { Article, Server } from '@/lib/types';
 import styles from './page.module.css';
 
 type FormState = {
@@ -16,10 +16,11 @@ type FormState = {
   content:      string;
   image:        string;
   category:     string;
+  serverIds:    string[];
   publishedAt:  string; // datetime-local или пусто = черновик
 };
 
-const EMPTY: FormState = { slug: '', title: '', description: '', content: '', image: '', category: 'Новости', publishedAt: '' };
+const EMPTY: FormState = { slug: '', title: '', description: '', content: '', image: '', category: 'Новости', serverIds: [], publishedAt: '' };
 const CATEGORY_SUGGESTIONS = ['Новости', 'Гайды', 'Сервера', 'Обзоры', 'Обновления'];
 
 function toLocalInput(iso: string | null | undefined): string {
@@ -36,6 +37,7 @@ export default function AdminArticlesPage() {
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   const [articles, setArticles] = useState<Article[]>([]);
+  const [servers,  setServers]  = useState<Server[]>([]);
   const [loading,  setLoading]  = useState(true);
   const [form,     setForm]     = useState<FormState>(EMPTY);
   const [busy,     setBusy]     = useState(false);
@@ -49,8 +51,12 @@ export default function AdminArticlesPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const list = await api.articles.adminList(token);
+      const [list, serverList] = await Promise.all([
+        api.articles.adminList(token),
+        api.servers.list({ limit: '300' }).catch(() => ({ data: [] as Server[] })),
+      ]);
       setArticles(list);
+      setServers(serverList.data ?? []);
     } catch (e: any) {
       showToast(e.message || 'Ошибка загрузки');
     }
@@ -74,6 +80,7 @@ export default function AdminArticlesPage() {
       content:     a.content,
       image:       a.image ?? '',
       category:    a.category ?? 'Новости',
+      serverIds:   a.serverIds ?? [],
       publishedAt: toLocalInput(a.publishedAt),
     });
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -135,6 +142,7 @@ export default function AdminArticlesPage() {
         content:     form.content,
         image:       form.image.trim() || null,
         category:    form.category.trim() || 'Новости',
+        serverIds:   form.serverIds,
         publishedAt: form.publishedAt ? new Date(form.publishedAt).toISOString() : null,
       };
       let savedSlug = form.slug;
@@ -147,7 +155,7 @@ export default function AdminArticlesPage() {
         const created = await api.articles.create(payload, token);
         savedSlug = created.slug;
         showToast('Статья создана');
-        setForm({ ...form, id: created.id, slug: created.slug });
+        setForm({ ...form, id: created.id, slug: created.slug, serverIds: created.serverIds ?? form.serverIds });
       }
       // Сбрасываем SSR-кеш блога — иначе пользователь не увидит правки 5 минут
       api.articles.revalidate(savedSlug, token).catch(() => {});
@@ -189,6 +197,16 @@ export default function AdminArticlesPage() {
   }
 
   const sortedArticles = useMemo(() => articles, [articles]);
+  const serverOptions = useMemo(() => [...servers].sort((a, b) => a.name.localeCompare(b.name, 'ru')), [servers]);
+
+  function toggleServerLink(serverId: string) {
+    setForm(p => ({
+      ...p,
+      serverIds: p.serverIds.includes(serverId)
+        ? p.serverIds.filter(id => id !== serverId)
+        : [...p.serverIds, serverId],
+    }));
+  }
 
   if (!user) {
     return (
@@ -278,7 +296,7 @@ export default function AdminArticlesPage() {
           <ImageUpload
             label="Обложка статьи (опционально)"
             value={form.image}
-            type="banner"
+            type="article"
             token={token}
             onChange={url => setForm(p => ({ ...p, image: url }))}
           />
@@ -298,7 +316,7 @@ export default function AdminArticlesPage() {
                   <ImageUpload
                     label="Картинка в текст"
                     value=""
-                    type="banner"
+                    type="article"
                     token={token}
                     onChange={insertArticleImage}
                   />
@@ -336,6 +354,25 @@ export default function AdminArticlesPage() {
               </div>
             </div>
           </div>
+        </Field>
+
+        <Field label="Привязать к серверу">
+          <div className={styles.serverPicker}>
+            {serverOptions.length === 0 ? (
+              <span className={styles.hint}>Список серверов не загрузился. Статью можно сохранить без привязки.</span>
+            ) : serverOptions.map(server => (
+              <label key={server.id} className={form.serverIds.includes(server.id) ? styles.serverPickActive : styles.serverPick}>
+                <input
+                  type="checkbox"
+                  checked={form.serverIds.includes(server.id)}
+                  onChange={() => toggleServerLink(server.id)}
+                />
+                <span>{server.name}</span>
+                <small>{server.id}</small>
+              </label>
+            ))}
+          </div>
+          <p className={styles.hint}>Если выбрать Scryde, статья появится на странице проекта Scryde под основной информацией.</p>
         </Field>
 
         <Field label="Дата публикации (если пусто — черновик, не виден на /blog)">

@@ -365,7 +365,7 @@ function HomeServerCard({
           title={canFavorite ? (isFavorite ? 'Убрать из избранного' : 'Добавить в избранное') : 'Войдите, чтобы добавить в избранное'}
           aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
         >
-          {isFavorite ? '♥' : '♡'}
+          {isFavorite ? '×' : '♡'}
         </button>
         <Link href={`/servers/${s.id}`} className={styles.cardIdentity} aria-label={`Открыть сервер ${s.name}`}>
           <ServerIcon server={s} />

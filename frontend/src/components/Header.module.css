@@ -193,6 +193,7 @@
   color: var(--text2);
   font-size: .78rem;
   line-height: 1;
+  white-space: nowrap;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
 .favoritesChip:hover {
@@ -203,12 +204,12 @@
 .favoritesIcon {
   width: 16px;
   height: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   color: var(--gold);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1;
+  transform: translateY(-1px);
 }
 
 .notifyBtn {
@@ -217,11 +218,13 @@
   align-items: center;
   justify-content: center;
   gap: .42rem;
+  padding: 0 .1rem;
   border: 0;
   background: transparent;
   color: var(--text2);
   font-size: .78rem;
   line-height: 1;
+  white-space: nowrap;
   position: relative;
   transition: border-color .18s, background .18s, color .18s, transform .08s;
 }
@@ -248,11 +251,13 @@
   width: 17px;
   height: 17px;
   display: block;
+  flex: 0 0 17px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
   stroke-linecap: round;
   stroke-linejoin: round;
+  transform: translateY(-1px);
 }
 
 .loginBtn { white-space: nowrap; }

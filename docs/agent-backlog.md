@@ -19,6 +19,7 @@ Working notes for the user and Codex. Update when a task changes status.
 
 ## Planned
 
+- Image follow-up: old uploaded banners/article covers may still look compressed; reupload important images through the newer `banner`/`article` upload pipeline when convenient.
 - Profile follow-up: move saved articles and recent views from localStorage to backend tables if cross-device sync becomes important.
 - Profile follow-up: add calm avatar upload/change UX, with image size limits and moderation-safe storage.
 - Auth follow-up: add a second registration/login path beyond VK ID when the site is ready for that work.

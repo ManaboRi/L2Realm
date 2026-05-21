@@ -153,6 +153,7 @@ export interface Article {
   content:      string;
   image:        string | null;
   category:     string;
+  serverIds?:    string[];
   views?:       number;
   publishedAt:  string | null;
   createdAt:    string;

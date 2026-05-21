@@ -5,7 +5,7 @@ import styles from './ImageUpload.module.css';
 interface Props {
   label: string;
   value: string;
-  type: 'icon' | 'banner';
+  type: 'icon' | 'banner' | 'article';
   token: string;
   onChange: (url: string) => void;
 }

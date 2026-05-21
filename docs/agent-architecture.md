@@ -42,6 +42,8 @@ The server page exports `generateMetadata()`, fetches through backend URL during
 
 Apply this pattern if another dynamic public page needs indexed metadata.
 
+The current server detail UI uses tabs `Обзор / Сервера / Отзывы`. Project launch cards live in the `Сервера` tab. Related articles are shown on the overview tab: first by `Article.serverIds`, then by a fallback title/description/content match against the project name.
+
 ## Sitemap And Backend Fetching
 
 `frontend/src/app/sitemap.ts` must keep build-time fetch protection. Current code uses `export const dynamic = 'force-dynamic'` plus backend fetches with `cache: 'no-store'`.

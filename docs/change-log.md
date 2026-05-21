@@ -4,11 +4,14 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-21
 
+- Widened `/profile` to match the newer full-width catalog/blog rhythm and aligned header/favorite icons.
+- Made favorite buttons clearer: active state now indicates that the next click removes the server from favorites.
 - Simplified `/profile`: removed the activity overview card, left menu, recent views, and extra hero stats; made logout subtle with confirmation.
 - Reworked the server detail page locally toward the new wide project layout: hero banner, overview/reviews tabs, vote panel, download/start block, contacts, related articles, and compact project information.
 - Added multi-region selection in the admin server form while keeping the existing `country` field format backward-compatible.
 - Hid the donate selector from admin add/edit server forms; the database field is kept for compatibility.
 - Polished the server detail layout: wider desktop container, no top action strip, vote button text, flag-only regions, improved external-site button, and higher project launch tiles without per-tile site buttons.
+- Added a dedicated server launches tab on server pages, linked articles to projects through `Article.serverIds`, and improved future upload quality for wide banners/article images.
 
 ## 2026-05-20
 

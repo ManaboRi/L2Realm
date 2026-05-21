@@ -19,7 +19,7 @@
   grid-template-columns: 132px minmax(0, 1fr) auto;
   gap: 1.25rem;
   align-items: center;
-  width: min(1440px, 100%);
+  width: min(1720px, 100%);
   min-height: 235px;
   margin: 0 auto 1rem;
   padding: 1.6rem 1.6rem;
@@ -137,7 +137,7 @@
 }
 
 .layout {
-  width: min(1180px, 100%);
+  width: min(1720px, 100%);
   margin: 0 auto;
 }
 

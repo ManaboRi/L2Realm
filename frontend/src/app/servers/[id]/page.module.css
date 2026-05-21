@@ -78,7 +78,8 @@
   height: 100%;
   object-fit: cover;
   opacity: .72;
-  filter: saturate(.98) contrast(1.06);
+  filter: blur(1.2px) saturate(.98) contrast(1.08);
+  transform: scale(1.018);
 }
 
 .serverHeroFallback {
@@ -253,10 +254,20 @@
 
 .iconHeroButton {
   width: 46px;
+  display: grid;
+  place-items: center;
   border: 1px solid rgba(210,171,82,.24);
   background: rgba(5,9,14,.62);
   color: var(--gold);
   font-size: 1.2rem;
+  line-height: 1;
+}
+
+.iconHeroButtonActive {
+  border-color: rgba(210,171,82,.42);
+  background: rgba(210,171,82,.1);
+  color: #f1d98b;
+  font-size: 1.1rem;
 }
 
 .heroPanel {
@@ -392,6 +403,10 @@
 
 .projectServersCard {
   grid-column: 1 / -1;
+}
+
+.projectArticlesCard {
+  grid-column: 1 / 3;
 }
 
 .reviewsLayout {
@@ -558,6 +573,133 @@
 .relatedArticles small {
   color: rgba(232,221,186,.42);
   font-size: .7rem;
+}
+
+.projectArticles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: .85rem;
+}
+
+.projectArticle {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: .85rem;
+  align-items: stretch;
+  padding: .75rem;
+  border: 1px solid rgba(118,141,151,.14);
+  border-radius: 7px;
+  background: linear-gradient(180deg, rgba(14,20,28,.7), rgba(7,10,15,.92));
+  color: inherit;
+}
+
+.projectArticle img {
+  width: 108px;
+  height: 86px;
+  object-fit: cover;
+  border-radius: 5px;
+  filter: saturate(.95) contrast(1.03);
+}
+
+.projectArticle span {
+  min-width: 0;
+  display: grid;
+  align-content: center;
+  gap: .25rem;
+}
+
+.projectArticle small {
+  color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .62rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.projectArticle strong {
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.projectArticle em {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: rgba(232,221,186,.58);
+  font-style: normal;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.serversTabLayout {
+  width: min(1540px, calc(100% - 1.5rem));
+  margin: 0 auto 4rem;
+}
+
+.instancesLarge {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: .85rem;
+}
+
+.instTileLarge {
+  min-height: 172px;
+  display: grid;
+  align-content: start;
+  gap: .55rem;
+  position: relative;
+  overflow: hidden;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(118,141,151,.14);
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(210,171,82,.1), transparent 35%),
+    linear-gradient(180deg, rgba(14,20,28,.78), rgba(7,10,15,.95));
+}
+
+.instTileLarge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-left: 2px solid rgba(210,171,82,.55);
+  pointer-events: none;
+}
+
+.instTileMeta {
+  margin-top: auto;
+  padding-top: .55rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .7rem;
+  border-top: 1px solid rgba(118,141,151,.1);
+}
+
+.instTileMeta span {
+  color: var(--gold-d);
+  font-family: 'Cinzel', serif;
+  font-size: .7rem;
+}
+
+.instTileMeta a {
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 .8rem;
+  border: 1px solid rgba(210,171,82,.28);
+  border-radius: 5px;
+  color: #f6edd0;
+  background: rgba(210,171,82,.06);
+  font-family: 'Cinzel', serif;
+  font-size: .66rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
 }
 
 .contactLinks {
@@ -1050,6 +1192,9 @@
   .projectServersCard {
     grid-column: 1 / -1;
   }
+  .projectArticlesCard {
+    grid-column: 1 / -1;
+  }
   .sideStack {
     grid-column: 1 / -1;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1162,6 +1307,10 @@
     width: calc(100% - 1rem);
     margin-bottom: 2.5rem;
   }
+  .serversTabLayout {
+    width: calc(100% - 1rem);
+    margin-bottom: 2.5rem;
+  }
   .infoCard,
   .sideCard {
     padding: 1rem;
@@ -1185,6 +1334,16 @@
   .relatedArticles img {
     width: 54px;
     height: 42px;
+  }
+  .projectArticle {
+    grid-template-columns: 1fr;
+  }
+  .projectArticle img {
+    width: 100%;
+    height: 140px;
+  }
+  .instancesLarge {
+    grid-template-columns: 1fr;
   }
   .page { max-width: 100vw; }
   .bread { padding: .7rem .8rem .4rem; font-size: .66rem; }

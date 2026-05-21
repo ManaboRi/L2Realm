@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { dateString, optionalSafeAssetUrl, parseOrThrow, safeMarkdownText, safeSlug, safeText } from '../common/input-validation';
 import { z } from 'zod';
 
+const safeServerId = safeSlug.max(64);
+
 export interface ArticleDto {
   slug?:        string;
   title:        string;
@@ -10,6 +12,7 @@ export interface ArticleDto {
   content:      string;
   image?:       string | null;
   category?:    string | null;
+  serverIds?:   string[] | null;
   publishedAt?: string | null;
 }
 
@@ -20,6 +23,7 @@ const articleSchema = z.object({
   content: safeMarkdownText(20, 60_000),
   image: optionalSafeAssetUrl,
   category: safeText(2, 40).optional(),
+  serverIds: z.array(safeServerId).max(20).optional().default([]),
   publishedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
 });
 
@@ -96,6 +100,7 @@ export class ArticlesService {
         content:     clean.content,
         image:       clean.image,
         category:    clean.category || 'Новости',
+        serverIds:   clean.serverIds ?? [],
         publishedAt: clean.publishedAt ? new Date(clean.publishedAt) : null,
       },
     });
@@ -129,6 +134,9 @@ export class ArticlesService {
         category:    dto.category === undefined
           ? existing.category
           : (clean.category || 'Новости'),
+        serverIds:   dto.serverIds === undefined
+          ? existing.serverIds
+          : (clean.serverIds ?? []),
         publishedAt: dto.publishedAt === undefined
           ? existing.publishedAt
           : (clean.publishedAt ? new Date(clean.publishedAt) : null),

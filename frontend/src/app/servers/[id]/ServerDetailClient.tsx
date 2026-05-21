@@ -217,7 +217,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'servers' | 'reviews'>('overview');
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
@@ -242,17 +242,21 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     const needle = normalizeSearchText(server.name);
     api.articles.list()
       .then(list => {
-        setRelatedArticles(
-          list
-            .filter(article => {
+        const linked = list.filter(article => article.serverIds?.includes(server.id));
+        const fallback = linked.length > 0
+          ? []
+          : list.filter(article => {
               const haystack = normalizeSearchText(`${article.title} ${article.description} ${article.content}`);
               return haystack.includes(needle);
-            })
-            .slice(0, 3)
+            });
+        setRelatedArticles(
+          [...linked, ...fallback]
+            .filter((article, index, self) => self.findIndex(item => item.id === article.id) === index)
+            .slice(0, 4)
         );
       })
       .catch(() => setRelatedArticles([]));
-  }, [server.name]);
+  }, [server.id, server.name]);
 
   async function handleVote() {
     if (!token) {
@@ -416,8 +420,15 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <p>{heroDescription}</p>
             <div className={styles.heroButtons}>
               <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.primaryHeroButton}>Перейти на сайт <span>↗</span></a>
-              <button type="button" className={styles.iconHeroButton} onClick={toggleFavorite} disabled={favBusy} aria-label="Добавить в избранное">
-                {isFav ? '★' : '♡'}
+              <button
+                type="button"
+                className={`${styles.iconHeroButton} ${isFav ? styles.iconHeroButtonActive : ''}`}
+                onClick={toggleFavorite}
+                disabled={favBusy}
+                title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+                aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
+              >
+                {isFav ? '×' : '♡'}
               </button>
             </div>
           </div>
@@ -466,40 +477,17 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
         <div className={styles.serverTabs}>
           <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
+          <button type="button" className={activeTab === 'servers' ? styles.serverTabActive : ''} onClick={() => setActiveTab('servers')}>
+            Сервера {instances.length > 0 && <span>{instances.length}</span>}
+          </button>
           <button type="button" className={activeTab === 'reviews' ? styles.serverTabActive : ''} onClick={() => setActiveTab('reviews')}>
             Отзывы {server.ratingCount > 0 && <span>{server.ratingCount}</span>}
           </button>
         </div>
       </section>
 
-      {activeTab === 'overview' ? (
+      {activeTab === 'overview' && (
         <div className={styles.detailGrid}>
-          {instances.length > 0 && (
-            <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
-              <h2>Сервера проекта</h2>
-              <div className={styles.instances}>
-                {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
-                  const isFuture = isOpeningStillSoon(inst.openedDate);
-                  return (
-                    <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
-                      <div className={styles.instTileHead}>
-                        <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
-                        {isFuture && <span className={styles.instTileSoonBadge}>Скоро</span>}
-                      </div>
-                      <div className={styles.instTileTags}>
-                        <span>{inst.chronicle}</span>
-                        <span>{inst.rates}</span>
-                        {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
-                      </div>
-                      {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
-                      {inst.openedDate && <div className={styles.instTileDate}>{formatFullDate(inst.openedDate)}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
           <section className={styles.infoCard}>
             <h2>О сервере</h2>
             {server.fullDesc
@@ -519,6 +507,24 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
             </div>
           </section>
+
+          {relatedArticles.length > 0 && (
+            <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
+              <h2>Статьи по проекту</h2>
+              <div className={styles.projectArticles}>
+                {relatedArticles.map(article => (
+                  <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
+                    {article.image && <img src={article.image} alt="" />}
+                    <span>
+                      <small>{article.category}</small>
+                      <strong>{article.title}</strong>
+                      <em>{article.description}</em>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           <aside className={styles.sideStack}>
             {hasStartGuide && (
@@ -558,27 +564,63 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </div>
               </section>
             )}
-
-            {relatedArticles.length > 0 && (
-              <section className={styles.sideCard}>
-                <h2>Статьи по проекту</h2>
-                <div className={styles.relatedArticles}>
-                  {relatedArticles.map(article => (
-                    <Link key={article.id} href={`/blog/${article.slug}`}>
-                      {article.image && <img src={article.image} alt="" />}
-                      <span>
-                        <strong>{article.title}</strong>
-                        <small>{article.views ?? 0} просмотров</small>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            )}
           </aside>
 
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'servers' && (
+        <div className={styles.serversTabLayout}>
+          <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
+            <h2>Сервера проекта</h2>
+            {instances.length > 0 ? (
+              <div className={styles.instancesLarge}>
+                {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
+                  const isFuture = isOpeningStillSoon(inst.openedDate);
+                  return (
+                    <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''}`}>
+                      <div className={styles.instTileHead}>
+                        <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
+                        {isFuture && <span className={styles.instTileSoonBadge}>Скоро</span>}
+                      </div>
+                      <div className={styles.instTileTags}>
+                        <span>{inst.chronicle}</span>
+                        <span>{inst.rates}</span>
+                        {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
+                      </div>
+                      {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                      <div className={styles.instTileMeta}>
+                        {inst.openedDate && <span>{formatFullDate(inst.openedDate)}</span>}
+                        <a href={inst.url} target="_blank" rel="noopener nofollow">Перейти</a>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className={styles.instancesLarge}>
+                <article className={styles.instTileLarge}>
+                  <div className={styles.instTileHead}>
+                    <span className={styles.instTileLabel}>{server.name}</span>
+                  </div>
+                  <div className={styles.instTileTags}>
+                    <span>{server.chronicle}</span>
+                    <span>{server.rates}</span>
+                    {mainType && <span>{typeLabels.get(mainType as any) ?? mainType}</span>}
+                  </div>
+                  {server.shortDesc && <div className={styles.instTileDesc}>{server.shortDesc}</div>}
+                  <div className={styles.instTileMeta}>
+                    {server.openedDate && <span>{startDate}</span>}
+                    <a href={server.url} target="_blank" rel="noopener nofollow">Перейти</a>
+                  </div>
+                </article>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
         <div className={styles.reviewsLayout}>
           <section className={styles.infoCard}>
             <h2>Оставить отзыв</h2>
