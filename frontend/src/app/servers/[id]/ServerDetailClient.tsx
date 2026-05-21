@@ -495,18 +495,37 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               : <p className={styles.empty}>Описание отсутствует.</p>}
           </section>
 
-          <section className={styles.infoCard}>
-            <h2>Основная информация</h2>
-            <div className={styles.infoRows}>
-              <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
-              <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
-              <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
-              <div><span>Старт проекта</span><strong>{startDate}</strong></div>
-              <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
-              <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
-              <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
-            </div>
-          </section>
+          <div className={styles.mainInfoStack}>
+            <section className={styles.infoCard}>
+              <h2>Основная информация</h2>
+              <div className={styles.infoRows}>
+                <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
+                <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
+                <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
+                <div><span>Старт проекта</span><strong>{startDate}</strong></div>
+                <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
+                <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
+                <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
+              </div>
+            </section>
+
+            {relatedArticles.length > 0 && (
+              <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
+                <h2>Статьи по проекту</h2>
+                <div className={styles.projectArticles}>
+                  {relatedArticles.map(article => (
+                    <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
+                      {article.image && <img src={article.image} alt="" />}
+                      <span>
+                        <strong>{article.title}</strong>
+                        <small>{formatFullDate(article.publishedAt)}</small>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
 
           <aside className={styles.sideStack}>
             {hasStartGuide && (
@@ -547,23 +566,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               </section>
             )}
           </aside>
-
-          {relatedArticles.length > 0 && (
-            <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
-              <h2>Статьи по проекту</h2>
-              <div className={styles.projectArticles}>
-                {relatedArticles.map(article => (
-                  <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
-                    {article.image && <img src={article.image} alt="" />}
-                    <span>
-                      <strong>{article.title}</strong>
-                      <small>{formatFullDate(article.publishedAt)}</small>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
 
         </div>
       )}

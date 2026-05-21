@@ -4,7 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-21
 
-- Adjusted server overview articles to sit under the main information column with title/date only, and removed the green full-card fill from future project launch cards.
+- Adjusted server overview articles to sit directly under the main information column with title/date only, removing the empty middle gap; future project launch cards now use a green strip/gradient instead of a full-card fill.
 - Tightened the profile and server overview layouts after production review: reduced oversized profile width, compacted saved-article cards, moved the server sidebar back to the top row, and made linked project articles smaller.
 - Widened `/profile` to match the newer full-width catalog/blog rhythm and aligned header/favorite icons.
 - Made favorite buttons clearer: active state now indicates that the next click removes the server from favorites.
