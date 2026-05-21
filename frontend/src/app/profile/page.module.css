@@ -16,13 +16,13 @@
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: 132px minmax(0, 1fr) auto;
-  gap: 1.25rem;
+  grid-template-columns: 104px minmax(0, 1fr) auto;
+  gap: 1.15rem;
   align-items: center;
-  width: min(1720px, 100%);
-  min-height: 235px;
+  width: min(1280px, 100%);
+  min-height: 190px;
   margin: 0 auto 1rem;
-  padding: 1.6rem 1.6rem;
+  padding: 1.25rem 1.35rem;
   overflow: hidden;
   border: 1px solid rgba(210, 171, 82, .1);
   border-radius: 8px;
@@ -34,8 +34,8 @@
 }
 
 .avatarWrap {
-  width: 128px;
-  height: 128px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   padding: 3px;
   background: linear-gradient(135deg, rgba(210, 171, 82, .95), rgba(119, 89, 28, .35));
@@ -53,7 +53,7 @@
   background: rgba(8, 13, 19, .94);
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: 2.65rem;
+  font-size: 2.2rem;
   border: 1px solid rgba(255, 255, 255, .08);
 }
 
@@ -64,7 +64,7 @@
 }
 
 .breadcrumb {
-  margin-bottom: 1.05rem;
+  margin-bottom: .7rem;
   color: rgba(232, 221, 186, .45);
   font-size: .68rem;
 }
@@ -80,7 +80,7 @@
   margin: 0;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  font-size: clamp(1.7rem, 2.3vw, 2.25rem);
   line-height: 1.08;
 }
 
@@ -94,13 +94,13 @@
 }
 
 .heroInfo p {
-  margin: .45rem 0 1.15rem;
+  margin: .38rem 0 .85rem;
   color: rgba(232, 221, 186, .72);
 }
 
 .heroStats {
   display: flex;
-  gap: 2rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
 }
 
@@ -137,7 +137,7 @@
 }
 
 .layout {
-  width: min(1720px, 100%);
+  width: min(1280px, 100%);
   margin: 0 auto;
 }
 
@@ -238,13 +238,13 @@
 
 .favoriteGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(210px, 260px));
   gap: .75rem;
 }
 
 .favoriteCard {
   position: relative;
-  min-height: 210px;
+  min-height: 168px;
   overflow: hidden;
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
@@ -279,8 +279,8 @@
 }
 
 .serverArt {
-  width: 76px;
-  height: 76px;
+  width: 60px;
+  height: 60px;
   display: grid;
   place-items: center;
   margin-bottom: .15rem;
@@ -289,8 +289,8 @@
 }
 
 .serverArt img {
-  max-width: 72px;
-  max-height: 72px;
+  max-width: 58px;
+  max-height: 58px;
   object-fit: contain;
 }
 
@@ -337,10 +337,15 @@
 }
 
 .list,
-.reviewList,
-.articleList {
+.reviewList {
   display: flex;
   flex-direction: column;
+  gap: .65rem;
+}
+
+.articleList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
   gap: .65rem;
 }
 
@@ -443,6 +448,7 @@
 
 .articleRow a {
   padding-right: 2.5rem;
+  min-height: 70px;
 }
 
 .articleRow button {

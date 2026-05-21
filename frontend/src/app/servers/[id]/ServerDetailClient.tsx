@@ -508,24 +508,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </section>
 
-          {relatedArticles.length > 0 && (
-            <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
-              <h2>Статьи по проекту</h2>
-              <div className={styles.projectArticles}>
-                {relatedArticles.map(article => (
-                  <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
-                    {article.image && <img src={article.image} alt="" />}
-                    <span>
-                      <small>{article.category}</small>
-                      <strong>{article.title}</strong>
-                      <em>{article.description}</em>
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          )}
-
           <aside className={styles.sideStack}>
             {hasStartGuide && (
               <section className={styles.sideCard}>
@@ -565,6 +547,24 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               </section>
             )}
           </aside>
+
+          {relatedArticles.length > 0 && (
+            <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
+              <h2>Статьи по проекту</h2>
+              <div className={styles.projectArticles}>
+                {relatedArticles.map(article => (
+                  <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
+                    {article.image && <img src={article.image} alt="" />}
+                    <span>
+                      <small>{article.category}</small>
+                      <strong>{article.title}</strong>
+                      <em>{article.description}</em>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
         </div>
       )}
