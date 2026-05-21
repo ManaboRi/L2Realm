@@ -24,7 +24,7 @@ const serverInstanceSchema = z.object({
   onlineValue: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineUpdatedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineStatus: z.enum(['ok', 'error']).nullable().optional(),
-  onlineError: optionalSafeText(240),
+  onlineError: z.union([optionalSafeText(240), z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineSourceUrl: optionalSafeUrl,
   onlineListPath: optionalSafeText(240),
   onlineMatchField: optionalSafeText(120),
