@@ -28,19 +28,8 @@ type SavedArticle = {
   savedAt: string;
 };
 
-type RecentServer = {
-  id: string;
-  name: string;
-  icon?: string | null;
-  banner?: string | null;
-  chronicle?: string;
-  rates?: string;
-  viewedAt: string;
-};
-
 const NICK_RE = /^[a-zA-Zа-яА-ЯёЁ0-9_-]{3,16}$/;
 const SAVED_ARTICLES_KEY = 'l2r_saved_articles';
-const RECENT_SERVERS_KEY = 'l2r_recent_servers';
 
 function readStorageList<T>(key: string): T[] {
   if (typeof window === 'undefined') return [];
@@ -100,9 +89,7 @@ export default function ProfilePage() {
   const [favorites, setFavorites] = useState<FavoriteServer[]>([]);
   const [favLoading, setFavLoading] = useState(true);
   const [reminders, setReminders] = useState<OpeningReminder[]>([]);
-  const [voteCount, setVoteCount] = useState(0);
   const [savedArticles, setSavedArticles] = useState<SavedArticle[]>([]);
-  const [recentServers, setRecentServers] = useState<RecentServer[]>([]);
 
   const [nick, setNick] = useState('');
   const [nickSaving, setNickSaving] = useState(false);
@@ -119,7 +106,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     setSavedArticles(readStorageList<SavedArticle>(SAVED_ARTICLES_KEY).slice(0, 8));
-    setRecentServers(readStorageList<RecentServer>(RECENT_SERVERS_KEY).slice(0, 8));
   }, []);
 
   useEffect(() => {
@@ -142,10 +128,6 @@ export default function ProfilePage() {
       .then(items => { if (alive) setReminders(items); })
       .catch(() => { if (alive) setReminders([]); });
 
-    api.votes.myCount(token)
-      .then(result => { if (alive) setVoteCount(result.total || 0); })
-      .catch(() => { if (alive) setVoteCount(0); });
-
     return () => { alive = false; };
   }, [token]);
 
@@ -155,10 +137,8 @@ export default function ProfilePage() {
 
   const stats = useMemo(() => [
     { label: 'Избранных серверов', value: favorites.length },
-    { label: 'Голосов', value: voteCount },
-    { label: 'Отзывов', value: reviews.length },
     { label: 'Статей сохранено', value: savedArticles.length },
-  ], [favorites.length, voteCount, reviews.length, savedArticles.length]);
+  ], [favorites.length, savedArticles.length]);
 
   async function handleNickSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -199,10 +179,10 @@ export default function ProfilePage() {
     localStorage.setItem(SAVED_ARTICLES_KEY, JSON.stringify(next));
   }
 
-  function removeRecentServer(id: string) {
-    const next = recentServers.filter(item => item.id !== id);
-    setRecentServers(next);
-    localStorage.setItem(RECENT_SERVERS_KEY, JSON.stringify(next));
+  function handleLogout() {
+    if (!confirm('Выйти из аккаунта?')) return;
+    logout();
+    router.push('/');
   }
 
   if (loading || !user) {
@@ -237,43 +217,14 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <button type="button" className={styles.heroButton} onClick={() => setTab('security')}>
-          Настроить профиль
+        <button type="button" className={styles.heroButton} onClick={() => setTab(tab === 'security' ? 'overview' : 'security')}>
+          {tab === 'security' ? 'Вернуться в профиль' : 'Настроить профиль'}
         </button>
       </section>
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <button type="button" className={tab === 'overview' ? styles.navActive : ''} onClick={() => setTab('overview')}>
-            Главная
-          </button>
-          <button type="button" className={tab === 'security' ? styles.navActive : ''} onClick={() => setTab('security')}>
-            Безопасность
-          </button>
-          <button type="button" className={styles.logoutBtn} onClick={() => { logout(); router.push('/'); }}>
-            Выйти
-          </button>
-        </aside>
-
         {tab === 'overview' ? (
           <div className={styles.content}>
-            <section className={styles.activityCard}>
-              <div className={styles.sectionHead}>
-                <div>
-                  <h2>Обзор активности</h2>
-                  <p>Коротко о твоём движении на L2Realm</p>
-                </div>
-              </div>
-              <div className={styles.activityGrid}>
-                {stats.map(item => (
-                  <div key={item.label} className={styles.activityItem}>
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
             <section id="favorites" className={styles.panel}>
               <div className={styles.sectionHead}>
                 <h2>Избранные серверы <span>{favorites.length}</span></h2>
@@ -350,29 +301,7 @@ export default function ProfilePage() {
               </section>
             </div>
 
-            <div className={styles.twoColumns}>
-              <section className={styles.panel}>
-                <div className={styles.sectionHead}>
-                  <h2>Недавние просмотры <span>{recentServers.length}</span></h2>
-                </div>
-                {recentServers.length === 0 ? (
-                  <p className={styles.empty}>Открой пару страниц серверов, и они появятся здесь.</p>
-                ) : (
-                  <div className={styles.recentGrid}>
-                    {recentServers.slice(0, 4).map(item => (
-                      <article key={item.id} className={styles.recentCard}>
-                        <button type="button" onClick={() => removeRecentServer(item.id)} aria-label="Убрать из истории">×</button>
-                        <Link href={`/servers/${item.id}`}>
-                          {item.banner || item.icon ? <img src={item.banner || item.icon || ''} alt="" /> : <span>{item.name[0]}</span>}
-                          <strong>{item.name}</strong>
-                          <small>{compactDate(item.viewedAt)}</small>
-                        </Link>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
-
+            <div className={styles.singleColumn}>
               <section className={styles.panel}>
                 <div className={styles.sectionHead}>
                   <h2>Сохранённые статьи <span>{savedArticles.length}</span></h2>
@@ -436,6 +365,7 @@ export default function ProfilePage() {
                 <div><span>Вход</span><strong>{user.vkId ? 'VK ID' : 'Email'}</strong></div>
                 <div><span>Роль</span><strong>{user.role === 'ADMIN' ? 'Админ' : 'Пользователь'}</strong></div>
               </div>
+              <button type="button" className={styles.subtleLogout} onClick={handleLogout}>Выйти из аккаунта</button>
             </section>
           </div>
         )}

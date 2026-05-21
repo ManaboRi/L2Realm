@@ -8,7 +8,7 @@ import { isOpeningStillSoon } from '@/lib/opening';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { DownloadLink, DownloadLinkKind, VipStatus } from '@/lib/types';
-import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, DONATE_OPTIONS, SERVER_TYPES } from '@/lib/types';
+import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
@@ -110,6 +110,33 @@ const ADMIN_DOWNLOAD_GROUPS: Array<{ kind: DownloadLinkKind; title: string; hint
   { kind: 'updater', title: 'Апдейтер', hint: 'Апдейтер, launcher, updater' },
   { kind: 'patch', title: 'Патч', hint: 'Патч, system, файл обновления' },
 ];
+
+const COUNTRY_OPTIONS = [
+  { code: 'RU', label: 'RU' },
+  { code: 'EU', label: 'EU' },
+  { code: 'US', label: 'US' },
+  { code: 'DE', label: 'DE' },
+  { code: 'PL', label: 'PL' },
+  { code: 'BY', label: 'BY' },
+  { code: 'UA', label: 'UA' },
+  { code: 'KZ', label: 'KZ' },
+];
+
+function parseCountryCodes(value?: string | null) {
+  const codes = String(value || 'RU')
+    .split(/[,\s]+/)
+    .map(code => code.trim().toUpperCase())
+    .filter(Boolean);
+  return codes.length > 0 ? Array.from(new Set(codes)) : ['RU'];
+}
+
+function toggleCountryCode(value: string | undefined, code: string) {
+  const codes = parseCountryCodes(value);
+  const next = codes.includes(code)
+    ? codes.filter(item => item !== code)
+    : [...codes, code];
+  return (next.length > 0 ? next : ['RU']).join(',');
+}
 
 function normalizeDownloadLinks(value: unknown): DownloadLink[] {
   if (!Array.isArray(value)) return [];
@@ -495,20 +522,12 @@ export default function AdminPage() {
                         {SERVER_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                       </select>
                     </AField>
-                    <AField label="Донат">
-                      <select className="input" value={editForm.donate} onChange={e => setEditForm((p:any) => ({...p,donate:e.target.value}))}>
-                        <option value="">Не указан</option>
-                        {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
-                      </select>
-                    </AField>
                   </>
                 )}
                 <AField label="Сайт *"><input className="input" required type="url" value={editForm.url} onChange={e => setEditForm((p:any) => ({...p,url:e.target.value}))} /></AField>
                 <AField label="Дата и время открытия"><input className="input" type="datetime-local" value={editForm.openedDate} onChange={e => setEditForm((p:any) => ({...p,openedDate:e.target.value}))} /></AField>
-                <AField label="Страна">
-                  <select className="input" value={editForm.country} onChange={e => setEditForm((p:any) => ({...p,country:e.target.value}))}>
-                    {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
-                  </select>
+                <AField label="Регионы">
+                  <CountryPicker value={editForm.country} onChange={country => setEditForm((p:any) => ({...p,country}))} />
                 </AField>
                 <AField label="Ручной статус">
                   <select className="input" value={editForm.statusOverride} onChange={e => setEditForm((p:any) => ({...p,statusOverride:e.target.value}))}>
@@ -914,20 +933,13 @@ export default function AdminPage() {
                             {SERVER_TYPES.map(t => <option key={t.v} value={t.v}>{t.l}</option>)}
                           </select>
                         </AField>
-                        <AField label="Донат">
-                          <select className="input" value={addForm.donate} onChange={e => setAddForm(p => ({...p,donate:e.target.value}))}>
-                            {DONATE_OPTIONS.map(d => <option key={d.v} value={d.v}>{d.l}</option>)}
-                          </select>
-                        </AField>
                       </>
                     )}
                     {/* Строка 3 */}
                     <AField label="Сайт *"><input className="input" required type="url" value={addForm.url} onChange={e => setAddForm(p => ({...p,url:e.target.value}))} placeholder="https://…" /></AField>
                     <AField label="Дата и время открытия"><input className="input" type="datetime-local" value={addForm.openedDate} onChange={e => setAddForm(p => ({...p,openedDate:e.target.value}))} /></AField>
-                    <AField label="Страна">
-                      <select className="input" value={addForm.country} onChange={e => setAddForm(p => ({...p,country:e.target.value}))}>
-                        {['RU','EU','US','DE','PL','BY','UA'].map(c => <option key={c}>{c}</option>)}
-                      </select>
+                    <AField label="Регионы">
+                      <CountryPicker value={addForm.country} onChange={country => setAddForm(p => ({...p,country}))} />
                     </AField>
                     <AField label="Ручной статус">
                       <select className="input" value={addForm.statusOverride} onChange={e => setAddForm(p => ({...p,statusOverride:e.target.value}))}>
@@ -995,6 +1007,38 @@ function AField({ label, children }: { label: string; children: React.ReactNode 
     <div style={{ display:'flex', flexDirection:'column', gap:'.25rem' }}>
       <label style={{ fontFamily:"'Cinzel',serif", fontSize:'.58rem', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'.12em' }}>{label}</label>
       {children}
+    </div>
+  );
+}
+
+function CountryPicker({ value, onChange }: { value?: string; onChange: (value: string) => void }) {
+  const selected = parseCountryCodes(value);
+  return (
+    <div style={{ display:'flex', flexWrap:'wrap', gap:'.35rem' }}>
+      {COUNTRY_OPTIONS.map(option => {
+        const active = selected.includes(option.code);
+        return (
+          <button
+            key={option.code}
+            type="button"
+            onClick={() => onChange(toggleCountryCode(value, option.code))}
+            style={{
+              minHeight: 34,
+              minWidth: 46,
+              borderRadius: 4,
+              border: active ? '1px solid rgba(200,168,75,.72)' : '1px solid var(--border)',
+              background: active ? 'rgba(200,168,75,.16)' : 'rgba(255,255,255,.025)',
+              color: active ? 'var(--gold)' : 'var(--text2)',
+              fontFamily: "'Cinzel', serif",
+              fontSize: '.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

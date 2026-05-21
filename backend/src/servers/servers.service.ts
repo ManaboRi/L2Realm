@@ -43,7 +43,7 @@ const serverPayloadSchema = z.object({
   vip: z.coerce.boolean().optional(),
   voteRewardsEnabled: z.coerce.boolean().optional(),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
-  country: optionalSafeText(8),
+  country: optionalSafeText(32),
   icon: optionalSafeAssetUrl,
   banner: optionalSafeAssetUrl,
   discord: optionalSafeUrl,

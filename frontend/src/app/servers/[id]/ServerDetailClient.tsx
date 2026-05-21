@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
-import type { DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
+import type { Article, DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -33,6 +33,35 @@ function relativeOpened(s?: string | null): string {
   return `${y} лет назад`;
 }
 function flag(c?: string) { return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦' }[c??''] ?? ''; }
+
+const COUNTRY_LABELS: Record<string, string> = {
+  RU: 'Россия',
+  EU: 'Европа',
+  US: 'США',
+  DE: 'Германия',
+  PL: 'Польша',
+  BY: 'Беларусь',
+  UA: 'Украина',
+  KZ: 'Казахстан',
+};
+
+function countryCodes(value?: string | null) {
+  return String(value || 'RU')
+    .split(/[,\s]+/)
+    .map(code => code.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+function formatFullDate(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function normalizeSearchText(value: string) {
+  return value.toLowerCase().replace(/ё/g, 'е');
+}
 
 function cooldownText(cooldownEnds: string | null): string {
   if (!cooldownEnds) return '';
@@ -188,6 +217,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'reviews'>('overview');
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
   // поэтому отзывы и рейтинг обновляем сразу при монтировании.
@@ -208,23 +239,20 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [token, id]);
 
   useEffect(() => {
-    try {
-      const key = 'l2r_recent_servers';
-      const item = {
-        id: server.id,
-        name: server.name,
-        icon: server.icon ?? null,
-        banner: server.banner ?? null,
-        chronicle: server.chronicle,
-        rates: server.rates,
-        viewedAt: new Date().toISOString(),
-      };
-      const current = JSON.parse(localStorage.getItem(key) || '[]');
-      const list = Array.isArray(current) ? current : [];
-      const next = [item, ...list.filter(entry => entry?.id !== server.id)].slice(0, 12);
-      localStorage.setItem(key, JSON.stringify(next));
-    } catch {}
-  }, [server.id, server.name, server.icon, server.banner, server.chronicle, server.rates]);
+    const needle = normalizeSearchText(server.name);
+    api.articles.list()
+      .then(list => {
+        setRelatedArticles(
+          list
+            .filter(article => {
+              const haystack = normalizeSearchText(`${article.title} ${article.description} ${article.content}`);
+              return haystack.includes(needle);
+            })
+            .slice(0, 3)
+        );
+      })
+      .catch(() => setRelatedArticles([]));
+  }, [server.name]);
 
   async function handleVote() {
     if (!token) {
@@ -281,6 +309,16 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     setTimeout(() => setToast(''), 3000);
   }
 
+  async function shareServer() {
+    const url = typeof window !== 'undefined' ? window.location.href : `https://l2realm.ru/servers/${id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('Ссылка скопирована');
+    } catch {
+      showToast(url);
+    }
+  }
+
   async function deleteReview(reviewId: string) {
     if (!token) return;
     if (!confirm('Удалить этот отзыв?')) return;
@@ -310,6 +348,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
   const isOnline = status?.status === 'online';
   const hasInstances = (server.instances?.length ?? 0) > 0;
+  const instances = server.instances ?? [];
+  const reviews = server.reviews ?? [];
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
@@ -324,6 +364,271 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         : link.kind === group.kind),
     }))
     .filter(group => group.links.length > 0);
+
+  const tagSet = new Set<string>();
+  if (instances.length) {
+    instances.forEach(inst => {
+      if (inst.chronicle) tagSet.add(inst.chronicle);
+      if (inst.rates) tagSet.add(inst.rates);
+      if (inst.type) tagSet.add(typeLabels.get(inst.type as any) ?? inst.type);
+    });
+  } else {
+    if (server.chronicle) tagSet.add(server.chronicle);
+    if (server.rates) tagSet.add(server.rates);
+    if (mainType) tagSet.add(typeLabels.get(mainType as any) ?? mainType);
+  }
+  const displayTags = Array.from(tagSet).slice(0, 7);
+  const regionCodes = countryCodes(server.country);
+  const startDate = formatFullDate(server.openedDate);
+  const uptimeValue = status?.uptime != null ? `${status.uptime}%` : '—';
+  const statusText = isOnline ? 'Онлайн' : status?.status === 'offline' ? 'Оффлайн' : 'Неизвестно';
+  const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
+  const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
+  const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
+
+  return (
+    <div className={styles.page}>
+      {toast && <div className={`${styles.toast} ${toast.includes('Ошибка') ? styles.toastError : ''}`}>{toast}</div>}
+      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
+
+      <section className={styles.serverHero}>
+        {server.banner ? (
+          <img src={server.banner} alt="" className={styles.serverHeroBg} aria-hidden="true" />
+        ) : (
+          <div className={styles.serverHeroFallback} aria-hidden="true" />
+        )}
+        <div className={styles.serverHeroShade} />
+
+        <div className={styles.heroMain}>
+          <div className={styles.heroLogo}>
+            {server.icon ? <img src={server.icon} alt={server.name} /> : <span>{server.abbr ?? server.name.slice(0, 2)}</span>}
+          </div>
+          <div className={styles.heroCopy}>
+            <div className={styles.heroBadges}>
+              {server._isVip && <span className={styles.goldBadge}>VIP</span>}
+              {server._isSod && <span className={styles.goldBadge}>Сервер недели</span>}
+              {activeBoost && <span className={styles.boostBadge}>Буст</span>}
+            </div>
+            <h1>{server.name}</h1>
+            <div className={styles.heroTags}>
+              {displayTags.map(tag => <span key={tag}>{tag}</span>)}
+            </div>
+            <p>{heroDescription}</p>
+            <div className={styles.heroButtons}>
+              <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.primaryHeroButton}>Перейти на сайт <span>↗</span></a>
+              <button type="button" className={styles.iconHeroButton} onClick={toggleFavorite} disabled={favBusy} aria-label="Добавить в избранное">
+                {isFav ? '★' : '♡'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <aside className={styles.heroPanel}>
+          <div className={styles.heroMetricGrid}>
+            <div>
+              <span>Голоса</span>
+              <strong>{totalVotes}</strong>
+            </div>
+            <div>
+              <span>Статус</span>
+              <strong className={statusClass}>● {statusText}</strong>
+            </div>
+            <div>
+              <span>Старт</span>
+              <strong>{startDate}</strong>
+            </div>
+            <div>
+              <span>Аптайм</span>
+              <strong>{uptimeValue}</strong>
+            </div>
+            <div>
+              <span>Рейтинг</span>
+              <strong>★ {server.ratingCount > 0 ? server.rating.toFixed(1) : '—'}</strong>
+            </div>
+          </div>
+
+          <div className={styles.heroVote}>
+            <input
+              className="input"
+              value={voteNickname}
+              onChange={e => setVoteNickname(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
+              placeholder="Ник на сервере"
+              maxLength={32}
+              disabled={!token || !!voteStatus?.voted}
+            />
+            <button type="button" onClick={handleVote} disabled={voting || !!voteStatus?.voted}>
+              {voting ? <span className="spin" /> : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
+            </button>
+          </div>
+          <small>{voteRewardsEnabled ? 'Бонусы за голос подключены' : 'Голосование работает через L2Realm'}</small>
+        </aside>
+
+        <div className={styles.serverTabs}>
+          <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
+          <button type="button" className={activeTab === 'reviews' ? styles.serverTabActive : ''} onClick={() => setActiveTab('reviews')}>
+            Отзывы {server.ratingCount > 0 && <span>{server.ratingCount}</span>}
+          </button>
+        </div>
+      </section>
+
+      {activeTab === 'overview' ? (
+        <div className={styles.detailGrid}>
+          {instances.length > 0 && (
+            <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
+              <h2>Сервера проекта</h2>
+              <div className={styles.instances}>
+                {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
+                  const isFuture = isOpeningStillSoon(inst.openedDate);
+                  return (
+                    <div key={inst.id} className={`${styles.instTile} ${isFuture ? styles.instTileSoon : ''}`}>
+                      <div className={styles.instTileHead}>
+                        <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
+                        {isFuture && <span className={styles.instTileSoonBadge}>Скоро</span>}
+                      </div>
+                      <div className={styles.instTileTags}>
+                        <span>{inst.chronicle}</span>
+                        <span>{inst.rates}</span>
+                        {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
+                      </div>
+                      {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                      {inst.openedDate && <div className={styles.instTileDate}>{formatFullDate(inst.openedDate)}</div>}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          <section className={styles.infoCard}>
+            <h2>О сервере</h2>
+            {server.fullDesc
+              ? <div className={styles.desc}>{formatDesc(server.fullDesc ?? '')}</div>
+              : <p className={styles.empty}>Описание отсутствует.</p>}
+          </section>
+
+          <section className={styles.infoCard}>
+            <h2>Основная информация</h2>
+            <div className={styles.infoRows}>
+              <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
+              <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
+              <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
+              <div><span>Старт проекта</span><strong>{startDate}</strong></div>
+              <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
+              <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
+              <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
+            </div>
+          </section>
+
+          <aside className={styles.sideStack}>
+            {hasStartGuide && (
+              <section className={styles.sideCard}>
+                <h2>Как начать играть?</h2>
+                {startGroups.map(group => (
+                  <div key={group.kind} className={styles.startLine}>
+                    <span>{group.title}</span>
+                    <div>
+                      {group.links.map((link, index) => (
+                        <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow">{downloadLinkLabel(link)}</a>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {server.installGuide && <div className={styles.installGuideBody}>{formatDesc(server.installGuide ?? '')}</div>}
+              </section>
+            )}
+
+            <section className={styles.sideCard}>
+              <h2>Голоса за сервер</h2>
+              <div className={styles.voteCompactStats}>
+                <div><span>Всего</span><strong>{voteSummary?.totalVotes ?? totalVotes}</strong></div>
+                <div><span>За месяц</span><strong>{voteSummary?.monthlyVotes ?? 0}</strong></div>
+                <div><span>Сегодня</span><strong>{voteSummary?.todayVotes ?? 0}</strong></div>
+              </div>
+            </section>
+
+            {(server.telegram || server.discord || server.vk || server.youtube) && (
+              <section className={styles.sideCard}>
+                <h2>Контакты</h2>
+                <div className={styles.contactLinks}>
+                  {server.telegram && <SocialLink ico="TG" name="Telegram" href={server.telegram ?? ''} />}
+                  {server.discord && <SocialLink ico="DC" name="Discord" href={server.discord ?? ''} />}
+                  {server.vk && <SocialLink ico="VK" name="ВКонтакте" href={server.vk ?? ''} />}
+                  {server.youtube && <SocialLink ico="YT" name="YouTube" href={server.youtube ?? ''} />}
+                </div>
+              </section>
+            )}
+
+            {relatedArticles.length > 0 && (
+              <section className={styles.sideCard}>
+                <h2>Статьи по проекту</h2>
+                <div className={styles.relatedArticles}>
+                  {relatedArticles.map(article => (
+                    <Link key={article.id} href={`/blog/${article.slug}`}>
+                      {article.image && <img src={article.image} alt="" />}
+                      <span>
+                        <strong>{article.title}</strong>
+                        <small>{article.views ?? 0} просмотров</small>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </aside>
+
+        </div>
+      ) : (
+        <div className={styles.reviewsLayout}>
+          <section className={styles.infoCard}>
+            <h2>Оставить отзыв</h2>
+            {user ? (
+              <form onSubmit={submitReview} className={styles.reviewForm}>
+                <div className={styles.stars}>
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} type="button" className={n <= reviewRating ? styles.starOn : styles.star} onClick={() => setReviewRating(n)}>★</button>
+                  ))}
+                  <span className={styles.ratingLbl}>{reviewRating} / 5</span>
+                </div>
+                <textarea
+                  className="input"
+                  placeholder="Расскажи об опыте на сервере..."
+                  rows={4}
+                  value={reviewTxt}
+                  onChange={e => setReviewTxt(e.target.value)}
+                  required
+                  style={{ resize: 'vertical' }}
+                />
+                <button className="btn-primary" type="submit" disabled={submitting} style={{ alignSelf: 'flex-start', padding: '.45rem 1.2rem' }}>
+                  {submitting ? <span className="spin" /> : 'Отправить отзыв'}
+                </button>
+              </form>
+            ) : (
+              <p className={styles.empty}>Войдите в аккаунт, чтобы оставить отзыв.</p>
+            )}
+          </section>
+
+          <section className={styles.infoCard}>
+            <h2>Отзывы игроков {server.ratingCount > 0 && `(${server.ratingCount})`}</h2>
+            {reviews.length > 0 ? (
+              <div className={styles.reviewList}>
+                {reviews.map(r => (
+                  <ReviewCard
+                    key={r.id}
+                    review={r}
+                    canDelete={isAdmin || r.user.id === user?.id}
+                    onDelete={() => deleteReview(r.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className={styles.empty}>Отзывов пока нет.</p>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className={styles.page}>
@@ -359,7 +664,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div>
               <div className={styles.serverName}>
                 {server.name}{' '}
-                {server.boost && new Date(server.boost.endDate) > new Date() && (
+                {activeBoost && (
                   <span title="Буст активен" style={{ filter: 'drop-shadow(0 0 4px rgba(240,140,70,.6))' }}>🔥</span>
                 )}
               </div>
@@ -405,7 +710,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   <span className={styles.voteBoxDot} />
                   {monthlyVotes > 0 ? `${monthlyVotes} ${voteWord(monthlyVotes)} за месяц` : 'Голосов за месяц пока нет'}
                 </span>
-                <span>{voteStatus?.voted && cooldownText(voteStatus.cooldownEnds) ? cooldownText(voteStatus.cooldownEnds) : '1 голос / 24ч IP + аккаунт'}</span>
+                <span>{voteStatus?.voted && cooldownText(voteStatus?.cooldownEnds ?? null) ? cooldownText(voteStatus?.cooldownEnds ?? null) : '1 голос / 24ч IP + аккаунт'}</span>
               </div>
 
               <div className={styles.voteInline}>
@@ -461,13 +766,13 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         {/* Левая колонка */}
         <div className={styles.left}>
           {/* Краткая статистика — над характеристиками. Если есть instances — показываем количество. */}
-          {server.instances && server.instances.length > 0 && (
+          {instances.length > 0 && (
             <div className={styles.miniStats}>
-              <span className={styles.miniStatsNum}>{server.instances.length}</span>
+              <span className={styles.miniStatsNum}>{instances.length}</span>
               <span className={styles.miniStatsLbl}>{
-                server.instances.length === 1 ? 'сервер проекта'
-                  : server.instances.length < 5 ? 'сервера проекта'
-                  : 'серверов проекта'
+                instances.length === 1 ? 'сервер проекта'
+                  : instances.length < 5 ? 'сервера проекта'
+                    : 'серверов проекта'
               }</span>
             </div>
           )}
@@ -492,10 +797,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div className={styles.block} style={{ marginTop: 1 }}>
               <div className={styles.blockTitle}>Контакты</div>
               <div className={styles.socials}>
-                {server.telegram && <SocialLink ico="✈️" name="Telegram" href={server.telegram} />}
-                {server.discord  && <SocialLink ico="💬" name="Discord"  href={server.discord} />}
-                {server.vk       && <SocialLink ico="🔵" name="ВКонтакте" href={server.vk} />}
-                {server.youtube  && <SocialLink ico="▶️" name="YouTube"  href={server.youtube} />}
+                {server.telegram && <SocialLink ico="✈️" name="Telegram" href={server.telegram ?? ''} />}
+                {server.discord  && <SocialLink ico="💬" name="Discord"  href={server.discord ?? ''} />}
+                {server.vk       && <SocialLink ico="🔵" name="ВКонтакте" href={server.vk ?? ''} />}
+                {server.youtube  && <SocialLink ico="▶️" name="YouTube"  href={server.youtube ?? ''} />}
               </div>
             </div>
           )}
@@ -509,7 +814,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div className={styles.dblockTitle}>О сервере</div>
             <div className={styles.dblockBody}>
               {server.fullDesc
-                ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
+                ? <div className={styles.desc}>{formatDesc(server.fullDesc ?? '')}</div>
                 : <p className={styles.empty}>Описание отсутствует</p>}
 
               {hasStartGuide && (
@@ -529,7 +834,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   {server.installGuide && (
                     <div className={styles.installGuide}>
                       <div className={styles.startGroupTitle}>Инструкция</div>
-                      <div className={styles.installGuideBody}>{formatDesc(server.installGuide)}</div>
+                      <div className={styles.installGuideBody}>{formatDesc(server.installGuide ?? '')}</div>
                     </div>
                   )}
                 </div>
@@ -538,14 +843,14 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           </div>
 
           {/* Сервера проекта — компактные плитки в сетке (без основного заголовка блока) */}
-          {server.instances && server.instances.length > 0 && (
+          {instances.length > 0 && (
             <div className={styles.dblock}>
               <div className={styles.dblockBody}>
                 <p className={styles.instSubtitle}>
-                  {server.instances.length} {server.instances.length === 1 ? 'сервер' : server.instances.length < 5 ? 'сервера' : 'серверов'}
+                  {instances.length} {instances.length === 1 ? 'сервер' : instances.length < 5 ? 'сервера' : 'серверов'}
                 </p>
                 <div className={styles.instances}>
-                  {[...server.instances]
+                  {[...instances]
                     .sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0))
                     .map(inst => {
                       const isFuture = isOpeningStillSoon(inst.openedDate);
@@ -610,7 +915,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     <table className={styles.voteTable}>
                       <thead><tr><th>#</th><th>Игрок</th><th>Голосов</th><th>Ранг</th><th>Последний голос</th></tr></thead>
                       <tbody>
-                        {voteSummary.top.map(row => (
+                        {voteSummary?.top.map(row => (
                           <tr key={`${row.place}-${row.nickname}`}>
                             <td>{row.place}</td>
                             <td className={styles.voterName}>{row.nickname}</td>
@@ -628,7 +933,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               ) : (
                 voteSummary?.recent?.length ? (
                   <div className={styles.recentVotes}>
-                    {voteSummary.recent.map((row, index) => (
+                    {voteSummary?.recent.map((row, index) => (
                       <div key={`${row.nickname}-${row.votedAt}-${index}`} className={styles.recentVoteItem}>
                         <span className={styles.recentVoteIcon}>◆</span>
                         <span className={styles.voterName}>{row.nickname}</span>
@@ -726,9 +1031,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <div className={styles.dblock}>
             <div className={styles.dblockTitle}>Отзывы игроков {server.ratingCount > 0 && `(${server.ratingCount})`}</div>
             <div className={styles.dblockBody}>
-              {server.reviews && server.reviews.length > 0 ? (
+              {reviews.length > 0 ? (
                 <div className={styles.reviewList}>
-                  {server.reviews.map(r => (
+                  {reviews.map(r => (
                     <ReviewCard
                       key={r.id}
                       review={r}

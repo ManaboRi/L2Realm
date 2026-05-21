@@ -137,45 +137,8 @@
 }
 
 .layout {
-  width: min(1440px, 100%);
+  width: min(1180px, 100%);
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
-}
-
-.sidebar {
-  position: sticky;
-  top: 68px;
-  display: grid;
-  overflow: hidden;
-  border: 1px solid rgba(210, 171, 82, .12);
-  border-radius: 8px;
-  background: linear-gradient(180deg, rgba(11, 16, 23, .94), rgba(5, 9, 14, .92));
-}
-
-.sidebar button {
-  min-height: 48px;
-  border: 0;
-  border-bottom: 1px solid rgba(210, 171, 82, .08);
-  background: transparent;
-  color: rgba(232, 221, 186, .72);
-  text-align: left;
-  padding: 0 1rem;
-  font-size: .78rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-}
-
-.sidebar button:hover,
-.sidebar .navActive {
-  background: linear-gradient(90deg, rgba(210, 171, 82, .15), rgba(210, 171, 82, .02));
-  color: var(--gold);
-}
-
-.sidebar .logoutBtn {
-  color: rgba(232, 221, 186, .45);
 }
 
 .content {
@@ -364,6 +327,12 @@
 .twoColumns {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.singleColumn {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
 }
 
@@ -560,6 +529,23 @@
   word-break: break-word;
 }
 
+.subtleLogout {
+  margin-top: .85rem;
+  border: 0;
+  background: transparent;
+  color: rgba(232, 221, 186, .42);
+  font-size: .78rem;
+  text-decoration: underline;
+  text-decoration-color: rgba(232, 221, 186, .18);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+
+.subtleLogout:hover {
+  color: rgba(232, 221, 186, .72);
+  text-decoration-color: rgba(232, 221, 186, .42);
+}
+
 @media (max-width: 1080px) {
   .hero {
     grid-template-columns: 100px minmax(0, 1fr);
@@ -584,14 +570,6 @@
   }
   .layout {
     grid-template-columns: 1fr;
-  }
-  .sidebar {
-    position: static;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .sidebar button {
-    text-align: center;
-    padding: 0 .55rem;
   }
   .activityGrid,
   .twoColumns {
