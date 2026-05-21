@@ -556,9 +556,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
                     {article.image && <img src={article.image} alt="" />}
                     <span>
-                      <small>{article.category}</small>
                       <strong>{article.title}</strong>
-                      <em>{article.description}</em>
+                      <small>{formatFullDate(article.publishedAt)}</small>
                     </span>
                   </Link>
                 ))}
