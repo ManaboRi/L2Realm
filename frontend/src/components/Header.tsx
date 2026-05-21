@@ -97,18 +97,18 @@ export function Header() {
         <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
           <nav className={styles.nav}>
             <Link href="/" className={navClass('/', styles.navLinkHome)} onClick={closeMenu}>
-              <Image src="/images/nav-servers.webp" alt="Каталог серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
+              <Image src="/images/nav-servers.webp" alt="Каталог серверов Lineage 2" width={24} height={24} className={styles.navIcon} unoptimized />
               <span className={styles.navText}>Все серверы</span>
             </Link>
             <Link href="/coming-soon" className={navClass('/coming-soon')} onClick={closeMenu}>
-              <Image src="/images/nav-coming-soon.webp" alt="Скоро открытие серверов Lineage 2" width={24} height={24} className={styles.navIcon} />
+              <Image src="/images/nav-coming-soon.webp" alt="Скоро открытие серверов Lineage 2" width={24} height={24} className={styles.navIcon} unoptimized />
               <span className={styles.navText}>
                 <span className={styles.navTextFull}>Скоро открытие</span>
                 <span className={styles.navTextShort}>Скоро</span>
               </span>
             </Link>
             <Link href="/blog" className={navClass('/blog')} onClick={closeMenu}>
-              <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} />
+              <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} unoptimized />
               <span className={styles.navText}>Статьи</span>
             </Link>
             {isAdmin && (
