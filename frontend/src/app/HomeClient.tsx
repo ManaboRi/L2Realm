@@ -268,10 +268,10 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               </div>
 
               <div className={styles.heroStats}>
-                <Metric tone="gold" label="Всего серверов" value={totalServers} />
-                <Metric tone="online" label="Игроков онлайн" value={totalOnline} />
-                <Metric tone="amber" label="Всего голосов" value={totalVotes} />
-                <Metric tone="red" label="Активных проектов" value={totalProjects} />
+                <Metric tone="gold" label="Серверов" value={totalServers} />
+                <Metric tone="online" label="Игроков" value={totalOnline} />
+                <Metric tone="amber" label="Голосов" value={totalVotes} />
+                <Metric tone="red" label="Проектов" value={totalProjects} />
               </div>
             </section>
 
@@ -340,7 +340,6 @@ function Metric({
 }) {
   return (
     <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
-      <span className={styles.metricIcon} aria-hidden="true" />
       <span className={styles.metricText}>
         <strong>{value.toLocaleString('ru-RU')}</strong>
         <em>{label}</em>

@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-23
 
+- Refined the local follow-up design pass: home hero stats are darker/equal text metrics with only online highlighted, server online graphs now render y-axis labels and hoverable SVG points, and the server-launches tab uses polished compact "world" cards with subtle future-start accents.
 - Adjusted the local main/server visuals after review: hero stats became text-only without icons/blocks, VIP/week cards keep a gold aura, server detail hero stats lost inner boxes, and project launch cards are smaller/non-clickable without action buttons.
 
 ## 2026-05-22

@@ -12,7 +12,6 @@ import {
   formatOnline,
   instanceOnlineIsEstimated,
   instanceOnlineValue,
-  onlineChartPath,
   onlineSeries,
   onlineSeriesStats,
   serverOnlineIsEstimated,
@@ -68,6 +67,16 @@ function formatFullDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+
+function onlinePointLabel(index: number, count: number, range: OnlineRange) {
+  const point = new Date();
+  if (range === '24h') {
+    point.setHours(point.getHours() - (count - 1 - index), 0, 0, 0);
+    return point.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  }
+  point.setDate(point.getDate() - (count - 1 - index));
+  return point.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
 function normalizeSearchText(value: string) {
@@ -405,8 +414,33 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
   const onlineValues = onlineSeries(projectOnline, onlineRange);
   const onlineStats = onlineSeriesStats(onlineValues);
-  const onlinePath = onlineChartPath(onlineValues, 460, 150);
-  const onlineFillPath = onlinePath ? `${onlinePath} L 460 150 L 0 150 Z` : '';
+  const chartLeft = 46;
+  const chartTop = 12;
+  const chartWidth = 396;
+  const chartHeight = 122;
+  const chartBottom = chartTop + chartHeight;
+  const onlineMin = onlineValues.length > 0 ? Math.min(...onlineValues) : 0;
+  const onlineMax = onlineValues.length > 0 ? Math.max(...onlineValues) : 0;
+  const onlineSpan = Math.max(1, onlineMax - onlineMin);
+  const onlineGraphPoints = onlineValues.map((value, index) => ({
+    value,
+    label: onlinePointLabel(index, onlineValues.length, onlineRange),
+    x: chartLeft + (onlineValues.length === 1 ? chartWidth : (index / (onlineValues.length - 1)) * chartWidth),
+    y: chartTop + chartHeight - ((value - onlineMin) / onlineSpan) * (chartHeight - 10) - 5,
+  }));
+  const onlinePath = onlineGraphPoints
+    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
+    .join(' ');
+  const onlineFillPath = onlinePath
+    ? `${onlinePath} L ${(chartLeft + chartWidth).toFixed(1)} ${chartBottom} L ${chartLeft} ${chartBottom} Z`
+    : '';
+  const onlineGraphScale = onlineValues.length > 0
+    ? [
+        { label: formatOnline(onlineMax, estimatedProjectOnline), y: chartTop + 7 },
+        { label: formatOnline(Math.round((onlineMin + onlineMax) / 2), estimatedProjectOnline), y: chartTop + chartHeight / 2 + 4 },
+        { label: formatOnline(onlineMin, estimatedProjectOnline), y: chartBottom - 2 },
+      ]
+    : [];
   const voteDisabled = voting || !!voteStatus?.voted;
 
   return (
@@ -530,9 +564,20 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                       <stop offset="100%" stopColor="rgba(83,217,135,0)" />
                     </linearGradient>
                   </defs>
-                  <path d="M 0 150 H 460" className={styles.onlineGraphAxis} />
+                  {onlineGraphScale.map((mark, index) => (
+                    <g key={`${mark.label}-${index}`}>
+                      <text x="2" y={mark.y} className={styles.onlineGraphScale}>{mark.label}</text>
+                      <path d={`M ${chartLeft} ${mark.y - 4} H ${chartLeft + chartWidth}`} className={styles.onlineGraphGridLine} />
+                    </g>
+                  ))}
+                  <path d={`M ${chartLeft} ${chartBottom} H ${chartLeft + chartWidth}`} className={styles.onlineGraphAxis} />
                   {onlineFillPath && <path d={onlineFillPath} className={styles.onlineGraphFill} />}
                   {onlinePath && <path d={onlinePath} className={styles.onlineGraphLine} />}
+                  {onlineGraphPoints.map((point, index) => (
+                    <circle key={`${point.x}-${index}`} cx={point.x} cy={point.y} r="3.6" className={styles.onlineGraphDot}>
+                      <title>{`${point.label}: ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
+                    </circle>
+                  ))}
                 </svg>
                 {!onlinePath && <div className={styles.onlineEmpty}>Онлайн появится после настройки сервера</div>}
               </div>
@@ -643,13 +688,19 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
       {activeTab === 'servers' && (
         <div className={styles.serversTabLayout}>
           <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
-            <h2>Сервера проекта</h2>
+            <div className={styles.projectServersHead}>
+              <div>
+                <h2>Миры проекта <span>{instances.length || 1}</span></h2>
+                <p>Запуски внутри проекта: хроники, рейты, онлайн и дата старта.</p>
+              </div>
+            </div>
             {instances.length > 0 ? (
               <div className={styles.instancesLarge}>
                 {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
                   const isFuture = isOpeningStillSoon(inst.openedDate);
                   const instOnline = instanceOnlineValue(inst);
                   const estimatedInstOnline = instanceOnlineIsEstimated(inst);
+                  const openedLabel = isFuture ? formatFullDate(inst.openedDate) : relativeOpened(inst.openedDate);
                   return (
                     <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''}`}>
                       <div className={styles.instTileHead}>
@@ -662,12 +713,20 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                         {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
                       </div>
                       {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
-                      {instOnline != null && (
-                        <div className={styles.instTileOnline}>
-                          <span>Онлайн</span>
-                          {formatOnline(instOnline, estimatedInstOnline)}
-                        </div>
-                      )}
+                      <div className={styles.instTileStats}>
+                        {instOnline != null && (
+                          <div className={styles.instTileStatOnline}>
+                            <strong>{formatOnline(instOnline, estimatedInstOnline)}</strong>
+                            <span>онлайн</span>
+                          </div>
+                        )}
+                        {inst.openedDate && (
+                          <div>
+                            <strong>{openedLabel}</strong>
+                            <span>{isFuture ? 'старт' : 'работает'}</span>
+                          </div>
+                        )}
+                      </div>
                       {inst.openedDate && (
                         <div className={styles.instTileMeta}>
                           <span>{formatFullDate(inst.openedDate)}</span>
@@ -689,6 +748,20 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     {mainType && <span>{typeLabels.get(mainType as any) ?? mainType}</span>}
                   </div>
                   {server.shortDesc && <div className={styles.instTileDesc}>{server.shortDesc}</div>}
+                  <div className={styles.instTileStats}>
+                    {projectOnline != null && (
+                      <div className={styles.instTileStatOnline}>
+                        <strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong>
+                        <span>онлайн</span>
+                      </div>
+                    )}
+                    {server.openedDate && (
+                      <div>
+                        <strong>{relativeOpened(server.openedDate)}</strong>
+                        <span>работает</span>
+                      </div>
+                    )}
+                  </div>
                   {server.openedDate && (
                     <div className={styles.instTileMeta}>
                       <span>{startDate}</span>
