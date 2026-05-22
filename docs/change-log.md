@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-22
 
+- Reworked the main catalog hero/cards: added compact stat tiles from `/servers/stats`, brightened the catalog banner, made cards fully clickable, removed card descriptions/details buttons, and kept tags to one row with `+N`.
 - Bypassed Next image optimization for tiny header nav icons so they load directly from `/images/nav-*.webp` instead of occasionally failing through `/_next/image`.
 - Fixed admin server save validation for estimated online: `instances[].onlineError` may be `null` after a successful check/refresh.
 - Added estimated per-launch online mode: admins can set a base value, backend recalculates hourly with Moscow time-of-day drops/peaks and light jitter, and public pages display estimated values with an `≈` marker.

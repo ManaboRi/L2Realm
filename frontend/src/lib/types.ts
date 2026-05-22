@@ -222,7 +222,9 @@ export interface Stats {
   newCount:    number;
   reviewCount: number;
   monthlyVotes?: number;
+  totalVotes?: number;
   onlineTotal?: number;
+  onlineServerCount?: number;
   onlineEstimated?: boolean;
 }
 

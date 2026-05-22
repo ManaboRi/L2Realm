@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { formatOnline, onlineChartPath, onlineSeries, onlineSeriesStats, serverOnlineIsEstimated, serverOnlineValue } from '@/lib/online';
+import { formatOnline, serverOnlineIsEstimated, serverOnlineValue } from '@/lib/online';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -67,12 +67,14 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
   const totalProjects = stats?.total ?? servers.length;
   const totalServers = stats?.launchCount ?? totalProjects;
-  const addedThisWeek = stats?.newCount ?? 0;
+  const totalReviews = stats?.reviewCount ?? 0;
+  const totalVotes = stats?.totalVotes ?? servers.reduce((sum, server) => sum + (server.totalVotes ?? 0), 0);
   const loadedOnline = servers
     .map(serverOnlineValue)
     .filter((value): value is number => value != null)
     .reduce((sum, value) => sum + value, 0);
   const totalOnline = stats?.onlineTotal && stats.onlineTotal > 0 ? stats.onlineTotal : loadedOnline;
+  const onlineServerCount = stats?.onlineServerCount ?? servers.filter(server => serverOnlineValue(server) != null).length;
   const estimatedOnline = Boolean(stats?.onlineEstimated || servers.some(serverOnlineIsEstimated));
 
   useEffect(() => {
@@ -231,8 +233,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           <section className={styles.content}>
             <section className={styles.hero}>
               <div className={styles.heroCopy}>
-                <h1>Найди свой мир <span>Lineage 2</span></h1>
-                <p>Каталог приватных серверов с фильтрами, отзывами, голосованием и живыми страницами проектов.</p>
+                <h1>Твой главный навигатор <br /><span>в мире Lineage 2</span></h1>
+                <p>Каталог приватных серверов с фильтрами, отзывами, голосованием и честной статистикой проектов.</p>
 
                 <div className={styles.searchControls}>
                   <div className={styles.searchWrap}>
@@ -257,9 +259,11 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               </div>
 
               <div className={styles.heroStats}>
-                <Metric label="Всего серверов" value={totalServers} note={`+${addedThisWeek} за неделю`} />
-                <Metric label="Всего проектов" value={totalProjects} note="карточек в каталоге" />
-                <OnlineMetric value={totalOnline || null} estimated={estimatedOnline} />
+                <Metric tone="green" icon="cluster" label="Серверов онлайн" value={onlineServerCount} note={`из ${totalServers} запусков`} />
+                <Metric tone="blue" icon="users" label="Игроков онлайн" value={totalOnline} note={estimatedOnline ? 'оценочный онлайн' : 'на всех серверах'} />
+                <Metric tone="violet" icon="reviews" label="Отзывов" value={totalReviews} note="помогают с выбором" />
+                <Metric tone="amber" icon="pulse" label="Голосов" value={totalVotes} note="за проекты каталога" />
+                <Metric tone="red" icon="rocket" label="Активных проектов" value={totalProjects} note="в каталоге L2Realm" />
               </div>
             </section>
 
@@ -317,32 +321,27 @@ function FilterItem({ label, active, count, onClick }: { label: string; active: 
   );
 }
 
-function Metric({ label, value, note }: { label: string; value: number; note: string }) {
+function Metric({
+  label,
+  value,
+  note,
+  tone,
+  icon,
+}: {
+  label: string;
+  value: number;
+  note: string;
+  tone: 'green' | 'blue' | 'violet' | 'amber' | 'red';
+  icon: 'cluster' | 'users' | 'reviews' | 'pulse' | 'rocket';
+}) {
   return (
-    <div className={styles.metric}>
-      <span>{label}</span>
-      <strong>{value.toLocaleString('ru-RU')}</strong>
-      <small>{note}</small>
-    </div>
-  );
-}
-
-function OnlineMetric({ value, estimated }: { value: number | null; estimated: boolean }) {
-  const series = onlineSeries(value, '24h');
-  const stats = onlineSeriesStats(series);
-  const path = onlineChartPath(series, 190, 46);
-
-  return (
-    <div className={styles.onlineMetricCard}>
-      <div className={styles.onlineMetricHead}>
-        <span>Общий онлайн</span>
-        <strong>{formatOnline(value, estimated)}</strong>
-      </div>
-      <svg className={styles.onlineMiniChart} viewBox="0 0 190 46" role="img" aria-label="График онлайна за 24 часа">
-        <path d="M 0 45 H 190" className={styles.onlineAxis} />
-        {path && <path d={path} className={styles.onlineLine} />}
-      </svg>
-      <small>Средний за сутки: {formatOnline(stats.average, estimated)}</small>
+    <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
+      <span className={`${styles.metricIcon} ${styles[`metricIcon_${icon}`]}`} aria-hidden="true" />
+      <span className={styles.metricText}>
+        <strong>{value.toLocaleString('ru-RU')}</strong>
+        <em>{label}</em>
+        <small>{note}</small>
+      </span>
     </div>
   );
 }
@@ -361,7 +360,7 @@ function HomeServerCard({
   onFavorite: () => void;
 }) {
   const tags = collectTags(s);
-  const visibleTags = tags.slice(0, 7);
+  const visibleTags = tags.slice(0, 4);
   const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const online = serverOnlineValue(s);
@@ -378,6 +377,7 @@ function HomeServerCard({
       isBoosted ? styles.serverCardBoost : '',
       isWeek ? styles.serverCardWeek : '',
     ].filter(Boolean).join(' ')}>
+      <Link href={`/servers/${s.id}`} className={styles.cardLink} aria-label={`Открыть сервер ${s.name}`} />
       <div className={styles.cardMedia}>
         {s.banner ? (
           <img src={s.banner} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
@@ -395,9 +395,9 @@ function HomeServerCard({
           title={canFavorite ? (isFavorite ? 'Убрать из избранного' : 'Добавить в избранное') : 'Войдите, чтобы добавить в избранное'}
           aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
         >
-          {isFavorite ? '×' : '♡'}
+          {isFavorite ? '★' : '♡'}
         </button>
-        <Link href={`/servers/${s.id}`} className={styles.cardIdentity} aria-label={`Открыть сервер ${s.name}`}>
+        <div className={styles.cardIdentity}>
           <ServerIcon server={s} />
           <div>
             <h2>{s.name}</h2>
@@ -406,25 +406,25 @@ function HomeServerCard({
               {hiddenTagsCount > 0 && <span className={styles.tagMore}>+{hiddenTagsCount}</span>}
             </div>
           </div>
-        </Link>
+        </div>
       </div>
 
       <div className={styles.cardBody}>
-        <p>{s.shortDesc || 'Проект Lineage 2 с отдельной страницей, голосами, описанием и ссылками для старта.'}</p>
-
         <div className={styles.cardFooter}>
           <div className={styles.cardMeta}>
             <span>
-              <small>{online == null ? 'Голоса' : 'Онлайн'}</small>
-              <strong className={styles.online}>{online == null ? votes.toLocaleString('ru-RU') : formatOnline(online, estimatedOnline)}</strong>
+              <strong className={styles.online}><i aria-hidden="true" />{online == null ? '—' : formatOnline(online, estimatedOnline)}</strong>
+              <small>онлайн</small>
             </span>
             <span>
-              <small>Старт</small>
-              <strong>{formatDate(s.openedDate)}</strong>
+              <strong><b aria-hidden="true" />{formatDate(s.openedDate)}</strong>
+              <small>старт</small>
+            </span>
+            <span>
+              <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
+              <small>голосов</small>
             </span>
           </div>
-
-          <Link href={`/servers/${s.id}`} className={styles.detailsBtn}>Подробнее</Link>
         </div>
       </div>
     </article>
@@ -442,9 +442,9 @@ function ServerIcon({ server, small }: { server: Server; small?: boolean }) {
 }
 
 function getServerBadge(server: Server) {
-  if (server._isVip || server.vip) return '★ VIP';
+  if (server._isVip || server.vip) return 'VIP';
   if (server._isSod) return 'СЕРВЕР НЕДЕЛИ';
-  if (server._isBoosted) return '🔥 БУСТ';
+  if (server._isBoosted) return 'БУСТ';
   return '';
 }
 

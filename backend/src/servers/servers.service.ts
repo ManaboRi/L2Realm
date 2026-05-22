@@ -1046,7 +1046,7 @@ export class ServersService {
 
   // ── Статистика ───────────────────────────────
   async getStats() {
-    const [servers, vip, newCount, monthlyVotesAgg] = await Promise.all([
+    const [servers, vip, newCount, votesAgg] = await Promise.all([
       this.prisma.server.findMany({ select: { instances: true } }),
       this.prisma.server.count({ where: { vip: true } }),
       this.prisma.server.count({
@@ -1057,7 +1057,7 @@ export class ServersService {
         },
       }),
       this.prisma.server.aggregate({
-        _sum: { monthlyVotes: true },
+        _sum: { monthlyVotes: true, totalVotes: true },
       }),
     ]);
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
@@ -1067,6 +1067,7 @@ export class ServersService {
       return sum + (instances.length > 0 ? instances.length : 1);
     }, 0);
     let onlineTotal = 0;
+    let onlineServerCount = 0;
     let onlineEstimated = false;
     for (const server of servers) {
       const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
@@ -1075,6 +1076,7 @@ export class ServersService {
         if (mode === 'off') continue;
         const online = numberFromUnknown(mode === 'manual' ? inst.onlineManual : inst.onlineValue ?? inst.onlineManual);
         if (online == null) continue;
+        onlineServerCount += 1;
         onlineTotal += online;
         if (mode === 'estimated') onlineEstimated = true;
       }
@@ -1085,8 +1087,10 @@ export class ServersService {
       vip,
       newCount,
       reviewCount,
-      monthlyVotes: monthlyVotesAgg._sum.monthlyVotes ?? 0,
+      monthlyVotes: votesAgg._sum.monthlyVotes ?? 0,
+      totalVotes: votesAgg._sum.totalVotes ?? 0,
       onlineTotal,
+      onlineServerCount,
       onlineEstimated,
     };
   }
