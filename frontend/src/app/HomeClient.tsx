@@ -30,6 +30,13 @@ const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
 type CardTagTone = 'chronicle' | 'rate' | 'type';
 type CardTag = { label: string; tone: CardTagTone };
 
+const SORT_OPTIONS = [
+  { value: '', label: 'По умолчанию' },
+  { value: 'opened', label: 'Дата открытия' },
+  { value: 'votes', label: 'Голоса' },
+  { value: 'rating', label: 'Рейтинг' },
+] as const;
+
 export function HomeClient(props: HomeClientProps) {
   return (
     <Suspense>
@@ -74,7 +81,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     .filter((value): value is number => value != null)
     .reduce((sum, value) => sum + value, 0);
   const totalOnline = stats?.onlineTotal && stats.onlineTotal > 0 ? stats.onlineTotal : loadedOnline;
-  const onlineServerCount = stats?.onlineServerCount ?? servers.filter(server => serverOnlineValue(server) != null).length;
   const estimatedOnline = Boolean(stats?.onlineEstimated || servers.some(serverOnlineIsEstimated));
 
   useEffect(() => {
@@ -248,22 +254,27 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                     {search && <button type="button" className={styles.searchClear} onClick={() => setSearch('')}>×</button>}
                   </div>
 
-                  <select className={styles.sortSelect} value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
-                    <option value="">По умолчанию</option>
-                    <option value="opened">По дате открытия</option>
-                    <option value="name">По алфавиту</option>
-                    <option value="rating">По рейтингу</option>
-                    <option value="votes">По голосам</option>
-                  </select>
+                  <div className={styles.sortPills} aria-label="Сортировка серверов">
+                    {SORT_OPTIONS.map(option => (
+                      <button
+                        key={option.value || 'default'}
+                        type="button"
+                        className={`${styles.sortPill} ${sort === option.value ? styles.sortPillActive : ''}`}
+                        onClick={() => { setSort(option.value); setPage(1); }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               <div className={styles.heroStats}>
-                <Metric tone="green" icon="cluster" label="Серверов онлайн" value={onlineServerCount} note={`из ${totalServers} запусков`} />
-                <Metric tone="blue" icon="users" label="Игроков онлайн" value={totalOnline} note={estimatedOnline ? 'оценочный онлайн' : 'на всех серверах'} />
-                <Metric tone="violet" icon="reviews" label="Отзывов" value={totalReviews} note="помогают с выбором" />
-                <Metric tone="amber" icon="pulse" label="Голосов" value={totalVotes} note="за проекты каталога" />
-                <Metric tone="red" icon="rocket" label="Активных проектов" value={totalProjects} note="в каталоге L2Realm" />
+                <Metric tone="gold" label="Всего серверов" value={totalServers} />
+                <Metric tone="online" label="Игроков онлайн" value={totalOnline} />
+                <Metric tone="violet" label="Всего отзывов" value={totalReviews} />
+                <Metric tone="amber" label="Всего голосов" value={totalVotes} />
+                <Metric tone="red" label="Активных проектов" value={totalProjects} />
               </div>
             </section>
 
@@ -324,23 +335,18 @@ function FilterItem({ label, active, count, onClick }: { label: string; active: 
 function Metric({
   label,
   value,
-  note,
   tone,
-  icon,
 }: {
   label: string;
   value: number;
-  note: string;
-  tone: 'green' | 'blue' | 'violet' | 'amber' | 'red';
-  icon: 'cluster' | 'users' | 'reviews' | 'pulse' | 'rocket';
+  tone: 'gold' | 'online' | 'violet' | 'amber' | 'red';
 }) {
   return (
     <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
-      <span className={`${styles.metricIcon} ${styles[`metricIcon_${icon}`]}`} aria-hidden="true" />
+      <span className={styles.metricIcon} aria-hidden="true" />
       <span className={styles.metricText}>
         <strong>{value.toLocaleString('ru-RU')}</strong>
         <em>{label}</em>
-        <small>{note}</small>
       </span>
     </div>
   );
@@ -418,7 +424,6 @@ function HomeServerCard({
             </span>
             <span>
               <strong><b aria-hidden="true" />{formatDate(s.openedDate)}</strong>
-              <small>старт</small>
             </span>
             <span>
               <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>

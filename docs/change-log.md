@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-22
 
+- Polished the main catalog after review: simplified hero stat labels, made online a green accent metric, replaced the broken sort select with sort pills, enlarged server logos, and emphasized card online values.
 - Reworked the main catalog hero/cards: added compact stat tiles from `/servers/stats`, brightened the catalog banner, made cards fully clickable, removed card descriptions/details buttons, and kept tags to one row with `+N`.
 - Bypassed Next image optimization for tiny header nav icons so they load directly from `/images/nav-*.webp` instead of occasionally failing through `/_next/image`.
 - Fixed admin server save validation for estimated online: `instances[].onlineError` may be `null` after a successful check/refresh.
