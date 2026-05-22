@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { formatOnline, serverOnlineIsEstimated, serverOnlineValue } from '@/lib/online';
+import { serverOnlineValue } from '@/lib/online';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -81,7 +81,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     .filter((value): value is number => value != null)
     .reduce((sum, value) => sum + value, 0);
   const totalOnline = stats?.onlineTotal && stats.onlineTotal > 0 ? stats.onlineTotal : loadedOnline;
-  const estimatedOnline = Boolean(stats?.onlineEstimated || servers.some(serverOnlineIsEstimated));
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -370,7 +369,6 @@ function HomeServerCard({
   const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const online = serverOnlineValue(s);
-  const estimatedOnline = serverOnlineIsEstimated(s);
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
   const isWeek = !!s._isSod;
@@ -419,15 +417,13 @@ function HomeServerCard({
         <div className={styles.cardFooter}>
           <div className={styles.cardMeta}>
             <span>
-              <strong className={styles.online}><i aria-hidden="true" />{online == null ? '—' : formatOnline(online, estimatedOnline)}</strong>
-              <small>онлайн</small>
+              <strong className={styles.online}><i aria-hidden="true" />{online == null ? '—' : online.toLocaleString('ru-RU')}</strong>
             </span>
             <span>
               <strong><b aria-hidden="true" />{formatDate(s.openedDate)}</strong>
             </span>
             <span>
               <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
-              <small>голосов</small>
             </span>
           </div>
         </div>
