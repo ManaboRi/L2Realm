@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-22
 
+- Moved the main catalog hero stats into a compact right-side column, removed the reviews metric from that hero block, and kept four cleaner site pulse numbers.
 - Refined the main catalog polish locally: removed stat/sort container boxes, simplified card meta labels, removed estimated markers from homepage card online values, and made VIP/BOOST/week cards more visible.
 - Polished the main catalog after review: simplified hero stat labels, made online a green accent metric, replaced the broken sort select with sort pills, enlarged server logos, and emphasized card online values.
 - Reworked the main catalog hero/cards: added compact stat tiles from `/servers/stats`, brightened the catalog banner, made cards fully clickable, removed card descriptions/details buttons, and kept tags to one row with `+N`.

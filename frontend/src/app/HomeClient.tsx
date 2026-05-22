@@ -74,7 +74,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
   const totalProjects = stats?.total ?? servers.length;
   const totalServers = stats?.launchCount ?? totalProjects;
-  const totalReviews = stats?.reviewCount ?? 0;
   const totalVotes = stats?.totalVotes ?? servers.reduce((sum, server) => sum + (server.totalVotes ?? 0), 0);
   const loadedOnline = servers
     .map(serverOnlineValue)
@@ -271,7 +270,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.heroStats}>
                 <Metric tone="gold" label="Всего серверов" value={totalServers} />
                 <Metric tone="online" label="Игроков онлайн" value={totalOnline} />
-                <Metric tone="violet" label="Всего отзывов" value={totalReviews} />
                 <Metric tone="amber" label="Всего голосов" value={totalVotes} />
                 <Metric tone="red" label="Активных проектов" value={totalProjects} />
               </div>
@@ -338,7 +336,7 @@ function Metric({
 }: {
   label: string;
   value: number;
-  tone: 'gold' | 'online' | 'violet' | 'amber' | 'red';
+  tone: 'gold' | 'online' | 'amber' | 'red';
 }) {
   return (
     <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
