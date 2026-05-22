@@ -557,15 +557,15 @@
 .onlineGraphBox {
   position: relative;
   overflow: hidden;
-  height: 164px;
+  height: 174px;
   border: 1px solid rgba(118,141,151,.12);
   border-radius: 7px;
   background:
-    linear-gradient(rgba(118,141,151,.055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(118,141,151,.055) 1px, transparent 1px),
-    radial-gradient(circle at 50% 0%, rgba(83,217,135,.09), transparent 48%),
-    rgba(5,9,14,.38);
-  background-size: 100% 25%, 12.5% 100%, auto, auto;
+    linear-gradient(rgba(118,141,151,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(118,141,151,.045) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(83,217,135,.12), transparent 48%),
+    linear-gradient(180deg, rgba(5,9,14,.58), rgba(5,9,14,.34));
+  background-size: 100% 25%, 10% 100%, auto, auto;
   padding: .45rem;
 }
 
@@ -592,9 +592,8 @@
 }
 
 .onlineGraphGridLine {
-  stroke: rgba(118,141,151,.12);
+  stroke: rgba(118,141,151,.16);
   stroke-width: 1;
-  stroke-dasharray: 4 8;
 }
 
 .onlineGraphScale {
@@ -606,15 +605,16 @@
 .onlineGraphFill {
   fill: url(#serverOnlineFill);
   stroke: none;
+  opacity: .92;
 }
 
 .onlineGraphLine {
   fill: none;
-  stroke: #53d987;
+  stroke: #6ee89e;
   stroke-width: 2.6;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 0 7px rgba(83,217,135,.36));
+  filter: drop-shadow(0 0 8px rgba(83,217,135,.34));
 }
 
 .onlineGraphDot {
@@ -628,6 +628,18 @@
 .onlineGraphDot:hover {
   r: 5.2px;
   stroke: #d4ffe0;
+}
+
+.onlineGraphTick {
+  stroke: rgba(232,221,186,.28);
+  stroke-width: 1;
+}
+
+.onlineGraphXLabel {
+  fill: rgba(232,221,186,.5);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  text-anchor: middle;
 }
 
 .onlineFooterStats {
@@ -892,7 +904,8 @@
 
 .instancesLarge {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 260px));
+  justify-content: center;
   gap: .82rem;
 }
 
@@ -1679,6 +1692,10 @@
   .serversTabLayout {
     width: calc(100% - 1rem);
     margin-bottom: 2.5rem;
+  }
+  .instancesLarge {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
   }
   .infoCard,
   .sideCard {

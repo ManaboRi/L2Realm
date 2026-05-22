@@ -4,6 +4,8 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-23
 
+- Changed server-page online charts into peak-online views with day/week/month ranges, x-axis labels, hover points, and a smoother deterministic estimate model for public project graphs.
+- Locally refined `/coming-soon`: launches that already started now show an "opened" state instead of a zero countdown, the filter can separate opened launches, and project-world cards on server pages keep a fixed centered width instead of stretching when there are few launches.
 - Refined the local follow-up design pass: home hero stats are darker/equal text metrics with only online highlighted, server online graphs now render y-axis labels and hoverable SVG points, and the server-launches tab uses polished compact "world" cards with subtle future-start accents.
 - Adjusted the local main/server visuals after review: hero stats became text-only without icons/blocks, VIP/week cards keep a gold aura, server detail hero stats lost inner boxes, and project launch cards are smaller/non-clickable without action buttons.
 

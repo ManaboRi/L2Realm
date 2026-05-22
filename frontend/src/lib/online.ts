@@ -1,6 +1,6 @@
 import type { Server, ServerInstance } from './types';
 
-export type OnlineRange = '24h' | '7d' | '30d';
+export type OnlineRange = 'days' | 'weeks' | 'months';
 
 export function instanceOnlineValue(instance?: ServerInstance | null): number | null {
   if (!instance) return null;
@@ -49,31 +49,41 @@ function hashString(value: string): number {
   return hash >>> 0;
 }
 
-function timeFactor(hour: number): number {
-  if (hour >= 1 && hour < 7) return 0.42;
-  if (hour >= 7 && hour < 12) return 0.62 + (hour - 7) * 0.04;
-  if (hour >= 12 && hour < 18) return 0.82 + (hour - 12) * 0.02;
-  if (hour >= 18 && hour < 23) return 0.98 + (hour - 18) * 0.015;
-  return 0.78;
+function normalizedHash(seed: string): number {
+  return hashString(seed) / 0xffffffff;
 }
 
-export function onlineSeries(baseValue?: number | null, range: OnlineRange = '24h'): number[] {
+function wave(index: number, length: number, phase: number, power = 1): number {
+  if (length <= 1) return 0;
+  return Math.sin((index / (length - 1)) * Math.PI * 2 * power + phase);
+}
+
+export function onlineSeries(baseValue?: number | null, range: OnlineRange = 'days'): number[] {
   const base = Number(baseValue);
   if (!Number.isFinite(base) || base <= 0) return [];
   const now = new Date();
-  const count = range === '24h' ? 24 : range === '7d' ? 7 : 30;
+  const count = range === 'days' ? 30 : range === 'weeks' ? 18 : 30;
+  const phase = normalizedHash(`${base}:${range}:phase`) * Math.PI * 2;
+
   return Array.from({ length: count }, (_, index) => {
     const point = new Date(now);
-    if (range === '24h') point.setHours(now.getHours() - (count - 1 - index));
-    else point.setDate(now.getDate() - (count - 1 - index));
+    if (range === 'days') point.setDate(now.getDate() - (count - 1 - index));
+    if (range === 'weeks') point.setDate(now.getDate() - (count - 1 - index) * 7);
+    if (range === 'months') point.setMonth(now.getMonth() - (count - 1 - index), 1);
 
-    const moscowHour = (point.getUTCHours() + 3) % 24;
-    const dayShape = range === '24h' ? timeFactor(moscowHour) : 0.82 + ((index % 7) / 6) * 0.18;
-    const slot = range === '24h'
-      ? point.toISOString().slice(0, 13)
+    const slot = range === 'months'
+      ? point.toISOString().slice(0, 7)
       : point.toISOString().slice(0, 10);
-    const jitter = 0.96 + (hashString(`${base}:${range}:${slot}`) / 0xffffffff) * 0.08;
-    return Math.max(0, Math.round(base * dayShape * jitter));
+    const jitter = normalizedHash(`${base}:${range}:${slot}`) - .5;
+    const weekendBoost = range === 'days' && [0, 6].includes(point.getDay()) ? .055 : 0;
+    const trend = range === 'months' ? (index / Math.max(1, count - 1) - .5) * .16 : 0;
+    const longWave = wave(index, count, phase, range === 'months' ? 1.35 : .75);
+    const shortWave = wave(index, count, phase / 2, range === 'days' ? 3.2 : 2.1);
+    const amplitude = range === 'days' ? .085 : range === 'weeks' ? .105 : .22;
+    const noise = range === 'days' ? jitter * .055 : range === 'weeks' ? jitter * .045 : jitter * .12;
+    const multiplier = 1 + trend + weekendBoost + longWave * amplitude + shortWave * amplitude * .35 + noise;
+
+    return Math.max(0, Math.round(base * Math.max(.58, multiplier)));
   });
 }
 

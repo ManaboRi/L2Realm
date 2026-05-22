@@ -289,6 +289,13 @@
   border-color: rgba(210, 171, 82, .32);
 }
 
+.openedRow {
+  border-color: rgba(83, 217, 135, .22);
+  background:
+    linear-gradient(90deg, rgba(8, 18, 15, .97), rgba(10, 15, 22, .78), rgba(10, 15, 22, .94)),
+    url('/images/hero-bg.webp') center / cover no-repeat;
+}
+
 .vipBadge {
   position: absolute;
   left: 1rem;
@@ -445,6 +452,36 @@
   text-transform: uppercase;
 }
 
+.openedCountdown {
+  align-self: stretch;
+}
+
+.openedState {
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .2rem;
+  padding: .7rem .9rem;
+  border: 1px solid rgba(83, 217, 135, .28);
+  border-radius: 6px;
+  background:
+    radial-gradient(circle at 14% 0%, rgba(83, 217, 135, .2), transparent 40%),
+    rgba(6, 17, 13, .48);
+}
+
+.openedState strong {
+  color: #7ff0a8;
+  font-family: 'Cinzel', serif;
+  font-size: 1.08rem;
+  line-height: 1;
+}
+
+.openedState span {
+  color: rgba(232, 221, 186, .62);
+  font-size: .72rem;
+}
+
 .openInfo {
   min-height: 84px;
   padding-left: 1.5rem;
@@ -487,6 +524,20 @@
 .bellBtn {
   border-left: 0;
   border-radius: 0 6px 6px 0;
+}
+
+.openedAction {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(83, 217, 135, .28);
+  border-left: 0;
+  border-radius: 0 6px 6px 0;
+  background: rgba(83, 217, 135, .08);
+  color: #7ff0a8;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 800;
 }
 
 .bellBtnActive {

@@ -101,7 +101,12 @@ function daysUntilValue(openedAt: string, now: number) {
   return Math.max(0, Math.ceil((new Date(openedAt).getTime() - now) / 86400000));
 }
 
+function isOpened(openedAt: string, now: number) {
+  return new Date(openedAt).getTime() <= now;
+}
+
 function openingBucket(openedAt: string, now: number) {
+  if (isOpened(openedAt, now)) return 'opened';
   const days = daysUntilValue(openedAt, now);
   if (days <= 3) return '3';
   if (days <= 7) return '7';
@@ -189,10 +194,11 @@ function OpeningRow({
   onToggleReminder: (opening: Opening) => void;
 }) {
   const parts = countdownParts(opening.openedAt, now);
+  const opened = isOpened(opening.openedAt, now);
   const types = opening.type.map(t => typeLabels.get(t as ServerType)).filter(Boolean).slice(0, 2);
 
   return (
-    <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''}`}>
+    <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''} ${opened ? styles.openedRow : ''}`}>
       {opening.isVip && <div className={styles.vipBadge}>VIP</div>}
       <Link href={`/servers/${opening.serverId}`} className={styles.identity}>
         <span className={styles.iconBox}>
@@ -211,41 +217,52 @@ function OpeningRow({
         </span>
       </Link>
 
-      <div className={styles.countdown}>
-        <span className={styles.miniTitle}>До открытия</span>
-        <div className={styles.timeGrid}>
-          {[
-            ['дня', parts[0]],
-            ['часов', parts[1]],
-            ['минут', parts[2]],
-            ['секунд', parts[3]],
-          ].map(([label, value]) => (
-            <span key={label} className={styles.timeCell}>
-              <strong>{value}</strong>
-              <small>{label}</small>
-            </span>
-          ))}
-        </div>
+      <div className={`${styles.countdown} ${opened ? styles.openedCountdown : ''}`}>
+        <span className={styles.miniTitle}>{opened ? 'Статус' : 'До открытия'}</span>
+        {opened ? (
+          <div className={styles.openedState}>
+            <strong>Открылся</strong>
+            <span>Запуск уже доступен</span>
+          </div>
+        ) : (
+          <div className={styles.timeGrid}>
+            {[
+              ['дня', parts[0]],
+              ['часов', parts[1]],
+              ['минут', parts[2]],
+              ['секунд', parts[3]],
+            ].map(([label, value]) => (
+              <span key={label} className={styles.timeCell}>
+                <strong>{value}</strong>
+                <small>{label}</small>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className={styles.openInfo}>
-        <span className={styles.miniTitle}>Открытие</span>
+        <span className={styles.miniTitle}>Дата старта</span>
         <strong>{formatOpenDate(opening.openedAt)}</strong>
         <div className={styles.actions}>
           <Link href={`/servers/${opening.serverId}`} className={styles.followBtn}>Подробнее</Link>
-          <button
-            type="button"
-            className={`${styles.bellBtn} ${reminderActive ? styles.bellBtnActive : ''}`}
-            title={reminderActive ? 'Напоминание включено' : 'Напомнить за час до открытия'}
-            aria-label={reminderActive ? 'Отключить напоминание' : 'Напомнить за час до открытия'}
-            disabled={reminderBusy}
-            onClick={() => onToggleReminder(opening)}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-              <path d="M13.7 21a2 2 0 0 1-3.4 0" />
-            </svg>
-          </button>
+          {opened ? (
+            <span className={styles.openedAction} title="Открытие уже состоялось">✓</span>
+          ) : (
+            <button
+              type="button"
+              className={`${styles.bellBtn} ${reminderActive ? styles.bellBtnActive : ''}`}
+              title={reminderActive ? 'Напоминание включено' : 'Напомнить за час до открытия'}
+              aria-label={reminderActive ? 'Отключить напоминание' : 'Напомнить за час до открытия'}
+              disabled={reminderBusy}
+              onClick={() => onToggleReminder(opening)}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+                <path d="M13.7 21a2 2 0 0 1-3.4 0" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     </article>
@@ -389,6 +406,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
 
             <FilterGroup label="До даты открытия">
               {[
+                { v: 'opened', l: 'Открылся' },
                 { v: '3', l: 'До 3 дней' },
                 { v: '7', l: '3 - 7 дней' },
                 { v: '14', l: '7 - 14 дней' },

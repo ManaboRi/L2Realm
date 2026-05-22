@@ -71,12 +71,19 @@ function formatFullDate(value?: string | null) {
 
 function onlinePointLabel(index: number, count: number, range: OnlineRange) {
   const point = new Date();
-  if (range === '24h') {
-    point.setHours(point.getHours() - (count - 1 - index), 0, 0, 0);
-    return point.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  if (range === 'days') {
+    point.setDate(point.getDate() - (count - 1 - index));
+    return point.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   }
-  point.setDate(point.getDate() - (count - 1 - index));
-  return point.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  if (range === 'weeks') {
+    const end = new Date(point);
+    end.setDate(point.getDate() - (count - 1 - index) * 7);
+    const start = new Date(end);
+    start.setDate(end.getDate() - 6);
+    return `${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
+  }
+  point.setMonth(point.getMonth() - (count - 1 - index), 1);
+  return point.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
 }
 
 function normalizeSearchText(value: string) {
@@ -238,7 +245,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'info' | 'servers' | 'reviews'>('overview');
-  const [onlineRange, setOnlineRange] = useState<OnlineRange>('24h');
+  const [onlineRange, setOnlineRange] = useState<OnlineRange>('days');
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
@@ -415,9 +422,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const onlineValues = onlineSeries(projectOnline, onlineRange);
   const onlineStats = onlineSeriesStats(onlineValues);
   const chartLeft = 46;
-  const chartTop = 12;
+  const chartTop = 10;
   const chartWidth = 396;
-  const chartHeight = 122;
+  const chartHeight = 108;
   const chartBottom = chartTop + chartHeight;
   const onlineMin = onlineValues.length > 0 ? Math.min(...onlineValues) : 0;
   const onlineMax = onlineValues.length > 0 ? Math.max(...onlineValues) : 0;
@@ -441,6 +448,16 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         { label: formatOnline(onlineMin, estimatedProjectOnline), y: chartBottom - 2 },
       ]
     : [];
+  const onlineAxisIndexes = onlineGraphPoints.length <= 7
+    ? onlineGraphPoints.map((_, index) => index)
+    : Array.from(new Set([
+        0,
+        Math.round((onlineGraphPoints.length - 1) * .25),
+        Math.round((onlineGraphPoints.length - 1) * .5),
+        Math.round((onlineGraphPoints.length - 1) * .75),
+        onlineGraphPoints.length - 1,
+      ]));
+  const onlineAxisMarks = onlineAxisIndexes.map(index => onlineGraphPoints[index]).filter(Boolean);
   const voteDisabled = voting || !!voteStatus?.voted;
 
   return (
@@ -542,22 +559,22 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <div className={styles.mainInfoStack}>
             <section className={`${styles.infoCard} ${styles.onlineStatsCard}`}>
               <div className={styles.cardTitleRow}>
-                <h2>Статистика онлайн</h2>
+                <h2>Пиковый онлайн</h2>
                 <div className={styles.onlineRangeTabs}>
-                  {(['24h', '7d', '30d'] as OnlineRange[]).map(range => (
+                  {(['days', 'weeks', 'months'] as OnlineRange[]).map(range => (
                     <button
                       key={range}
                       type="button"
                       className={onlineRange === range ? styles.onlineRangeActive : ''}
                       onClick={() => setOnlineRange(range)}
                     >
-                      {range === '24h' ? '24 часа' : range === '7d' ? '7 дней' : '30 дней'}
+                      {range === 'days' ? 'Дни' : range === 'weeks' ? 'Недели' : 'Месяцы'}
                     </button>
                   ))}
                 </div>
               </div>
               <div className={styles.onlineGraphBox}>
-                <svg viewBox="0 0 460 150" role="img" aria-label="График оценочного онлайна">
+                <svg viewBox="0 0 460 150" role="img" aria-label="График пикового онлайна">
                   <defs>
                     <linearGradient id="serverOnlineFill" x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="rgba(83,217,135,.34)" />
@@ -575,16 +592,22 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   {onlinePath && <path d={onlinePath} className={styles.onlineGraphLine} />}
                   {onlineGraphPoints.map((point, index) => (
                     <circle key={`${point.x}-${index}`} cx={point.x} cy={point.y} r="3.6" className={styles.onlineGraphDot}>
-                      <title>{`${point.label}: ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
+                      <title>{`${point.label}: пик ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
                     </circle>
+                  ))}
+                  {onlineAxisMarks.map(point => (
+                    <g key={`axis-${point.label}`}>
+                      <path d={`M ${point.x} ${chartBottom} V ${chartBottom + 5}`} className={styles.onlineGraphTick} />
+                      <text x={point.x} y={chartBottom + 20} className={styles.onlineGraphXLabel}>{point.label}</text>
+                    </g>
                   ))}
                 </svg>
                 {!onlinePath && <div className={styles.onlineEmpty}>Онлайн появится после настройки сервера</div>}
               </div>
               <div className={styles.onlineFooterStats}>
-                <div><span>Текущий онлайн</span><strong>{formatOnline(onlineStats.current, estimatedProjectOnline)}</strong></div>
-                <div><span>Средний</span><strong>{formatOnline(onlineStats.average, estimatedProjectOnline)}</strong></div>
-                <div><span>Пик</span><strong>{formatOnline(onlineStats.peak, estimatedProjectOnline)}</strong></div>
+                <div><span>Последний пик</span><strong>{formatOnline(onlineStats.current, estimatedProjectOnline)}</strong></div>
+                <div><span>Средний пик</span><strong>{formatOnline(onlineStats.average, estimatedProjectOnline)}</strong></div>
+                <div><span>Рекорд</span><strong>{formatOnline(onlineStats.peak, estimatedProjectOnline)}</strong></div>
               </div>
             </section>
 
