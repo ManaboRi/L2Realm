@@ -169,7 +169,7 @@
 .hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(218px, 270px);
+  grid-template-columns: minmax(0, 1fr);
   align-content: end;
   align-items: end;
   gap: 1.25rem;
@@ -289,18 +289,19 @@
 }
 
 .heroStats {
-  justify-self: end;
-  width: min(100%, 268px);
+  position: absolute;
+  right: 1.25rem;
+  top: 1.05rem;
+  width: min(46vw, 520px);
   display: grid;
-  grid-template-columns: 1fr;
-  gap: .42rem;
-  padding: .72rem .82rem;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  justify-content: end;
+  gap: 0;
+  padding: 0;
   border-radius: 0;
-  background:
-    linear-gradient(180deg, rgba(6, 10, 15, .38), rgba(6, 10, 15, .08)),
-    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .08), transparent 54%);
-  border-left: 1px solid rgba(210, 171, 82, .22);
-  backdrop-filter: blur(2px);
+  background: transparent;
+  border-left: 0;
+  backdrop-filter: none;
 }
 
 .metric {
@@ -308,10 +309,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: .7rem;
-  padding: .42rem 0 .48rem;
-  border-right: 0;
-  border-bottom: 1px solid rgba(118, 141, 151, .14);
+  gap: .45rem;
+  padding: .08rem .82rem .08rem .78rem;
+  border-right: 1px solid rgba(210, 171, 82, .22);
+  border-bottom: 0;
 }
 
 .metric:last-child {
@@ -341,14 +342,11 @@
 
 .metric_online {
   position: relative;
-  padding-block: .54rem;
+  padding-block: .08rem;
 }
 
 .metric_online .metricIcon {
-  display: inline-block;
-  background: #43df82;
-  box-shadow: 0 0 12px rgba(67, 223, 130, .72);
-  order: 2;
+  display: none;
 }
 
 .metric_online .metricText strong {
@@ -361,25 +359,24 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: baseline;
-  gap: .12rem .75rem;
+  grid-template-columns: 1fr;
+  gap: .18rem;
 }
 
 .metricText strong {
-  grid-column: 2;
+  grid-column: auto;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: 1.32rem;
+  font-size: 1.26rem;
   line-height: 1;
-  text-align: right;
+  text-align: left;
 }
 
 .metricText em {
-  grid-column: 1;
+  grid-column: auto;
   color: rgba(246, 237, 208, .82);
   font-style: normal;
-  font-size: .68rem;
+  font-size: .64rem;
   line-height: 1.15;
   text-transform: uppercase;
   letter-spacing: .06em;
@@ -469,8 +466,8 @@
 }
 
 .serverCardWeek {
-  border-color: rgba(103, 172, 238, .5);
-  box-shadow: 0 22px 52px rgba(103, 172, 238, .12), 0 0 0 1px rgba(103, 172, 238, .07), inset 0 1px 0 rgba(255, 255, 255, .035);
+  border-color: rgba(231, 183, 64, .58);
+  box-shadow: 0 22px 52px rgba(210, 171, 82, .15), 0 0 0 1px rgba(210, 171, 82, .08), inset 0 1px 0 rgba(255, 255, 255, .035);
 }
 
 .serverCardVip.serverCardBoost {
@@ -492,8 +489,8 @@
 
 .serverCardWeek::before {
   opacity: 1;
-  background: linear-gradient(180deg, rgba(103, 172, 238, .16), transparent 36%), linear-gradient(90deg, rgba(103, 172, 238, .12), transparent 26%);
-  box-shadow: inset 0 0 0 1px rgba(103, 172, 238, .08);
+  background: linear-gradient(180deg, rgba(231, 183, 64, .17), transparent 36%), linear-gradient(90deg, rgba(231, 183, 64, .13), transparent 26%);
+  box-shadow: inset 0 0 0 1px rgba(231, 183, 64, .08);
 }
 
 .cardLink {
@@ -963,12 +960,13 @@
   .hero { grid-template-columns: 1fr; padding-top: 1.55rem; }
   .heroCopy { max-width: none; }
   .heroStats {
+    position: static;
     justify-self: stretch;
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     border-left: 0;
-    border-top: 1px solid rgba(210, 171, 82, .18);
+    border-top: 0;
   }
 }
 
@@ -993,7 +991,7 @@
   }
   .heroStats::-webkit-scrollbar { display: none; }
   .metric {
-    flex: 0 0 158px;
+    flex: 0 0 138px;
     min-height: 0;
     padding: .15rem .72rem .15rem 0;
     gap: .36rem;

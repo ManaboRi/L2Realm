@@ -2,6 +2,10 @@
 
 Short notes for future Codex sessions. Keep this file compact and append newest work on top.
 
+## 2026-05-23
+
+- Adjusted the local main/server visuals after review: hero stats became text-only without icons/blocks, VIP/week cards keep a gold aura, server detail hero stats lost inner boxes, and project launch cards are smaller/non-clickable without action buttons.
+
 ## 2026-05-22
 
 - Moved the main catalog hero stats into a compact right-side column, removed the reviews metric from that hero block, and kept four cleaner site pulse numbers.

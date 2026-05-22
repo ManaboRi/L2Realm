@@ -271,40 +271,48 @@
 }
 
 .heroPanel {
-  align-self: center;
-  border: 1px solid rgba(118,141,151,.18);
+  align-self: start;
+  margin-top: .25rem;
+  border: 1px solid rgba(118,141,151,.1);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(10,15,22,.86), rgba(5,8,12,.9));
-  padding: .95rem;
-  backdrop-filter: blur(4px);
+  background: linear-gradient(180deg, rgba(6,10,15,.34), rgba(6,10,15,.14));
+  padding: .78rem .9rem;
+  backdrop-filter: blur(2px);
 }
 
 .heroMetricGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .55rem;
+  gap: .55rem .9rem;
 }
 
 .heroMetricGrid div {
   display: grid;
-  gap: .28rem;
-  min-height: 64px;
+  gap: .24rem;
+  min-height: 48px;
   align-content: center;
-  padding: .58rem .62rem;
-  border: 1px solid rgba(118,141,151,.14);
-  border-radius: 7px;
-  background: linear-gradient(180deg, rgba(9,13,19,.72), rgba(5,8,12,.82));
+  padding: .18rem .78rem .24rem 0;
+  border: 0;
+  border-right: 1px solid rgba(118,141,151,.14);
+  border-radius: 0;
+  background: transparent;
+}
+
+.heroMetricGrid div:nth-child(3n) {
+  border-right: 0;
 }
 
 .heroMetricGrid span {
-  color: rgba(232,221,186,.46);
-  font-size: .72rem;
+  color: rgba(232,221,186,.5);
+  font-size: .68rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
 }
 
 .heroMetricGrid strong {
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: .88rem;
+  font-size: .92rem;
   line-height: 1.25;
 }
 
@@ -822,38 +830,40 @@
 
 .instancesLarge {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: .85rem;
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  gap: .72rem;
 }
 
 .instTileLarge {
-  min-height: 172px;
+  min-height: 136px;
   display: grid;
   align-content: start;
-  gap: .55rem;
+  gap: .48rem;
   position: relative;
   overflow: hidden;
-  padding: 1rem 1.05rem;
-  border: 1px solid rgba(118,141,151,.14);
+  padding: .82rem .9rem;
+  border: 1px solid rgba(210,171,82,.13);
   border-radius: 7px;
   background:
-    radial-gradient(circle at 80% 0%, rgba(210,171,82,.1), transparent 35%),
-    linear-gradient(180deg, rgba(14,20,28,.78), rgba(7,10,15,.95));
+    linear-gradient(135deg, rgba(210,171,82,.08), transparent 32%),
+    linear-gradient(180deg, rgba(13,19,27,.5), rgba(6,10,15,.62));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
 
 .instTileLarge::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-left: 2px solid rgba(210,171,82,.55);
+  border-left: 2px solid rgba(210,171,82,.62);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.018);
   pointer-events: none;
 }
 
 .instTileMeta {
   margin-top: auto;
-  padding-top: .55rem;
+  padding-top: .4rem;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: .7rem;
   border-top: 1px solid rgba(118,141,151,.1);
@@ -863,22 +873,6 @@
   color: var(--gold-d);
   font-family: 'Cinzel', serif;
   font-size: .7rem;
-}
-
-.instTileMeta a {
-  min-height: 30px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 .8rem;
-  border: 1px solid rgba(210,171,82,.28);
-  border-radius: 5px;
-  color: #f6edd0;
-  background: rgba(210,171,82,.06);
-  font-family: 'Cinzel', serif;
-  font-size: .66rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
 }
 
 .contactLinks {

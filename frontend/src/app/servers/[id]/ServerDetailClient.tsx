@@ -403,7 +403,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
   const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
-  const projectAge = relativeOpened(server.openedDate);
   const onlineValues = onlineSeries(projectOnline, onlineRange);
   const onlineStats = onlineSeriesStats(onlineValues);
   const onlinePath = onlineChartPath(onlineValues, 460, 150);
@@ -481,10 +480,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div>
               <span>Рейтинг</span>
               <strong>★ {server.ratingCount > 0 ? server.rating.toFixed(1) : '—'}</strong>
-            </div>
-            <div>
-              <span>Проекту</span>
-              <strong>{projectAge}</strong>
             </div>
           </div>
         </aside>
@@ -673,10 +668,11 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                           {formatOnline(instOnline, estimatedInstOnline)}
                         </div>
                       )}
-                      <div className={styles.instTileMeta}>
-                        {inst.openedDate && <span>{formatFullDate(inst.openedDate)}</span>}
-                        <a href={inst.url} target="_blank" rel="noopener nofollow">Перейти</a>
-                      </div>
+                      {inst.openedDate && (
+                        <div className={styles.instTileMeta}>
+                          <span>{formatFullDate(inst.openedDate)}</span>
+                        </div>
+                      )}
                     </article>
                   );
                 })}
@@ -693,10 +689,11 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     {mainType && <span>{typeLabels.get(mainType as any) ?? mainType}</span>}
                   </div>
                   {server.shortDesc && <div className={styles.instTileDesc}>{server.shortDesc}</div>}
-                  <div className={styles.instTileMeta}>
-                    {server.openedDate && <span>{startDate}</span>}
-                    <a href={server.url} target="_blank" rel="noopener nofollow">Перейти</a>
-                  </div>
+                  {server.openedDate && (
+                    <div className={styles.instTileMeta}>
+                      <span>{startDate}</span>
+                    </div>
+                  )}
                 </article>
               </div>
             )}
