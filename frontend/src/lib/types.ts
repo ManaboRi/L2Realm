@@ -19,6 +19,7 @@ export interface ServerInstance {
   onlineManual?: number | null;
   onlineValue?: number | null;
   onlineUpdatedAt?: string | null;
+  onlineHistory?: Array<{ at: string; value: number; estimated?: boolean }> | null;
   onlineStatus?: 'ok' | 'error' | null;
   onlineError?: string | null;
   onlineSourceUrl?: string | null;

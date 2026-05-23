@@ -1,6 +1,7 @@
 import type { Server, ServerInstance } from './types';
 
 export type OnlineRange = 'days' | 'weeks' | 'months';
+export type OnlineHistoryEntry = { at: string; value: number; estimated?: boolean };
 
 export function instanceOnlineValue(instance?: ServerInstance | null): number | null {
   if (!instance) return null;
@@ -85,6 +86,59 @@ export function onlineSeries(baseValue?: number | null, range: OnlineRange = 'da
 
     return Math.max(0, Math.round(base * Math.max(.58, multiplier)));
   });
+}
+
+function historyBucketIndex(date: Date, now: Date, range: OnlineRange): number {
+  if (range === 'months') {
+    return (now.getFullYear() - date.getFullYear()) * 12 + now.getMonth() - date.getMonth();
+  }
+
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const day = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  const diffDays = Math.floor((today - day) / 86400000);
+  return range === 'weeks' ? Math.floor(diffDays / 7) : diffDays;
+}
+
+function historyValues(history: OnlineHistoryEntry[] | null | undefined, range: OnlineRange, count: number): Array<number | null> {
+  const values: Array<number | null> = Array(count).fill(null);
+  if (!Array.isArray(history)) return values;
+
+  const now = new Date();
+  for (const point of history) {
+    const value = Number(point?.value);
+    const at = new Date(point?.at);
+    if (!Number.isFinite(value) || Number.isNaN(at.getTime())) continue;
+    const bucketAge = historyBucketIndex(at, now, range);
+    const index = count - 1 - bucketAge;
+    if (index < 0 || index >= count) continue;
+    values[index] = values[index] == null ? Math.round(value) : Math.max(values[index] ?? 0, Math.round(value));
+  }
+
+  return values;
+}
+
+export function serverOnlineHistorySeries(server: Server | null | undefined, range: OnlineRange, fallback: number[]) {
+  const count = fallback.length;
+  if (!server || count === 0) return { values: fallback, realPoints: 0 };
+
+  const sources = Array.isArray(server.instances) && server.instances.length > 0
+    ? server.instances
+    : [server as unknown as ServerInstance];
+  const sums: Array<number | null> = Array(count).fill(null);
+
+  for (const source of sources) {
+    const values = historyValues(source.onlineHistory, range, count);
+    values.forEach((value, index) => {
+      if (value == null) return;
+      sums[index] = (sums[index] ?? 0) + value;
+    });
+  }
+
+  const realPoints = sums.filter(value => value != null).length;
+  return {
+    values: realPoints >= 3 ? sums.map((value, index) => value ?? fallback[index] ?? 0) : fallback,
+    realPoints,
+  };
 }
 
 export function onlineSeriesStats(values: number[]) {

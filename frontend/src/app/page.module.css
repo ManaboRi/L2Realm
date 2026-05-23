@@ -351,13 +351,13 @@
 .metric_online .metricText strong::after {
   content: '';
   position: absolute;
-  top: -.42rem;
-  right: -.38rem;
-  width: 8px;
-  height: 8px;
+  top: -.36rem;
+  right: -.46rem;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: #43df82;
-  box-shadow: 0 0 12px rgba(67, 223, 130, .78);
+  box-shadow: 0 0 10px rgba(67, 223, 130, .74);
 }
 
 .metric_online .metricIcon {

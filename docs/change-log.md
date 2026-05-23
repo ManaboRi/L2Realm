@@ -2,6 +2,13 @@
 
 Short notes for future Codex sessions. Keep this file compact and append newest work on top.
 
+## 2026-05-24
+
+- Locally refined estimated online: smoother Moscow-time curve with gentler night changes, special lower night drop for Essence/Main, stronger but still gradual drop for very high rates, and hourly `instances[].onlineHistory` snapshots without a Prisma migration.
+- Updated server online charts to prefer saved hourly history once enough points exist, fall back to deterministic estimates while history is still new, and render rounded y-axis labels like 6000/4000/2000.
+- Changed admin server add/edit "Regions" into a free-text "Languages" field so project language flags/codes can be entered manually, and public server pages now display it as `Языки`.
+- Tuned the homepage online green dot so it is smaller and slightly farther right.
+
 ## 2026-05-23
 
 - Changed server-page online charts into peak-online views with day/week/month ranges, x-axis labels, hover points, and a smoother deterministic estimate model for public project graphs.

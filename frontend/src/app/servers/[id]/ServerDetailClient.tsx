@@ -15,6 +15,7 @@ import {
   onlineSeries,
   onlineSeriesStats,
   serverOnlineIsEstimated,
+  serverOnlineHistorySeries,
   serverOnlineValue,
   type OnlineRange,
 } from '@/lib/online';
@@ -42,9 +43,13 @@ function relativeOpened(s?: string | null): string {
   if (y < 5)      return `${y} года назад`;
   return `${y} лет назад`;
 }
-function flag(c?: string) { return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦' }[c??''] ?? ''; }
+function languageMark(value?: string) {
+  const clean = String(value || '').trim();
+  if (!clean) return '';
+  return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦',KZ:'🇰🇿' }[clean.toUpperCase()] ?? clean;
+}
 
-const COUNTRY_LABELS: Record<string, string> = {
+const LANGUAGE_LABELS: Record<string, string> = {
   RU: 'Россия',
   EU: 'Европа',
   US: 'США',
@@ -55,11 +60,13 @@ const COUNTRY_LABELS: Record<string, string> = {
   KZ: 'Казахстан',
 };
 
-function countryCodes(value?: string | null) {
+function languageMarks(value?: string | null) {
   return String(value || 'RU')
     .split(/[,\s]+/)
-    .map(code => code.trim().toUpperCase())
-    .filter(Boolean);
+    .map(code => code.trim())
+    .filter(Boolean)
+    .map(mark => ({ raw: mark, label: languageMark(mark) }))
+    .filter(mark => mark.label);
 }
 
 function formatFullDate(value?: string | null) {
@@ -84,6 +91,21 @@ function onlinePointLabel(index: number, count: number, range: OnlineRange) {
   }
   point.setMonth(point.getMonth() - (count - 1 - index), 1);
   return point.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+}
+
+function niceChartStep(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  const power = Math.pow(10, Math.floor(Math.log10(value)));
+  const fraction = value / power;
+  const multiplier = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 3 ? 3 : fraction <= 5 ? 5 : 10;
+  return multiplier * power;
+}
+
+function niceOnlineTicks(maxValue: number) {
+  if (!Number.isFinite(maxValue) || maxValue <= 0) return [];
+  const step = niceChartStep(maxValue / 3);
+  const top = step * 3;
+  return [top, top - step, top - step * 2, 0];
 }
 
 function normalizeSearchText(value: string) {
@@ -412,28 +434,30 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     if (mainType) tagSet.add(typeLabels.get(mainType as any) ?? mainType);
   }
   const displayTags = Array.from(tagSet).slice(0, 7);
-  const regionCodes = countryCodes(server.country);
+  const languages = languageMarks(server.country);
   const startDate = formatFullDate(server.openedDate);
   const uptimeValue = status?.uptime != null ? `${status.uptime}%` : '—';
   const statusText = isOnline ? 'Онлайн' : status?.status === 'offline' ? 'Оффлайн' : 'Неизвестно';
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
   const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
-  const onlineValues = onlineSeries(projectOnline, onlineRange);
+  const estimatedOnlineValues = onlineSeries(projectOnline, onlineRange);
+  const onlineHistory = serverOnlineHistorySeries(server, onlineRange, estimatedOnlineValues);
+  const onlineValues = onlineHistory.values;
   const onlineStats = onlineSeriesStats(onlineValues);
   const chartLeft = 46;
   const chartTop = 10;
   const chartWidth = 396;
   const chartHeight = 108;
   const chartBottom = chartTop + chartHeight;
-  const onlineMin = onlineValues.length > 0 ? Math.min(...onlineValues) : 0;
   const onlineMax = onlineValues.length > 0 ? Math.max(...onlineValues) : 0;
-  const onlineSpan = Math.max(1, onlineMax - onlineMin);
+  const onlineTicks = niceOnlineTicks(onlineMax);
+  const onlineDomainMax = onlineTicks[0] || Math.max(1, onlineMax);
   const onlineGraphPoints = onlineValues.map((value, index) => ({
     value,
     label: onlinePointLabel(index, onlineValues.length, onlineRange),
     x: chartLeft + (onlineValues.length === 1 ? chartWidth : (index / (onlineValues.length - 1)) * chartWidth),
-    y: chartTop + chartHeight - ((value - onlineMin) / onlineSpan) * (chartHeight - 10) - 5,
+    y: chartBottom - (Math.min(value, onlineDomainMax) / onlineDomainMax) * chartHeight,
   }));
   const onlinePath = onlineGraphPoints
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
@@ -441,13 +465,14 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const onlineFillPath = onlinePath
     ? `${onlinePath} L ${(chartLeft + chartWidth).toFixed(1)} ${chartBottom} L ${chartLeft} ${chartBottom} Z`
     : '';
-  const onlineGraphScale = onlineValues.length > 0
-    ? [
-        { label: formatOnline(onlineMax, estimatedProjectOnline), y: chartTop + 7 },
-        { label: formatOnline(Math.round((onlineMin + onlineMax) / 2), estimatedProjectOnline), y: chartTop + chartHeight / 2 + 4 },
-        { label: formatOnline(onlineMin, estimatedProjectOnline), y: chartBottom - 2 },
-      ]
-    : [];
+  const onlineGraphScale = onlineTicks.map(value => {
+    const y = chartBottom - (value / onlineDomainMax) * chartHeight;
+    return {
+      label: value.toLocaleString('ru-RU'),
+      y,
+      textY: Math.min(chartBottom - 2, Math.max(chartTop + 7, y + 4)),
+    };
+  });
   const onlineAxisIndexes = onlineGraphPoints.length <= 7
     ? onlineGraphPoints.map((_, index) => index)
     : Array.from(new Set([
@@ -583,8 +608,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   </defs>
                   {onlineGraphScale.map((mark, index) => (
                     <g key={`${mark.label}-${index}`}>
-                      <text x="2" y={mark.y} className={styles.onlineGraphScale}>{mark.label}</text>
-                      <path d={`M ${chartLeft} ${mark.y - 4} H ${chartLeft + chartWidth}`} className={styles.onlineGraphGridLine} />
+                      <text x="2" y={mark.textY} className={styles.onlineGraphScale}>{mark.label}</text>
+                      <path d={`M ${chartLeft} ${mark.y} H ${chartLeft + chartWidth}`} className={styles.onlineGraphGridLine} />
                     </g>
                   ))}
                   <path d={`M ${chartLeft} ${chartBottom} H ${chartLeft + chartWidth}`} className={styles.onlineGraphAxis} />
@@ -699,7 +724,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
               <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
               <div><span>Старт проекта</span><strong>{startDate}</strong></div>
-              <div><span>Регионы</span><strong className={styles.regionList}>{regionCodes.map(code => <span key={code} title={COUNTRY_LABELS[code] ?? code}>{flag(code)}</span>)}</strong></div>
+              <div><span>Языки</span><strong className={styles.regionList}>{languages.map(item => <span key={item.raw} title={LANGUAGE_LABELS[item.raw.toUpperCase()] ?? item.raw}>{item.label}</span>)}</strong></div>
               <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
               {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong></div>}
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
@@ -1002,7 +1027,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {/* Хроника / Рейты убраны — они видны в карточках серверов ниже.
                   В характеристиках только метаданные проекта. */}
               {[
-                ['Страна',     flag(server.country)],
+                ['Языки',      languageMarks(server.country).map(item => item.label).join(' ')],
                 ['Открылся',   relativeOpened(server.openedDate)],
                 ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
               ].map(([l, v]) => (

@@ -59,7 +59,7 @@ const serverPayloadSchema = z.object({
   vip: z.coerce.boolean().optional(),
   voteRewardsEnabled: z.coerce.boolean().optional(),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
-  country: optionalSafeText(32),
+  country: optionalSafeText(80),
   icon: optionalSafeAssetUrl,
   banner: optionalSafeAssetUrl,
   discord: optionalSafeUrl,
@@ -190,22 +190,68 @@ function hashString(value: string): number {
   return hash >>> 0;
 }
 
-function estimateOnline(baseValue: unknown, date = new Date()): number | null {
+const ONLINE_HISTORY_LIMIT = 24 * 90;
+
+function smoothBell(hour: number, center: number, width: number): number {
+  const distance = Math.abs(((hour - center + 12) % 24) - 12);
+  const t = Math.max(0, 1 - distance / width);
+  return t * t * (3 - 2 * t);
+}
+
+function estimatedNightFloor(context?: any): number {
+  const chronicle = String(context?.chronicle || '').toLowerCase();
+  const rates = String(context?.rates || '').toLowerCase();
+  const rateNum = numberFromUnknown(context?.rateNum) ?? numberFromUnknown(rates) ?? 1;
+
+  if (chronicle.includes('essence') || chronicle.includes('main')) return 0.86;
+  if (rateNum >= 1000) return 0.56;
+  if (rateNum >= 100) return 0.63;
+  if (rateNum <= 5) return 0.73;
+  return 0.68;
+}
+
+function appendOnlineHistory(inst: any, online: number | null, date = new Date(), estimated = false) {
+  const history = Array.isArray(inst?.onlineHistory) ? inst.onlineHistory : [];
+  const hour = new Date(date);
+  hour.setMinutes(0, 0, 0);
+  const at = hour.toISOString();
+  const compact = history
+    .filter((item: any) => item && typeof item.at === 'string' && Number.isFinite(Number(item.value)) && item.at !== at)
+    .slice(-(ONLINE_HISTORY_LIMIT - 1))
+    .map((item: any) => ({
+      at: item.at,
+      value: Math.max(0, Math.round(Number(item.value))),
+      estimated: Boolean(item.estimated),
+    }));
+
+  if (online != null) {
+    compact.push({
+      at,
+      value: Math.max(0, Math.round(online)),
+      estimated,
+    });
+  }
+
+  return compact;
+}
+
+function estimateOnline(baseValue: unknown, date = new Date(), context?: any): number | null {
   const base = numberFromUnknown(baseValue);
   if (base == null) return null;
 
-  const moscowHour = (date.getUTCHours() + 3) % 24;
-  let dayFactor = 1;
-  if (moscowHour >= 1 && moscowHour < 7) dayFactor = 0.42;
-  else if (moscowHour >= 7 && moscowHour < 12) dayFactor = 0.62 + (moscowHour - 7) * 0.04;
-  else if (moscowHour >= 12 && moscowHour < 18) dayFactor = 0.82 + (moscowHour - 12) * 0.02;
-  else if (moscowHour >= 18 && moscowHour < 23) dayFactor = 0.98 + (moscowHour - 18) * 0.015;
-  else dayFactor = 0.78;
+  const moscowHour = ((date.getUTCHours() + 3) % 24) + date.getUTCMinutes() / 60;
+  const floor = estimatedNightFloor(context);
+  const nightDip = smoothBell(moscowHour, 4.3, 6.4);
+  const eveningPeak = smoothBell(moscowHour, 21.2, 4.8) * 0.075;
+  const afternoonPeak = smoothBell(moscowHour, 15.5, 5.5) * 0.035;
+  const daySeed = hashString(`${base}:${context?.chronicle || ''}:${context?.rates || ''}:${date.toISOString().slice(0, 10)}`) / 0xffffffff;
+  const hourSeed = hashString(`${base}:${context?.id || context?.label || ''}:${date.toISOString().slice(0, 13)}`) / 0xffffffff;
+  const dayJitter = 0.985 + daySeed * 0.03;
+  const hourJitter = 0.982 + hourSeed * 0.036;
+  const wave = 1 + Math.sin(((moscowHour - 10) / 24) * Math.PI * 2) * 0.014;
+  const factor = Math.max(floor, 1 - nightDip * (1 - floor) + eveningPeak + afternoonPeak);
 
-  const slot = date.toISOString().slice(0, 13);
-  const jitterRaw = hashString(`${base}:${slot}`) / 0xffffffff;
-  const jitter = 0.95 + jitterRaw * 0.1;
-  return Math.max(0, Math.round(base * dayFactor * jitter));
+  return Math.max(0, Math.round(base * factor * dayJitter * hourJitter * wave));
 }
 
 function extractNextData(html: string): any | null {
@@ -521,6 +567,7 @@ export class ServersService {
       let changed = false;
       const next: any[] = [];
       for (const inst of instances) {
+        const checkedAt = new Date();
         const mode = inst?.onlineMode || 'off';
         if (mode === 'off') {
           next.push(inst);
@@ -532,7 +579,8 @@ export class ServersService {
           next.push({
             ...inst,
             onlineValue: online,
-            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : new Date().toISOString(),
+            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : checkedAt.toISOString(),
+            onlineHistory: appendOnlineHistory(inst, online, checkedAt, false),
             onlineStatus: online == null ? 'error' : 'ok',
             onlineError: online == null ? 'Manual online value is empty' : null,
           });
@@ -541,11 +589,12 @@ export class ServersService {
         }
 
         if (mode === 'estimated') {
-          const online = estimateOnline(inst.onlineManual);
+          const online = estimateOnline(inst.onlineManual, checkedAt, inst);
           next.push({
             ...inst,
             onlineValue: online,
-            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : new Date().toISOString(),
+            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : checkedAt.toISOString(),
+            onlineHistory: appendOnlineHistory(inst, online, checkedAt, true),
             onlineStatus: online == null ? 'error' : 'ok',
             onlineError: online == null ? 'Base online value is empty' : null,
           });
@@ -580,6 +629,7 @@ export class ServersService {
             ...inst,
             onlineValue: result.online,
             onlineUpdatedAt: result.checkedAt,
+            onlineHistory: appendOnlineHistory(inst, result.online, new Date(result.checkedAt), false),
             onlineStatus: 'ok',
             onlineError: null,
           });
