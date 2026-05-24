@@ -4,6 +4,12 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-24
 
+- Fixed `VIP Скоро открытие` ordering: VIP future launches now stay above ordinary future launches, with each group sorted by opening date.
+- Rebuilt `/blog` into a magazine-style article hub with a featured article, category sections, colored category sidebar, coming-soon sidebar block, prepared latest-comments block, and page-based pagination after 15 visible articles.
+- Removed Yandex Metrika and VK Pixel from the global layout so the privacy policy no longer contradicts the shipped HTML; no cookie-consent banner is needed while analytics trackers stay disabled.
+- Added `/terms` for ordinary users: account rules, reviews/votes, moderation/removal rights, anti-abuse rules, third-party server disclaimer, trademark disclaimer, and broad liability limits.
+- Expanded `/legal` offer with right-holder disclaimer, stronger liability limits, downtime/force-majeure handling, and unilateral terms-change wording for paid services.
+- Removed public and admin download/start-guide fields from the active UI/API validation to reduce NCSoft/Innova/4game file-distribution risk; old DB columns are left untouched for now to avoid a risky migration.
 - Locally refined estimated online: smoother Moscow-time curve with gentler night changes, special lower night drop for Essence/Main, stronger but still gradual drop for very high rates, and hourly `instances[].onlineHistory` snapshots without a Prisma migration.
 - Updated server online charts to prefer saved hourly history once enough points exist, fall back to deterministic estimates while history is still new, and render rounded y-axis labels like 6000/4000/2000.
 - Changed admin server add/edit "Regions" into a free-text "Languages" field so project language flags/codes can be entered manually, and public server pages now display it as `Языки`.

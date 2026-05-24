@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MonitoringService } from '../monitoring/monitoring.service';
 import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server.dto';
-import { dateString, optionalSafeAssetUrl, optionalSafeMarkdownText, optionalSafeText, optionalSafeUrl, parseOrThrow, safeDownloadUrl, safeSlug, safeText, safeUrl } from '../common/input-validation';
+import { dateString, optionalSafeAssetUrl, optionalSafeMarkdownText, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
 import { z } from 'zod';
 
 const serverInstanceSchema = z.object({
@@ -36,16 +36,6 @@ const serverInstanceSchema = z.object({
   onlineRegexGroup: z.coerce.number().int().min(0).max(20).nullable().optional(),
 }).passthrough();
 
-const downloadLinkSchema = z.object({
-  kind: z.enum(['client', 'patch', 'updater', 'torrent', 'mirror']).optional(),
-  label: optionalSafeText(80),
-  url: safeDownloadUrl,
-}).transform(link => ({
-  kind: link.kind || 'mirror',
-  label: link.label || null,
-  url: link.url,
-}));
-
 const serverPayloadSchema = z.object({
   id: safeSlug.max(64),
   name: safeText(2, 80),
@@ -67,11 +57,6 @@ const serverPayloadSchema = z.object({
   vk: optionalSafeUrl,
   youtube: optionalSafeUrl,
   site: optionalSafeUrl,
-  clientUrl: optionalSafeUrl,
-  patchUrl: optionalSafeUrl,
-  updaterUrl: optionalSafeUrl,
-  downloadLinks: z.array(downloadLinkSchema).max(20).optional(),
-  installGuide: optionalSafeMarkdownText(2_000),
   shortDesc: optionalSafeText(300),
   fullDesc: optionalSafeMarkdownText(10_000),
   statusOverride: z.union([z.enum(['online', 'offline', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
@@ -81,6 +66,22 @@ const serverPayloadSchema = z.object({
 const serverUpdateSchema = serverPayloadSchema.partial().omit({ id: true }).extend({
   id: safeSlug.max(64).optional(),
 });
+
+function stripLegacyDownloadFields<T>(value: T): T {
+  if (Array.isArray(value)) return value.map(item => stripLegacyDownloadFields(item)) as T;
+  if (!value || typeof value !== 'object') return value;
+
+  const {
+    clientUrl: _clientUrl,
+    patchUrl: _patchUrl,
+    updaterUrl: _updaterUrl,
+    downloadLinks: _downloadLinks,
+    installGuide: _installGuide,
+    ...rest
+  } = value as any;
+
+  return rest as T;
+}
 
 const onlineSourceTestSchema = z.object({
   mode: z.enum(['manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']),
@@ -816,7 +817,7 @@ export class ServersService {
 
     const total = decorated.length;
     const start = (page - 1) * limit;
-    const data  = decorated.slice(start, start + limit);
+    const data  = decorated.slice(start, start + limit).map(server => stripLegacyDownloadFields(server));
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }
@@ -842,7 +843,7 @@ export class ServersService {
       orderBy: { endDate: 'desc' },
     });
     const manualStatus = normalizeStatusOverride((server as any).statusOverride);
-    return { ...server, ...(manualStatus && { status: manualStatus }), boost };
+    return stripLegacyDownloadFields({ ...server, ...(manualStatus && { status: manualStatus }), boost });
   }
 
   // ── Создать (только admin) ───────────────────
@@ -861,7 +862,7 @@ export class ServersService {
     // Запускаем первую проверку мониторинга в фоне
     this.monitoring.checkServer(server.id).catch(() => {});
 
-    return server;
+    return stripLegacyDownloadFields(server);
   }
 
   // ── Обновить (только admin) ──────────────────
@@ -883,13 +884,14 @@ export class ServersService {
       await this.monitoring.checkServer(id).catch(() => {});
       return this.findOne(id);
     }
-    return server;
+    return stripLegacyDownloadFields(server);
   }
 
   // ── Удалить (только admin) ───────────────────
   async remove(id: string) {
     await this.findOne(id);
-    return this.prisma.server.delete({ where: { id } });
+    const server = await this.prisma.server.delete({ where: { id } });
+    return stripLegacyDownloadFields(server);
   }
 
   // ── Заявка на добавление (авторизовано, 1/24ч) ─
@@ -972,15 +974,41 @@ export class ServersService {
       const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
       return insts.some(i => isOpeningStillSoon(i?.openedDate, nowTs));
     });
-    // Сортируем по ближайшему будущему openedDate (свой или из instances)
+
+    function openingDates(s: any, vipOnly = false): number[] {
+      const dates: number[] = [];
+      const subPlan = s.subscription?.plan ?? 'FREE';
+      const subActive = s.subscription?.endDate && new Date(s.subscription.endDate).getTime() > nowTs;
+      const rootIsVip = subPlan === 'VIP' && subActive;
+
+      if (s.openedDate && (!vipOnly || rootIsVip)) {
+        const t = new Date(s.openedDate).getTime();
+        if (!isNaN(t) && t + OPENING_DAY_MS > nowTs) dates.push(t);
+      }
+
+      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      for (const inst of insts) {
+        if (!inst?.openedDate) continue;
+        const t = new Date(inst.openedDate).getTime();
+        const instVip = !!inst?.soonVipUntil && new Date(inst.soonVipUntil).getTime() > nowTs;
+        if (!isNaN(t) && t + OPENING_DAY_MS > nowTs && (!vipOnly || instVip)) dates.push(t);
+      }
+      return dates;
+    }
+
+    // VIP в «Скоро открытие» всегда наверху; внутри VIP и обычных — ближайшая дата открытия.
     filtered.sort((a, b) => {
-      const aDates = [a.openedDate, ...(Array.isArray(a.instances) ? (a.instances as any[]).map(i => i?.openedDate) : [])]
-        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t + OPENING_DAY_MS > nowTs);
-      const bDates = [b.openedDate, ...(Array.isArray(b.instances) ? (b.instances as any[]).map(i => i?.openedDate) : [])]
-        .filter(Boolean).map(d => new Date(d as any).getTime()).filter(t => t + OPENING_DAY_MS > nowTs);
+      const aVipDates = openingDates(a, true);
+      const bVipDates = openingDates(b, true);
+      const aIsVip = aVipDates.length > 0;
+      const bIsVip = bVipDates.length > 0;
+      if (aIsVip !== bIsVip) return aIsVip ? -1 : 1;
+
+      const aDates = aIsVip ? aVipDates : openingDates(a);
+      const bDates = bIsVip ? bVipDates : openingDates(b);
       return Math.min(...aDates) - Math.min(...bDates);
     });
-    return filtered;
+    return filtered.map(server => stripLegacyDownloadFields(server));
   }
 
   // ── Счётчики для фильтров ────────────────────

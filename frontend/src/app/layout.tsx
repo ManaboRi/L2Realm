@@ -4,8 +4,6 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { NicknamePrompt } from '@/components/NicknamePrompt';
 import { AuthProvider } from '@/context/AuthContext';
-import { YandexMetrika } from '@/components/YandexMetrika';
-import { VKPixel } from '@/components/VKPixel';
 
 const SITE = 'https://l2realm.ru';
 const DEFAULT_SHARE_IMAGE = '/images/og-default.jpg';
@@ -90,8 +88,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Footer />
           <NicknamePrompt />
         </AuthProvider>
-        <YandexMetrika />
-        <VKPixel />
       </body>
     </html>
   );

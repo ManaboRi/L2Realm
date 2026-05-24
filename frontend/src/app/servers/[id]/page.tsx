@@ -29,12 +29,6 @@ function absoluteUrl(url: string | null | undefined): string | undefined {
   }
 }
 
-function hasStartGuide(server: Server): boolean {
-  const hasDownloadLinks = Array.isArray(server.downloadLinks)
-    && server.downloadLinks.some(link => Boolean(link?.url));
-  return Boolean(hasDownloadLinks || server.clientUrl || server.patchUrl || server.updaterUrl || server.installGuide);
-}
-
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -53,20 +47,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : server.type?.includes('pve')
       ? 'PvE'
       : '';
-  const downloadsReady = hasStartGuide(server);
-  const title = downloadsReady
-    ? `${server.name} — скачать клиент, патч и играть Lineage 2 ${server.chronicle}`
-    : `${server.name} — Lineage 2 ${server.chronicle} ${server.rates}${typeStr ? ' ' + typeStr : ''}`;
+  const title = `${server.name} — Lineage 2 ${server.chronicle} ${server.rates}${typeStr ? ' ' + typeStr : ''}`;
 
   const ratingStr = server.ratingCount > 0
     ? ` Рейтинг ${server.rating.toFixed(1)} ⭐ по ${server.ratingCount} отзывам игроков.`
     : '';
-  const startStr = downloadsReady
-    ? ` Скачать клиент, патч, torrent или апдейтер ${server.name} и посмотреть инструкцию запуска.`
-    : '';
   const baseDescription = (server.shortDesc && server.shortDesc.trim())
     || `Приватный сервер Lineage 2 «${server.name}» — хроника ${server.chronicle}, рейты ${server.rates}${typeStr ? ', ' + typeStr : ''}.${ratingStr} Честные отзывы и онлайн-статус на L2Realm.`;
-  const description = downloadsReady ? `${baseDescription}${startStr}` : baseDescription;
+  const description = baseDescription;
 
   const ogImage = absoluteUrl(server.banner || server.icon);
   const canonical = `${SITE}/servers/${id}`;

@@ -167,7 +167,9 @@ export default function PrivacyPage() {
         </section>
 
         <p style={{ fontSize: '.82rem', color: 'var(--text3)', textAlign: 'center', margin: '.4rem 0 0' }}>
-          Связанные документы: <Link href="/legal" style={{ color: 'var(--gold)' }}>Оферта и реквизиты</Link>.
+          Связанные документы:{' '}
+          <Link href="/terms" style={{ color: 'var(--gold)' }}>Пользовательское соглашение</Link>
+          {' '}и <Link href="/legal" style={{ color: 'var(--gold)' }}>Оферта и реквизиты</Link>.
         </p>
 
       </div>

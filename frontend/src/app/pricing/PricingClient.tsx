@@ -401,7 +401,7 @@ export function PricingClient() {
           <div className={styles.extraGrid}>
             <span><b>★</b> Сервер недели<br /><small>по голосам игроков</small></span>
             <span><b>⚔</b> Голосование<br /><small>API для бонусов</small></span>
-            <span><b>⇩</b> Скачивание<br /><small>клиент, патч, апдейтер</small></span>
+            <span><b>◆</b> Карточка проекта<br /><small>описание и контакты</small></span>
             <span><b>♡</b> Избранное<br /><small>сохранение проекта</small></span>
             <span><b>◇</b> SEO-страница<br /><small>описание и ссылки</small></span>
           </div>

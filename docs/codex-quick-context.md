@@ -22,7 +22,7 @@ Read this first before working on L2Realm. Keep it short: it exists so a new Cod
 ## Current Public Routes
 
 - `/` - main server catalog with filters, search, sort and server cards.
-- `/servers/[id]` - project page with SEO metadata, hero, tabs `Обзор / Сервера / Отзывы`, vote panel and download links.
+- `/servers/[id]` - project page with SEO metadata, hero, tabs `Обзор / Сервера / Отзывы`, vote/support panel, contacts and linked articles.
 - `/coming-soon` - future openings. A server stays visible for the whole opening date and disappears the next day.
 - `/pricing` - tariffs and promotion.
 - `/blog` and `/blog/[slug]` - articles.
@@ -34,7 +34,7 @@ Read this first before working on L2Realm. Keep it short: it exists so a new Cod
 - Voting is limited by IP and authenticated account for 24 hours.
 - Vote Manager API for server owners:
   `https://l2realm.ru/api/vote/check?server_id=ID&nickname=НИК`
-- Server download block lives on the server page, under the description, with client/patch/updater links.
+- Download/client/patch/updater blocks are intentionally disabled in public UI, admin UI and API validation to reduce right-holder risk.
 - Server pages now have a separate `Сервера` tab for project launches/instances.
 - Articles can be linked to projects through `Article.serverIds`; linked articles appear on the server page.
 - Future banner/article uploads are kept wider and higher quality (`banner` and `article` upload types).

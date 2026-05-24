@@ -24,11 +24,6 @@ export class CreateServerDto {
   @IsOptional() @IsString() vk?: string;
   @IsOptional() @IsString() youtube?: string;
   @IsOptional() @IsString() site?: string;
-  @IsOptional() @IsString() clientUrl?: string;
-  @IsOptional() @IsString() patchUrl?: string;
-  @IsOptional() @IsString() updaterUrl?: string;
-  @IsOptional() downloadLinks?: any[];
-  @IsOptional() @IsString() installGuide?: string;
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
   @IsOptional() @IsString() statusOverride?: string | null;

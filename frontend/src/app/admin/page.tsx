@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { isOpeningStillSoon } from '@/lib/opening';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
-import type { DownloadLink, DownloadLinkKind, VipStatus } from '@/lib/types';
+import type { VipStatus } from '@/lib/types';
 import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -89,57 +89,6 @@ function hasProjectLaunches(s: any): boolean {
   return Array.isArray(s?.instances) && s.instances.length > 0;
 }
 
-const DOWNLOAD_KIND_OPTIONS: Array<{ value: DownloadLinkKind; label: string }> = [
-  { value: 'client', label: 'Клиент' },
-  { value: 'patch', label: 'Патч' },
-  { value: 'updater', label: 'Апдейтер' },
-  { value: 'torrent', label: 'Torrent' },
-  { value: 'mirror', label: 'Зеркало' },
-];
-
-const DEFAULT_DOWNLOAD_LABEL: Record<DownloadLinkKind, string> = {
-  client: 'Яндекс Диск',
-  patch: 'Патч',
-  updater: 'Апдейтер',
-  torrent: 'Torrent',
-  mirror: 'Зеркало',
-};
-
-const ADMIN_DOWNLOAD_GROUPS: Array<{ kind: DownloadLinkKind; title: string; hint: string }> = [
-  { kind: 'client', title: 'Клиент', hint: 'Яндекс Диск, Google Drive, Torrent' },
-  { kind: 'updater', title: 'Апдейтер', hint: 'Апдейтер, launcher, updater' },
-  { kind: 'patch', title: 'Патч', hint: 'Патч, system, файл обновления' },
-];
-
-function normalizeDownloadLinks(value: unknown): DownloadLink[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item: any) => ({
-      kind: DOWNLOAD_KIND_OPTIONS.some(o => o.value === item?.kind) ? item.kind as DownloadLinkKind : 'mirror',
-      label: typeof item?.label === 'string' ? item.label : '',
-      url: typeof item?.url === 'string' ? item.url : '',
-    }))
-    .filter(link => link.url.trim().length > 0);
-}
-
-function downloadLinksFromServer(s: any): DownloadLink[] {
-  const links = normalizeDownloadLinks(s?.downloadLinks);
-  if (links.length > 0) return links;
-  return [
-    s?.clientUrl && { kind: 'client' as const, label: '', url: s.clientUrl },
-    s?.patchUrl && { kind: 'patch' as const, label: '', url: s.patchUrl },
-    s?.updaterUrl && { kind: 'updater' as const, label: '', url: s.updaterUrl },
-  ].filter(Boolean) as DownloadLink[];
-}
-
-function legacyUrlsFromLinks(links: DownloadLink[]) {
-  return {
-    clientUrl: links.find(link => link.kind === 'client')?.url || null,
-    patchUrl: links.find(link => link.kind === 'patch')?.url || null,
-    updaterUrl: links.find(link => link.kind === 'updater')?.url || null,
-  };
-}
-
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -166,7 +115,6 @@ export default function AdminPage() {
     serverType: 'pvp-pve', donate: 'cosmetic',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
-    clientUrl:'', patchUrl:'', updaterUrl:'', downloadLinks: [] as DownloadLink[], installGuide:'',
     shortDesc:'', fullDesc:'',
     instances: [] as any[],
   });
@@ -253,7 +201,6 @@ export default function AdminPage() {
       type_new: false, type_featured: false, vip: false,
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
-      clientUrl:'', patchUrl:'', updaterUrl:'', downloadLinks: [] as DownloadLink[], installGuide:'',
       shortDesc:'', fullDesc:'',
       instances: [],
     });
@@ -338,11 +285,6 @@ export default function AdminPage() {
       telegram:    s.telegram    ?? '',
       discord:     s.discord     ?? '',
       vk:          s.vk          ?? '',
-      clientUrl:   s.clientUrl   ?? '',
-      patchUrl:    s.patchUrl    ?? '',
-      updaterUrl:  s.updaterUrl  ?? '',
-      downloadLinks: downloadLinksFromServer(s),
-      installGuide: s.installGuide ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
       instances:   Array.isArray(s.instances) ? s.instances : [],
@@ -365,8 +307,6 @@ export default function AdminPage() {
     const baseChron = sortedInsts.length > 0 ? sortedInsts[0].chronicle : editForm.chronicle;
     const baseRates = sortedInsts.length > 0 ? sortedInsts[0].rates     : editForm.rates;
     const baseRateN = sortedInsts.length > 0 ? sortedInsts[0].rateNum   : Number(editForm.rateNum);
-    const downloadLinks = normalizeDownloadLinks(editForm.downloadLinks);
-    const legacyDownloads = legacyUrlsFromLinks(downloadLinks);
     try {
       await api.servers.update(editServer.id, {
         name:        editForm.name,
@@ -386,9 +326,6 @@ export default function AdminPage() {
         telegram:    editForm.telegram || undefined,
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
-        ...legacyDownloads,
-        downloadLinks,
-        installGuide: editForm.installGuide || null,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         instances:   editForm.instances ?? [],
@@ -415,8 +352,6 @@ export default function AdminPage() {
     const aChron  = aSorted.length > 0 ? aSorted[0].chronicle : addForm.chronicle;
     const aRates  = aSorted.length > 0 ? aSorted[0].rates     : addForm.rates;
     const aRateN  = aSorted.length > 0 ? aSorted[0].rateNum   : Number(addForm.rateNum);
-    const downloadLinks = normalizeDownloadLinks(addForm.downloadLinks);
-    const legacyDownloads = legacyUrlsFromLinks(downloadLinks);
     try {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
@@ -427,9 +362,6 @@ export default function AdminPage() {
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
-        ...legacyDownloads,
-        downloadLinks,
-        installGuide: addForm.installGuide || null,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         instances: addForm.instances ?? [],
       } as any, token);
@@ -526,19 +458,6 @@ export default function AdminPage() {
                 <AField label="Telegram"><input className="input" type="url" value={editForm.telegram} onChange={e => setEditForm((p:any) => ({...p,telegram:e.target.value}))} placeholder="https://t.me/…" /></AField>
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
-              </div>
-
-              <div style={{ marginTop:'.4rem', padding:'.9rem', border:'1px solid var(--border)', background:'rgba(200,168,75,.035)', borderRadius:4 }}>
-                <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
-                  Как начать играть
-                </div>
-                <DownloadLinksEditor
-                  value={editForm.downloadLinks ?? []}
-                  onChange={downloadLinks => setEditForm((p:any) => ({ ...p, downloadLinks }))}
-                />
-                <AField label="Инструкция">
-                  <textarea className="input" rows={4} value={editForm.installGuide} onChange={e => setEditForm((p:any) => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
-                </AField>
               </div>
 
               <AField label="Краткое описание">
@@ -948,19 +867,6 @@ export default function AdminPage() {
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                   </div>
 
-                  <div style={{ padding:'.9rem', border:'1px solid var(--border)', background:'rgba(200,168,75,.035)', borderRadius:4 }}>
-                    <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em', marginBottom:'.7rem' }}>
-                      Как начать играть
-                    </div>
-                    <DownloadLinksEditor
-                      value={addForm.downloadLinks ?? []}
-                      onChange={downloadLinks => setAddForm(p => ({ ...p, downloadLinks }))}
-                    />
-                    <AField label="Инструкция">
-                      <textarea className="input" rows={4} value={addForm.installGuide} onChange={e => setAddForm(p => ({...p,installGuide:e.target.value}))} placeholder="1. Скачайте клиент&#10;2. Распакуйте патч в папку игры&#10;3. Запустите апдейтер или l2.exe" style={{ resize:'vertical' }} />
-                    </AField>
-                  </div>
-
                   <AField label="Краткое описание">
                     <input className="input" value={addForm.shortDesc} onChange={e => setAddForm(p => ({...p,shortDesc:e.target.value}))} placeholder="Одна строка для карточки" />
                   </AField>
@@ -992,82 +898,6 @@ function AField({ label, children }: { label: string; children: React.ReactNode 
     <div style={{ display:'flex', flexDirection:'column', gap:'.25rem' }}>
       <label style={{ fontFamily:"'Cinzel',serif", fontSize:'.58rem', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'.12em' }}>{label}</label>
       {children}
-    </div>
-  );
-}
-
-function DownloadLinksEditor({
-  value,
-  onChange,
-}: {
-  value: DownloadLink[];
-  onChange: (value: DownloadLink[]) => void;
-}) {
-  const links = value.length > 0 ? value : [];
-
-  function update(index: number, patch: Partial<DownloadLink>) {
-    onChange(links.map((link, i) => i === index ? { ...link, ...patch } : link));
-  }
-
-  function add(kind: DownloadLinkKind = 'client') {
-    onChange([...links, { kind, label: '', url: '' }]);
-  }
-
-  function remove(index: number) {
-    onChange(links.filter((_, i) => i !== index));
-  }
-
-  return (
-    <div style={{ display:'grid', gridTemplateColumns:'repeat(3, minmax(0, 1fr))', gap:'.65rem', marginBottom:'.65rem' }}>
-      {ADMIN_DOWNLOAD_GROUPS.map(group => {
-        const groupLinks = links
-          .map((link, index) => ({ link, index }))
-          .filter(item => group.kind === 'client'
-            ? item.link.kind === 'client' || item.link.kind === 'torrent' || item.link.kind === 'mirror'
-            : item.link.kind === group.kind);
-
-        return (
-          <div key={group.kind} style={{ border:'1px solid var(--border)', background:'rgba(255,255,255,.018)', borderRadius:4, padding:'.65rem', display:'flex', flexDirection:'column', gap:'.5rem', minWidth:0 }}>
-            <div>
-              <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.62rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em' }}>{group.title}</div>
-              <div style={{ color:'var(--text3)', fontSize:'.72rem', marginTop:'.18rem', lineHeight:1.35 }}>{group.hint}</div>
-            </div>
-
-            {groupLinks.length === 0 ? (
-              <div style={{ color:'var(--text3)', fontSize:'.78rem', border:'1px dashed var(--border)', padding:'.55rem .6rem', borderRadius:3 }}>
-                Ссылок пока нет
-              </div>
-            ) : (
-              groupLinks.map(({ link, index }) => (
-                <div key={index} style={{ display:'flex', flexDirection:'column', gap:'.35rem' }}>
-                  <input
-                    className="input"
-                    value={link.label ?? ''}
-                    onChange={e => update(index, { label: e.target.value })}
-                    placeholder={DEFAULT_DOWNLOAD_LABEL[group.kind]}
-                  />
-                  <div style={{ display:'grid', gridTemplateColumns:'minmax(0, 1fr) auto', gap:'.35rem' }}>
-                    <input
-                      className="input"
-                      type="url"
-                      value={link.url}
-                      onChange={e => update(index, { url: e.target.value })}
-                      placeholder="https://..."
-                    />
-                    <button type="button" className="btn-ghost" onClick={() => remove(index)} style={{ minHeight:38, padding:'0 .7rem' }}>
-                      ×
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-
-            <button type="button" className="btn-ghost" onClick={() => add(group.kind)} style={{ alignSelf:'flex-start' }}>
-              + ссылка
-            </button>
-          </div>
-        );
-      })}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
-import type { Article, DownloadLink, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
+import type { Article, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import {
   formatOnline,
@@ -149,58 +149,12 @@ function voterRankLabel(votes: number, place: number) {
   return 'Новичок';
 }
 
-function linkHostLabel(url: string) {
-  if (url.toLowerCase().startsWith('magnet:')) return 'Magnet';
-  try {
-    const host = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
-    if (host.includes('disk.yandex') || host.includes('yadi.sk')) return 'Яндекс Диск';
-    if (host.includes('drive.google')) return 'Google Drive';
-    if (host.includes('mega.nz')) return 'MEGA';
-    if (host.includes('dropbox.com')) return 'Dropbox';
-    if (host.includes('mediafire.com')) return 'MediaFire';
-    if (url.toLowerCase().includes('.torrent') || host.includes('torrent')) return 'Torrent';
-    return host;
-  } catch {
-    return 'Внешняя ссылка';
-  }
-}
-
-const DOWNLOAD_LABELS: Record<string, string> = {
-  client: '',
-  patch: '',
-  updater: '',
-  torrent: '',
-  mirror: '',
-};
-
-function downloadLinkLabel(link: DownloadLink) {
-  return link.label?.trim() || linkHostLabel(link.url) || DOWNLOAD_LABELS[link.kind] || 'Скачать';
-}
-
-function serverDownloadLinks(server: Server): DownloadLink[] {
-  const links = Array.isArray(server.downloadLinks)
-    ? server.downloadLinks.filter(link => link?.url)
-    : [];
-  if (links.length > 0) return links;
-  return [
-    server.clientUrl && { kind: 'client' as const, label: null, url: server.clientUrl },
-    server.patchUrl && { kind: 'patch' as const, label: null, url: server.patchUrl },
-    server.updaterUrl && { kind: 'updater' as const, label: null, url: server.updaterUrl },
-  ].filter(Boolean) as DownloadLink[];
-}
-
 function renderDescInline(text: string) {
   return text.split(/(\*\*[^*]+?\*\*)/g).map((part, index) => {
     const match = part.match(/^\*\*([^*]+?)\*\*$/);
     return match ? <strong key={index}>{match[1]}</strong> : <React.Fragment key={index}>{part}</React.Fragment>;
   });
 }
-
-const DOWNLOAD_GROUPS = [
-  { kind: 'client', title: 'Клиент' },
-  { kind: 'updater', title: 'Апдейтер' },
-  { kind: 'patch', title: 'Патч' },
-] as const;
 
 function formatDesc(text: string) {
   if (!text) return null;
@@ -410,17 +364,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const projectOnline = serverOnlineValue(server);
   const estimatedProjectOnline = serverOnlineIsEstimated(server);
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
-  const startLinks = serverDownloadLinks(server);
-  const hasStartGuide = startLinks.length > 0 || !!server.installGuide;
-  const startGroups = DOWNLOAD_GROUPS
-    .map(group => ({
-      ...group,
-      links: startLinks.filter(link => group.kind === 'client'
-        ? link.kind === 'client' || link.kind === 'torrent' || link.kind === 'mirror'
-        : link.kind === group.kind),
-    }))
-    .filter(group => group.links.length > 0);
-
   const tagSet = new Set<string>();
   if (instances.length) {
     instances.forEach(inst => {
@@ -655,23 +598,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           </div>
 
           <aside className={styles.sideStack}>
-            {hasStartGuide && (
-              <section className={styles.sideCard}>
-                <h2>Как начать играть?</h2>
-                {startGroups.map(group => (
-                  <div key={group.kind} className={styles.startLine}>
-                    <span>{group.title}</span>
-                    <div>
-                      {group.links.map((link, index) => (
-                        <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow">{downloadLinkLabel(link)}</a>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                {server.installGuide && <div className={styles.installGuideBody}>{formatDesc(server.installGuide ?? '')}</div>}
-              </section>
-            )}
-
             <section className={`${styles.sideCard} ${styles.supportCard}`}>
               <h2>Поддержать сервер</h2>
               <p>{voteRewardsEnabled ? 'Проголосуй и получи награду по нику персонажа.' : 'Vote Manager не подключен: голос учтётся на L2Realm, но бонусы проект пока не выдаёт.'}</p>
@@ -1060,29 +986,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {server.fullDesc
                 ? <div className={styles.desc}>{formatDesc(server.fullDesc ?? '')}</div>
                 : <p className={styles.empty}>Описание отсутствует</p>}
-
-              {hasStartGuide && (
-                <div className={styles.startInline}>
-                  {startGroups.map(group => (
-                    <div key={group.kind} className={styles.startGroup}>
-                      <div className={styles.startGroupTitle}>{group.title}</div>
-                      <div className={styles.startGroupLinks}>
-                        {group.links.map((link, index) => (
-                          <a key={`${link.url}-${index}`} href={link.url} target="_blank" rel="noopener nofollow" className={styles.startLink}>
-                            <span className={styles.startLinkTitle}>{downloadLinkLabel(link)}</span>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {server.installGuide && (
-                    <div className={styles.installGuide}>
-                      <div className={styles.startGroupTitle}>Инструкция</div>
-                      <div className={styles.installGuideBody}>{formatDesc(server.installGuide ?? '')}</div>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
 

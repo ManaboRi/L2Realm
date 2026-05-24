@@ -85,7 +85,10 @@ function flattenOpenings(servers: Server[]): Opening[] {
     }
   }
 
-  return result.sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime());
+  return result.sort((a, b) => {
+    if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
+    return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
+  });
 }
 
 function rateRange(rateNum: number) {
@@ -307,6 +310,7 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
   const filtered = useMemo(() => {
     const data = applyFilters(openings, filters, now);
     return [...data].sort((a, b) => {
+      if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
       if (sort === 'name') return a.projectName.localeCompare(b.projectName, 'ru');
       return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
     });

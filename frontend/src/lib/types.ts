@@ -33,14 +33,6 @@ export interface ServerInstance {
   onlineRegexGroup?: number | null;
 }
 
-export type DownloadLinkKind = 'client' | 'patch' | 'updater' | 'torrent' | 'mirror';
-
-export interface DownloadLink {
-  kind: DownloadLinkKind;
-  label?: string | null;
-  url: string;
-}
-
 export interface Server {
   id:          string;
   name:        string;
@@ -62,11 +54,6 @@ export interface Server {
   vk?:         string;
   youtube?:    string;
   site?:       string;
-  clientUrl?:  string | null;
-  patchUrl?:   string | null;
-  updaterUrl?: string | null;
-  downloadLinks?: DownloadLink[] | null;
-  installGuide?: string | null;
   shortDesc?:  string;
   fullDesc?:   string;
   rating:      number;

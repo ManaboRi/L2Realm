@@ -119,7 +119,6 @@ Swagger is available only in dev at `/api/docs`; production disables it.
 - SSR server metadata: `frontend/src/app/servers/[id]/page.tsx`
 - Dynamic sitemap: `frontend/src/app/sitemap.ts`
 - Robots: `frontend/src/app/robots.ts`
-- Yandex Metrika: `frontend/src/components/YandexMetrika.tsx`
 - Webmaster verification: `frontend/src/app/layout.tsx`
 - Security headers: `frontend/next.config.ts`
 - Auth context: `frontend/src/context/AuthContext.tsx`

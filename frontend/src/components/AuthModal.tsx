@@ -44,7 +44,7 @@ export function AuthModal({ open, onClose }: Props) {
             className={styles.consentBox}
           />
           <span className={styles.consentText}>
-            Я принимаю <Link href="/legal" target="_blank" style={{ color: 'var(--gold)' }}>оферту</Link>{' '}
+            Я принимаю <Link href="/terms" target="_blank" style={{ color: 'var(--gold)' }}>пользовательское соглашение</Link>{' '}
             и <Link href="/privacy" target="_blank" style={{ color: 'var(--gold)' }}>политику конфиденциальности</Link>{' '}
             и даю согласие на обработку моих данных VK (ID, имя, email, аватар).
           </span>
