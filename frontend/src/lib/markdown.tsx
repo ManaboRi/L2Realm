@@ -23,6 +23,10 @@ const PURIFY_OPTS = {
   ALLOW_DATA_ATTR: false,
 } as const;
 
+type RenderMarkdownOptions = {
+  getHeadingId?: (headingText: string) => string | undefined;
+};
+
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -116,7 +120,7 @@ function isTableSeparator(line: string): boolean {
   return cells.every(c => /^:?-{3,}:?$/.test(c.trim()));
 }
 
-export function renderMarkdown(text: string): React.ReactNode[] {
+export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}): React.ReactNode[] {
   if (!text) return [];
 
   const lines = normalizeMarkdownSource(text).split('\n');
@@ -232,9 +236,11 @@ export function renderMarkdown(text: string): React.ReactNode[] {
     if (h && h[2].trim()) {
       flushAll();
       const level = h[1].length;
-      const html = renderInline(h[2].trim());
+      const headingText = h[2].trim();
+      const html = renderInline(headingText);
       const Tag: any = `h${level + 1}`; // h1 в файле = <h2> на странице (h1 — заголовок статьи)
-      out.push(<Tag key={`h-${key++}`} dangerouslySetInnerHTML={{ __html: html }} />);
+      const headingId = options.getHeadingId?.(headingText);
+      out.push(<Tag key={`h-${key++}`} id={headingId} dangerouslySetInnerHTML={{ __html: html }} />);
       continue;
     }
 

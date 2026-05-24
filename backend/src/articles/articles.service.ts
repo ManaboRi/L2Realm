@@ -63,10 +63,12 @@ export class ArticlesService {
       throw new NotFoundException('Статья не найдена');
     }
     if (incrementView) {
-      return this.prisma.article.update({
-        where: { id: article.id },
-        data: { views: { increment: 1 } },
-      });
+      await this.prisma.$executeRaw`
+        UPDATE "Article"
+        SET "views" = "views" + 1
+        WHERE "id" = ${article.id}
+      `;
+      return { ...article, views: article.views + 1 };
     }
     return article;
   }

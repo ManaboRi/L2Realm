@@ -2,8 +2,9 @@ import { Fragment } from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import type { Article, Server } from '@/lib/types';
+import type { Article, Server, ServerInstance } from '@/lib/types';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
+import { isOpeningStillSoon } from '@/lib/opening';
 import { ArticleSaveButton } from './ArticleSaveButton';
 import styles from './page.module.css';
 
@@ -19,6 +20,22 @@ type SummaryItem = {
   value: string;
 };
 
+type TocItem = {
+  title: string;
+  id: string;
+};
+
+type OpeningPreview = {
+  key: string;
+  serverId: string;
+  title: string;
+  icon?: string | null;
+  chronicle: string;
+  rates: string;
+  openedAt: string;
+  isVip: boolean;
+};
+
 type ArticleContentPart =
   | { type: 'markdown'; content: string }
   | { type: 'server'; serverId: string };
@@ -28,7 +45,7 @@ type ParsedArticleContent = {
   summary: SummaryItem[];
   parts: ArticleContentPart[];
   embeddedServerIds: string[];
-  toc: string[];
+  toc: TocItem[];
 };
 
 async function fetchArticle(slug: string, countView = false): Promise<Article | null> {
@@ -79,6 +96,17 @@ async function fetchServerList(): Promise<Server[]> {
   }
 }
 
+async function fetchComingSoon(): Promise<OpeningPreview[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const servers = (await res.json()) as Server[];
+    return flattenOpenings(servers).slice(0, 3);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchRelatedArticles(article: Article): Promise<Article[]> {
   const articles = await fetchArticles();
   const linkedIds = new Set(article.serverIds ?? []);
@@ -114,6 +142,50 @@ function fmtDate(s: string | null | undefined): string {
   if (!s) return 'Не указано';
   return new Date(s).toLocaleDateString('ru-RU', {
     day: 'numeric', month: 'long', year: 'numeric',
+  });
+}
+
+function flattenOpenings(servers: Server[]): OpeningPreview[] {
+  const now = Date.now();
+  const result: OpeningPreview[] = [];
+
+  for (const server of servers) {
+    const instances: ServerInstance[] = Array.isArray(server.instances) ? server.instances : [];
+    const futureInstances = instances.filter(instance => isOpeningStillSoon(instance.openedDate, now));
+    const serverVip = server.subscription?.plan === 'VIP'
+      && !!server.subscription.endDate
+      && new Date(server.subscription.endDate).getTime() > now;
+
+    if (futureInstances.length > 0) {
+      for (const instance of futureInstances) {
+        result.push({
+          key: `${server.id}:${instance.id}`,
+          serverId: server.id,
+          title: instance.label ? `${server.name} ${instance.label}` : server.name,
+          icon: server.icon,
+          chronicle: instance.chronicle,
+          rates: instance.rates,
+          openedAt: instance.openedDate!,
+          isVip: !!instance.soonVipUntil && new Date(instance.soonVipUntil).getTime() > now,
+        });
+      }
+    } else if (isOpeningStillSoon(server.openedDate, now)) {
+      result.push({
+        key: server.id,
+        serverId: server.id,
+        title: server.name,
+        icon: server.icon,
+        chronicle: server.chronicle,
+        rates: server.rates,
+        openedAt: server.openedDate!,
+        isVip: serverVip,
+      });
+    }
+  }
+
+  return result.sort((a, b) => {
+    if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
+    return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
   });
 }
 
@@ -191,12 +263,29 @@ function splitContentParts(content: string): { parts: ArticleContentPart[]; embe
   return { parts, embeddedServerIds };
 }
 
-function extractToc(content: string): string[] {
+function headingSlug(value: string): string {
+  const slug = normalizeText(stripMarkdown(value))
+    .replace(/[^a-zа-я0-9]+/gi, '-')
+    .replace(/^-+|-+$/g, '');
+  return slug || 'section';
+}
+
+function extractToc(content: string): TocItem[] {
+  const seen = new Map<string, number>();
   return content
     .split('\n')
     .map(line => line.match(/^(#{1,3})\s*(.+)$/)?.[2])
     .filter((value): value is string => !!value)
-    .map(stripMarkdown)
+    .map(value => {
+      const title = stripMarkdown(value);
+      const base = headingSlug(title);
+      const count = seen.get(base) ?? 0;
+      seen.set(base, count + 1);
+      return {
+        title,
+        id: count > 0 ? `${base}-${count + 1}` : base,
+      };
+    })
     .slice(0, 8);
 }
 
@@ -231,16 +320,6 @@ function serverTypeLabel(server: Server): string {
   return values.map(typeLabel).slice(0, 2).join(' / ');
 }
 
-function donateLabel(value: Server['donate']): string {
-  const labels: Record<string, string> = {
-    free: 'Без P2W',
-    cosmetic: 'Косметика',
-    convenience: 'Удобства',
-    p2w: 'P2W',
-  };
-  return labels[value] ?? 'Не указано';
-}
-
 function formatOnline(server: Server): string {
   const online = server.onlineValue;
   if (typeof online === 'number' && Number.isFinite(online) && online > 0) {
@@ -250,18 +329,63 @@ function formatOnline(server: Server): string {
 }
 
 function serverImage(server: Server): string | null {
-  return server.banner || server.icon || null;
+  return server.banner || null;
+}
+
+function uniqueValues(values: Array<string | null | undefined>): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    const trimmed = value?.trim();
+    if (!trimmed) continue;
+    const key = normalizeText(trimmed);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+function summarizeValues(values: string[], empty = 'Не указано'): string {
+  if (!values.length) return empty;
+  if (values.length <= 3) return values.join(', ');
+  return `${values.slice(0, 3).join(', ')} +${values.length - 3}`;
+}
+
+function projectChronicles(server: Server): string {
+  const values = uniqueValues([
+    server.chronicle,
+    ...(server.instances ?? []).map(instance => instance.chronicle),
+  ]);
+  return summarizeValues(values);
+}
+
+function projectRates(server: Server): string {
+  const values = uniqueValues([
+    server.rates,
+    ...(server.instances ?? []).map(instance => instance.rates),
+  ]);
+  return summarizeValues(values);
+}
+
+function projectOpening(server: Server): string {
+  const dates = uniqueValues([
+    server.openedDate,
+    ...(server.instances ?? []).map(instance => instance.openedDate),
+  ]);
+  if (dates.length > 1) return `${dates.length} запусков`;
+  return fmtDate(dates[0]);
 }
 
 function buildServerSummary(server: Server | null): SummaryItem[] {
   if (!server) return [];
   return [
-    ['Хроника', server.chronicle],
-    ['Рейт', server.rates],
-    ['Тип сервера', serverTypeLabel(server)],
-    ['Донат', donateLabel(server.donate)],
+    ['Хроники', projectChronicles(server)],
+    ['Рейты', projectRates(server)],
+    ['Тип проекта', serverTypeLabel(server)],
     ['Онлайн', formatOnline(server)],
-    ['Дата открытия', fmtDate(server.openedDate)],
+    ['Открытие', projectOpening(server)],
+    ['Запусков', String(Math.max(1, server.instances?.length ?? 1))],
   ]
     .filter(([, value]) => !!value)
     .map(([label, value]) => ({ label, value }))
@@ -280,8 +404,7 @@ function rateBucket(value: number): string {
 function relatedServerScore(primary: Server, candidate: Server): number {
   const sameChronicle = normalizeText(primary.chronicle) === normalizeText(candidate.chronicle);
   const sameRate = rateBucket(primary.rateNum) === rateBucket(candidate.rateNum);
-  const sameDonate = primary.donate === candidate.donate;
-  return (sameChronicle ? 5 : 0) + (sameRate ? 3 : 0) + (sameDonate ? 1 : 0) + ((candidate.totalVotes ?? 0) / 100000);
+  return (sameChronicle ? 5 : 0) + (sameRate ? 3 : 0) + ((candidate.totalVotes ?? 0) / 100000);
 }
 
 function pickRelatedServers(primary: Server | null, servers: Server[], linkedIds: Set<string>): Server[] {
@@ -296,22 +419,25 @@ function pickRelatedServers(primary: Server | null, servers: Server[], linkedIds
 }
 
 function ArticleServerCard({ server, compact = false }: { server: Server; compact?: boolean }) {
-  const image = serverImage(server);
+  const media = serverImage(server);
   const rating = server.ratingCount > 0 ? `${server.rating.toFixed(1)} (${server.ratingCount})` : 'Нет отзывов';
+  const initials = (server.abbr || server.name.slice(0, 2)).toUpperCase();
 
   return (
     <section className={`${styles.serverCard} ${compact ? styles.serverCardCompact : ''}`}>
-      <Link href={`/servers/${server.id}`} className={styles.serverMedia} aria-label={`Смотреть ${server.name} в каталоге`}>
-        {image ? <img src={image} alt="" loading="lazy" /> : <span className={styles.serverMediaFallback}>{server.name.slice(0, 2)}</span>}
+      <Link href={`/servers/${server.id}`} className={styles.serverMedia} aria-label={`Открыть ${server.name} в каталоге`}>
+        {media ? <img className={styles.serverBanner} src={media} alt="" loading="lazy" /> : <span className={styles.serverMediaFallback} />}
+        <span className={styles.serverIconBadge}>
+          {server.icon ? <img src={server.icon} alt="" loading="lazy" /> : initials}
+        </span>
       </Link>
       <div className={styles.serverInfo}>
-        <div className={styles.serverLabel}>Сервер из каталога</div>
+        <div className={styles.serverLabel}>Проект из каталога</div>
         <h3>{server.name}</h3>
         <div className={styles.serverTags}>
-          <span>{server.chronicle}</span>
-          <span>{server.rates}</span>
+          <span>{projectChronicles(server)}</span>
+          <span>{projectRates(server)}</span>
           <span>{serverTypeLabel(server)}</span>
-          <span>{donateLabel(server.donate)}</span>
         </div>
         {server.shortDesc && <p>{server.shortDesc}</p>}
         <div className={styles.serverStats}>
@@ -322,10 +448,10 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
       </div>
       <div className={styles.serverActions}>
         <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.serverPrimaryAction}>
-          Перейти на сервер →
+          Открыть сайт
         </a>
         <Link href={`/servers/${server.id}`} className={styles.serverSecondaryAction}>
-          Смотреть в каталоге
+          В каталог L2Realm
         </Link>
       </div>
     </section>
@@ -375,6 +501,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       locale: 'ru_RU',
       images: [{ url: image, width: 1200, height: 630, alt: article.title }],
       ...(article.publishedAt && { publishedTime: article.publishedAt }),
+      ...(article.updatedAt && { modifiedTime: article.updatedAt }),
     },
     twitter: {
       card: 'summary_large_image',
@@ -396,10 +523,11 @@ export default async function BlogPostPage({ params }: Props) {
     ...parsed.embeddedServerIds,
   ]));
 
-  const [linkedServers, allServers, relatedArticles] = await Promise.all([
+  const [linkedServers, allServers, relatedArticles, openings] = await Promise.all([
     Promise.all(requestedServerIds.map(fetchServer)),
     fetchServerList(),
     fetchRelatedArticles(article),
+    fetchComingSoon(),
   ]);
 
   const serverMap = new Map(
@@ -413,6 +541,9 @@ export default async function BlogPostPage({ params }: Props) {
   const summaryItems = parsed.summary.length > 0 ? parsed.summary : buildServerSummary(primaryServer);
   const hasEmbeddedServerCard = parsed.parts.some(part => part.type === 'server');
   const articleImage = absoluteUrl(article.image);
+  const publishedDate = article.publishedAt ?? article.createdAt;
+  const modifiedDate = article.updatedAt ?? publishedDate;
+  let headingIndex = 0;
 
   const articleSchema = {
     '@context': 'https://schema.org',
@@ -473,14 +604,11 @@ export default async function BlogPostPage({ params }: Props) {
               <header className={styles.head}>
                 <div className={styles.meta}>
                   <span className={styles.category}>{article.category || 'Новости'}</span>
-                  <time dateTime={article.publishedAt ?? article.createdAt}>
-                    {fmtDate(article.publishedAt ?? article.createdAt)}
+                  <time dateTime={publishedDate}>
+                    {fmtDate(publishedDate)}
                   </time>
                   <span className={styles.metaDot}>·</span>
                   <span>{readingTime(article.content)} мин чтения</span>
-                </div>
-                <div className={styles.titleRow}>
-                  <h1 className={styles.title}>{article.title}</h1>
                   <ArticleSaveButton
                     article={{
                       slug: article.slug,
@@ -490,15 +618,20 @@ export default async function BlogPostPage({ params }: Props) {
                       category: article.category,
                     }}
                   />
+                  <span className={styles.metaDot}>·</span>
+                  <time className={styles.updatedMeta} dateTime={modifiedDate}>
+                    Обновлено {fmtDate(modifiedDate)}
+                  </time>
                 </div>
+                <h1 className={styles.title}>{article.title}</h1>
                 {article.description && (
                   <p className={styles.lead}>{article.description}</p>
                 )}
               </header>
 
               {summaryItems.length > 0 && (
-                <section className={styles.quickSummary} aria-label="Коротко о сервере">
-                  <h2>Коротко о сервере</h2>
+                <section className={styles.quickSummary} aria-label="Коротко о проекте">
+                  <h2>Коротко о проекте</h2>
                   <div className={styles.summaryGrid}>
                     {summaryItems.map(item => (
                       <div key={item.label} className={styles.summaryCard}>
@@ -518,7 +651,7 @@ export default async function BlogPostPage({ params }: Props) {
                   }
                   return (
                     <Fragment key={`md-${index}`}>
-                      {renderMarkdown(part.content)}
+                      {renderMarkdown(part.content, { getHeadingId: () => parsed.toc[headingIndex++]?.id })}
                     </Fragment>
                   );
                 })}
@@ -569,14 +702,16 @@ export default async function BlogPostPage({ params }: Props) {
               <section className={styles.sideBlock}>
                 <div className={styles.sideTitle}>Содержание статьи</div>
                 <div className={styles.tocList}>
-                  {parsed.toc.map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}
+                  {parsed.toc.map(item => (
+                    <a key={item.id} href={`#${item.id}`}>{item.title}</a>
+                  ))}
                 </div>
               </section>
             )}
 
             {serverMap.size > 0 && (
               <section className={styles.sideBlock}>
-                <div className={styles.sideTitle}>Серверы в статье</div>
+                <div className={styles.sideTitle}>Проекты в статье</div>
                 <div className={styles.sideServers}>
                   {Array.from(serverMap.values()).slice(0, 4).map(server => (
                     <Link key={server.id} href={`/servers/${server.id}`} className={styles.sideServer}>
@@ -588,6 +723,27 @@ export default async function BlogPostPage({ params }: Props) {
                 </div>
               </section>
             )}
+
+            <section className={styles.sideBlock}>
+              <div className={styles.sideTitle}>Скоро открытие</div>
+              <div className={styles.openings}>
+                {openings.length === 0 ? (
+                  <p className={styles.sideEmpty}>Пока нет ближайших открытий.</p>
+                ) : openings.map(opening => (
+                  <Link key={opening.key} href={`/servers/${opening.serverId}`} className={styles.openingItem}>
+                    <span className={styles.openingIcon}>
+                      {opening.icon ? <img src={opening.icon} alt="" loading="lazy" /> : opening.title.slice(0, 2)}
+                    </span>
+                    <span>
+                      <strong>{opening.title}</strong>
+                      <small>{opening.chronicle} {opening.rates}</small>
+                      <em>{fmtDate(opening.openedAt)}</em>
+                    </span>
+                  </Link>
+                ))}
+              </div>
+              <Link href="/coming-soon" className={styles.sideButton}>Все открытия →</Link>
+            </section>
           </aside>
         </div>
       </div>
