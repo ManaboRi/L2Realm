@@ -24,7 +24,7 @@ const PURIFY_OPTS = {
 } as const;
 
 type RenderMarkdownOptions = {
-  getHeadingId?: (headingText: string) => string | undefined;
+  getHeadingId?: (headingText: string, level: number) => string | undefined;
 };
 
 function escapeHtml(s: string): string {
@@ -103,7 +103,7 @@ function normalizeMarkdownSource(text: string): string {
 function stripArticleShortcodes(text: string): string {
   return text
     .replace(/\[\[(?:summary|резюме)\]\]\s*\n[\s\S]*?\n\s*\[\[\/(?:summary|резюме)\]\]/gi, ' ')
-    .replace(/^\s*\[\[(?:server|сервер)(?::|=|\s+id=)\s*[A-Za-z0-9_-]+\]\]\s*$/gim, ' ');
+    .replace(/^\s*\[\[(?:server|сервер|project|проект|card|карточка)(?::|=|\s+id=)\s*[A-Za-z0-9_-]+\]\]\s*$/gim, ' ');
 }
 
 // Парсинг строки таблицы: "| a | b | c |" → ['a', 'b', 'c']
@@ -239,7 +239,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
       const headingText = h[2].trim();
       const html = renderInline(headingText);
       const Tag: any = `h${level + 1}`; // h1 в файле = <h2> на странице (h1 — заголовок статьи)
-      const headingId = options.getHeadingId?.(headingText);
+      const headingId = options.getHeadingId?.(headingText, level);
       out.push(<Tag key={`h-${key++}`} id={headingId} dangerouslySetInnerHTML={{ __html: html }} />);
       continue;
     }

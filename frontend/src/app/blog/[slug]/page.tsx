@@ -233,7 +233,7 @@ function readSummaryBlock(content: string): { body: string; summary: SummaryItem
 }
 
 function parseServerDirective(line: string): string | null {
-  const match = line.trim().match(/^\[\[(?:server|сервер)(?::|=|\s+id=)\s*([A-Za-z0-9_-]+)\]\]$/i);
+  const match = line.trim().match(/^\[\[(?:server|сервер|project|проект|card|карточка)(?::|=|\s+id=)\s*([A-Za-z0-9_-]+)\]\]$/i);
   return match?.[1] ?? null;
 }
 
@@ -274,7 +274,7 @@ function extractToc(content: string): TocItem[] {
   const seen = new Map<string, number>();
   return content
     .split('\n')
-    .map(line => line.match(/^(#{1,3})\s*(.+)$/)?.[2])
+    .map(line => line.match(/^##(?!#)\s*(.+)$/)?.[1])
     .filter((value): value is string => !!value)
     .map(value => {
       const title = stripMarkdown(value);
@@ -285,8 +285,7 @@ function extractToc(content: string): TocItem[] {
         title,
         id: count > 0 ? `${base}-${count + 1}` : base,
       };
-    })
-    .slice(0, 8);
+    });
 }
 
 function parseArticleContent(content: string): ParsedArticleContent {
@@ -546,7 +545,6 @@ export default async function BlogPostPage({ params }: Props) {
   const primaryServer = requestedServerIds.map(id => serverMap.get(id)).find(Boolean) ?? null;
   const linkedIdSet = new Set(requestedServerIds);
   const relatedServers = pickRelatedServers(primaryServer, allServers, linkedIdSet);
-  const summaryItems = parsed.summary.length > 0 ? parsed.summary : buildServerSummary(primaryServer);
   const hasEmbeddedServerCard = parsed.parts.some(part => part.type === 'server');
   const articleImage = absoluteUrl(article.image);
   const publishedDate = article.publishedAt ?? article.createdAt;
@@ -637,20 +635,6 @@ export default async function BlogPostPage({ params }: Props) {
                 )}
               </header>
 
-              {summaryItems.length > 0 && (
-                <section className={styles.quickSummary} aria-label="Коротко о проекте">
-                  <h2>Коротко о проекте</h2>
-                  <div className={styles.summaryGrid}>
-                    {summaryItems.map(item => (
-                      <div key={item.label} className={styles.summaryCard}>
-                        <span>{item.label}</span>
-                        <strong>{item.value}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-
               <div className={styles.body}>
                 {parsed.parts.map((part, index) => {
                   if (part.type === 'server') {
@@ -659,7 +643,9 @@ export default async function BlogPostPage({ params }: Props) {
                   }
                   return (
                     <Fragment key={`md-${index}`}>
-                      {renderMarkdown(part.content, { getHeadingId: () => parsed.toc[headingIndex++]?.id })}
+                      {renderMarkdown(part.content, {
+                        getHeadingId: (_heading, level) => (level === 2 ? parsed.toc[headingIndex++]?.id : undefined),
+                      })}
                     </Fragment>
                   );
                 })}

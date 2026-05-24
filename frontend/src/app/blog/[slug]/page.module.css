@@ -261,21 +261,24 @@
 
 .body h3 {
   scroll-margin-top: 86px;
-  margin: 2rem 0 .7rem;
-  color: var(--gold);
+  margin: 2.35rem 0 .85rem;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid rgba(118, 141, 151, .13);
+  color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: 1.24rem;
-  font-weight: 700;
-  line-height: 1.3;
+  font-size: 1.42rem;
+  font-weight: 800;
+  line-height: 1.24;
 }
 
 .body h4 {
-  margin: 1.7rem 0 .6rem;
-  color: var(--gold-d);
-  font-family: 'Cinzel', serif;
-  font-size: 1rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+  margin: 1.45rem 0 .55rem;
+  color: rgba(232, 221, 186, .9);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .body ul {
@@ -970,7 +973,8 @@
   .summaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .body { font-size: 1rem; line-height: 1.72; }
   .body h2 { font-size: 1.42rem; margin-top: 2.1rem; }
-  .body h3 { font-size: 1.12rem; margin-top: 1.6rem; }
+  .body h3 { font-size: 1.24rem; margin-top: 1.75rem; }
+  .body h4 { font-size: .98rem; margin-top: 1.25rem; }
   .body figure img { max-height: 360px; }
   .serverStats { grid-template-columns: 1fr 1fr; }
   .serverActions { grid-template-columns: 1fr; }
