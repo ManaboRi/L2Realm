@@ -352,6 +352,10 @@ function summarizeValues(values: string[], empty = 'Не указано'): strin
   return `${values.slice(0, 3).join(', ')} +${values.length - 3}`;
 }
 
+function knownValue(value: string): string | null {
+  return value && value !== 'Не указано' ? value : null;
+}
+
 function projectChronicles(server: Server): string {
   const values = uniqueValues([
     server.chronicle,
@@ -379,15 +383,16 @@ function projectOpening(server: Server): string {
 
 function buildServerSummary(server: Server | null): SummaryItem[] {
   if (!server) return [];
-  return [
+  const items: Array<[string, string | null]> = [
     ['Хроники', projectChronicles(server)],
     ['Рейты', projectRates(server)],
-    ['Тип проекта', serverTypeLabel(server)],
+    ['Тип проекта', knownValue(serverTypeLabel(server))],
     ['Онлайн', formatOnline(server)],
     ['Открытие', projectOpening(server)],
     ['Запусков', String(Math.max(1, server.instances?.length ?? 1))],
-  ]
-    .filter(([, value]) => !!value)
+  ];
+  return items
+    .filter((item): item is [string, string] => !!item[1] && item[1] !== 'Не указано')
     .map(([label, value]) => ({ label, value }))
     .slice(0, 6);
 }
@@ -422,6 +427,11 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
   const media = serverImage(server);
   const rating = server.ratingCount > 0 ? `${server.rating.toFixed(1)} (${server.ratingCount})` : 'Нет отзывов';
   const initials = (server.abbr || server.name.slice(0, 2)).toUpperCase();
+  const tags = [
+    projectChronicles(server),
+    projectRates(server),
+    knownValue(serverTypeLabel(server)),
+  ].filter((tag): tag is string => !!tag);
 
   return (
     <section className={`${styles.serverCard} ${compact ? styles.serverCardCompact : ''}`}>
@@ -435,9 +445,7 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
         <div className={styles.serverLabel}>Проект из каталога</div>
         <h3>{server.name}</h3>
         <div className={styles.serverTags}>
-          <span>{projectChronicles(server)}</span>
-          <span>{projectRates(server)}</span>
-          <span>{serverTypeLabel(server)}</span>
+          {tags.map(tag => <span key={tag}>{tag}</span>)}
         </div>
         {server.shortDesc && <p>{server.shortDesc}</p>}
         <div className={styles.serverStats}>
