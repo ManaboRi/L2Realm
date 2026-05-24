@@ -308,10 +308,11 @@ export default async function BlogPage({ searchParams }: Props) {
   const latest = articles.slice(0, 5);
   const isFiltered = !!activeCategory || !!q;
 
-  const reviewArticles = pageArticles.filter(isReviewArticle);
-  const newsArticles = pageArticles.filter(isNewsArticle);
+  const sectionArticles = isFiltered ? pageArticles : visible;
+  const reviewArticles = sectionArticles.filter(isReviewArticle).slice(0, 4);
+  const newsArticles = sectionArticles.filter(isNewsArticle).slice(0, 4);
   const otherGroups = Array.from(
-    pageArticles.reduce((groups, article) => {
+    sectionArticles.reduce((groups, article) => {
       if (isReviewArticle(article) || isNewsArticle(article)) return groups;
       const title = displayCategory(article);
       const group = groups.get(title);
@@ -319,7 +320,7 @@ export default async function BlogPage({ searchParams }: Props) {
       else groups.set(title, [article]);
       return groups;
     }, new Map<string, Article[]>()),
-    ([title, groupArticles]) => ({ title, articles: groupArticles }),
+    ([title, groupArticles]) => ({ title, articles: groupArticles.slice(0, 4) }),
   );
 
   return (
@@ -383,8 +384,6 @@ export default async function BlogPage({ searchParams }: Props) {
                     </div>
                   </section>
                 ))}
-
-                <Pagination pages={pages} currentPage={safePage} category={activeCategory} q={q} />
               </>
             )}
           </section>

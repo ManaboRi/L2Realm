@@ -96,6 +96,12 @@ function normalizeMarkdownSource(text: string): string {
   return s;
 }
 
+function stripArticleShortcodes(text: string): string {
+  return text
+    .replace(/\[\[(?:summary|резюме)\]\]\s*\n[\s\S]*?\n\s*\[\[\/(?:summary|резюме)\]\]/gi, ' ')
+    .replace(/^\s*\[\[(?:server|сервер)(?::|=|\s+id=)\s*[A-Za-z0-9_-]+\]\]\s*$/gim, ' ');
+}
+
 // Парсинг строки таблицы: "| a | b | c |" → ['a', 'b', 'c']
 function parseTableRow(line: string): string[] | null {
   const trimmed = line.trim();
@@ -277,7 +283,7 @@ export function renderMarkdown(text: string): React.ReactNode[] {
 export function readingTime(text: string): number {
   if (!text) return 1;
   // выкидываем код-блоки и markdown-пунктуацию
-  const clean = text
+  const clean = stripArticleShortcodes(text)
     .replace(/```[\s\S]*?```/g, '')
     .replace(/`[^`]+`/g, '')
     .replace(/!\[[^\]]*]\([^)]+\)/g, ' ')
@@ -289,7 +295,7 @@ export function readingTime(text: string): number {
 /** Первый абзац — для превью на /blog */
 export function firstParagraph(text: string, maxChars = 220): string {
   if (!text) return '';
-  const lines = text.replace(/\r\n/g, '\n').split('\n');
+  const lines = stripArticleShortcodes(text).replace(/\r\n/g, '\n').split('\n');
   for (const line of lines) {
     const t = line.trim();
     if (!t) continue;

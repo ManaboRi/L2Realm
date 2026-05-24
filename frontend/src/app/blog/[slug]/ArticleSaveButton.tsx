@@ -54,7 +54,8 @@ export function ArticleSaveButton({ article }: { article: Omit<SavedArticle, 'sa
       onClick={toggle}
       aria-pressed={saved}
     >
-      {saved ? 'Статья сохранена' : 'Сохранить статью'}
+      <span aria-hidden="true">{saved ? '★' : '☆'}</span>
+      {saved ? 'Сохранено' : 'Сохранить'}
     </button>
   );
 }
