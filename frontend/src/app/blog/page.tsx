@@ -32,12 +32,15 @@ type OpeningPreview = {
 };
 
 const CATEGORY_CONFIGS: CategoryConfig[] = [
-  { label: 'Обзоры серверов', aliases: ['обзор серверов', 'обзоры серверов', 'серверы', 'сервера'], color: '#58aef7' },
+  { label: 'Обзоры серверов', aliases: ['обзор', 'обзоры', 'обзор серверов', 'обзоры серверов', 'серверы', 'сервера'], color: '#58aef7' },
   { label: 'Гайды', aliases: ['гайд', 'гайды'], color: '#56d178' },
   { label: 'Новости', aliases: ['новости', 'новости lineage 2'], color: '#6f8dff' },
   { label: 'Патчи и обновления', aliases: ['патчи', 'патчи и обновления', 'обновления'], color: '#d56ee6' },
   { label: 'Корейские новости', aliases: ['корейские новости', 'корея', 'korea'], color: '#f2a044' },
 ];
+
+const REVIEW_CATEGORY = 'Обзоры серверов';
+const NEWS_CATEGORIES = ['Новости', 'Патчи и обновления', 'Корейские новости'];
 
 export const metadata: Metadata = {
   title: 'Блог L2Realm — статьи, обзоры и гайды Lineage 2',
@@ -105,6 +108,18 @@ function categoryMatches(a: Article, selected: string) {
     return articleConfig?.label === selectedConfig.label;
   }
   return normalizeCategory(articleValue) === normalizeCategory(selected);
+}
+
+function isReviewArticle(article: Article) {
+  return categoryMatches(article, REVIEW_CATEGORY);
+}
+
+function isNewsArticle(article: Article) {
+  return NEWS_CATEGORIES.some(category => categoryMatches(article, category));
+}
+
+function displayCategory(article: Article) {
+  return categoryConfigFor(articleCategory(article))?.label ?? articleCategory(article);
 }
 
 function categoryCount(articles: Article[], category: string) {
@@ -214,24 +229,6 @@ function ArticleStats({ article, compact = false }: { article: Article; compact?
   );
 }
 
-function FeaturedArticle({ article }: { article: Article }) {
-  return (
-    <Link href={`/blog/${article.slug}`} className={styles.featureCard}>
-      <ArticleCover article={article} />
-      <span className={styles.featureContent}>
-        <span className={styles.categoryBadge} style={categoryStyle(articleCategory(article))}>{articleCategory(article)}</span>
-        <time dateTime={article.publishedAt ?? article.createdAt}>{fmtDate(article.publishedAt ?? article.createdAt)}</time>
-        <strong>{article.title}</strong>
-        <em>{article.description || firstParagraph(article.content, 180)}</em>
-        <span className={styles.featureBottom}>
-          <ArticleStats article={article} />
-          <span className={styles.readButton}>Читать статью →</span>
-        </span>
-      </span>
-    </Link>
-  );
-}
-
 function ArticleCard({ article }: { article: Article }) {
   return (
     <Link href={`/blog/${article.slug}`} className={styles.articleCard}>
@@ -242,17 +239,6 @@ function ArticleCard({ article }: { article: Article }) {
         <strong>{article.title}</strong>
         <ArticleStats article={article} compact />
       </span>
-    </Link>
-  );
-}
-
-function NewsRow({ article }: { article: Article }) {
-  return (
-    <Link href={`/blog/${article.slug}`} className={styles.newsRow}>
-      <span className={styles.categoryBadge} style={categoryStyle(articleCategory(article))}>{articleCategory(article)}</span>
-      <strong>{article.title}</strong>
-      <time dateTime={article.publishedAt ?? article.createdAt}>{fmtDate(article.publishedAt ?? article.createdAt)}</time>
-      <ArticleStats article={article} compact />
     </Link>
   );
 }
@@ -322,17 +308,19 @@ export default async function BlogPage({ searchParams }: Props) {
   const latest = articles.slice(0, 5);
   const isFiltered = !!activeCategory || !!q;
 
-  const featured = pageArticles[0];
-  const rest = pageArticles.slice(1);
-  const reviewArticles = rest.filter(a => categoryMatches(a, 'Обзоры серверов')).slice(0, 4);
-  const guideArticles = rest.filter(a => categoryMatches(a, 'Гайды')).slice(0, 3);
-  const newsArticles = rest.filter(a =>
-    categoryMatches(a, 'Новости') ||
-    categoryMatches(a, 'Патчи и обновления') ||
-    categoryMatches(a, 'Корейские новости'),
-  ).slice(0, 4);
-  const used = new Set([featured?.id, ...reviewArticles.map(a => a.id), ...guideArticles.map(a => a.id), ...newsArticles.map(a => a.id)].filter(Boolean));
-  const otherArticles = rest.filter(a => !used.has(a.id)).slice(0, 6);
+  const reviewArticles = pageArticles.filter(isReviewArticle);
+  const newsArticles = pageArticles.filter(isNewsArticle);
+  const otherGroups = Array.from(
+    pageArticles.reduce((groups, article) => {
+      if (isReviewArticle(article) || isNewsArticle(article)) return groups;
+      const title = displayCategory(article);
+      const group = groups.get(title);
+      if (group) group.push(article);
+      else groups.set(title, [article]);
+      return groups;
+    }, new Map<string, Article[]>()),
+    ([title, groupArticles]) => ({ title, articles: groupArticles }),
+  );
 
   return (
     <main className={styles.page}>
@@ -369,31 +357,11 @@ export default async function BlogPage({ searchParams }: Props) {
               </>
             ) : (
               <>
-                {featured && <FeaturedArticle article={featured} />}
-
-                <Link href="/coming-soon" className={styles.hotStrip}>
-                  <span className={styles.hotIcon}>◆</span>
-                  <span>
-                    <strong>Горячие старты и новые серверы</strong>
-                    <em>Не пропусти открытие популярных проектов</em>
-                  </span>
-                  <b>Смотреть скоро открытие →</b>
-                </Link>
-
                 {reviewArticles.length > 0 && (
                   <section className={styles.articleSection}>
-                    <SectionHeader title="Обзоры серверов" icon="◆" href={buildBlogHref({ category: 'Обзоры серверов' })} />
-                    <div className={styles.reviewGrid}>
+                    <SectionHeader title="Обзоры серверов" icon="◆" href={buildBlogHref({ category: REVIEW_CATEGORY })} />
+                    <div className={styles.articleGrid}>
                       {reviewArticles.map(article => <ArticleCard key={article.id} article={article} />)}
-                    </div>
-                  </section>
-                )}
-
-                {guideArticles.length > 0 && (
-                  <section className={styles.articleSection}>
-                    <SectionHeader title="Гайды" icon="◆" href={buildBlogHref({ category: 'Гайды' })} />
-                    <div className={styles.guideGrid}>
-                      {guideArticles.map(article => <ArticleCard key={article.id} article={article} />)}
                     </div>
                   </section>
                 )}
@@ -401,20 +369,20 @@ export default async function BlogPage({ searchParams }: Props) {
                 {newsArticles.length > 0 && (
                   <section className={styles.articleSection}>
                     <SectionHeader title="Новости Lineage 2" icon="◆" href={buildBlogHref({ category: 'Новости' })} />
-                    <div className={styles.newsList}>
-                      {newsArticles.map(article => <NewsRow key={article.id} article={article} />)}
+                    <div className={styles.articleGrid}>
+                      {newsArticles.map(article => <ArticleCard key={article.id} article={article} />)}
                     </div>
                   </section>
                 )}
 
-                {otherArticles.length > 0 && (
-                  <section className={styles.articleSection}>
-                    <SectionHeader title="Другие материалы" icon="◆" />
-                    <div className={styles.filteredGrid}>
-                      {otherArticles.map(article => <ArticleCard key={article.id} article={article} />)}
+                {otherGroups.map(group => (
+                  <section key={group.title} className={styles.articleSection}>
+                    <SectionHeader title={group.title} icon="◆" href={buildBlogHref({ category: group.title })} />
+                    <div className={styles.articleGrid}>
+                      {group.articles.map(article => <ArticleCard key={article.id} article={article} />)}
                     </div>
                   </section>
-                )}
+                ))}
 
                 <Pagination pages={pages} currentPage={safePage} category={activeCategory} q={q} />
               </>
@@ -457,12 +425,6 @@ export default async function BlogPage({ searchParams }: Props) {
                 ))}
               </div>
               <Link href="/coming-soon" className={styles.sideButton}>Все открытия →</Link>
-            </section>
-
-            <section className={`${styles.sideBlock} ${styles.subscribeBlock}`}>
-              <strong>Не пропусти старт!</strong>
-              <p>Следи за будущими открытиями и включай напоминания в карточках проектов.</p>
-              <Link href="/coming-soon">Перейти к открытиям</Link>
             </section>
 
             <section className={styles.sideBlock}>
