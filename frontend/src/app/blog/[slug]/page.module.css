@@ -442,13 +442,13 @@
 
 .serverCard {
   box-sizing: border-box;
-  width: min(100%, 860px);
+  width: 100%;
   display: grid;
-  grid-template-columns: 168px minmax(0, 1fr) 148px;
-  gap: .85rem;
+  grid-template-columns: 202px minmax(0, 1fr) 164px;
+  gap: 1.05rem;
   align-items: stretch;
-  margin: 1.5rem auto 0;
-  padding: .78rem;
+  margin: 1.55rem 0 0;
+  padding: .88rem;
   border: 1px solid rgba(118, 141, 151, .18);
   border-radius: 8px;
   background:
@@ -463,7 +463,7 @@
 
 .serverMedia {
   position: relative;
-  min-height: 154px;
+  min-height: 166px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -518,7 +518,8 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: .55rem;
+  gap: .58rem;
+  padding: .08rem 0;
 }
 
 .serverLabel {
@@ -552,6 +553,7 @@
   color: rgba(232, 221, 186, .72);
   font-size: .86rem;
   line-height: 1.5;
+  max-width: 640px;
 }
 
 .serverTags {
@@ -576,7 +578,7 @@
 .serverStats {
   display: flex;
   flex-wrap: wrap;
-  gap: .65rem 1.2rem;
+  gap: .65rem 1.7rem;
   margin-top: auto;
   padding-top: .25rem;
 }
@@ -596,6 +598,23 @@
 .serverStats strong {
   color: #f6edd0;
   font-size: .78rem;
+}
+
+.serverOnlineStat strong {
+  display: inline-flex;
+  align-items: center;
+  gap: .38rem;
+  color: #89dda2;
+  font-size: .84rem;
+}
+
+.serverOnlineStat i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #43d881;
+  box-shadow: 0 0 8px rgba(67, 216, 129, .66);
 }
 
 .serverActions {
@@ -678,7 +697,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.serverCardCompact .serverStats span:nth-child(3),
+.serverCardCompact .serverRatingStat,
 .serverCardCompact .serverSecondaryAction {
   display: none;
 }
