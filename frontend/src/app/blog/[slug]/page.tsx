@@ -455,10 +455,10 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
       </div>
       <div className={styles.serverActions}>
         <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.serverPrimaryAction}>
-          Открыть сайт
+          Сайт проекта
         </a>
         <Link href={`/servers/${server.id}`} className={styles.serverSecondaryAction}>
-          В каталог L2Realm
+          В каталоге
         </Link>
       </div>
     </section>

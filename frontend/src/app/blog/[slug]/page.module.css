@@ -441,12 +441,14 @@
 }
 
 .serverCard {
+  box-sizing: border-box;
+  width: min(100%, 860px);
   display: grid;
-  grid-template-columns: 190px minmax(0, 1fr) 190px;
-  gap: 1rem;
+  grid-template-columns: 168px minmax(0, 1fr) 148px;
+  gap: .85rem;
   align-items: stretch;
-  margin: 1.5rem 0 0;
-  padding: .9rem;
+  margin: 1.5rem auto 0;
+  padding: .78rem;
   border: 1px solid rgba(118, 141, 151, .18);
   border-radius: 8px;
   background:
@@ -537,6 +539,8 @@
 
 .serverInfo h3 {
   margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
   font-size: 1.32rem;
@@ -570,10 +574,11 @@
 }
 
 .serverStats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem 1.2rem;
   margin-top: auto;
+  padding-top: .25rem;
 }
 
 .serverStats span {
@@ -581,8 +586,6 @@
   display: flex;
   flex-direction: column;
   gap: .16rem;
-  padding-top: .5rem;
-  border-top: 1px solid rgba(118, 141, 151, .15);
 }
 
 .serverStats small {
@@ -610,25 +613,35 @@
   justify-content: center;
   padding: 0 .9rem;
   border-radius: 6px;
-  font-family: 'Cinzel', serif;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .08em;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: 0;
   text-align: center;
   text-decoration: none;
-  text-transform: uppercase;
+  transition: border-color .16s, color .16s, background .16s;
 }
 
 .serverPrimaryAction {
-  border: 1px solid rgba(210, 171, 82, .55);
-  background: linear-gradient(135deg, #f2ca68, #b98520);
-  color: #080b10;
+  border: 1px solid rgba(210, 171, 82, .38);
+  background: rgba(210, 171, 82, .1);
+  color: var(--gold);
 }
 
 .serverSecondaryAction {
-  border: 1px solid rgba(210, 171, 82, .28);
+  border: 1px solid rgba(118, 141, 151, .2);
+  color: rgba(232, 221, 186, .7);
+  background: rgba(4, 8, 13, .4);
+}
+
+.serverPrimaryAction:hover {
+  border-color: rgba(210, 171, 82, .58);
+  background: rgba(210, 171, 82, .15);
+}
+
+.serverSecondaryAction:hover {
+  border-color: rgba(210, 171, 82, .3);
   color: var(--gold);
-  background: rgba(4, 8, 13, .55);
 }
 
 .serverGrid,
@@ -639,6 +652,7 @@
 }
 
 .serverCardCompact {
+  width: 100%;
   grid-template-columns: 1fr;
   gap: .75rem;
   margin: 0;

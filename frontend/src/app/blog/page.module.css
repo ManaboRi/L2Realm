@@ -358,6 +358,43 @@
   transition: transform .18s, border-color .18s, box-shadow .18s;
 }
 
+.articleSourceBadge {
+  position: absolute;
+  z-index: 3;
+  top: .7rem;
+  right: .7rem;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid rgba(210, 171, 82, .28);
+  border-radius: 7px;
+  background: rgba(5, 8, 12, .9);
+  box-shadow: 0 9px 20px rgba(0, 0, 0, .35);
+}
+
+.articleSourceBadge img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.articleSourceNcsoft {
+  background: rgba(243, 239, 222, .96);
+}
+
+.articleSourceNcsoft img {
+  padding: 6px;
+  object-fit: contain;
+}
+
+.articleSourceFourgame img {
+  object-fit: cover;
+}
+
 .cardContent {
   position: relative;
   z-index: 2;

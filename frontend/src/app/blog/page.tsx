@@ -31,6 +31,12 @@ type OpeningPreview = {
   isVip: boolean;
 };
 
+type ArticleBadge = {
+  src: string;
+  label: string;
+  kind: 'server' | 'ncsoft' | 'fourgame';
+};
+
 const CATEGORY_CONFIGS: CategoryConfig[] = [
   { label: 'Обзоры серверов', aliases: ['обзор', 'обзоры', 'обзор серверов', 'обзоры серверов', 'серверы', 'сервера'], color: '#58aef7' },
   { label: 'Гайды', aliases: ['гайд', 'гайды'], color: '#56d178' },
@@ -77,6 +83,24 @@ async function fetchComingSoon(): Promise<OpeningPreview[]> {
   } catch {
     return [];
   }
+}
+
+async function fetchArticleServers(articles: Article[]): Promise<Map<string, Server>> {
+  const ids = Array.from(new Set(articles.flatMap(article => article.serverIds ?? [])));
+  const servers = await Promise.all(ids.map(async id => {
+    try {
+      const res = await fetch(`${BACKEND}/api/servers/${encodeURIComponent(id)}`, { cache: 'no-store' });
+      if (!res.ok) return null;
+      return await res.json() as Server;
+    } catch {
+      return null;
+    }
+  }));
+  return new Map(
+    servers
+      .filter((server): server is Server => !!server)
+      .map(server => [server.id, server]),
+  );
 }
 
 function normalizeCategory(value: string) {
@@ -210,6 +234,20 @@ function categoryStyle(category: string): CSSProperties {
   return { '--cat-color': config?.color ?? '#d2ab52' } as CSSProperties;
 }
 
+function articleBadge(article: Article, serverMap: Map<string, Server>): ArticleBadge | null {
+  const category = normalizeCategory(articleCategory(article));
+  if (category.includes('корейск') || category.includes('ncsoft') || category.includes('нцсофт')) {
+    return { src: '/images/article-source-ncsoft.png', label: 'NCSOFT', kind: 'ncsoft' };
+  }
+  if (category.includes('фогейм') || category.includes('форгейм') || category.includes('4game')) {
+    return { src: '/images/article-source-4game.png', label: '4GAME', kind: 'fourgame' };
+  }
+  const server = (article.serverIds ?? []).map(id => serverMap.get(id)).find(item => !!item?.icon);
+  return server?.icon
+    ? { src: server.icon, label: server.name, kind: 'server' }
+    : null;
+}
+
 function ArticleCover({ article }: { article: Article }) {
   return (
     <span className={styles.cover}>
@@ -229,10 +267,23 @@ function ArticleStats({ article, compact = false }: { article: Article; compact?
   );
 }
 
-function ArticleCard({ article }: { article: Article }) {
+function ArticleCard({ article, badge }: { article: Article; badge: ArticleBadge | null }) {
+  const badgeClass = badge?.kind === 'ncsoft'
+    ? styles.articleSourceNcsoft
+    : badge?.kind === 'fourgame'
+      ? styles.articleSourceFourgame
+      : '';
   return (
     <Link href={`/blog/${article.slug}`} className={styles.articleCard}>
       <ArticleCover article={article} />
+      {badge && (
+        <span
+          className={`${styles.articleSourceBadge} ${badgeClass}`}
+          title={badge.label}
+        >
+          <img src={badge.src} alt="" loading="lazy" />
+        </span>
+      )}
       <span className={styles.cardContent}>
         <span className={styles.categoryBadge} style={categoryStyle(articleCategory(article))}>{articleCategory(article)}</span>
         <time dateTime={article.publishedAt ?? article.createdAt}>{fmtDate(article.publishedAt ?? article.createdAt)}</time>
@@ -285,6 +336,7 @@ function Pagination({ pages, currentPage, category, q }: { pages: number; curren
 
 export default async function BlogPage({ searchParams }: Props) {
   const [articles, openings] = await Promise.all([fetchArticles(), fetchComingSoon()]);
+  const articleServers = await fetchArticleServers(articles);
   const sp = await searchParams;
   const activeCategory = sp?.category?.trim() || '';
   const q = sp?.q?.trim() || '';
@@ -293,7 +345,10 @@ export default async function BlogPage({ searchParams }: Props) {
   const customCategories = Array.from(new Set(articles.map(articleCategory)))
     .filter(name => !categoryConfigFor(name))
     .map(name => ({ label: name, aliases: [name], color: '#caa050' }));
-  const sidebarCategories = [...CATEGORY_CONFIGS, ...customCategories];
+  const sidebarCategories = [
+    ...CATEGORY_CONFIGS.filter(config => categoryCount(articles, config.label) > 0),
+    ...customCategories,
+  ];
 
   const searched = q
     ? articles.filter(a => [a.title, a.description, articleCategory(a), firstParagraph(a.content, 120)].join(' ').toLowerCase().includes(q.toLowerCase()))
@@ -351,7 +406,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <div className={styles.empty}>По выбранным параметрам статей не найдено.</div>
                 ) : (
                   <div className={styles.filteredGrid}>
-                    {pageArticles.map(article => <ArticleCard key={article.id} article={article} />)}
+                    {pageArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
                   </div>
                 )}
                 <Pagination pages={pages} currentPage={safePage} category={activeCategory} q={q} />
@@ -362,7 +417,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <section className={styles.articleSection}>
                     <SectionHeader title="Обзоры серверов" icon="◆" href={buildBlogHref({ category: REVIEW_CATEGORY })} />
                     <div className={styles.articleGrid}>
-                      {reviewArticles.map(article => <ArticleCard key={article.id} article={article} />)}
+                      {reviewArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
                     </div>
                   </section>
                 )}
@@ -371,7 +426,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <section className={styles.articleSection}>
                     <SectionHeader title="Новости Lineage 2" icon="◆" href={buildBlogHref({ category: 'Новости' })} />
                     <div className={styles.articleGrid}>
-                      {newsArticles.map(article => <ArticleCard key={article.id} article={article} />)}
+                      {newsArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
                     </div>
                   </section>
                 )}
@@ -380,7 +435,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   <section key={group.title} className={styles.articleSection}>
                     <SectionHeader title={group.title} icon="◆" href={buildBlogHref({ category: group.title })} />
                     <div className={styles.articleGrid}>
-                      {group.articles.map(article => <ArticleCard key={article.id} article={article} />)}
+                      {group.articles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
                     </div>
                   </section>
                 ))}
