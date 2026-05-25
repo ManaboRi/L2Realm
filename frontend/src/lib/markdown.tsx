@@ -45,8 +45,23 @@ function isSafeImageUrl(url: string): boolean {
 // inline: **bold**, *italic*, `code`, [link](url) → возвращает HTML-строку
 function renderInline(raw: string): string {
   let s = escapeHtml(raw);
-  // inline code (до bold/italic, чтобы внутри `**x**` не подчёркивалось)
-  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  const codeFragments: string[] = [];
+  const linkUrls: string[] = [];
+  const token = (kind: 'C' | 'U', index: number) => `\u0000${kind}${index}\u0000`;
+
+  // Protect code and link destinations while text emphasis is parsed. Otherwise
+  // underscores in paths such as /events_and_promos/ become <em> inside href.
+  s = s.replace(/`([^`]+)`/g, (_match, code: string) => {
+    const index = codeFragments.push(`<code>${code}</code>`) - 1;
+    return token('C', index);
+  });
+  s = s.replace(
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    (_match, label: string, url: string) => {
+      const index = linkUrls.push(url) - 1;
+      return `[${label}](${token('U', index)})`;
+    },
+  );
   // bold
   s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
   // italic (только парные `*` или `_`, не одиночные)
@@ -54,9 +69,12 @@ function renderInline(raw: string): string {
   s = s.replace(/(^|[^_])_([^_\s][^_]*?)_(?!_)/g, '$1<em>$2</em>');
   // links: [text](https://url) — только http(s) для безопасности
   s = s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener nofollow">$1</a>',
+    /\[([^\]]+)\]\(\u0000U(\d+)\u0000\)/g,
+    (_match, label: string, index: string) => (
+      `<a href="${linkUrls[Number(index)]}" target="_blank" rel="noopener nofollow">${label}</a>`
+    ),
   );
+  s = s.replace(/\u0000C(\d+)\u0000/g, (_match, index: string) => codeFragments[Number(index)]);
   // Pill-бейджи: <strong>X:</strong> value → <span class="md-pill">...</span>
   // Value тянется до следующего <strong>Y:</strong> или конца строки.
   // Срабатывает только на bold, заканчивающийся ":" — нормальный bold не задевает.
