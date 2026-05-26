@@ -6,6 +6,11 @@ import { CreateServerDto, FilterServersDto, UpdateServerDto } from './dto/server
 import { dateString, optionalSafeAssetUrl, optionalSafeMarkdownText, optionalSafeText, optionalSafeUrl, parseOrThrow, safeSlug, safeText, safeUrl } from '../common/input-validation';
 import { z } from 'zod';
 
+const optionalOnlineRegex = z.string()
+  .transform(value => value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim())
+  .pipe(z.string().max(500))
+  .optional();
+
 const serverInstanceSchema = z.object({
   id: optionalSafeText(64),
   label: optionalSafeText(80),
@@ -18,7 +23,7 @@ const serverInstanceSchema = z.object({
   shortDesc: optionalSafeText(240),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
-  soonVipPaymentId: optionalSafeText(120),
+  soonVipPaymentId: z.union([optionalSafeText(120), z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineMode: z.enum(['off', 'manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']).optional(),
   onlineManual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineValue: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
@@ -32,7 +37,7 @@ const serverInstanceSchema = z.object({
   onlineValuePath: optionalSafeText(120),
   onlineJsonVar: optionalSafeText(160),
   onlineItemIndex: z.coerce.number().int().min(0).max(1_000).nullable().optional(),
-  onlineRegex: optionalSafeText(500),
+  onlineRegex: optionalOnlineRegex,
   onlineRegexGroup: z.coerce.number().int().min(0).max(20).nullable().optional(),
 }).passthrough();
 
@@ -93,7 +98,7 @@ const onlineSourceTestSchema = z.object({
   valuePath: optionalSafeText(120),
   jsonVar: optionalSafeText(160),
   itemIndex: z.coerce.number().int().min(0).max(1_000).nullable().optional(),
-  regex: optionalSafeText(500),
+  regex: optionalOnlineRegex,
   regexGroup: z.coerce.number().int().min(0).max(20).nullable().optional(),
 });
 
