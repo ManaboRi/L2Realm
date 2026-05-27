@@ -6,7 +6,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
-import type { Article, Server, Review, VoteStatus, VoteSummary } from '@/lib/types';
+import type { Article, Server, ServerInstance, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import {
   formatOnline,
@@ -247,7 +247,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'info' | 'servers' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'worlds' | 'info' | 'reviews'>('overview');
   const [onlineRange, setOnlineRange] = useState<OnlineRange>('hours');
   const [hoveredTrafficIndex, setHoveredTrafficIndex] = useState<number | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
@@ -485,6 +485,111 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     };
   });
   const voteDisabled = voting || !!voteStatus?.voted;
+  const allWorlds = [...currentWorlds, ...historicalWorlds];
+  const renderWorldRows = (worlds: ServerInstance[], showCurrentEmpty = false) => (
+    <>
+      {worlds.map(instance => {
+        const online = instanceOnlineValue(instance);
+        const label = worldLifecycleLabel(instance);
+        const lifecycle = worldLifecycle(instance);
+        const lifecycleClass = lifecycle === 'upcoming'
+          ? styles.worldSoon
+          : lifecycle === 'active' ? styles.worldActive : styles.worldArchive;
+        const activityPath = onlineChartPath(instanceOnlineLast24Hours(instance), 110, 25);
+        return (
+          <div key={instance.id} className={styles.worldTableRow} role="row">
+            <strong>{instance.label || instance.rates || instance.chronicle}</strong>
+            <span>{instance.chronicle || '—'}</span>
+            <span>{instance.rates || '—'}</span>
+            <span>{instance.type ? (typeLabels.get(instance.type as any) ?? instance.type) : '—'}</span>
+            <b>{online != null && <i aria-hidden="true" />}{online == null ? '-' : formatOnline(online, instanceOnlineIsEstimated(instance))}</b>
+            <em className={lifecycleClass}>{label}</em>
+            <span>{instance.openedDate ? formatFullDate(instance.openedDate) : '—'}</span>
+            <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Онлайн за 24 часа">
+              {activityPath && <path d={`${activityPath} L 110 25 L 0 25 Z`} className={styles.worldActivityFill} />}
+              {activityPath && <path d={activityPath} className={styles.worldActivityLine} />}
+            </svg>
+          </div>
+        );
+      })}
+      {instances.length === 0 && (
+        <div className={styles.worldTableRow} role="row">
+          <strong>{server.name}</strong>
+          <span>{server.chronicle || '—'}</span>
+          <span>{server.rates || '—'}</span>
+          <span>{mainType ? (typeLabels.get(mainType as any) ?? mainType) : '—'}</span>
+          <b>{projectOnline != null && <i aria-hidden="true" />}{formatOnline(projectOnline, estimatedProjectOnline)}</b>
+          <em className={styles.worldActive}>Открыт</em>
+          <span>{server.openedDate ? formatFullDate(server.openedDate) : '—'}</span>
+          <span className={styles.worldNoActivity}>—</span>
+        </div>
+      )}
+      {showCurrentEmpty && instances.length > 0 && worlds.length === 0 && (
+        <div className={styles.worldTableEmpty}>Сейчас нет открытых миров или ближайших стартов.</div>
+      )}
+    </>
+  );
+  const projectSidebar = (
+    <aside className={styles.sideStack}>
+      <section className={`${styles.sideCard} ${styles.supportCard}`}>
+        <h2>Поддержать сервер</h2>
+        <p>{voteRewardsEnabled ? 'Проголосуй и получи награду по нику персонажа.' : 'Vote Manager не подключен: голос учтётся на L2Realm, но бонусы проект пока не выдаёт.'}</p>
+        <div className={styles.voteCompactStats}>
+          <div><span>Всего</span><strong>{voteSummary?.totalVotes ?? totalVotes}</strong></div>
+          <div><span>За месяц</span><strong>{voteSummary?.monthlyVotes ?? 0}</strong></div>
+          <div><span>Сегодня</span><strong>{voteSummary?.todayVotes ?? 0}</strong></div>
+        </div>
+        <div className={styles.supportVote}>
+          <input
+            className="input"
+            value={voteNickname}
+            onChange={e => setVoteNickname(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
+            placeholder="Ник на сервере"
+            maxLength={32}
+            disabled={!token || !!voteStatus?.voted}
+          />
+          <button type="button" onClick={handleVote} disabled={voteDisabled}>
+            {voting ? <span className="spin" /> : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Проголосовать'}
+          </button>
+        </div>
+        {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds ?? null) && (
+          <small>{cooldownText(voteStatus.cooldownEnds ?? null)}</small>
+        )}
+      </section>
+
+      <section className={`${styles.sideCard} ${styles.projectArticlesCard}`}>
+        <h2>Статьи по проекту</h2>
+        {relatedArticles.length > 0 ? (
+          <div className={styles.projectArticles}>
+            {relatedArticles.map(article => (
+              <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
+                {article.image && <img src={article.image} alt="" />}
+                <span>
+                  <strong>{article.title}</strong>
+                  <small>{formatFullDate(article.publishedAt)}</small>
+                </span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className={styles.projectArticlesEmpty}>Публикаций о проекте пока нет.</p>
+        )}
+      </section>
+
+      {(server.telegram || server.discord || server.vk || server.youtube) && (
+        <section className={styles.sideCard}>
+          <h2>Контакты</h2>
+          <div className={styles.contactLinks}>
+            {server.telegram && <SocialLink ico="TG" name="Telegram" href={server.telegram ?? ''} />}
+            {server.discord && <SocialLink ico="DC" name="Discord" href={server.discord ?? ''} />}
+            {server.vk && <SocialLink ico="VK" name="ВКонтакте" href={server.vk ?? ''} />}
+            {server.youtube && <SocialLink ico="YT" name="YouTube" href={server.youtube ?? ''} />}
+          </div>
+        </section>
+      )}
+    </aside>
+  );
 
   return (
     <div className={styles.page}>
@@ -548,7 +653,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <strong>{worldCount}</strong>
             </div>
             <div className={styles.heroTrafficMetric}>
-                <span>Трафик / до 3 мес.</span>
+                <span>Трафик / 3 мес.</span>
               <strong>{formatTraffic(server.trafficThreeMonths)}</strong>
             </div>
             <div>
@@ -569,9 +674,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         <div className={styles.serverTabs}>
           <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
           <button type="button" className={activeTab === 'info' ? styles.serverTabActive : ''} onClick={() => setActiveTab('info')}>Информация</button>
-          <button type="button" className={activeTab === 'servers' ? styles.serverTabActive : ''} onClick={() => setActiveTab('servers')}>
-            Миры и открытия {instances.length > 0 && <span>{instances.length}</span>}
-          </button>
           <button type="button" className={activeTab === 'reviews' ? styles.serverTabActive : ''} onClick={() => setActiveTab('reviews')}>
             Отзывы {server.ratingCount > 0 && <span>{server.ratingCount}</span>}
           </button>
@@ -583,7 +685,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <section className={`${styles.infoCard} ${styles.worldOverviewCard}`}>
             <div className={styles.cardTitleRow}>
               <h2>Миры и открытия</h2>
-              <button type="button" className={styles.inlineLink} onClick={() => setActiveTab('servers')}>Все открытия</button>
+              <button type="button" className={styles.inlineLink} onClick={() => setActiveTab('worlds')}>Все открытия</button>
             </div>
             <div className={styles.worldTable} role="table" aria-label="Миры проекта">
               <div className={styles.worldTableHead} role="row">
@@ -596,45 +698,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <span>Открыт</span>
                 <span>Активность (24 ч)</span>
               </div>
-              {(currentWorlds.length > 0 ? currentWorlds : instances).slice(0, 5).map(instance => {
-                const online = instanceOnlineValue(instance);
-                const label = worldLifecycleLabel(instance);
-                const lifecycle = worldLifecycle(instance);
-                const lifecycleClass = lifecycle === 'upcoming'
-                  ? styles.worldSoon
-                  : lifecycle === 'active' ? styles.worldActive : styles.worldArchive;
-                const activityPath = onlineChartPath(instanceOnlineLast24Hours(instance), 110, 25);
-                return (
-                  <div key={instance.id} className={styles.worldTableRow} role="row">
-                    <strong>{instance.label || instance.rates || instance.chronicle}</strong>
-                    <span>{instance.chronicle || '—'}</span>
-                    <span>{instance.rates || '—'}</span>
-                    <span>{instance.type ? (typeLabels.get(instance.type as any) ?? instance.type) : '—'}</span>
-                    <b>{online != null && <i aria-hidden="true" />}{online == null ? '-' : formatOnline(online, instanceOnlineIsEstimated(instance))}</b>
-                    <em className={lifecycleClass}>{label}</em>
-                    <span>{instance.openedDate ? formatFullDate(instance.openedDate) : '—'}</span>
-                    <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Онлайн за 24 часа">
-                      {activityPath && <path d={`${activityPath} L 110 25 L 0 25 Z`} className={styles.worldActivityFill} />}
-                      {activityPath && <path d={activityPath} className={styles.worldActivityLine} />}
-                    </svg>
-                  </div>
-                );
-              })}
-              {instances.length === 0 && (
-                <div className={styles.worldTableRow} role="row">
-                  <strong>{server.name}</strong>
-                  <span>{server.chronicle || '—'}</span>
-                  <span>{server.rates || '—'}</span>
-                  <span>{mainType ? (typeLabels.get(mainType as any) ?? mainType) : '—'}</span>
-                  <b>{projectOnline != null && <i aria-hidden="true" />}{formatOnline(projectOnline, estimatedProjectOnline)}</b>
-                  <em className={styles.worldActive}>Открыт</em>
-                  <span>{server.openedDate ? formatFullDate(server.openedDate) : '—'}</span>
-                  <span className={styles.worldNoActivity}>—</span>
-                </div>
-              )}
+              {renderWorldRows(currentWorlds, true)}
             </div>
             {historicalWorlds.length > 0 && (
-              <p className={styles.worldArchiveHint}>В истории: {historicalWorlds.length} закрытых или объединённых открытий</p>
+              <p className={styles.worldArchiveHint}>Закрытые и объединённые миры находятся во вкладке «Все открытия».</p>
             )}
           </section>
 
@@ -767,65 +834,32 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           </section>
 
-          <aside className={styles.sideStack}>
-            <section className={`${styles.sideCard} ${styles.supportCard}`}>
-              <h2>Поддержать сервер</h2>
-              <p>{voteRewardsEnabled ? 'Проголосуй и получи награду по нику персонажа.' : 'Vote Manager не подключен: голос учтётся на L2Realm, но бонусы проект пока не выдаёт.'}</p>
-              <div className={styles.voteCompactStats}>
-                <div><span>Всего</span><strong>{voteSummary?.totalVotes ?? totalVotes}</strong></div>
-                <div><span>За месяц</span><strong>{voteSummary?.monthlyVotes ?? 0}</strong></div>
-                <div><span>Сегодня</span><strong>{voteSummary?.todayVotes ?? 0}</strong></div>
-              </div>
-              <div className={styles.supportVote}>
-                <input
-                  className="input"
-                  value={voteNickname}
-                  onChange={e => setVoteNickname(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
-                  placeholder="Ник на сервере"
-                  maxLength={32}
-                  disabled={!token || !!voteStatus?.voted}
-                />
-                <button type="button" onClick={handleVote} disabled={voteDisabled}>
-                  {voting ? <span className="spin" /> : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Проголосовать'}
-                </button>
-              </div>
-              {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds ?? null) && (
-                <small>{cooldownText(voteStatus.cooldownEnds ?? null)}</small>
-              )}
-            </section>
+          {projectSidebar}
+        </div>
+      )}
 
-            <section className={`${styles.sideCard} ${styles.projectArticlesCard}`}>
-              <h2>Статьи по проекту</h2>
-              {relatedArticles.length > 0 ? (
-                <div className={styles.projectArticles}>
-                  {relatedArticles.map(article => (
-                    <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
-                      {article.image && <img src={article.image} alt="" />}
-                      <span>
-                        <strong>{article.title}</strong>
-                        <small>{formatFullDate(article.publishedAt)}</small>
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.projectArticlesEmpty}>Публикаций о проекте пока нет.</p>
-              )}
-            </section>
-
-            {(server.telegram || server.discord || server.vk || server.youtube) && (
-              <section className={styles.sideCard}>
-                <h2>Контакты</h2>
-                <div className={styles.contactLinks}>
-                  {server.telegram && <SocialLink ico="TG" name="Telegram" href={server.telegram ?? ''} />}
-                  {server.discord && <SocialLink ico="DC" name="Discord" href={server.discord ?? ''} />}
-                  {server.vk && <SocialLink ico="VK" name="ВКонтакте" href={server.vk ?? ''} />}
-                  {server.youtube && <SocialLink ico="YT" name="YouTube" href={server.youtube ?? ''} />}
-                </div>
-              </section>
-            )}
-          </aside>
+      {activeTab === 'worlds' && (
+        <div className={styles.detailGrid}>
+          <section className={`${styles.infoCard} ${styles.worldHistoryCard}`}>
+            <div className={styles.cardTitleRow}>
+              <h2>Все открытия</h2>
+              <span className={styles.historySummary}>Открытий: {openingCount}</span>
+            </div>
+            <div className={styles.worldTable} role="table" aria-label="История миров проекта">
+              <div className={styles.worldTableHead} role="row">
+                <span>Мир</span>
+                <span>Хроники</span>
+                <span>Рейт</span>
+                <span>Тип</span>
+                <span>Онлайн</span>
+                <span>Статус</span>
+                <span>Открыт</span>
+                <span>Активность (24 ч)</span>
+              </div>
+              {renderWorldRows(allWorlds)}
+            </div>
+          </section>
+          {projectSidebar}
         </div>
       )}
 
@@ -841,107 +875,16 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div><span>Языки</span><strong className={styles.regionList}>{languages.map(item => <span key={item.raw} title={LANGUAGE_LABELS[item.raw.toUpperCase()] ?? item.raw}>{item.label}</span>)}</strong></div>
               <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
               {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong></div>}
-              {server.trafficThreeMonths != null && <div><span>Трафик / до 3 мес.</span><strong className={styles.serverTraffic}>{formatTraffic(server.trafficThreeMonths)}</strong></div>}
+              {server.trafficThreeMonths != null && <div><span>Трафик / 3 мес.</span><strong className={styles.serverTraffic}>{formatTraffic(server.trafficThreeMonths)}</strong></div>}
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
             </div>
           </section>
-        </div>
-      )}
-
-      {activeTab === 'servers' && (
-        <div className={styles.serversTabLayout}>
-          <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
-            <div className={styles.projectServersHead}>
-              <div>
-                <h2>Миры и открытия <span>{instances.length || 1}</span></h2>
-                <p>Сейчас миров: {worldCount}. Всего открытий в истории: {openingCount}.</p>
-              </div>
-            </div>
-            {instances.length > 0 ? (
-              <div className={styles.instancesLarge}>
-                {[...instances].sort((a, b) => {
-                  const rank = (instance: typeof a) => ['active', 'upcoming', 'merged', 'closed', 'archived'].indexOf(worldLifecycle(instance));
-                  return rank(a) - rank(b) || (a.rateNum || 0) - (b.rateNum || 0);
-                }).map(inst => {
-                  const lifecycle = worldLifecycle(inst);
-                  const isFuture = lifecycle === 'upcoming';
-                  const isHistorical = lifecycle === 'merged' || lifecycle === 'closed' || lifecycle === 'archived';
-                  const instOnline = instanceOnlineValue(inst);
-                  const estimatedInstOnline = instanceOnlineIsEstimated(inst);
-                  const openedLabel = isFuture ? formatFullDate(inst.openedDate) : relativeOpened(inst.openedDate);
-                  return (
-                    <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''} ${isHistorical ? styles.instTileHistorical : ''}`}>
-                      <div className={styles.instTileHead}>
-                        <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
-                        <span className={`${styles.instTileStatus} ${isFuture ? styles.instTileSoonBadge : ''} ${isHistorical ? styles.instTileArchiveBadge : ''}`}>
-                          {worldLifecycleLabel(inst)}
-                        </span>
-                      </div>
-                      <div className={styles.instTileTags}>
-                        <span>{inst.chronicle}</span>
-                        <span>{inst.rates}</span>
-                        {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
-                      </div>
-                      {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
-                      {inst.statusNote && <div className={styles.instStatusNote}>{inst.statusNote}</div>}
-                      <div className={styles.instTileStats}>
-                        {!isHistorical && instOnline != null && (
-                          <div className={styles.instTileStatOnline}>
-                            <strong>{formatOnline(instOnline, estimatedInstOnline)}</strong>
-                            <span>онлайн</span>
-                          </div>
-                        )}
-                        {inst.openedDate && (
-                          <div>
-                            <strong>{openedLabel}</strong>
-                            <span>{isFuture ? 'старт' : isHistorical ? 'открывался' : 'работает'}</span>
-                          </div>
-                        )}
-                      </div>
-                      {inst.openedDate && (
-                        <div className={styles.instTileMeta}>
-                          <span>{formatFullDate(inst.openedDate)}</span>
-                        </div>
-                      )}
-                    </article>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className={styles.instancesLarge}>
-                <article className={styles.instTileLarge}>
-                  <div className={styles.instTileHead}>
-                    <span className={styles.instTileLabel}>{server.name}</span>
-                  </div>
-                  <div className={styles.instTileTags}>
-                    <span>{server.chronicle}</span>
-                    <span>{server.rates}</span>
-                    {mainType && <span>{typeLabels.get(mainType as any) ?? mainType}</span>}
-                  </div>
-                  {server.shortDesc && <div className={styles.instTileDesc}>{server.shortDesc}</div>}
-                  <div className={styles.instTileStats}>
-                    {projectOnline != null && (
-                      <div className={styles.instTileStatOnline}>
-                        <strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong>
-                        <span>онлайн</span>
-                      </div>
-                    )}
-                    {server.openedDate && (
-                      <div>
-                        <strong>{relativeOpened(server.openedDate)}</strong>
-                        <span>работает</span>
-                      </div>
-                    )}
-                  </div>
-                  {server.openedDate && (
-                    <div className={styles.instTileMeta}>
-                      <span>{startDate}</span>
-                    </div>
-                  )}
-                </article>
-              </div>
-            )}
-          </section>
+          <aside className={`${styles.infoCard} ${styles.infoDescriptionCard}`}>
+            <h2>О проекте</h2>
+            {server.fullDesc
+              ? <div className={styles.desc}>{formatDesc(server.fullDesc)}</div>
+              : <p className={styles.empty}>Описание проекта пока не добавлено.</p>}
+          </aside>
         </div>
       )}
 

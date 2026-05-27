@@ -431,7 +431,7 @@ function HomeServerCard({
         </div>
         <div className={styles.cardFacts}>
           <span>
-            <small>Трафик, до 3 мес.</small>
+            <small>Трафик / 3 мес.</small>
             <strong className={styles.trafficValue}>
               {formatTraffic(s.trafficThreeMonths)}
               {trafficTrend && (
@@ -442,11 +442,11 @@ function HomeServerCard({
             </strong>
           </span>
           <span>
-            <small>Последний старт</small>
+            <small>Старт</small>
             <strong>{latestOpening ? formatDate(latestOpening) : '-'}</strong>
           </span>
           <span>
-            <small>Голосов</small>
+            <small>Голоса</small>
             <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
           </span>
         </div>

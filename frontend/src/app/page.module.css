@@ -429,11 +429,13 @@
 .metricMethodology span {
   width: 14px;
   height: 14px;
-  display: inline-grid;
-  place-items: center;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(8, 11, 16, .42);
   border-radius: 50%;
-  padding: 0 0 1px;
+  padding: 1px 0 0;
   font-family: 'DM Sans', sans-serif;
   font-weight: 700;
   line-height: 1;
@@ -488,6 +490,13 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .85rem;
+}
+
+@media (min-width: 1840px) {
+  .grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .7rem;
+  }
 }
 
 .serverCard {
@@ -902,6 +911,34 @@
 .votes {
   color: #f1c553 !important;
   font-size: .78rem !important;
+}
+
+@media (min-width: 1840px) {
+  .cardMedia {
+    aspect-ratio: 16 / 7.45;
+  }
+
+  .cardIdentity {
+    padding-inline: 1rem;
+  }
+
+  .cardBody {
+    padding-inline: .64rem;
+    padding-bottom: .56rem;
+  }
+
+  .cardFacts {
+    grid-template-columns: 1.18fr 1.12fr .7fr;
+    padding-top: .34rem;
+  }
+
+  .cardFacts span + span {
+    padding-left: .52rem;
+  }
+
+  .cardFacts small {
+    white-space: nowrap;
+  }
 }
 .muted { color: var(--text2) !important; }
 

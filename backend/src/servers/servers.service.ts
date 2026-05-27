@@ -691,8 +691,9 @@ export class ServersService {
     };
   }
 
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async refreshOnlineSources() {
+    const refreshHourlySources = new Date().getMinutes() < 5;
     const servers = await this.prisma.server.findMany({
       select: { id: true, instances: true },
     });
@@ -716,20 +717,6 @@ export class ServersService {
           continue;
         }
 
-        if (mode === 'manual') {
-          const online = numberFromUnknown(inst.onlineManual);
-          next.push({
-            ...inst,
-            onlineValue: online,
-            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : checkedAt.toISOString(),
-            onlineHistory: appendOnlineHistory(inst, online, checkedAt, false),
-            onlineStatus: online == null ? 'error' : 'ok',
-            onlineError: online == null ? 'Manual online value is empty' : null,
-          });
-          changed = true;
-          continue;
-        }
-
         if (mode === 'estimated') {
           const online = estimateOnline(inst.onlineManual, checkedAt, inst);
           next.push({
@@ -739,6 +726,25 @@ export class ServersService {
             onlineHistory: appendOnlineHistory(inst, online, checkedAt, true),
             onlineStatus: online == null ? 'error' : 'ok',
             onlineError: online == null ? 'Base online value is empty' : null,
+          });
+          changed = true;
+          continue;
+        }
+
+        if (!refreshHourlySources) {
+          next.push(inst);
+          continue;
+        }
+
+        if (mode === 'manual') {
+          const online = numberFromUnknown(inst.onlineManual);
+          next.push({
+            ...inst,
+            onlineValue: online,
+            onlineUpdatedAt: online == null ? inst.onlineUpdatedAt ?? null : checkedAt.toISOString(),
+            onlineHistory: appendOnlineHistory(inst, online, checkedAt, false),
+            onlineStatus: online == null ? 'error' : 'ok',
+            onlineError: online == null ? 'Manual online value is empty' : null,
           });
           changed = true;
           continue;
@@ -795,7 +801,10 @@ export class ServersService {
       }
     }
 
-    if (updated > 0) this.logger.log(`Online sources refreshed for ${updated} servers`);
+    if (updated > 0) {
+      const label = refreshHourlySources ? 'Online sources' : 'Estimated online';
+      this.logger.log(`${label} refreshed for ${updated} servers`);
+    }
   }
 
   // ── Получить все с фильтрами ─────────────────
