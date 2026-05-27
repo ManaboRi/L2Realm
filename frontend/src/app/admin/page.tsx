@@ -134,6 +134,17 @@ function trafficPayload(entries: TrafficDraft[]) {
     .map(entry => ({ period: entry.period, monthly: Number(entry.monthly), source: entry.source || 'similarweb' }));
 }
 
+function applyTrafficPatch<T extends { id?: string }>(server: T, patch: any): T {
+  return {
+    ...server,
+    trafficHistory: patch.trafficHistory ?? [],
+    trafficMonthly: patch.trafficMonthly ?? null,
+    trafficThreeMonths: patch.trafficThreeMonths ?? null,
+    trafficPeriod: patch.trafficPeriod ?? null,
+    trafficSource: patch.trafficSource ?? null,
+  };
+}
+
 function projectInstancesPayload(instances: any[]) {
   return instances.map(({ donate: _donate, ...instance }) => instance);
 }
@@ -377,7 +388,6 @@ export default function AdminPage() {
         vk:          editForm.vk || undefined,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
-        trafficHistory: trafficPayload(editForm.trafficHistory ?? []),
         instances:   projectInstancesPayload(editForm.instances ?? []),
       } as any, token);
       showToast(`✅ Сервер ${editForm.name} обновлён`);
@@ -511,10 +521,16 @@ export default function AdminPage() {
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
               </div>
 
-              <TrafficEditor
+              <TrafficEditorV2
+                serverId={editServer.id}
+                token={token}
                 projectUrl={editForm.url}
                 entries={editForm.trafficHistory ?? []}
                 onChange={(trafficHistory) => setEditForm((p:any) => ({ ...p, trafficHistory }))}
+                onPersisted={(patch) => {
+                  setEditForm((p:any) => applyTrafficPatch(p, patch));
+                  setServers(prev => prev.map(server => server.id === patch.id ? applyTrafficPatch(server, patch) : server));
+                }}
               />
 
               <AField label="Краткое описание">
@@ -924,7 +940,7 @@ export default function AdminPage() {
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                   </div>
 
-                  <TrafficEditor
+                  <TrafficEditorV2
                     projectUrl={addForm.url}
                     entries={addForm.trafficHistory}
                     onChange={(trafficHistory) => setAddForm(p => ({ ...p, trafficHistory }))}
@@ -1021,6 +1037,168 @@ function TrafficEditor({
               <button type="button" className={styles.trafficRemoveButton} onClick={() => removeEntry(index)} aria-label="Удалить месяц">×</button>
             </div>
           ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function TrafficEditorV2({
+  serverId,
+  token,
+  projectUrl,
+  entries,
+  onChange,
+  onPersisted,
+}: {
+  serverId?: string;
+  token?: string | null;
+  projectUrl?: string;
+  entries: TrafficDraft[];
+  onChange: (entries: TrafficDraft[]) => void;
+  onPersisted?: (serverPatch: any) => void;
+}) {
+  const reportUrl = similarwebUrl(projectUrl);
+  const [draft, setDraft] = React.useState<TrafficDraft>({ period: lastCompleteMonth(), monthly: '', source: 'similarweb' });
+  const [saving, setSaving] = React.useState(false);
+  const [message, setMessage] = React.useState('');
+  const sortedEntries = [...entries].sort((left, right) => right.period.localeCompare(left.period));
+  const selectedEntry = sortedEntries.find(entry => entry.period === draft.period);
+
+  React.useEffect(() => {
+    if (selectedEntry) {
+      setDraft(prev => ({ ...prev, monthly: selectedEntry.monthly, source: selectedEntry.source || 'similarweb' }));
+    } else {
+      setDraft(prev => prev.monthly === '' ? prev : { ...prev, monthly: '' });
+    }
+  }, [draft.period, selectedEntry?.period, selectedEntry?.monthly, selectedEntry?.source]);
+
+  const upsertLocal = (entry: TrafficDraft) => {
+    const next = [
+      entry,
+      ...entries.filter(item => item.period !== entry.period),
+    ].sort((left, right) => right.period.localeCompare(left.period));
+    onChange(next);
+  };
+
+  const saveEntry = async () => {
+    const monthly = Number(draft.monthly);
+    if (!draft.period || !Number.isFinite(monthly) || monthly < 0) {
+      setMessage('Укажи месяц и посещения');
+      return;
+    }
+
+    const entry = { period: draft.period, monthly: String(Math.round(monthly)), source: draft.source || 'similarweb' };
+    if (!serverId) {
+      upsertLocal(entry);
+      setMessage('Месяц добавлен к новому проекту');
+      return;
+    }
+    if (!token) {
+      setMessage('Нужно войти админом');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('');
+    try {
+      const patch = await api.servers.saveTrafficSnapshot(serverId, { ...entry, monthly: Number(entry.monthly) }, token);
+      onPersisted?.(patch);
+      onChange(trafficDrafts(patch));
+      setDraft(prev => ({ ...prev, period: previousMonth(prev.period), monthly: '' }));
+      setMessage('Сохранено в базу');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Не удалось сохранить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const removeEntry = async (entry: TrafficDraft) => {
+    if (!confirm(`Удалить трафик за ${entry.period}?`)) return;
+    if (!serverId) {
+      onChange(entries.filter(item => item.period !== entry.period));
+      return;
+    }
+    if (!token) {
+      setMessage('Нужно войти админом');
+      return;
+    }
+    setSaving(true);
+    setMessage('');
+    try {
+      const patch = await api.servers.deleteTrafficSnapshot(serverId, entry.period, token);
+      onPersisted?.(patch);
+      onChange(trafficDrafts(patch));
+      setMessage('Месяц удален');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Не удалось удалить');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className={styles.trafficEditor}>
+      <div className={styles.trafficEditorHeader}>
+        <div>
+          <h3>Посещаемость сайта</h3>
+          <p>{serverId ? 'Месяц сохраняется сразу в базу, отдельно от общей формы проекта.' : 'Для нового проекта месяцы сохранятся после создания проекта.'}</p>
+        </div>
+        <div className={styles.trafficEditorActions}>
+          {reportUrl ? (
+            <a className={styles.trafficReportLink} href={reportUrl} target="_blank" rel="noopener noreferrer">
+              Открыть Similarweb <span aria-hidden="true">↗</span>
+            </a>
+          ) : (
+            <span className={styles.trafficReportDisabled}>Сначала укажи сайт</span>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.trafficQuickRow}>
+        <input className="input" aria-label="Месяц отчета" type="month" value={draft.period} onChange={e => setDraft(prev => ({ ...prev, period: e.target.value }))} />
+        <input className="input" aria-label="Визиты за месяц" type="number" min={0} value={draft.monthly} onChange={e => setDraft(prev => ({ ...prev, monthly: e.target.value }))} placeholder="68500" />
+        <select className="input" aria-label="Источник трафика" value={draft.source} onChange={e => setDraft(prev => ({ ...prev, source: e.target.value }))}>
+          <option value="similarweb">Similarweb</option>
+          <option value="pr-cy">PR-CY</option>
+          <option value="semrush">Semrush</option>
+          <option value="be1">Be1</option>
+          <option value="owner">Данные владельца</option>
+        </select>
+        <button className={styles.trafficSaveButton} type="button" onClick={saveEntry} disabled={saving}>
+          {saving ? 'Сохранение...' : selectedEntry ? 'Обновить месяц' : 'Сохранить месяц'}
+        </button>
+      </div>
+      {message && <div className={styles.trafficStatus}>{message}</div>}
+
+      {sortedEntries.length === 0 ? (
+        <div className={styles.trafficEmpty}>Пока нет сохраненных месяцев</div>
+      ) : (
+        <div className={styles.trafficSavedSummary}>
+          <span><b>{sortedEntries.length}</b> мес. в базе</span>
+          {sortedEntries[0] && (
+            <span>Последний: {sortedEntries[0].period} · {Number(sortedEntries[0].monthly).toLocaleString('ru-RU')}</span>
+          )}
+          <select
+            className="input"
+            aria-label="Выбрать сохраненный месяц"
+            value={selectedEntry?.period ?? ''}
+            onChange={e => {
+              const entry = sortedEntries.find(item => item.period === e.target.value);
+              if (entry) setDraft({ ...entry, source: entry.source || 'similarweb' });
+            }}
+          >
+            <option value="">Выбрать месяц</option>
+            {sortedEntries.map(entry => (
+              <option key={entry.period} value={entry.period}>
+                {entry.period} · {Number(entry.monthly).toLocaleString('ru-RU')}
+              </option>
+            ))}
+          </select>
+          {selectedEntry && (
+            <button type="button" className={styles.trafficRemoveButton} onClick={() => removeEntry(selectedEntry)} aria-label="Удалить выбранный месяц">×</button>
+          )}
         </div>
       )}
     </section>

@@ -73,6 +73,22 @@ export class ServersController {
   @ApiBearerAuth()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
+  @Put(':id/traffic')
+  saveTrafficSnapshot(@Param('id') id: string, @Body() body: any) {
+    return this.srv.saveTrafficSnapshot(id, body);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
+  @Delete(':id/traffic/:period')
+  deleteTrafficSnapshot(@Param('id') id: string, @Param('period') period: string) {
+    return this.srv.deleteTrafficSnapshot(id, period);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('ADMIN')
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdateServerDto) {
     return this.srv.update(id, dto);

@@ -22,6 +22,8 @@ const trafficSnapshotInputSchema = z.object({
   source: z.union([optionalSafeText(40), z.literal(''), z.null()]).optional().transform(value => value || 'similarweb'),
 });
 
+const trafficPeriodSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
 const serverInstanceSchema = z.object({
   id: optionalSafeText(64),
   label: optionalSafeText(80),
@@ -243,6 +245,13 @@ function appendTrafficSnapshot(existing: unknown, payload: any): TrafficUpdate |
     ...history.map((item: any) => ({ period: item.period, monthly: Number(item.monthly), source: item.source })),
     { period: payload.trafficPeriod, monthly: Number(payload.trafficMonthly), source: payload.trafficSource },
   ]);
+}
+
+function persistedTrafficEntries(history: unknown): Array<{ period: string; monthly: number; source?: string | null }> {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((item: any) => item?.period && item?.monthly != null && Number.isFinite(Number(item.monthly)))
+    .map((item: any) => ({ period: item.period, monthly: Number(item.monthly), source: item.source || 'similarweb' }));
 }
 
 function rateRange(n: number): string {
@@ -1093,6 +1102,71 @@ export class ServersService {
       return this.findOne(id);
     }
     return stripLegacyDownloadFields(server);
+  }
+
+  async saveTrafficSnapshot(id: string, body: any) {
+    const snapshot = parseOrThrow(trafficSnapshotInputSchema, body);
+    const existing = await this.prisma.server.findUnique({
+      where: { id },
+      select: { trafficHistory: true },
+    });
+    if (!existing) throw new NotFoundException('Сервер не найден');
+
+    const trafficUpdate = calculateTrafficHistory([
+      ...persistedTrafficEntries(existing.trafficHistory),
+      snapshot,
+    ]);
+
+    return this.prisma.server.update({
+      where: { id },
+      data: {
+        trafficHistory: trafficUpdate.history,
+        trafficMonthly: trafficUpdate.current?.monthly ?? null,
+        trafficThreeMonths: trafficUpdate.current?.threeMonths ?? null,
+        trafficPeriod: trafficUpdate.current?.period ?? null,
+        trafficSource: trafficUpdate.current?.source ?? null,
+      },
+      select: {
+        id: true,
+        trafficHistory: true,
+        trafficMonthly: true,
+        trafficThreeMonths: true,
+        trafficPeriod: true,
+        trafficSource: true,
+      },
+    });
+  }
+
+  async deleteTrafficSnapshot(id: string, period: string) {
+    const cleanPeriod = parseOrThrow(trafficPeriodSchema, period);
+    const existing = await this.prisma.server.findUnique({
+      where: { id },
+      select: { trafficHistory: true },
+    });
+    if (!existing) throw new NotFoundException('Сервер не найден');
+
+    const trafficUpdate = calculateTrafficHistory(
+      persistedTrafficEntries(existing.trafficHistory).filter(entry => entry.period !== cleanPeriod),
+    );
+
+    return this.prisma.server.update({
+      where: { id },
+      data: {
+        trafficHistory: trafficUpdate.history,
+        trafficMonthly: trafficUpdate.current?.monthly ?? null,
+        trafficThreeMonths: trafficUpdate.current?.threeMonths ?? null,
+        trafficPeriod: trafficUpdate.current?.period ?? null,
+        trafficSource: trafficUpdate.current?.source ?? null,
+      },
+      select: {
+        id: true,
+        trafficHistory: true,
+        trafficMonthly: true,
+        trafficThreeMonths: true,
+        trafficPeriod: true,
+        trafficSource: true,
+      },
+    });
   }
 
   // ── Удалить (только admin) ───────────────────

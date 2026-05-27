@@ -44,6 +44,16 @@ export const api = {
       request<Server>('/servers', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     update: (id: string, data: Partial<Server>, token: string) =>
       request<Server>(`/servers/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+    saveTrafficSnapshot: (id: string, data: { period: string; monthly: number; source?: string }, token: string) =>
+      request<Pick<Server, 'id' | 'trafficHistory' | 'trafficMonthly' | 'trafficThreeMonths' | 'trafficPeriod' | 'trafficSource'>>(
+        `/servers/${id}/traffic`,
+        { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } },
+      ),
+    deleteTrafficSnapshot: (id: string, period: string, token: string) =>
+      request<Pick<Server, 'id' | 'trafficHistory' | 'trafficMonthly' | 'trafficThreeMonths' | 'trafficPeriod' | 'trafficSource'>>(
+        `/servers/${id}/traffic/${encodeURIComponent(period)}`,
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+      ),
     delete: (id: string, token: string) =>
       request<void>(`/servers/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
     testOnlineSource: (data: any, token: string) =>
