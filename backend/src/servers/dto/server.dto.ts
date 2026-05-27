@@ -27,6 +27,10 @@ export class CreateServerDto {
   @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
   @IsOptional() @IsString() statusOverride?: string | null;
+  @IsOptional() @IsInt() trafficMonthly?: number | null;
+  @IsOptional() @IsInt() trafficThreeMonths?: number | null;
+  @IsOptional() @IsString() trafficPeriod?: string | null;
+  @IsOptional() @IsString() trafficSource?: string | null;
   // instances — массив сабкарточек проекта (см. schema.prisma)
   @IsOptional() instances?: any[];
 }

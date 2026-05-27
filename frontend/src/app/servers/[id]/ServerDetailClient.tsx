@@ -10,15 +10,29 @@ import type { Article, Server, Review, VoteStatus, VoteSummary } from '@/lib/typ
 import { SERVER_TYPES } from '@/lib/types';
 import {
   formatOnline,
+  instanceOnlineLast24Hours,
   instanceOnlineIsEstimated,
   instanceOnlineValue,
+  onlineChartPath,
   onlineSeries,
-  onlineSeriesStats,
+  serverOnlineDisclosure,
   serverOnlineIsEstimated,
   serverOnlineHistorySeries,
   serverOnlineValue,
   type OnlineRange,
 } from '@/lib/online';
+import {
+  currentProjectWorlds,
+  formatTraffic,
+  formatTrafficPeriod,
+  historicalProjectWorlds,
+  nextProjectOpening,
+  projectOpeningCount,
+  projectTrafficHistory,
+  projectWorldCount,
+  worldLifecycle,
+  worldLifecycleLabel,
+} from '@/lib/project-metrics';
 import styles from './page.module.css';
 
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
@@ -78,7 +92,11 @@ function formatFullDate(value?: string | null) {
 
 function onlinePointLabel(index: number, count: number, range: OnlineRange) {
   const point = new Date();
-  if (range === 'days') {
+  if (range === 'hours') {
+    point.setHours(point.getHours() - (count - 1 - index));
+    return point.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+  }
+  if (range === 'days' || range === 'monthDays') {
     point.setDate(point.getDate() - (count - 1 - index));
     return point.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   }
@@ -91,6 +109,15 @@ function onlinePointLabel(index: number, count: number, range: OnlineRange) {
   }
   point.setMonth(point.getMonth() - (count - 1 - index), 1);
   return point.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+}
+
+function ChartHint({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <span className={styles.chartHint}>
+      <button type="button" aria-label={label}>?</button>
+      <span className={styles.chartHintPopup} role="tooltip">{children}</span>
+    </span>
+  );
 }
 
 function niceChartStep(value: number) {
@@ -221,7 +248,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'info' | 'servers' | 'reviews'>('overview');
-  const [onlineRange, setOnlineRange] = useState<OnlineRange>('days');
+  const [onlineRange, setOnlineRange] = useState<OnlineRange>('hours');
+  const [hoveredTrafficIndex, setHoveredTrafficIndex] = useState<number | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
@@ -357,16 +385,23 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const isOnline = status?.status === 'online';
   const hasInstances = (server.instances?.length ?? 0) > 0;
   const instances = server.instances ?? [];
+  const currentWorlds = currentProjectWorlds(server);
+  const historicalWorlds = historicalProjectWorlds(server);
+  const visibleWorlds = instances.length > 0 ? currentWorlds : instances;
+  const worldCount = projectWorldCount(server);
+  const openingCount = projectOpeningCount(server);
+  const nextOpening = nextProjectOpening(server);
   const reviews = server.reviews ?? [];
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const projectOnline = serverOnlineValue(server);
   const estimatedProjectOnline = serverOnlineIsEstimated(server);
+  const onlineDisclosure = serverOnlineDisclosure(server);
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
   const tagSet = new Set<string>();
-  if (instances.length) {
-    instances.forEach(inst => {
+  if (visibleWorlds.length) {
+    visibleWorlds.forEach(inst => {
       if (inst.chronicle) tagSet.add(inst.chronicle);
       if (inst.rates) tagSet.add(inst.rates);
       if (inst.type) tagSet.add(typeLabels.get(inst.type as any) ?? inst.type);
@@ -387,7 +422,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const estimatedOnlineValues = onlineSeries(projectOnline, onlineRange);
   const onlineHistory = serverOnlineHistorySeries(server, onlineRange, estimatedOnlineValues);
   const onlineValues = onlineHistory.values;
-  const onlineStats = onlineSeriesStats(onlineValues);
   const chartLeft = 46;
   const chartTop = 10;
   const chartWidth = 396;
@@ -426,6 +460,30 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         onlineGraphPoints.length - 1,
       ]));
   const onlineAxisMarks = onlineAxisIndexes.map(index => onlineGraphPoints[index]).filter(Boolean);
+  const trafficHistory = projectTrafficHistory(server).slice(-6);
+  const trafficValues = trafficHistory.map(snapshot => snapshot.monthly ?? Math.round((snapshot.threeMonths ?? 0) / 3));
+  const trafficMax = trafficValues.length > 0 ? Math.max(...trafficValues) : 0;
+  const trafficTicks = niceOnlineTicks(trafficMax);
+  const trafficDomainMax = trafficTicks[0] || Math.max(1, trafficMax);
+  const trafficGraphPoints = trafficValues.map((value, index) => {
+    const slotWidth = chartWidth / Math.max(1, trafficValues.length);
+    const width = Math.min(52, slotWidth * .62);
+    return {
+    value,
+    label: formatTrafficPeriod(trafficHistory[index]?.period),
+    x: chartLeft + slotWidth * index + ((slotWidth - width) / 2),
+    width,
+    y: chartBottom - (Math.min(value, trafficDomainMax) / trafficDomainMax) * chartHeight,
+    };
+  });
+  const trafficGraphScale = trafficTicks.map(value => {
+    const y = chartBottom - (value / trafficDomainMax) * chartHeight;
+    return {
+      label: formatTraffic(value),
+      y,
+      textY: Math.min(chartBottom - 2, Math.max(chartTop + 7, y + 4)),
+    };
+  });
   const voteDisabled = voting || !!voteStatus?.voted;
 
   return (
@@ -473,28 +531,33 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         </div>
 
         <aside className={styles.heroPanel}>
+          <div className={styles.heroPanelHead}>
+            <span>Показатели проекта</span>
+            <Link href="/methodology">Методика</Link>
+          </div>
           <div className={styles.heroMetricGrid}>
             {projectOnline != null && (
               <div>
-                <span>Онлайн</span>
+                <span>Онлайн сейчас</span>
                 <strong className={styles.serverOnline}>{formatOnline(projectOnline, estimatedProjectOnline)}</strong>
+                {onlineDisclosure && <small title={onlineDisclosure.title}>{onlineDisclosure.label}</small>}
               </div>
             )}
             <div>
-              <span>Голоса</span>
-              <strong>{totalVotes}</strong>
+              <span>Миров</span>
+              <strong>{worldCount}</strong>
+            </div>
+            <div className={styles.heroTrafficMetric}>
+                <span>Трафик / до 3 мес.</span>
+              <strong>{formatTraffic(server.trafficThreeMonths)}</strong>
             </div>
             <div>
-              <span>Статус</span>
-              <strong className={statusClass}>● {statusText}</strong>
+              <span>Ближайший старт</span>
+              <strong>{nextOpening ? formatFullDate(nextOpening) : 'Нет анонса'}</strong>
             </div>
             <div>
-              <span>Старт</span>
-              <strong>{startDate}</strong>
-            </div>
-            <div>
-              <span>Аптайм</span>
-              <strong>{uptimeValue}</strong>
+              <span>Открытий</span>
+              <strong>{openingCount}</strong>
             </div>
             <div>
               <span>Рейтинг</span>
@@ -507,7 +570,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
           <button type="button" className={activeTab === 'info' ? styles.serverTabActive : ''} onClick={() => setActiveTab('info')}>Информация</button>
           <button type="button" className={activeTab === 'servers' ? styles.serverTabActive : ''} onClick={() => setActiveTab('servers')}>
-            Сервера {instances.length > 0 && <span>{instances.length}</span>}
+            Миры и открытия {instances.length > 0 && <span>{instances.length}</span>}
           </button>
           <button type="button" className={activeTab === 'reviews' ? styles.serverTabActive : ''} onClick={() => setActiveTab('reviews')}>
             Отзывы {server.ratingCount > 0 && <span>{server.ratingCount}</span>}
@@ -517,32 +580,90 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
       {activeTab === 'overview' && (
         <div className={styles.detailGrid}>
-          <section className={styles.infoCard}>
-            <h2>О сервере</h2>
-            {server.fullDesc
-              ? <div className={styles.desc}>{formatDesc(server.fullDesc ?? '')}</div>
-              : <p className={styles.empty}>Описание отсутствует.</p>}
+          <section className={`${styles.infoCard} ${styles.worldOverviewCard}`}>
+            <div className={styles.cardTitleRow}>
+              <h2>Миры и открытия</h2>
+              <button type="button" className={styles.inlineLink} onClick={() => setActiveTab('servers')}>Все открытия</button>
+            </div>
+            <div className={styles.worldTable} role="table" aria-label="Миры проекта">
+              <div className={styles.worldTableHead} role="row">
+                <span>Мир</span>
+                <span>Хроники</span>
+                <span>Рейт</span>
+                <span>Тип</span>
+                <span>Онлайн</span>
+                <span>Статус</span>
+                <span>Открыт</span>
+                <span>Активность (24 ч)</span>
+              </div>
+              {(currentWorlds.length > 0 ? currentWorlds : instances).slice(0, 5).map(instance => {
+                const online = instanceOnlineValue(instance);
+                const label = worldLifecycleLabel(instance);
+                const lifecycle = worldLifecycle(instance);
+                const lifecycleClass = lifecycle === 'upcoming'
+                  ? styles.worldSoon
+                  : lifecycle === 'active' ? styles.worldActive : styles.worldArchive;
+                const activityPath = onlineChartPath(instanceOnlineLast24Hours(instance), 110, 25);
+                return (
+                  <div key={instance.id} className={styles.worldTableRow} role="row">
+                    <strong>{instance.label || instance.rates || instance.chronicle}</strong>
+                    <span>{instance.chronicle || '—'}</span>
+                    <span>{instance.rates || '—'}</span>
+                    <span>{instance.type ? (typeLabels.get(instance.type as any) ?? instance.type) : '—'}</span>
+                    <b>{online != null && <i aria-hidden="true" />}{online == null ? '-' : formatOnline(online, instanceOnlineIsEstimated(instance))}</b>
+                    <em className={lifecycleClass}>{label}</em>
+                    <span>{instance.openedDate ? formatFullDate(instance.openedDate) : '—'}</span>
+                    <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Онлайн за 24 часа">
+                      {activityPath && <path d={`${activityPath} L 110 25 L 0 25 Z`} className={styles.worldActivityFill} />}
+                      {activityPath && <path d={activityPath} className={styles.worldActivityLine} />}
+                    </svg>
+                  </div>
+                );
+              })}
+              {instances.length === 0 && (
+                <div className={styles.worldTableRow} role="row">
+                  <strong>{server.name}</strong>
+                  <span>{server.chronicle || '—'}</span>
+                  <span>{server.rates || '—'}</span>
+                  <span>{mainType ? (typeLabels.get(mainType as any) ?? mainType) : '—'}</span>
+                  <b>{projectOnline != null && <i aria-hidden="true" />}{formatOnline(projectOnline, estimatedProjectOnline)}</b>
+                  <em className={styles.worldActive}>Открыт</em>
+                  <span>{server.openedDate ? formatFullDate(server.openedDate) : '—'}</span>
+                  <span className={styles.worldNoActivity}>—</span>
+                </div>
+              )}
+            </div>
+            {historicalWorlds.length > 0 && (
+              <p className={styles.worldArchiveHint}>В истории: {historicalWorlds.length} закрытых или объединённых открытий</p>
+            )}
           </section>
 
-          <div className={styles.mainInfoStack}>
-            <section className={`${styles.infoCard} ${styles.onlineStatsCard}`}>
+          <section className={`${styles.infoCard} ${styles.analyticsCard}`}>
+            <div className={styles.analyticsPane}>
               <div className={styles.cardTitleRow}>
-                <h2>Пиковый онлайн</h2>
+                <h2 className={styles.chartHeading}>
+                  Онлайн
+                  <ChartHint label="Как считается онлайн">
+                    <strong>Как считается онлайн</strong>
+                    <span>Если у проекта есть счётчик, число берётся с его сайта.</span>
+                    <span>Если счётчика нет, редакция заходит в игру и вносит визуальную оценку. Для неё строится умный суточный график: спад ночью, пик вечером, поправка на выходные и автоохоту, плюс естественный шум 5–15%.</span>
+                  </ChartHint>
+                </h2>
                 <div className={styles.onlineRangeTabs}>
-                  {(['days', 'weeks', 'months'] as OnlineRange[]).map(range => (
+                  {(['hours', 'days', 'monthDays'] as OnlineRange[]).map(range => (
                     <button
                       key={range}
                       type="button"
                       className={onlineRange === range ? styles.onlineRangeActive : ''}
                       onClick={() => setOnlineRange(range)}
                     >
-                      {range === 'days' ? 'Дни' : range === 'weeks' ? 'Недели' : 'Месяцы'}
+                      {range === 'hours' ? '24 часа' : range === 'days' ? '7 дней' : '30 дней'}
                     </button>
                   ))}
                 </div>
               </div>
               <div className={styles.onlineGraphBox}>
-                <svg viewBox="0 0 460 150" role="img" aria-label="График пикового онлайна">
+                <svg viewBox="0 0 460 150" role="img" aria-label="График онлайна за выбранный период">
                   <defs>
                     <linearGradient id="serverOnlineFill" x1="0" x2="0" y1="0" y2="1">
                       <stop offset="0%" stopColor="rgba(83,217,135,.34)" />
@@ -560,7 +681,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   {onlinePath && <path d={onlinePath} className={styles.onlineGraphLine} />}
                   {onlineGraphPoints.map((point, index) => (
                     <circle key={`${point.x}-${index}`} cx={point.x} cy={point.y} r="3.6" className={styles.onlineGraphDot}>
-                      <title>{`${point.label}: пик ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
+                      <title>{`${point.label}: онлайн ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
                     </circle>
                   ))}
                   {onlineAxisMarks.map(point => (
@@ -572,30 +693,79 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </svg>
                 {!onlinePath && <div className={styles.onlineEmpty}>Онлайн появится после настройки сервера</div>}
               </div>
-              <div className={styles.onlineFooterStats}>
-                <div><span>Последний пик</span><strong>{formatOnline(onlineStats.current, estimatedProjectOnline)}</strong></div>
-                <div><span>Средний пик</span><strong>{formatOnline(onlineStats.average, estimatedProjectOnline)}</strong></div>
-                <div><span>Рекорд</span><strong>{formatOnline(onlineStats.peak, estimatedProjectOnline)}</strong></div>
-              </div>
-            </section>
+            </div>
 
-            {relatedArticles.length > 0 && (
-              <section className={`${styles.infoCard} ${styles.projectArticlesCard}`}>
-                <h2>Статьи по проекту</h2>
-                <div className={styles.projectArticles}>
-                  {relatedArticles.map(article => (
-                    <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
-                      {article.image && <img src={article.image} alt="" />}
-                      <span>
-                        <strong>{article.title}</strong>
-                        <small>{formatFullDate(article.publishedAt)}</small>
-                      </span>
-                    </Link>
+            <div className={`${styles.analyticsPane} ${styles.trafficPane}`}>
+            <div className={styles.cardTitleRow}>
+              <h2 className={styles.chartHeading}>
+                Посещаемость сайта
+                <ChartHint label="Как считается посещаемость">
+                  <strong>Посещаемость сайта</strong>
+                  <span>Это не число игроков. Столбцы показывают оценку визитов на сайт проекта за каждый месяц.</span>
+                </ChartHint>
+              </h2>
+              <div className={styles.trafficTitleLinks}>
+                <span>6 месяцев</span>
+                <Link href="/methodology" className={styles.inlineTextLink}>Методика</Link>
+              </div>
+            </div>
+            <div className={`${styles.onlineGraphBox} ${styles.trafficGraphBox}`}>
+              <svg viewBox="0 0 460 150" role="img" aria-label="График оценочного трафика сайта">
+                <defs>
+                  <linearGradient id="serverTrafficBars" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stopColor="rgba(87,166,246,.84)" />
+                    <stop offset="100%" stopColor="rgba(28,71,130,.46)" />
+                  </linearGradient>
+                </defs>
+                {trafficGraphScale.map((mark, index) => (
+                  <g key={`${mark.label}-${index}`}>
+                    <text x="2" y={mark.textY} className={styles.onlineGraphScale}>{mark.label}</text>
+                    <path d={`M ${chartLeft} ${mark.y} H ${chartLeft + chartWidth}`} className={styles.onlineGraphGridLine} />
+                  </g>
                   ))}
+                <path d={`M ${chartLeft} ${chartBottom} H ${chartLeft + chartWidth}`} className={styles.onlineGraphAxis} />
+                {trafficGraphPoints.map((point, index) => (
+                  <rect
+                    key={`${point.x}-${index}`}
+                    x={point.x}
+                    y={point.y}
+                    width={point.width}
+                    height={chartBottom - point.y}
+                    rx="3"
+                    tabIndex={0}
+                    className={`${styles.trafficGraphBar} ${hoveredTrafficIndex === index ? styles.trafficGraphBarActive : ''}`}
+                    onMouseEnter={() => setHoveredTrafficIndex(index)}
+                    onMouseLeave={() => setHoveredTrafficIndex(null)}
+                    onClick={() => setHoveredTrafficIndex(index)}
+                    onFocus={() => setHoveredTrafficIndex(index)}
+                    onBlur={() => setHoveredTrafficIndex(null)}
+                  >
+                    <title>{`${point.label}: ${formatTraffic(point.value)} визитов`}</title>
+                  </rect>
+                ))}
+                {trafficGraphPoints.map(point => (
+                  <g key={`traffic-axis-${point.label}`}>
+                    <path d={`M ${point.x + point.width / 2} ${chartBottom} V ${chartBottom + 5}`} className={styles.onlineGraphTick} />
+                    <text x={point.x + point.width / 2} y={chartBottom + 20} className={styles.onlineGraphXLabel}>{point.label}</text>
+                  </g>
+                ))}
+              </svg>
+              {hoveredTrafficIndex != null && trafficGraphPoints[hoveredTrafficIndex] && (
+                <div
+                  className={styles.trafficTooltip}
+                  style={{
+                    left: `${((trafficGraphPoints[hoveredTrafficIndex].x + trafficGraphPoints[hoveredTrafficIndex].width / 2) / 460) * 100}%`,
+                    top: `${Math.max(36, (trafficGraphPoints[hoveredTrafficIndex].y / 150) * 100)}%`,
+                  }}
+                >
+                  <small>{trafficGraphPoints[hoveredTrafficIndex].label}</small>
+                  <strong>{formatTraffic(trafficGraphPoints[hoveredTrafficIndex].value)} визитов</strong>
                 </div>
-              </section>
-            )}
-          </div>
+              )}
+              {trafficGraphPoints.length === 0 && <div className={styles.onlineEmpty}>Трафик появится после подключения источника</div>}
+            </div>
+            </div>
+          </section>
 
           <aside className={styles.sideStack}>
             <section className={`${styles.sideCard} ${styles.supportCard}`}>
@@ -625,6 +795,25 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               )}
             </section>
 
+            <section className={`${styles.sideCard} ${styles.projectArticlesCard}`}>
+              <h2>Статьи по проекту</h2>
+              {relatedArticles.length > 0 ? (
+                <div className={styles.projectArticles}>
+                  {relatedArticles.map(article => (
+                    <Link key={article.id} href={`/blog/${article.slug}`} className={styles.projectArticle}>
+                      {article.image && <img src={article.image} alt="" />}
+                      <span>
+                        <strong>{article.title}</strong>
+                        <small>{formatFullDate(article.publishedAt)}</small>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.projectArticlesEmpty}>Публикаций о проекте пока нет.</p>
+              )}
+            </section>
+
             {(server.telegram || server.discord || server.vk || server.youtube) && (
               <section className={styles.sideCard}>
                 <h2>Контакты</h2>
@@ -637,7 +826,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               </section>
             )}
           </aside>
-
         </div>
       )}
 
@@ -646,13 +834,14 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <section className={`${styles.infoCard} ${styles.infoTabCard}`}>
             <h2>Информация</h2>
             <div className={styles.infoRows}>
-              <div><span>Хроники</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
-              <div><span>Рейты</span><strong>{instances.length ? Array.from(new Set(instances.map(i => i.rates))).join(', ') : server.rates}</strong></div>
-              <div><span>Тип сервера</span><strong>{instances.length ? 'Несколько запусков' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
+              <div><span>Хроники</span><strong>{currentWorlds.length ? Array.from(new Set(currentWorlds.map(i => i.chronicle))).join(', ') : server.chronicle}</strong></div>
+              <div><span>Рейты</span><strong>{currentWorlds.length ? Array.from(new Set(currentWorlds.map(i => i.rates))).join(', ') : server.rates}</strong></div>
+              <div><span>Тип сервера</span><strong>{currentWorlds.length ? 'Несколько миров' : (mainType ? typeLabels.get(mainType as any) : '—')}</strong></div>
               <div><span>Старт проекта</span><strong>{startDate}</strong></div>
               <div><span>Языки</span><strong className={styles.regionList}>{languages.map(item => <span key={item.raw} title={LANGUAGE_LABELS[item.raw.toUpperCase()] ?? item.raw}>{item.label}</span>)}</strong></div>
               <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
               {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong></div>}
+              {server.trafficThreeMonths != null && <div><span>Трафик / до 3 мес.</span><strong className={styles.serverTraffic}>{formatTraffic(server.trafficThreeMonths)}</strong></div>}
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
             </div>
           </section>
@@ -664,22 +853,29 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <section className={`${styles.infoCard} ${styles.projectServersCard}`}>
             <div className={styles.projectServersHead}>
               <div>
-                <h2>Миры проекта <span>{instances.length || 1}</span></h2>
-                <p>Запуски внутри проекта: хроники, рейты, онлайн и дата старта.</p>
+                <h2>Миры и открытия <span>{instances.length || 1}</span></h2>
+                <p>Сейчас миров: {worldCount}. Всего открытий в истории: {openingCount}.</p>
               </div>
             </div>
             {instances.length > 0 ? (
               <div className={styles.instancesLarge}>
-                {[...instances].sort((a, b) => (a.rateNum || 0) - (b.rateNum || 0)).map(inst => {
-                  const isFuture = isOpeningStillSoon(inst.openedDate);
+                {[...instances].sort((a, b) => {
+                  const rank = (instance: typeof a) => ['active', 'upcoming', 'merged', 'closed', 'archived'].indexOf(worldLifecycle(instance));
+                  return rank(a) - rank(b) || (a.rateNum || 0) - (b.rateNum || 0);
+                }).map(inst => {
+                  const lifecycle = worldLifecycle(inst);
+                  const isFuture = lifecycle === 'upcoming';
+                  const isHistorical = lifecycle === 'merged' || lifecycle === 'closed' || lifecycle === 'archived';
                   const instOnline = instanceOnlineValue(inst);
                   const estimatedInstOnline = instanceOnlineIsEstimated(inst);
                   const openedLabel = isFuture ? formatFullDate(inst.openedDate) : relativeOpened(inst.openedDate);
                   return (
-                    <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''}`}>
+                    <article key={inst.id} className={`${styles.instTileLarge} ${isFuture ? styles.instTileSoon : ''} ${isHistorical ? styles.instTileHistorical : ''}`}>
                       <div className={styles.instTileHead}>
                         <span className={styles.instTileLabel}>{inst.label || inst.chronicle}</span>
-                        {isFuture && <span className={styles.instTileSoonBadge}>Скоро</span>}
+                        <span className={`${styles.instTileStatus} ${isFuture ? styles.instTileSoonBadge : ''} ${isHistorical ? styles.instTileArchiveBadge : ''}`}>
+                          {worldLifecycleLabel(inst)}
+                        </span>
                       </div>
                       <div className={styles.instTileTags}>
                         <span>{inst.chronicle}</span>
@@ -687,8 +883,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                         {inst.type && <span>{typeLabels.get(inst.type as any) ?? inst.type}</span>}
                       </div>
                       {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
+                      {inst.statusNote && <div className={styles.instStatusNote}>{inst.statusNote}</div>}
                       <div className={styles.instTileStats}>
-                        {instOnline != null && (
+                        {!isHistorical && instOnline != null && (
                           <div className={styles.instTileStatOnline}>
                             <strong>{formatOnline(instOnline, estimatedInstOnline)}</strong>
                             <span>онлайн</span>
@@ -697,7 +894,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                         {inst.openedDate && (
                           <div>
                             <strong>{openedLabel}</strong>
-                            <span>{isFuture ? 'старт' : 'работает'}</span>
+                            <span>{isFuture ? 'старт' : isHistorical ? 'открывался' : 'работает'}</span>
                           </div>
                         )}
                       </div>

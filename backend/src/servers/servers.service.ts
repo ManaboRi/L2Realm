@@ -11,6 +11,11 @@ const optionalOnlineRegex = z.string()
   .pipe(z.string().max(500))
   .optional();
 
+const optionalTrafficCount = z.preprocess(
+  value => value === '' || value == null ? null : value,
+  z.coerce.number().int().min(0).max(100_000_000).nullable().optional(),
+);
+
 const serverInstanceSchema = z.object({
   id: optionalSafeText(64),
   label: optionalSafeText(80),
@@ -22,12 +27,15 @@ const serverInstanceSchema = z.object({
   url: optionalSafeUrl,
   shortDesc: optionalSafeText(240),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  lifecycleStatus: z.enum(['active', 'upcoming', 'merged', 'closed', 'archived']).optional(),
+  statusNote: optionalSafeText(160),
   soonVipUntil: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   soonVipPaymentId: z.union([optionalSafeText(120), z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineMode: z.enum(['off', 'manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']).optional(),
   onlineManual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineValue: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   onlineUpdatedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  onlineEstimatedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineStatus: z.enum(['ok', 'error']).nullable().optional(),
   onlineError: z.union([optionalSafeText(240), z.literal(''), z.null()]).optional().transform(value => value || null),
   onlineSourceUrl: optionalSafeUrl,
@@ -65,6 +73,10 @@ const serverPayloadSchema = z.object({
   shortDesc: optionalSafeText(300),
   fullDesc: optionalSafeMarkdownText(10_000),
   statusOverride: z.union([z.enum(['online', 'offline', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
+  trafficMonthly: optionalTrafficCount,
+  trafficThreeMonths: optionalTrafficCount,
+  trafficPeriod: z.union([z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/), z.literal(''), z.null()]).optional().transform(value => value || null),
+  trafficSource: z.union([optionalSafeText(40), z.literal(''), z.null()]).optional().transform(value => value || null),
   instances: z.array(serverInstanceSchema).max(50).optional(),
 });
 
@@ -91,6 +103,11 @@ function stripLegacyDownloadFields<T>(value: T): T {
 const onlineSourceTestSchema = z.object({
   mode: z.enum(['manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']),
   manual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
+  chronicle: optionalSafeText(80),
+  rates: optionalSafeText(40),
+  rateNum: z.coerce.number().int().min(1).max(1_000_000).optional(),
+  instanceId: optionalSafeText(64),
+  observedAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   sourceUrl: safeUrl.optional(),
   listPath: optionalSafeText(240),
   matchField: optionalSafeText(120),
@@ -118,6 +135,74 @@ function isOpeningStillSoon(value?: Date | string | null, nowTs = Date.now()): b
   return !isNaN(t) && t + OPENING_DAY_MS > nowTs;
 }
 
+function isHistoricalInstance(instance: any): boolean {
+  return instance?.lifecycleStatus === 'merged' ||
+    instance?.lifecycleStatus === 'closed' ||
+    instance?.lifecycleStatus === 'archived';
+}
+
+function activeInstances(server: any): any[] {
+  const instances: any[] = Array.isArray(server?.instances) ? server.instances : [];
+  return instances.filter(instance => !isHistoricalInstance(instance));
+}
+
+type TrafficSnapshot = {
+  period: string;
+  monthly: number | null;
+  threeMonths: number | null;
+  source: string;
+};
+
+type TrafficUpdate = {
+  history: TrafficSnapshot[];
+  current: TrafficSnapshot;
+};
+
+function appendTrafficSnapshot(existing: unknown, payload: any): TrafficUpdate | undefined {
+  const touched = Object.prototype.hasOwnProperty.call(payload, 'trafficMonthly') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficThreeMonths') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficPeriod') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficSource');
+  if (!touched || !payload.trafficPeriod || (payload.trafficMonthly == null && payload.trafficThreeMonths == null)) {
+    return undefined;
+  }
+
+  const history = Array.isArray(existing) ? existing.filter(item => item && typeof item === 'object') : [];
+  const snapshot: TrafficSnapshot = {
+    period: payload.trafficPeriod,
+    monthly: payload.trafficMonthly ?? null,
+    threeMonths: payload.trafficThreeMonths ?? null,
+    source: payload.trafficSource || 'similarweb',
+  };
+  const snapshots = [...history.filter((item: any) => item.period !== snapshot.period), snapshot]
+    .sort((a: any, b: any) => String(a.period).localeCompare(String(b.period)))
+    .slice(-36)
+    .map((item: any) => ({
+      period: String(item.period),
+      monthly: item.monthly == null ? null : Number(item.monthly),
+      threeMonths: item.threeMonths == null ? null : Number(item.threeMonths),
+      source: String(item.source || 'similarweb'),
+    }));
+
+  const derivedHistory = snapshots.map((item, index) => {
+    const recentMonthly = snapshots
+      .slice(Math.max(0, index - 2), index + 1)
+      .map(entry => entry.monthly)
+      .filter((value): value is number => value != null && Number.isFinite(value));
+    return {
+      ...item,
+      threeMonths: recentMonthly.length > 0
+        ? recentMonthly.reduce((sum, value) => sum + value, 0)
+        : item.threeMonths,
+    };
+  });
+
+  return {
+    history: derivedHistory,
+    current: derivedHistory[derivedHistory.length - 1],
+  };
+}
+
 function rateRange(n: number): string {
   if (n <= 5)     return 'low';
   if (n <= 49)    return 'mid';
@@ -129,7 +214,7 @@ function rateRange(n: number): string {
 
 function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
   if (isOpeningStillSoon(s.openedDate, nowTs)) return true;
-  const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+  const insts = activeInstances(s);
   return insts.some(i => isOpeningStillSoon(i?.openedDate, nowTs));
 }
 
@@ -139,7 +224,7 @@ function hasOpenedLaunch(s: any, nowTs = Date.now()): boolean {
     if (!isNaN(t) && t + OPENING_DAY_MS <= nowTs) return true;
   }
 
-  const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+  const insts = activeInstances(s);
   let hasDatedInstance = false;
   for (const i of insts) {
     if (!i?.openedDate) continue;
@@ -198,22 +283,66 @@ function hashString(value: string): number {
 
 const ONLINE_HISTORY_LIMIT = 24 * 90;
 
-function smoothBell(hour: number, center: number, width: number): number {
-  const distance = Math.abs(((hour - center + 12) % 24) - 12);
-  const t = Math.max(0, 1 - distance / width);
-  return t * t * (3 - 2 * t);
+const ESTIMATED_DAILY_CURVE = [
+  { hour: 0, multiplier: .42 },
+  { hour: 2, multiplier: .30 },
+  { hour: 4, multiplier: .20 },
+  { hour: 6, multiplier: .22 },
+  { hour: 8, multiplier: .50 },
+  { hour: 10, multiplier: .68 },
+  { hour: 12, multiplier: .72 },
+  { hour: 14, multiplier: .74 },
+  { hour: 16, multiplier: .85 },
+  { hour: 18, multiplier: .95 },
+  { hour: 20, multiplier: 1 },
+  { hour: 22, multiplier: .83 },
+  { hour: 24, multiplier: .55 },
+] as const;
+
+function moscowClock(date: Date) {
+  const moscow = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+  return {
+    day: moscow.getUTCDay(),
+    hour: moscow.getUTCHours() + moscow.getUTCMinutes() / 60,
+    slot: moscow.toISOString().slice(0, 13),
+  };
 }
 
-function estimatedNightFloor(context?: any): number {
-  const chronicle = String(context?.chronicle || '').toLowerCase();
-  const rates = String(context?.rates || '').toLowerCase();
-  const rateNum = numberFromUnknown(context?.rateNum) ?? numberFromUnknown(rates) ?? 1;
+function interpolatedEstimatedMultiplier(hour: number): number {
+  const normalizedHour = ((hour % 24) + 24) % 24;
+  for (let index = 1; index < ESTIMATED_DAILY_CURVE.length; index++) {
+    const previous = ESTIMATED_DAILY_CURVE[index - 1];
+    const next = ESTIMATED_DAILY_CURVE[index];
+    if (normalizedHour <= next.hour) {
+      const progress = (normalizedHour - previous.hour) / (next.hour - previous.hour);
+      return previous.multiplier + ((next.multiplier - previous.multiplier) * progress);
+    }
+  }
+  return ESTIMATED_DAILY_CURVE[0].multiplier;
+}
 
-  if (chronicle.includes('essence') || chronicle.includes('main')) return 0.86;
-  if (rateNum >= 1000) return 0.56;
-  if (rateNum >= 100) return 0.63;
-  if (rateNum <= 5) return 0.73;
-  return 0.68;
+function chronicleEstimatedMultiplier(multiplier: number, context?: any): number {
+  const chronicle = String(context?.chronicle || '').toLowerCase();
+  if (chronicle.includes('essence') || chronicle.includes('main')) return .67 + (multiplier * .33);
+  if (chronicle.includes('classic')) return .3 + (multiplier * .7);
+  return multiplier;
+}
+
+function estimatedWeekdayMultiplier(day: number, hour: number): number {
+  if (day === 5) return hour >= 16 ? 1.15 : 1.04;
+  if (day === 6) return hour >= 12 ? 1.32 : 1.25;
+  if (day === 0) return hour >= 22 ? 1.1 : 1.2;
+  return 1;
+}
+
+function estimatedMultiplier(date: Date, context?: any): number {
+  const clock = moscowClock(date);
+  const daily = chronicleEstimatedMultiplier(interpolatedEstimatedMultiplier(clock.hour), context);
+  const weekday = estimatedWeekdayMultiplier(clock.day, clock.hour);
+  const seed = `${context?.id || context?.instanceId || context?.label || ''}:${context?.chronicle || ''}:${clock.slot}`;
+  const magnitude = .05 + ((hashString(`${seed}:magnitude`) / 0xffffffff) * .1);
+  const direction = hashString(`${seed}:direction`) / 0xffffffff >= .5 ? 1 : -1;
+  return Math.max(.12, daily * weekday * (1 + (magnitude * direction)));
 }
 
 function appendOnlineHistory(inst: any, online: number | null, date = new Date(), estimated = false) {
@@ -244,20 +373,10 @@ function appendOnlineHistory(inst: any, online: number | null, date = new Date()
 function estimateOnline(baseValue: unknown, date = new Date(), context?: any): number | null {
   const base = numberFromUnknown(baseValue);
   if (base == null) return null;
-
-  const moscowHour = ((date.getUTCHours() + 3) % 24) + date.getUTCMinutes() / 60;
-  const floor = estimatedNightFloor(context);
-  const nightDip = smoothBell(moscowHour, 4.3, 6.4);
-  const eveningPeak = smoothBell(moscowHour, 21.2, 4.8) * 0.075;
-  const afternoonPeak = smoothBell(moscowHour, 15.5, 5.5) * 0.035;
-  const daySeed = hashString(`${base}:${context?.chronicle || ''}:${context?.rates || ''}:${date.toISOString().slice(0, 10)}`) / 0xffffffff;
-  const hourSeed = hashString(`${base}:${context?.id || context?.label || ''}:${date.toISOString().slice(0, 13)}`) / 0xffffffff;
-  const dayJitter = 0.985 + daySeed * 0.03;
-  const hourJitter = 0.982 + hourSeed * 0.036;
-  const wave = 1 + Math.sin(((moscowHour - 10) / 24) * Math.PI * 2) * 0.014;
-  const factor = Math.max(floor, 1 - nightDip * (1 - floor) + eveningPeak + afternoonPeak);
-
-  return Math.max(0, Math.round(base * factor * dayJitter * hourJitter * wave));
+  const observedRaw = context?.onlineEstimatedAt ?? context?.observedAt;
+  const observedAt = observedRaw ? new Date(observedRaw) : null;
+  const anchor = observedAt && !Number.isNaN(observedAt.getTime()) ? estimatedMultiplier(observedAt, context) : 1;
+  return Math.max(0, Math.round(base * estimatedMultiplier(date, context) / Math.max(.1, anchor)));
 }
 
 function extractNextData(html: string): any | null {
@@ -409,7 +528,13 @@ export class ServersService {
     }
 
     if (clean.mode === 'estimated') {
-      const online = estimateOnline(clean.manual);
+      const online = estimateOnline(clean.manual, new Date(), {
+        id: clean.instanceId,
+        chronicle: clean.chronicle,
+        rates: clean.rates,
+        rateNum: clean.rateNum,
+        onlineEstimatedAt: clean.observedAt,
+      });
       if (online == null) throw new BadRequestException('Base online value is required');
       return {
         ok: true,
@@ -573,6 +698,10 @@ export class ServersService {
       let changed = false;
       const next: any[] = [];
       for (const inst of instances) {
+        if (isHistoricalInstance(inst)) {
+          next.push(inst);
+          continue;
+        }
         const checkedAt = new Date();
         const mode = inst?.onlineMode || 'off';
         if (mode === 'off') {
@@ -703,7 +832,7 @@ export class ServersService {
         const t = new Date(s.openedDate).getTime();
         if (!isNaN(t) && t <= nowTs) dates.push(t);
       }
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       for (const i of insts) {
         if (i?.openedDate) {
           const t = new Date(i.openedDate).getTime();
@@ -717,13 +846,13 @@ export class ServersService {
       if (!chronicle) return true;
       const c = chronicle.toLowerCase();
       if (s.chronicle?.toLowerCase().includes(c)) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       return insts.some(i => typeof i?.chronicle === 'string' && i.chronicle.toLowerCase().includes(c));
     }
     function matchesRate(s: any): boolean {
       if (!rate) return true;
       if (rateRange(s.rateNum) === rate) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       return insts.some(i => typeof i?.rateNum === 'number' && rateRange(i.rateNum) === rate);
     }
     function matchesOpenedWithin(s: any): boolean {
@@ -736,7 +865,7 @@ export class ServersService {
     function matchesDonate(s: any): boolean {
       if (!donate) return true;
       const wanted = donate;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       const instValues = insts
         .map(i => i?.donate)
         .filter(value => value && value !== 'free');
@@ -745,7 +874,7 @@ export class ServersService {
     }
     function matchesType(s: any): boolean {
       if (!type) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       const instValues = insts
         .map(i => i?.type)
         .filter(Boolean);
@@ -856,9 +985,17 @@ export class ServersService {
     const clean = parseOrThrow(serverPayloadSchema, dto) as any;
     const { openedDate, ...rest } = clean;
     const manualStatus = normalizeStatusOverride((rest as any).statusOverride);
+    const trafficUpdate = appendTrafficSnapshot([], rest);
     const server = await this.prisma.server.create({
       data: {
         ...rest,
+        ...(trafficUpdate && {
+          trafficHistory: trafficUpdate.history,
+          trafficMonthly: trafficUpdate.current.monthly,
+          trafficThreeMonths: trafficUpdate.current.threeMonths,
+          trafficPeriod: trafficUpdate.current.period,
+          trafficSource: trafficUpdate.current.source,
+        }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
       },
@@ -877,10 +1014,18 @@ export class ServersService {
     const { id: _id, openedDate, ...data } = clean as any;
     const manualStatus = normalizeStatusOverride(data.statusOverride);
     const statusOverrideTouched = Object.prototype.hasOwnProperty.call(data, 'statusOverride');
+    const trafficUpdate = appendTrafficSnapshot((existing as any).trafficHistory, data);
     const server = await this.prisma.server.update({
       where: { id },
       data: {
         ...data,
+        ...(trafficUpdate && {
+          trafficHistory: trafficUpdate.history,
+          trafficMonthly: trafficUpdate.current.monthly,
+          trafficThreeMonths: trafficUpdate.current.threeMonths,
+          trafficPeriod: trafficUpdate.current.period,
+          trafficSource: trafficUpdate.current.source,
+        }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
       },
@@ -976,7 +1121,7 @@ export class ServersService {
     });
     const filtered = all.filter(s => {
       if (isOpeningStillSoon(s.openedDate, nowTs)) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       return insts.some(i => isOpeningStillSoon(i?.openedDate, nowTs));
     });
 
@@ -991,7 +1136,7 @@ export class ServersService {
         if (!isNaN(t) && t + OPENING_DAY_MS > nowTs) dates.push(t);
       }
 
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       for (const inst of insts) {
         if (!inst?.openedDate) continue;
         const t = new Date(inst.openedDate).getTime();
@@ -1034,18 +1179,18 @@ export class ServersService {
       if (!f.chronicle) return true;
       const c = f.chronicle.toLowerCase();
       if (s.chronicle?.toLowerCase().includes(c)) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       return insts.some(i => typeof i?.chronicle === 'string' && i.chronicle.toLowerCase().includes(c));
     }
     function rateMatch(s: any): boolean {
       if (!f.rate) return true;
       if (rateRange(s.rateNum) === f.rate) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       return insts.some(i => typeof i?.rateNum === 'number' && rateRange(i.rateNum) === f.rate);
     }
     function donateMatch(s: any): boolean {
       if (!f.donate) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       const has = (val?: string) => val === f.donate;
       if (insts.some(i => has(i?.donate))) return true;
       if (insts.length === 0 && has(s.donate)) return true;
@@ -1053,7 +1198,7 @@ export class ServersService {
     }
     function typeMatchLocal(s: any): boolean {
       if (!f.type) return true;
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       if (insts.some(i => typeMatches(i?.type, f.type as string))) return true;
       if (insts.length === 0 && Array.isArray(s.type) && s.type.some((t: string) => typeMatches(t, f.type as string))) return true;
       return false;
@@ -1067,7 +1212,7 @@ export class ServersService {
         const t = new Date(s.openedDate).getTime();
         if (!isNaN(t) && t <= nowTs) dates.push(t);
       }
-      const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+      const insts = activeInstances(s);
       for (const i of insts) {
         if (i?.openedDate) {
           const t = new Date(i.openedDate).getTime();
@@ -1092,7 +1237,7 @@ export class ServersService {
     function dimensionCounts(servers: any[], dimension: 'chronicle' | 'rate' | 'donate' | 'type'): Record<string, number> {
       const out: Record<string, number> = {};
       for (const s of servers) {
-        const insts: any[] = Array.isArray(s.instances) ? s.instances : [];
+        const insts = activeInstances(s);
         const set = new Set<string>();
         if (dimension === 'chronicle') {
           if (s.chronicle) set.add(s.chronicle);
@@ -1146,14 +1291,14 @@ export class ServersService {
     const reviewCount = await this.prisma.review.count({ where: { approved: true } });
     const total = servers.length;
     const launchCount = servers.reduce((sum, s) => {
-      const instances = Array.isArray(s.instances) ? s.instances : [];
+      const instances = activeInstances(s);
       return sum + (instances.length > 0 ? instances.length : 1);
     }, 0);
     let onlineTotal = 0;
     let onlineServerCount = 0;
     let onlineEstimated = false;
     for (const server of servers) {
-      const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
+      const instances = activeInstances(server);
       for (const inst of instances) {
         const mode = inst?.onlineMode || 'off';
         if (mode === 'off') continue;

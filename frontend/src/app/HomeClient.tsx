@@ -7,7 +7,8 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { serverOnlineValue } from '@/lib/online';
+import { formatOnline, onlineChartPath, serverOnlineDisclosure, serverOnlineLast24Hours, serverOnlineValue } from '@/lib/online';
+import { currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount } from '@/lib/project-metrics';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -24,11 +25,6 @@ type HomeClientProps = {
   initialPages: number;
   initialOk: boolean;
 };
-
-const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
-
-type CardTagTone = 'chronicle' | 'rate' | 'type';
-type CardTag = { label: string; tone: CardTagTone };
 
 const SORT_OPTIONS = [
   { value: '', label: 'По умолчанию' },
@@ -267,11 +263,19 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 </div>
               </div>
 
-              <div className={styles.heroStats}>
-                <Metric tone="gold" label="Серверов" value={totalServers} />
-                <Metric tone="online" label="Игроков" value={totalOnline} />
-                <Metric tone="amber" label="Голосов" value={totalVotes} />
-                <Metric tone="red" label="Проектов" value={totalProjects} />
+              <div className={styles.heroStatsWrap}>
+                <div className={styles.heroStats}>
+                  <Metric tone="gold" label="Миров" value={totalServers} />
+                  <Metric tone="online" label="Игроков" value={totalOnline} />
+                  <Metric tone="amber" label="Голосов" value={totalVotes} />
+                  <Metric tone="red" label="Проектов" value={totalProjects} />
+                </div>
+                <div className={styles.heroStatsActions}>
+                  <Link href="/methodology" className={styles.metricMethodology}>
+                    <span aria-hidden="true">?</span>
+                    Методика
+                  </Link>
+                </div>
               </div>
             </section>
 
@@ -361,11 +365,16 @@ function HomeServerCard({
   canFavorite: boolean;
   onFavorite: () => void;
 }) {
-  const tags = collectTags(s);
-  const visibleTags = tags.slice(0, 4);
-  const hiddenTagsCount = Math.max(0, tags.length - visibleTags.length);
-  const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
+  const projectMeta = collectCardMeta(s);
   const online = serverOnlineValue(s);
+  const onlineDisclosure = serverOnlineDisclosure(s);
+  const worlds = projectWorldCount(s);
+  const latestOpening = latestProjectOpening(s);
+  const trafficTrend = projectTrafficTrend(s);
+  const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
+  const onlinePulse = serverOnlineLast24Hours(s);
+  const onlinePulsePath = onlinePulse.length >= 2 ? onlineChartPath(onlinePulse, 292, 34) : '';
+  const onlinePulseFillPath = onlinePulsePath ? `${onlinePulsePath} L 292 34 L 0 34 Z` : '';
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
   const isWeek = !!s._isSod;
@@ -402,27 +411,61 @@ function HomeServerCard({
           <ServerIcon server={s} />
           <div>
             <h2>{s.name}</h2>
-            <div className={styles.cardTags}>
-              {visibleTags.map(tag => <span key={`${tag.tone}-${tag.label}`} className={styles[`tag${capitalize(tag.tone)}`]}>{tag.label}</span>)}
-              {hiddenTagsCount > 0 && <span className={styles.tagMore}>+{hiddenTagsCount}</span>}
+            <div className={styles.cardTags} title={`${projectMeta.chroniclesTitle} / ${projectMeta.ratesTitle}`}>
+              <span className={styles.tagChronicle}>{projectMeta.chronicles}</span>
+              <span className={styles.tagRate}>{projectMeta.rates}</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className={styles.cardBody}>
-        <div className={styles.cardFooter}>
-          <div className={styles.cardMeta}>
-            <span>
-              <strong className={styles.online}><i aria-hidden="true" />{online == null ? '—' : online.toLocaleString('ru-RU')}</strong>
-            </span>
-            <span>
-              <strong><b aria-hidden="true" />{formatDate(s.openedDate)}</strong>
-            </span>
-            <span>
-              <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
-            </span>
-          </div>
+        <div className={styles.cardLiveRow} title={onlineDisclosure?.title}>
+          {online != null ? (
+            <>
+              <i className={styles.liveDot} aria-hidden="true" />
+              <strong>{formatOnline(online, onlineDisclosure?.estimated ?? false)} <small>онлайн</small></strong>
+            </>
+          ) : <span className={styles.onlineUnavailable}>Нет данных онлайн</span>}
+          <i className={styles.liveSeparator} aria-hidden="true" />
+          <span className={styles.worldSummary}>
+            {onlineDisclosure ? `${onlineDisclosure.tracked} из ${worlds}` : worlds} {worldWord(worlds)}
+          </span>
+        </div>
+        <div className={styles.cardSparkline} aria-hidden="true">
+          {onlinePulsePath && (
+            <svg viewBox="0 0 292 34" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id={`cardOnlineFill-${s.id}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stopColor="rgba(62,205,119,.2)" />
+                  <stop offset="100%" stopColor="rgba(62,205,119,0)" />
+                </linearGradient>
+              </defs>
+              {onlinePulseFillPath && <path className={styles.sparkFill} style={{ fill: `url(#cardOnlineFill-${s.id})` }} d={onlinePulseFillPath} />}
+              <path className={styles.sparkLine} d={onlinePulsePath} />
+            </svg>
+          )}
+        </div>
+        <div className={styles.cardFacts}>
+          <span>
+            <small>Трафик, до 3 мес.</small>
+            <strong className={styles.trafficValue}>
+              {formatTraffic(s.trafficThreeMonths)}
+              {trafficTrend && (
+                <em className={trafficTrend.direction === 'up' ? styles.trendUp : trafficTrend.direction === 'down' ? styles.trendDown : styles.trendFlat}>
+                  {trafficTrend.direction === 'up' ? '↑' : trafficTrend.direction === 'down' ? '↓' : '•'} {trafficTrend.percent}%
+                </em>
+              )}
+            </strong>
+          </span>
+          <span>
+            <small>Последний старт</small>
+            <strong>{latestOpening ? formatDate(latestOpening) : '-'}</strong>
+          </span>
+          <span>
+            <small>Голосов</small>
+            <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
+          </span>
         </div>
       </div>
     </article>
@@ -446,34 +489,31 @@ function getServerBadge(server: Server) {
   return '';
 }
 
-function collectTags(server: Server): CardTag[] {
-  const tags: CardTag[] = [];
-  const seen = new Set<string>();
-  const instances = server.instances ?? [];
-
-  const add = (tone: CardTagTone, value?: string | null) => {
-    const clean = value?.trim();
-    if (!clean || seen.has(clean)) return;
-    seen.add(clean);
-    tags.push({ label: clean, tone });
+function collectCardMeta(server: Server): { chronicles: string; chroniclesTitle: string; rates: string; ratesTitle: string } {
+  const instances = currentProjectWorlds(server);
+  const unique = (values: Array<string | null | undefined>) => Array.from(new Set(
+    values.map(value => value?.trim()).filter((value): value is string => Boolean(value)),
+  ));
+  const chronicles = unique([server.chronicle, ...instances.map(instance => instance.chronicle)]);
+  const rates = unique([server.rates, ...instances.map(instance => instance.rates)]);
+  const compact = (values: string[], visible: number) => values.length > visible
+    ? `${values.slice(0, visible).join(' / ')} +${values.length - visible}`
+    : values.join(' / ') || '-';
+  return {
+    chronicles: compact(chronicles, 2),
+    chroniclesTitle: chronicles.join(' / ') || '-',
+    rates: compact(rates, 3),
+    ratesTitle: rates.join(' / ') || '-',
   };
-
-  add('chronicle', server.chronicle);
-  for (const instance of instances) add('chronicle', instance.chronicle);
-
-  add('rate', server.rates);
-  for (const instance of instances) add('rate', instance.rates);
-
-  for (const type of server.type ?? []) add('type', typeLabels.get(type as any));
-  for (const instance of instances) {
-    if (instance.type) add('type', typeLabels.get(instance.type as any));
-  }
-
-  return tags;
 }
 
-function capitalize(value: CardTagTone) {
-  return (value.charAt(0).toUpperCase() + value.slice(1)) as Capitalize<CardTagTone>;
+function worldWord(value: number): string {
+  const mod100 = value % 100;
+  const mod10 = value % 10;
+  if (mod100 >= 11 && mod100 <= 14) return 'миров';
+  if (mod10 === 1) return 'мир';
+  if (mod10 >= 2 && mod10 <= 4) return 'мира';
+  return 'миров';
 }
 
 function FilterFooter() {

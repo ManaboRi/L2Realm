@@ -89,6 +89,21 @@ function hasProjectLaunches(s: any): boolean {
   return Array.isArray(s?.instances) && s.instances.length > 0;
 }
 
+function lastCompleteMonth(): string {
+  const now = new Date();
+  const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  return `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function similarwebUrl(projectUrl?: string | null): string | null {
+  try {
+    const host = new URL(projectUrl || '').hostname.replace(/^www\./, '').toLowerCase();
+    return host ? `https://www.similarweb.com/website/${host}/` : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -116,6 +131,7 @@ export default function AdminPage() {
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
+    trafficMonthly:'', trafficThreeMonths:'', trafficPeriod:lastCompleteMonth(), trafficSource:'similarweb',
     instances: [] as any[],
   });
 
@@ -202,6 +218,7 @@ export default function AdminPage() {
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
+      trafficMonthly:'', trafficThreeMonths:'', trafficPeriod:'', trafficSource:'similarweb',
       instances: [],
     });
     setApprovingId(r.id);
@@ -287,6 +304,10 @@ export default function AdminPage() {
       vk:          s.vk          ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
+      trafficMonthly: s.trafficMonthly == null ? '' : String(s.trafficMonthly),
+      trafficThreeMonths: s.trafficThreeMonths == null ? '' : String(s.trafficThreeMonths),
+      trafficPeriod: s.trafficPeriod ?? lastCompleteMonth(),
+      trafficSource: s.trafficSource ?? 'similarweb',
       instances:   Array.isArray(s.instances) ? s.instances : [],
     });
   }
@@ -328,6 +349,9 @@ export default function AdminPage() {
         vk:          editForm.vk || undefined,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
+        trafficMonthly: editForm.trafficMonthly === '' ? null : Number(editForm.trafficMonthly),
+        trafficPeriod: editForm.trafficPeriod || null,
+        trafficSource: editForm.trafficSource || null,
         instances:   editForm.instances ?? [],
       } as any, token);
       showToast(`✅ Сервер ${editForm.name} обновлён`);
@@ -363,6 +387,9 @@ export default function AdminPage() {
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
+        trafficMonthly: addForm.trafficMonthly === '' ? null : Number(addForm.trafficMonthly),
+        trafficPeriod: addForm.trafficPeriod || null,
+        trafficSource: addForm.trafficSource || null,
         instances: addForm.instances ?? [],
       } as any, token);
       if (approvingId) {
@@ -459,6 +486,15 @@ export default function AdminPage() {
                 <AField label="Discord"><input className="input" type="url" value={editForm.discord} onChange={e => setEditForm((p:any) => ({...p,discord:e.target.value}))} placeholder="https://discord.gg/…" /></AField>
                 <AField label="ВКонтакте"><input className="input" type="url" value={editForm.vk} onChange={e => setEditForm((p:any) => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
               </div>
+
+              <TrafficEditor
+                projectUrl={editForm.url}
+                monthly={editForm.trafficMonthly}
+                period={editForm.trafficPeriod}
+                source={editForm.trafficSource}
+                calculatedTotal={editForm.trafficThreeMonths}
+                onChange={(patch) => setEditForm((p:any) => ({ ...p, ...patch }))}
+              />
 
               <AField label="Краткое описание">
                 <input className="input" value={editForm.shortDesc} onChange={e => setEditForm((p:any) => ({...p,shortDesc:e.target.value}))} />
@@ -867,6 +903,15 @@ export default function AdminPage() {
                     <AField label="ВКонтакте"><input className="input" type="url" value={addForm.vk} onChange={e => setAddForm(p => ({...p,vk:e.target.value}))} placeholder="https://vk.com/…" /></AField>
                   </div>
 
+                  <TrafficEditor
+                    projectUrl={addForm.url}
+                    monthly={addForm.trafficMonthly}
+                    period={addForm.trafficPeriod}
+                    source={addForm.trafficSource}
+                    calculatedTotal={addForm.trafficThreeMonths}
+                    onChange={(patch) => setAddForm(p => ({ ...p, ...patch }))}
+                  />
+
                   <AField label="Краткое описание">
                     <input className="input" value={addForm.shortDesc} onChange={e => setAddForm(p => ({...p,shortDesc:e.target.value}))} placeholder="Одна строка для карточки" />
                   </AField>
@@ -899,5 +944,61 @@ function AField({ label, children }: { label: string; children: React.ReactNode 
       <label style={{ fontFamily:"'Cinzel',serif", fontSize:'.58rem', color:'var(--text2)', textTransform:'uppercase', letterSpacing:'.12em' }}>{label}</label>
       {children}
     </div>
+  );
+}
+
+function TrafficEditor({
+  projectUrl,
+  monthly,
+  period,
+  source,
+  calculatedTotal,
+  onChange,
+}: {
+  projectUrl?: string;
+  monthly: string;
+  period: string;
+  source: string;
+  calculatedTotal?: string;
+  onChange: (patch: { trafficMonthly?: string; trafficPeriod?: string; trafficSource?: string }) => void;
+}) {
+  const reportUrl = similarwebUrl(projectUrl);
+  return (
+    <section className={styles.trafficEditor}>
+      <div className={styles.trafficEditorHeader}>
+        <div>
+          <h3>Посещаемость сайта</h3>
+          <p>Один раз в месяц внеси <b>Total Visits</b> за прошлый завершённый месяц. Итог до 3 месяцев сайт посчитает сам.</p>
+        </div>
+        {reportUrl ? (
+          <a className={styles.trafficReportLink} href={reportUrl} target="_blank" rel="noopener noreferrer">
+            Открыть Similarweb <span aria-hidden="true">↗</span>
+          </a>
+        ) : (
+          <span className={styles.trafficReportDisabled}>Сначала укажи сайт</span>
+        )}
+      </div>
+      <div className={styles.trafficEditorFields}>
+        <AField label="Месяц отчёта">
+          <input className="input" type="month" value={period} onChange={e => onChange({ trafficPeriod: e.target.value })} />
+        </AField>
+        <AField label="Визиты за месяц">
+          <input className="input" type="number" min={0} value={monthly} onChange={e => onChange({ trafficMonthly: e.target.value })} placeholder="68500" />
+        </AField>
+        <AField label="Источник">
+          <select className="input" value={source} onChange={e => onChange({ trafficSource: e.target.value })}>
+            <option value="similarweb">Similarweb</option>
+            <option value="pr-cy">PR-CY</option>
+            <option value="semrush">Semrush</option>
+            <option value="be1">Be1</option>
+            <option value="owner">Данные владельца</option>
+          </select>
+        </AField>
+        <div className={styles.trafficCalculated}>
+          <span>Сохранено до 3 мес.</span>
+          <strong>{calculatedTotal ? Number(calculatedTotal).toLocaleString('ru-RU') : 'Сформируется после сохранения'}</strong>
+        </div>
+      </div>
+    </section>
   );
 }

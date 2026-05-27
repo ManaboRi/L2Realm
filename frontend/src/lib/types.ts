@@ -13,12 +13,15 @@ export interface ServerInstance {
   donate?:     DonateType | 'free';
   url:         string;       // внешний URL — сайт конкретного запуска
   openedDate?: string | null;
+  lifecycleStatus?: 'active' | 'upcoming' | 'merged' | 'closed' | 'archived';
+  statusNote?: string | null;
   soonVipUntil?: string | null;
   soonVipPaymentId?: string | null;
   onlineMode?: 'off' | 'manual' | 'estimated' | 'next-json' | 'html-json-var' | 'html-regex';
   onlineManual?: number | null;
   onlineValue?: number | null;
   onlineUpdatedAt?: string | null;
+  onlineEstimatedAt?: string | null;
   onlineHistory?: Array<{ at: string; value: number; estimated?: boolean }> | null;
   onlineStatus?: 'ok' | 'error' | null;
   onlineError?: string | null;
@@ -60,6 +63,11 @@ export interface Server {
   ratingCount: number;
   status?:     'online' | 'offline' | 'unknown';
   statusOverride?: 'online' | 'offline' | 'unknown' | null;
+  trafficMonthly?: number | null;
+  trafficThreeMonths?: number | null;
+  trafficPeriod?: string | null;
+  trafficSource?: string | null;
+  trafficHistory?: TrafficSnapshot[] | null;
   subscription?: Subscription;
   boost?:      Boost | null;
   reviews?:    Review[];
@@ -74,6 +82,13 @@ export interface Server {
   _isBoosted?: boolean;
   _isSod?:     boolean;
   _boostEnd?:  string | null;
+}
+
+export interface TrafficSnapshot {
+  period: string;
+  monthly: number | null;
+  threeMonths: number | null;
+  source?: string | null;
 }
 
 export interface VoteStatus {

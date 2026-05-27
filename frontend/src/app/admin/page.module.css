@@ -54,11 +54,65 @@
 .checkLabel { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text2); cursor: pointer; }
 .checkLabel input { accent-color: var(--gold-d); }
 
+.trafficEditor {
+  display: flex;
+  flex-direction: column;
+  gap: .85rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(200,168,75,.18);
+  border-radius: 4px;
+  background: rgba(200,168,75,.035);
+}
+.trafficEditorHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.trafficEditorHeader h3 { margin: 0 0 .32rem; font-family: 'Cinzel', serif; color: var(--gold); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; }
+.trafficEditorHeader p { margin: 0; max-width: 620px; color: var(--text2); font-size: .78rem; line-height: 1.55; }
+.trafficEditorHeader b { color: var(--text); font-weight: 600; }
+.trafficReportLink,
+.trafficReportDisabled {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: 0 .9rem;
+  border-radius: 3px;
+  font-family: 'Cinzel', serif;
+  font-size: .6rem;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.trafficReportLink {
+  border: 1px solid rgba(200,168,75,.38);
+  background: rgba(200,168,75,.1);
+  color: var(--gold);
+  text-decoration: none;
+  transition: background .16s ease, border-color .16s ease;
+}
+.trafficReportLink:hover { border-color: rgba(200,168,75,.68); background: rgba(200,168,75,.18); }
+.trafficReportDisabled { border: 1px solid var(--border); color: var(--text3); }
+.trafficEditorFields { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)) minmax(190px, 1.15fr); gap: .7rem; align-items: end; }
+.trafficCalculated {
+  min-height: 38px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: .14rem;
+  padding: 0 .75rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: rgba(0,0,0,.12);
+}
+.trafficCalculated span { color: var(--text3); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; }
+.trafficCalculated strong { color: var(--text); font-size: .84rem; font-weight: 500; }
+
 @media (max-width: 600px) {
   .hero { padding: 1.2rem .8rem 1rem; }
   .wrap { padding: 1rem .8rem 3rem; }
   .tab { padding: .5rem .7rem; font-size: .62rem; }
   .addForm { padding: 1rem .9rem; }
   .formGrid { grid-template-columns: 1fr; }
+  .trafficEditor { padding: .9rem; }
+  .trafficEditorHeader { flex-direction: column; }
+  .trafficEditorFields { grid-template-columns: 1fr; }
   .toast { bottom: .8rem; right: .8rem; left: .8rem; text-align: center; }
 }

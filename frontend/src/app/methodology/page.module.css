@@ -1,0 +1,204 @@
+.page {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2.5rem 0 4.5rem;
+}
+
+.header {
+  max-width: 760px;
+  margin-bottom: 2rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1.2rem;
+  color: rgba(210, 171, 82, .9);
+  font-size: .78rem;
+  text-decoration: none;
+}
+
+.back::before {
+  content: '\2190';
+  margin-right: .45rem;
+}
+
+.header h1 {
+  margin: 0 0 .7rem;
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.8rem, 3vw, 2.45rem);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.header p {
+  margin: 0;
+  color: rgba(232, 221, 186, .68);
+  font-size: .98rem;
+  line-height: 1.65;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.card {
+  padding: 1.35rem;
+  border: 1px solid rgba(118, 141, 151, .16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(11, 16, 23, .9), rgba(6, 10, 15, .98));
+}
+
+.card:first-child {
+  grid-row: span 2;
+}
+
+.card h2 {
+  margin: 0 0 1.05rem;
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: 1.16rem;
+  letter-spacing: 0;
+}
+
+.card p {
+  margin: 0 0 1rem;
+  color: rgba(232, 221, 186, .68);
+  font-size: .88rem;
+  line-height: 1.62;
+}
+
+.legend {
+  display: grid;
+  gap: .85rem;
+  margin-bottom: 1.05rem;
+}
+
+.legend div {
+  padding: .85rem;
+  border: 1px solid rgba(118, 141, 151, .12);
+  border-radius: 6px;
+  background: rgba(5, 9, 14, .38);
+}
+
+.legend strong {
+  display: inline-flex;
+  margin-bottom: .4rem;
+  font-size: .8rem;
+}
+
+.legend p {
+  margin: 0;
+}
+
+.site {
+  color: #64db94;
+}
+
+.estimated {
+  color: #e4c268;
+}
+
+.smartModel {
+  margin: 0 0 1.05rem;
+  padding: .85rem;
+  border: 1px solid rgba(210, 171, 82, .15);
+  border-radius: 6px;
+  background: rgba(210, 171, 82, .04);
+}
+
+.smartModel strong {
+  display: inline-flex;
+  margin-bottom: .42rem;
+  color: #f6edd0;
+  font-size: .8rem;
+}
+
+.smartModel p {
+  margin: 0;
+}
+
+.card:nth-child(2) h2,
+.card:nth-child(2) .metricRow strong {
+  color: #67b1ff;
+}
+
+.note {
+  margin: 0 !important;
+  padding-top: .85rem;
+  border-top: 1px solid rgba(118, 141, 151, .12);
+  color: rgba(232, 221, 186, .52) !important;
+  font-size: .8rem !important;
+}
+
+.metricRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 .65rem;
+  padding: .58rem .65rem;
+  border: 1px solid rgba(118, 141, 151, .1);
+  border-radius: 5px;
+}
+
+.metricRow span {
+  color: rgba(232, 221, 186, .48);
+  font-size: .76rem;
+}
+
+.metricRow strong {
+  color: #f6edd0;
+  font-size: .78rem;
+}
+
+.statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.statuses span {
+  min-height: 27px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 .68rem;
+  border-radius: 5px;
+  font-size: .72rem;
+}
+
+.open {
+  border: 1px solid rgba(83, 217, 135, .24);
+  background: rgba(83, 217, 135, .08);
+  color: #72eba2;
+}
+
+.soon {
+  border: 1px solid rgba(210, 171, 82, .27);
+  background: rgba(210, 171, 82, .09);
+  color: #d2ab52;
+}
+
+.archive {
+  border: 1px solid rgba(118, 141, 151, .18);
+  background: rgba(118, 141, 151, .08);
+  color: rgba(232, 221, 186, .58);
+}
+
+@media (max-width: 700px) {
+  .page {
+    width: calc(100% - 1rem);
+    padding: 1.35rem 0 2.5rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card:first-child {
+    grid-row: auto;
+  }
+}

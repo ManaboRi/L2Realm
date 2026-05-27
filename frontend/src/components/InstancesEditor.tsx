@@ -28,6 +28,8 @@ function emptyInstance(): ServerInstance {
     donate:     'cosmetic',
     url:        '',
     openedDate: null,
+    lifecycleStatus: 'active',
+    statusNote: '',
   };
 }
 
@@ -89,6 +91,11 @@ export function InstancesEditor({ value, onChange, token }: Props) {
       const result = await api.servers.testOnlineSource({
         mode,
         manual: inst.onlineManual ?? null,
+        chronicle: inst.chronicle,
+        rates: inst.rates,
+        rateNum: inst.rateNum,
+        instanceId: inst.id,
+        observedAt: inst.onlineEstimatedAt ?? null,
         sourceUrl: inst.onlineSourceUrl || inst.url,
         listPath: inst.onlineListPath || 'props.pageProps.home.servers',
         matchField: inst.onlineMatchField || 'name',
@@ -121,16 +128,16 @@ export function InstancesEditor({ value, onChange, token }: Props) {
   return (
     <div className={styles.wrap}>
       <div className={styles.head}>
-        <span className={styles.title}>Сервера в проекте ({list.length})</span>
+        <span className={styles.title}>Миры и открытия ({list.length})</span>
         <button type="button" className={styles.addBtn} onClick={add}>
-          + Добавить запуск
+          + Добавить мир
         </button>
       </div>
 
       {list.length === 0 ? (
         <p className={styles.empty}>
-          Нет внутренних запусков. Это будет обычный одиночный сервер. Добавь
-          запуски если у проекта несколько ответвлений (x10, x100, x1000 и т.п.).
+          Нет отдельных миров. Проект будет показан как один запуск. Добавь миры,
+          если нужно хранить текущие и прошлые открытия отдельно.
         </p>
       ) : (
         <ul className={styles.list}>
@@ -238,6 +245,33 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                 </label>
               </div>
 
+              <div className={styles.row}>
+                <label className={styles.field}>
+                  <span>Состояние мира</span>
+                  <select
+                    className="input"
+                    value={inst.lifecycleStatus ?? 'active'}
+                    onChange={e => update(idx, { lifecycleStatus: e.target.value as ServerInstance['lifecycleStatus'] })}
+                  >
+                    <option value="active">Открыт</option>
+                    <option value="upcoming">Скоро открытие</option>
+                    <option value="merged">Объединён</option>
+                    <option value="closed">Закрыт</option>
+                    <option value="archived">Архив</option>
+                  </select>
+                </label>
+                <label className={styles.field}>
+                  <span>Примечание к статусу</span>
+                  <input
+                    className="input"
+                    value={inst.statusNote ?? ''}
+                    onChange={e => update(idx, { statusNote: e.target.value })}
+                    placeholder="Например: объединён с Essence x20"
+                    maxLength={160}
+                  />
+                </label>
+              </div>
+
               <label className={styles.field}>
                 <span>Короткое описание (одна строка для карточки)</span>
                 <input
@@ -265,6 +299,9 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                         const mode = e.target.value as ServerInstance['onlineMode'];
                         update(idx, {
                           onlineMode: mode,
+                          ...(mode === 'estimated' ? {
+                            onlineEstimatedAt: inst.onlineEstimatedAt || new Date().toISOString(),
+                          } : {}),
                           ...(mode === 'next-json' ? {
                             onlineSourceUrl: inst.onlineSourceUrl || inst.url,
                             onlineListPath: inst.onlineListPath || 'props.pageProps.home.servers',
@@ -295,17 +332,21 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                   </label>
 
                   <label className={styles.field}>
-                    <span>{(inst.onlineMode || 'off') === 'estimated' ? 'Базовый онлайн' : 'Ручное значение'}</span>
+                    <span>{(inst.onlineMode || 'off') === 'estimated' ? 'Онлайн при оценке' : 'Ручное значение'}</span>
                     <input
                       className="input"
                       type="number"
                       min={0}
                       value={inst.onlineManual ?? ''}
-                      onChange={e => update(idx, {
-                        onlineManual: e.target.value === '' ? null : Number(e.target.value),
-                        onlineValue: e.target.value === '' ? null : Number(e.target.value),
-                        onlineUpdatedAt: new Date().toISOString(),
-                      })}
+                      onChange={e => {
+                        const checkedAt = new Date().toISOString();
+                        update(idx, {
+                          onlineManual: e.target.value === '' ? null : Number(e.target.value),
+                          onlineValue: e.target.value === '' ? null : Number(e.target.value),
+                          onlineUpdatedAt: checkedAt,
+                          ...((inst.onlineMode || 'off') === 'estimated' ? { onlineEstimatedAt: checkedAt } : {}),
+                        });
+                      }}
                       placeholder="8663"
                       disabled={!['manual', 'estimated'].includes(inst.onlineMode || 'off')}
                     />
