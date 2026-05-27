@@ -16,6 +16,12 @@ const optionalTrafficCount = z.preprocess(
   z.coerce.number().int().min(0).max(100_000_000).nullable().optional(),
 );
 
+const trafficSnapshotInputSchema = z.object({
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  monthly: z.coerce.number().int().min(0).max(100_000_000),
+  source: z.union([optionalSafeText(40), z.literal(''), z.null()]).optional().transform(value => value || 'similarweb'),
+});
+
 const serverInstanceSchema = z.object({
   id: optionalSafeText(64),
   label: optionalSafeText(80),
@@ -77,6 +83,7 @@ const serverPayloadSchema = z.object({
   trafficThreeMonths: optionalTrafficCount,
   trafficPeriod: z.union([z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/), z.literal(''), z.null()]).optional().transform(value => value || null),
   trafficSource: z.union([optionalSafeText(40), z.literal(''), z.null()]).optional().transform(value => value || null),
+  trafficHistory: z.array(trafficSnapshotInputSchema).max(36).optional(),
   instances: z.array(serverInstanceSchema).max(50).optional(),
 });
 
@@ -155,35 +162,23 @@ type TrafficSnapshot = {
 
 type TrafficUpdate = {
   history: TrafficSnapshot[];
-  current: TrafficSnapshot;
+  current: TrafficSnapshot | null;
 };
 
-function appendTrafficSnapshot(existing: unknown, payload: any): TrafficUpdate | undefined {
-  const touched = Object.prototype.hasOwnProperty.call(payload, 'trafficMonthly') ||
-    Object.prototype.hasOwnProperty.call(payload, 'trafficThreeMonths') ||
-    Object.prototype.hasOwnProperty.call(payload, 'trafficPeriod') ||
-    Object.prototype.hasOwnProperty.call(payload, 'trafficSource');
-  if (!touched || !payload.trafficPeriod || (payload.trafficMonthly == null && payload.trafficThreeMonths == null)) {
-    return undefined;
-  }
-
-  const history = Array.isArray(existing) ? existing.filter(item => item && typeof item === 'object') : [];
-  const snapshot: TrafficSnapshot = {
-    period: payload.trafficPeriod,
-    monthly: payload.trafficMonthly ?? null,
-    threeMonths: payload.trafficThreeMonths ?? null,
-    source: payload.trafficSource || 'similarweb',
-  };
-  const snapshots = [...history.filter((item: any) => item.period !== snapshot.period), snapshot]
+function calculateTrafficHistory(entries: Array<{ period: string; monthly: number | null; source?: string | null }>): TrafficUpdate {
+  const snapshotsByPeriod = new Map<string, TrafficSnapshot>();
+  entries.forEach(entry => {
+    if (!entry.period || entry.monthly == null || !Number.isFinite(Number(entry.monthly))) return;
+    snapshotsByPeriod.set(entry.period, {
+      period: entry.period,
+      monthly: Number(entry.monthly),
+      threeMonths: null,
+      source: entry.source || 'similarweb',
+    });
+  });
+  const snapshots = Array.from(snapshotsByPeriod.values())
     .sort((a: any, b: any) => String(a.period).localeCompare(String(b.period)))
-    .slice(-36)
-    .map((item: any) => ({
-      period: String(item.period),
-      monthly: item.monthly == null ? null : Number(item.monthly),
-      threeMonths: item.threeMonths == null ? null : Number(item.threeMonths),
-      source: String(item.source || 'similarweb'),
-    }));
-
+    .slice(-36);
   const derivedHistory = snapshots.map((item, index) => {
     const recentMonthly = snapshots
       .slice(Math.max(0, index - 2), index + 1)
@@ -191,16 +186,28 @@ function appendTrafficSnapshot(existing: unknown, payload: any): TrafficUpdate |
       .filter((value): value is number => value != null && Number.isFinite(value));
     return {
       ...item,
-      threeMonths: recentMonthly.length > 0
-        ? recentMonthly.reduce((sum, value) => sum + value, 0)
-        : item.threeMonths,
+      threeMonths: recentMonthly.reduce((sum, value) => sum + value, 0),
     };
   });
 
   return {
     history: derivedHistory,
-    current: derivedHistory[derivedHistory.length - 1],
+    current: derivedHistory[derivedHistory.length - 1] ?? null,
   };
+}
+
+function appendTrafficSnapshot(existing: unknown, payload: any): TrafficUpdate | undefined {
+  const touched = Object.prototype.hasOwnProperty.call(payload, 'trafficMonthly') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficThreeMonths') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficPeriod') ||
+    Object.prototype.hasOwnProperty.call(payload, 'trafficSource');
+  if (!touched || !payload.trafficPeriod || payload.trafficMonthly == null) return undefined;
+
+  const history = Array.isArray(existing) ? existing.filter((item: any) => item?.period && item?.monthly != null) : [];
+  return calculateTrafficHistory([
+    ...history.map((item: any) => ({ period: item.period, monthly: Number(item.monthly), source: item.source })),
+    { period: payload.trafficPeriod, monthly: Number(payload.trafficMonthly), source: payload.trafficSource },
+  ]);
 }
 
 function rateRange(n: number): string {
@@ -983,18 +990,20 @@ export class ServersService {
   // ── Создать (только admin) ───────────────────
   async create(dto: CreateServerDto) {
     const clean = parseOrThrow(serverPayloadSchema, dto) as any;
-    const { openedDate, ...rest } = clean;
+    const { openedDate, trafficHistory: submittedTrafficHistory, ...rest } = clean;
     const manualStatus = normalizeStatusOverride((rest as any).statusOverride);
-    const trafficUpdate = appendTrafficSnapshot([], rest);
+    const trafficUpdate = submittedTrafficHistory !== undefined
+      ? calculateTrafficHistory(submittedTrafficHistory)
+      : appendTrafficSnapshot([], rest);
     const server = await this.prisma.server.create({
       data: {
         ...rest,
         ...(trafficUpdate && {
           trafficHistory: trafficUpdate.history,
-          trafficMonthly: trafficUpdate.current.monthly,
-          trafficThreeMonths: trafficUpdate.current.threeMonths,
-          trafficPeriod: trafficUpdate.current.period,
-          trafficSource: trafficUpdate.current.source,
+          trafficMonthly: trafficUpdate.current?.monthly ?? null,
+          trafficThreeMonths: trafficUpdate.current?.threeMonths ?? null,
+          trafficPeriod: trafficUpdate.current?.period ?? null,
+          trafficSource: trafficUpdate.current?.source ?? null,
         }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
@@ -1011,20 +1020,22 @@ export class ServersService {
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
     const clean = parseOrThrow(serverUpdateSchema, dto) as any;
-    const { id: _id, openedDate, ...data } = clean as any;
+    const { id: _id, openedDate, trafficHistory: submittedTrafficHistory, ...data } = clean as any;
     const manualStatus = normalizeStatusOverride(data.statusOverride);
     const statusOverrideTouched = Object.prototype.hasOwnProperty.call(data, 'statusOverride');
-    const trafficUpdate = appendTrafficSnapshot((existing as any).trafficHistory, data);
+    const trafficUpdate = submittedTrafficHistory !== undefined
+      ? calculateTrafficHistory(submittedTrafficHistory)
+      : appendTrafficSnapshot((existing as any).trafficHistory, data);
     const server = await this.prisma.server.update({
       where: { id },
       data: {
         ...data,
         ...(trafficUpdate && {
           trafficHistory: trafficUpdate.history,
-          trafficMonthly: trafficUpdate.current.monthly,
-          trafficThreeMonths: trafficUpdate.current.threeMonths,
-          trafficPeriod: trafficUpdate.current.period,
-          trafficSource: trafficUpdate.current.source,
+          trafficMonthly: trafficUpdate.current?.monthly ?? null,
+          trafficThreeMonths: trafficUpdate.current?.threeMonths ?? null,
+          trafficPeriod: trafficUpdate.current?.period ?? null,
+          trafficSource: trafficUpdate.current?.source ?? null,
         }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,

@@ -31,6 +31,7 @@ export class CreateServerDto {
   @IsOptional() @IsInt() trafficThreeMonths?: number | null;
   @IsOptional() @IsString() trafficPeriod?: string | null;
   @IsOptional() @IsString() trafficSource?: string | null;
+  @IsOptional() @IsArray() trafficHistory?: Array<{ period: string; monthly: number; source?: string | null }>;
   // instances — массив сабкарточек проекта (см. schema.prisma)
   @IsOptional() instances?: any[];
 }

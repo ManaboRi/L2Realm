@@ -433,6 +433,10 @@
   place-items: center;
   border: 1px solid rgba(8, 11, 16, .42);
   border-radius: 50%;
+  padding: 0 0 1px;
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 700;
+  line-height: 1;
   font-size: .56rem;
 }
 
@@ -786,7 +790,8 @@
   min-height: 20px;
   color: rgba(232, 221, 186, .72);
   font-size: .75rem;
-  transform: translateY(-.28rem);
+  margin-bottom: .18rem;
+  transform: translateY(-.32rem);
 }
 
 .cardLiveRow strong {
@@ -825,39 +830,12 @@
   font-size: .69rem;
 }
 
-.cardSparkline {
-  height: 27px;
-  display: grid;
-  place-items: center;
-  margin: 0 .08rem .12rem;
-}
-
-.cardSparkline svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.sparkLine {
-  fill: none;
-  stroke: #3ecb77;
-  stroke-width: 1.7;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 5px rgba(62, 203, 119, .3));
-}
-
-.sparkFill {
-  stroke: none;
-}
-
 .cardFacts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
   align-items: center;
-  padding: .45rem .08rem 0;
+  padding: .28rem .08rem 0;
   border-top: 1px solid rgba(118, 141, 151, .12);
 }
 

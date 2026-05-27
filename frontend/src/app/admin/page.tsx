@@ -104,6 +104,36 @@ function similarwebUrl(projectUrl?: string | null): string | null {
   }
 }
 
+type TrafficDraft = {
+  period: string;
+  monthly: string;
+  source: string;
+};
+
+function previousMonth(period: string): string {
+  const [year, month] = period.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 2, 1));
+  return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+}
+
+function trafficDrafts(server: any): TrafficDraft[] {
+  const history = Array.isArray(server?.trafficHistory) ? server.trafficHistory : [];
+  const entries = history
+    .filter((item: any) => item?.period && item?.monthly != null)
+    .map((item: any) => ({ period: item.period, monthly: String(item.monthly), source: item.source || 'similarweb' }));
+  if (entries.length > 0) return entries.sort((left: TrafficDraft, right: TrafficDraft) => right.period.localeCompare(left.period));
+  if (server?.trafficPeriod && server?.trafficMonthly != null) {
+    return [{ period: server.trafficPeriod, monthly: String(server.trafficMonthly), source: server.trafficSource || 'similarweb' }];
+  }
+  return [];
+}
+
+function trafficPayload(entries: TrafficDraft[]) {
+  return entries
+    .filter(entry => entry.period && entry.monthly !== '' && Number.isFinite(Number(entry.monthly)))
+    .map(entry => ({ period: entry.period, monthly: Number(entry.monthly), source: entry.source || 'similarweb' }));
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -131,7 +161,7 @@ export default function AdminPage() {
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
-    trafficMonthly:'', trafficThreeMonths:'', trafficPeriod:lastCompleteMonth(), trafficSource:'similarweb',
+    trafficHistory: [] as TrafficDraft[],
     instances: [] as any[],
   });
 
@@ -218,7 +248,7 @@ export default function AdminPage() {
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
       shortDesc:'', fullDesc:'',
-      trafficMonthly:'', trafficThreeMonths:'', trafficPeriod:'', trafficSource:'similarweb',
+      trafficHistory: [] as TrafficDraft[],
       instances: [],
     });
     setApprovingId(r.id);
@@ -304,10 +334,7 @@ export default function AdminPage() {
       vk:          s.vk          ?? '',
       shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
-      trafficMonthly: s.trafficMonthly == null ? '' : String(s.trafficMonthly),
-      trafficThreeMonths: s.trafficThreeMonths == null ? '' : String(s.trafficThreeMonths),
-      trafficPeriod: s.trafficPeriod ?? lastCompleteMonth(),
-      trafficSource: s.trafficSource ?? 'similarweb',
+      trafficHistory: trafficDrafts(s),
       instances:   Array.isArray(s.instances) ? s.instances : [],
     });
   }
@@ -349,9 +376,7 @@ export default function AdminPage() {
         vk:          editForm.vk || undefined,
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
-        trafficMonthly: editForm.trafficMonthly === '' ? null : Number(editForm.trafficMonthly),
-        trafficPeriod: editForm.trafficPeriod || null,
-        trafficSource: editForm.trafficSource || null,
+        trafficHistory: trafficPayload(editForm.trafficHistory ?? []),
         instances:   editForm.instances ?? [],
       } as any, token);
       showToast(`✅ Сервер ${editForm.name} обновлён`);
@@ -387,9 +412,7 @@ export default function AdminPage() {
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
-        trafficMonthly: addForm.trafficMonthly === '' ? null : Number(addForm.trafficMonthly),
-        trafficPeriod: addForm.trafficPeriod || null,
-        trafficSource: addForm.trafficSource || null,
+        trafficHistory: trafficPayload(addForm.trafficHistory ?? []),
         instances: addForm.instances ?? [],
       } as any, token);
       if (approvingId) {
@@ -489,11 +512,8 @@ export default function AdminPage() {
 
               <TrafficEditor
                 projectUrl={editForm.url}
-                monthly={editForm.trafficMonthly}
-                period={editForm.trafficPeriod}
-                source={editForm.trafficSource}
-                calculatedTotal={editForm.trafficThreeMonths}
-                onChange={(patch) => setEditForm((p:any) => ({ ...p, ...patch }))}
+                entries={editForm.trafficHistory ?? []}
+                onChange={(trafficHistory) => setEditForm((p:any) => ({ ...p, trafficHistory }))}
               />
 
               <AField label="Краткое описание">
@@ -905,11 +925,8 @@ export default function AdminPage() {
 
                   <TrafficEditor
                     projectUrl={addForm.url}
-                    monthly={addForm.trafficMonthly}
-                    period={addForm.trafficPeriod}
-                    source={addForm.trafficSource}
-                    calculatedTotal={addForm.trafficThreeMonths}
-                    onChange={(patch) => setAddForm(p => ({ ...p, ...patch }))}
+                    entries={addForm.trafficHistory}
+                    onChange={(trafficHistory) => setAddForm(p => ({ ...p, trafficHistory }))}
                   />
 
                   <AField label="Краткое описание">
@@ -949,56 +966,62 @@ function AField({ label, children }: { label: string; children: React.ReactNode 
 
 function TrafficEditor({
   projectUrl,
-  monthly,
-  period,
-  source,
-  calculatedTotal,
+  entries,
   onChange,
 }: {
   projectUrl?: string;
-  monthly: string;
-  period: string;
-  source: string;
-  calculatedTotal?: string;
-  onChange: (patch: { trafficMonthly?: string; trafficPeriod?: string; trafficSource?: string }) => void;
+  entries: TrafficDraft[];
+  onChange: (entries: TrafficDraft[]) => void;
 }) {
   const reportUrl = similarwebUrl(projectUrl);
+  const addEntry = () => {
+    const used = new Set(entries.map(entry => entry.period));
+    let period = lastCompleteMonth();
+    while (used.has(period)) period = previousMonth(period);
+    onChange([{ period, monthly: '', source: 'similarweb' }, ...entries]);
+  };
+  const updateEntry = (index: number, patch: Partial<TrafficDraft>) => {
+    onChange(entries.map((entry, current) => current === index ? { ...entry, ...patch } : entry));
+  };
+  const removeEntry = (index: number) => onChange(entries.filter((_, current) => current !== index));
   return (
     <section className={styles.trafficEditor}>
       <div className={styles.trafficEditorHeader}>
         <div>
           <h3>Посещаемость сайта</h3>
-          <p>Один раз в месяц внеси <b>Total Visits</b> за прошлый завершённый месяц. Итог до 3 месяцев сайт посчитает сам.</p>
+          <p>Добавь месяцы и значения <b>Total Visits</b> из отчёта. Всё сохранится вместе с проектом одной кнопкой.</p>
         </div>
-        {reportUrl ? (
-          <a className={styles.trafficReportLink} href={reportUrl} target="_blank" rel="noopener noreferrer">
-            Открыть Similarweb <span aria-hidden="true">↗</span>
-          </a>
-        ) : (
-          <span className={styles.trafficReportDisabled}>Сначала укажи сайт</span>
-        )}
-      </div>
-      <div className={styles.trafficEditorFields}>
-        <AField label="Месяц отчёта">
-          <input className="input" type="month" value={period} onChange={e => onChange({ trafficPeriod: e.target.value })} />
-        </AField>
-        <AField label="Визиты за месяц">
-          <input className="input" type="number" min={0} value={monthly} onChange={e => onChange({ trafficMonthly: e.target.value })} placeholder="68500" />
-        </AField>
-        <AField label="Источник">
-          <select className="input" value={source} onChange={e => onChange({ trafficSource: e.target.value })}>
-            <option value="similarweb">Similarweb</option>
-            <option value="pr-cy">PR-CY</option>
-            <option value="semrush">Semrush</option>
-            <option value="be1">Be1</option>
-            <option value="owner">Данные владельца</option>
-          </select>
-        </AField>
-        <div className={styles.trafficCalculated}>
-          <span>Сохранено до 3 мес.</span>
-          <strong>{calculatedTotal ? Number(calculatedTotal).toLocaleString('ru-RU') : 'Сформируется после сохранения'}</strong>
+        <div className={styles.trafficEditorActions}>
+          {reportUrl ? (
+            <a className={styles.trafficReportLink} href={reportUrl} target="_blank" rel="noopener noreferrer">
+              Открыть Similarweb <span aria-hidden="true">↗</span>
+            </a>
+          ) : (
+            <span className={styles.trafficReportDisabled}>Сначала укажи сайт</span>
+          )}
+          <button className={styles.trafficAddButton} type="button" onClick={addEntry}>+ Месяц</button>
         </div>
       </div>
+      {entries.length === 0 ? (
+        <div className={styles.trafficEmpty}>Пока нет внесённых месяцев</div>
+      ) : (
+        <div className={styles.trafficMonths}>
+          {entries.map((entry, index) => (
+            <div className={styles.trafficMonthRow} key={`${entry.period}-${index}`}>
+              <input className="input" aria-label="Месяц отчёта" type="month" value={entry.period} onChange={e => updateEntry(index, { period: e.target.value })} />
+              <input className="input" aria-label="Визиты за месяц" type="number" min={0} value={entry.monthly} onChange={e => updateEntry(index, { monthly: e.target.value })} placeholder="68500" />
+              <select className="input" aria-label="Источник трафика" value={entry.source} onChange={e => updateEntry(index, { source: e.target.value })}>
+                <option value="similarweb">Similarweb</option>
+                <option value="pr-cy">PR-CY</option>
+                <option value="semrush">Semrush</option>
+                <option value="be1">Be1</option>
+                <option value="owner">Данные владельца</option>
+              </select>
+              <button type="button" className={styles.trafficRemoveButton} onClick={() => removeEntry(index)} aria-label="Удалить месяц">×</button>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

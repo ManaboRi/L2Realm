@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { formatOnline, onlineChartPath, serverOnlineDisclosure, serverOnlineLast24Hours, serverOnlineValue } from '@/lib/online';
+import { formatOnline, serverOnlineDisclosure, serverOnlineValue } from '@/lib/online';
 import { currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount } from '@/lib/project-metrics';
 import styles from './page.module.css';
 
@@ -372,9 +372,6 @@ function HomeServerCard({
   const latestOpening = latestProjectOpening(s);
   const trafficTrend = projectTrafficTrend(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
-  const onlinePulse = serverOnlineLast24Hours(s);
-  const onlinePulsePath = onlinePulse.length >= 2 ? onlineChartPath(onlinePulse, 292, 34) : '';
-  const onlinePulseFillPath = onlinePulsePath ? `${onlinePulsePath} L 292 34 L 0 34 Z` : '';
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
   const isWeek = !!s._isSod;
@@ -431,20 +428,6 @@ function HomeServerCard({
           <span className={styles.worldSummary}>
             {onlineDisclosure ? `${onlineDisclosure.tracked} из ${worlds}` : worlds} {worldWord(worlds)}
           </span>
-        </div>
-        <div className={styles.cardSparkline} aria-hidden="true">
-          {onlinePulsePath && (
-            <svg viewBox="0 0 292 34" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id={`cardOnlineFill-${s.id}`} x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(62,205,119,.2)" />
-                  <stop offset="100%" stopColor="rgba(62,205,119,0)" />
-                </linearGradient>
-              </defs>
-              {onlinePulseFillPath && <path className={styles.sparkFill} style={{ fill: `url(#cardOnlineFill-${s.id})` }} d={onlinePulseFillPath} />}
-              <path className={styles.sparkLine} d={onlinePulsePath} />
-            </svg>
-          )}
         </div>
         <div className={styles.cardFacts}>
           <span>
