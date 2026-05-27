@@ -134,6 +134,10 @@ function trafficPayload(entries: TrafficDraft[]) {
     .map(entry => ({ period: entry.period, monthly: Number(entry.monthly), source: entry.source || 'similarweb' }));
 }
 
+function projectInstancesPayload(instances: any[]) {
+  return instances.map(({ donate: _donate, ...instance }) => instance);
+}
+
 export default function AdminPage() {
   const { user, token, isAdmin, loading } = useAuth();
   const router = useRouter();
@@ -157,7 +161,7 @@ export default function AdminPage() {
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
     url:'', openedDate:'', country:'RU', statusOverride: 'auto',
-    serverType: 'pvp-pve', donate: 'cosmetic',
+    serverType: 'pvp-pve',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
     shortDesc:'', fullDesc:'',
@@ -243,7 +247,6 @@ export default function AdminPage() {
       country:     'RU',
       statusOverride: 'auto',
       serverType: 'pvp-pve',
-      donate: 'cosmetic',
       type_new: false, type_featured: false, vip: false,
       voteRewardsEnabled: false,
       icon:'', banner:'', telegram:'', discord:'', vk:'',
@@ -323,7 +326,6 @@ export default function AdminPage() {
       country:     s.country     ?? 'RU',
       statusOverride: s.statusOverride ?? 'auto',
       serverType:  (s.type ?? []).find((t: string) => SERVER_TYPES.some(st => st.v === t)) ?? 'pvp-pve',
-      donate:      s.donate === 'free' ? '' : (s.donate ?? ''),
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
       voteRewardsEnabled: !!s.voteRewardsEnabled,
@@ -365,7 +367,6 @@ export default function AdminPage() {
         url:         editForm.url,
         openedDate:  fromDateTimeLocal(editForm.openedDate) || undefined,
         country:     editForm.country,
-        donate:      editForm.donate || undefined,
         voteRewardsEnabled: !!editForm.voteRewardsEnabled,
         statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
@@ -377,7 +378,7 @@ export default function AdminPage() {
         shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         trafficHistory: trafficPayload(editForm.trafficHistory ?? []),
-        instances:   editForm.instances ?? [],
+        instances:   projectInstancesPayload(editForm.instances ?? []),
       } as any, token);
       showToast(`✅ Сервер ${editForm.name} обновлён`);
       setEditServer(null);
@@ -405,7 +406,7 @@ export default function AdminPage() {
       await api.servers.create({
         id: addForm.id, name: addForm.name, abbr: addForm.abbr || addForm.name.slice(0,2).toUpperCase(),
         url: addForm.url, chronicle: aChron, rates: aRates, rateNum: aRateN,
-        type: types, donate: addForm.donate, vip: addForm.vip,
+        type: types, vip: addForm.vip,
         voteRewardsEnabled: !!addForm.voteRewardsEnabled,
         openedDate: fromDateTimeLocal(addForm.openedDate) || undefined, country: addForm.country,
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
@@ -413,7 +414,7 @@ export default function AdminPage() {
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
         shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
         trafficHistory: trafficPayload(addForm.trafficHistory ?? []),
-        instances: addForm.instances ?? [],
+        instances: projectInstancesPayload(addForm.instances ?? []),
       } as any, token);
       if (approvingId) {
         try { await api.servers.updateRequest(approvingId, 'approved', token); } catch {}

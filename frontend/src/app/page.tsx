@@ -47,6 +47,7 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
   const params: Record<string, string> = {
     page: Number.isFinite(page) && page > 0 ? String(page) : '1',
     limit: '30',
+    compact: 'true',
   };
 
   const sort = firstParam(searchParams.sort);

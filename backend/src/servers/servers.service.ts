@@ -107,6 +107,41 @@ function stripLegacyDownloadFields<T>(value: T): T {
   return rest as T;
 }
 
+function compactCatalogServer<T>(value: T): T {
+  if (!value || typeof value !== 'object') return value;
+
+  const {
+    fullDesc: _fullDesc,
+    subscription: _subscription,
+    instances,
+    ...server
+  } = value as any;
+
+  return {
+    ...server,
+    instances: Array.isArray(instances)
+      ? instances.map(instance => {
+          const {
+            onlineHistory: _onlineHistory,
+            onlineSourceUrl: _onlineSourceUrl,
+            onlineListPath: _onlineListPath,
+            onlineMatchField: _onlineMatchField,
+            onlineMatchValue: _onlineMatchValue,
+            onlineValuePath: _onlineValuePath,
+            onlineJsonVar: _onlineJsonVar,
+            onlineItemIndex: _onlineItemIndex,
+            onlineRegex: _onlineRegex,
+            onlineRegexGroup: _onlineRegexGroup,
+            onlineStatus: _onlineStatus,
+            onlineError: _onlineError,
+            ...compactInstance
+          } = instance ?? {};
+          return compactInstance;
+        })
+      : instances,
+  } as T;
+}
+
 const onlineSourceTestSchema = z.object({
   mode: z.enum(['manual', 'estimated', 'next-json', 'html-json-var', 'html-regex']),
   manual: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
@@ -811,7 +846,7 @@ export class ServersService {
   async findAll(filters: FilterServersDto) {
     // sort без default: пустое = «по умолчанию» (пьедестал VIP → сервер недели → Буст
      // → остальные по голосам). Явные значения: opened/name/rating/votes.
-    const { search, chronicle, rate, donate, type, openedWithin, sort, page = 1, limit = 50 } = filters;
+    const { search, chronicle, rate, donate, type, openedWithin, sort, compact = false, page = 1, limit = 50 } = filters;
 
     const where: any = {};
 
@@ -967,7 +1002,10 @@ export class ServersService {
 
     const total = decorated.length;
     const start = (page - 1) * limit;
-    const data  = decorated.slice(start, start + limit).map(server => stripLegacyDownloadFields(server));
+    const data  = decorated.slice(start, start + limit).map(server => {
+      const sanitized = stripLegacyDownloadFields(server);
+      return compact ? compactCatalogServer(sanitized) : sanitized;
+    });
 
     return { data, total, page, limit, pages: Math.ceil(total / limit) };
   }

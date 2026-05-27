@@ -92,7 +92,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { page: String(page), limit: '30' };
+      const params: Record<string, string> = { page: String(page), limit: '30', compact: 'true' };
       if (sort) params.sort = sort;
       if (search) params.search = search;
       if (filters.chr) params.chronicle = filters.chr;
@@ -287,10 +287,11 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
             ) : (
               <div className={styles.grid}>
-                {servers.map(s => (
+                {servers.map((s, index) => (
                   <HomeServerCard
                     key={s.id}
                     server={s}
+                    eagerImage={index < 5}
                     isFavorite={favoriteIds.has(s.id)}
                     favoriteBusy={favoriteBusyId === s.id}
                     canFavorite={!!token}
@@ -354,12 +355,14 @@ function Metric({
 
 function HomeServerCard({
   server: s,
+  eagerImage,
   isFavorite,
   favoriteBusy,
   canFavorite,
   onFavorite,
 }: {
   server: Server;
+  eagerImage: boolean;
   isFavorite: boolean;
   favoriteBusy: boolean;
   canFavorite: boolean;
@@ -387,7 +390,7 @@ function HomeServerCard({
       <Link href={`/servers/${s.id}`} className={styles.cardLink} aria-label={`Открыть сервер ${s.name}`} />
       <div className={styles.cardMedia}>
         {s.banner ? (
-          <img src={s.banner} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <img src={s.banner} alt="" loading={eagerImage ? 'eager' : 'lazy'} decoding="async" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         ) : (
           <span className={styles.cardMediaFallback} />
         )}
@@ -405,7 +408,7 @@ function HomeServerCard({
           {isFavorite ? '★' : '♡'}
         </button>
         <div className={styles.cardIdentity}>
-          <ServerIcon server={s} />
+          <ServerIcon server={s} eager={eagerImage} />
           <div>
             <h2>{s.name}</h2>
             <div className={styles.cardTags} title={`${projectMeta.chroniclesTitle} / ${projectMeta.ratesTitle}`}>
@@ -455,11 +458,11 @@ function HomeServerCard({
   );
 }
 
-function ServerIcon({ server, small }: { server: Server; small?: boolean }) {
+function ServerIcon({ server, small, eager = false }: { server: Server; small?: boolean; eager?: boolean }) {
   return (
     <span className={`${styles.serverIcon} ${small ? styles.serverIconSmall : ''}`}>
       {server.icon
-        ? <img src={server.icon} alt="" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        ? <img src={server.icon} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         : <span>{server.abbr ?? server.name.slice(0, 2).toUpperCase()}</span>}
     </span>
   );

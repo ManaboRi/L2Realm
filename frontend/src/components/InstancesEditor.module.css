@@ -90,6 +90,9 @@
 .field {
   display: flex; flex-direction: column; gap: .2rem;
 }
+.fieldWide {
+  grid-column: 1 / -1;
+}
 .field span {
   font-family: 'Cinzel', serif;
   font-size: .58rem;
