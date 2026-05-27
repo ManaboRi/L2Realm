@@ -682,6 +682,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
       {activeTab === 'overview' && (
         <div className={styles.detailGrid}>
+          <div className={styles.detailMain}>
           <section className={`${styles.infoCard} ${styles.worldOverviewCard}`}>
             <div className={styles.cardTitleRow}>
               <h2>Миры и открытия</h2>
@@ -833,6 +834,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
             </div>
           </section>
+          </div>
 
           {projectSidebar}
         </div>
