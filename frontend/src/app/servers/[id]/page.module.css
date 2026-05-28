@@ -361,6 +361,11 @@
   color: #53d987 !important;
 }
 
+.serverActivity {
+  color: #7ee5a5 !important;
+  font-size: .92rem !important;
+}
+
 .serverTraffic,
 .heroTrafficMetric strong {
   color: #67b1ff !important;
@@ -474,19 +479,19 @@
   grid-column: 1;
   grid-row: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
 }
 
 .analyticsPane {
   min-width: 0;
-  padding-right: 1.1rem;
+  padding-right: 0;
 }
 
 .trafficPane {
   padding-right: 0;
-  padding-left: 1.1rem;
-  border-left: 1px solid rgba(118,141,151,.14);
+  padding-left: 0;
+  border-left: 0;
 }
 
 .worldOverviewCard {
@@ -775,6 +780,28 @@
   box-shadow: 0 0 7px rgba(83,217,135,.48);
 }
 
+.worldAvailabilityGood {
+  color: #72eba2 !important;
+}
+
+.worldAvailabilityBad {
+  color: #e66f6f !important;
+}
+
+.worldAvailabilityBad i {
+  background: #e66f6f !important;
+  box-shadow: 0 0 7px rgba(230,111,111,.48) !important;
+}
+
+.worldAvailabilityUnknown {
+  color: rgba(232,221,186,.58) !important;
+}
+
+.worldAvailabilityUnknown i {
+  background: rgba(232,221,186,.48) !important;
+  box-shadow: 0 0 7px rgba(232,221,186,.2) !important;
+}
+
 .worldTableRow em {
   width: max-content;
   min-height: 21px;
@@ -799,6 +826,30 @@
 .worldActivityLine {
   fill: none;
   stroke: #50d587;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.worldActivityFillBad {
+  fill: rgba(230,111,111,.12);
+}
+
+.worldActivityLineBad {
+  fill: none;
+  stroke: #e66f6f;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.worldActivityFillMuted {
+  fill: rgba(118,141,151,.1);
+}
+
+.worldActivityLineMuted {
+  fill: none;
+  stroke: rgba(232,221,186,.46);
   stroke-width: 1.5;
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -2010,10 +2061,10 @@
     padding-right: 0;
   }
   .trafficPane {
-    margin-top: 1rem;
-    padding-top: 1rem;
+    margin-top: 0;
+    padding-top: 0;
     padding-left: 0;
-    border-top: 1px solid rgba(118,141,151,.14);
+    border-top: 0;
     border-left: 0;
   }
   .worldOverviewCard { grid-row: 2; }

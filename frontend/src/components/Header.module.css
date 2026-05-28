@@ -82,6 +82,13 @@
 
 .right { display: flex; align-items: center; gap: .7rem; flex-shrink: 0; }
 
+@media (max-width: 1360px) and (min-width: 1121px) {
+  .header { padding: 0 1rem; gap: .6rem; }
+  .nav { gap: .12rem; }
+  .navLink { padding: .52rem .62rem; font-size: .62rem; letter-spacing: .075em; }
+  .right { gap: .45rem; }
+}
+
 /* Соц-иконки: круглые кнопки */
 .socials {
   display: flex; align-items: center; gap: .4rem;

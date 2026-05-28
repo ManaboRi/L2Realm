@@ -347,35 +347,14 @@
 }
 
 .metric_gold .metricIcon { background: radial-gradient(circle, rgba(210, 171, 82, .26), rgba(115, 79, 27, .24)); color: #d9b85a; }
-.metric_online .metricIcon { background: radial-gradient(circle, rgba(56, 221, 132, .34), rgba(15, 94, 60, .32)); color: #53e88d; }
+.metric_blue .metricIcon { background: radial-gradient(circle, rgba(87, 166, 246, .34), rgba(35, 78, 132, .34)); color: #7dbdff; }
 .metric_violet .metricIcon { background: radial-gradient(circle, rgba(160, 92, 255, .34), rgba(78, 45, 144, .34)); color: #b68cff; }
 .metric_amber .metricIcon { background: radial-gradient(circle, rgba(238, 173, 62, .34), rgba(142, 87, 25, .34)); color: #edb341; }
 .metric_red .metricIcon { background: radial-gradient(circle, rgba(244, 78, 92, .35), rgba(137, 39, 57, .34)); color: #ff6978; }
 
-.metric_online {
-  position: relative;
-  padding-block: .08rem;
-}
-
-.metric_online .metricText strong::after {
-  content: '';
-  position: absolute;
-  top: -.36rem;
-  right: -.46rem;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #43df82;
-  box-shadow: 0 0 10px rgba(67, 223, 130, .74);
-}
-
-.metric_online .metricIcon {
-  display: none;
-}
-
-.metric_online .metricText strong {
-  color: #70f5a2;
-  text-shadow: 0 0 16px rgba(83, 232, 141, .28);
+.metric_blue .metricText strong {
+  color: #8fc7ff;
+  text-shadow: 0 0 14px rgba(87, 166, 246, .22);
   font-size: 1.22rem;
 }
 
@@ -435,10 +414,10 @@
   justify-content: center;
   border: 1px solid rgba(8, 11, 16, .42);
   border-radius: 50%;
-  padding: 1px 0 0;
+  padding: 0;
   font-family: 'DM Sans', sans-serif;
   font-weight: 700;
-  line-height: 1;
+  line-height: 14px;
   font-size: .56rem;
 }
 
@@ -641,6 +620,27 @@
   white-space: nowrap;
 }
 
+.verificationBadge {
+  position: absolute;
+  right: .7rem;
+  top: 3rem;
+  z-index: 4;
+  min-height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 .48rem;
+  border: 1px solid rgba(87, 166, 246, .36);
+  border-radius: 5px;
+  background: rgba(11, 31, 50, .78);
+  color: #8fc7ff;
+  font-size: .56rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(8px);
+}
+
 .favoriteBtn {
   position: absolute;
   z-index: 5;
@@ -796,11 +796,11 @@
   align-items: center;
   justify-content: center;
   gap: .42rem;
-  min-height: 20px;
+  min-height: 18px;
   color: rgba(232, 221, 186, .72);
   font-size: .75rem;
-  margin-bottom: .18rem;
-  transform: translateY(-.32rem);
+  margin-bottom: .08rem;
+  transform: translateY(-.18rem);
 }
 
 .cardLiveRow strong {
@@ -818,25 +818,17 @@
   font-weight: 400;
 }
 
-.liveDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #43d47e;
-  box-shadow: 0 0 8px rgba(67, 212, 126, .42);
-}
-
-.liveSeparator {
-  width: 3px;
-  height: 3px;
-  margin: 0 .08rem;
-  border-radius: 50%;
-  background: rgba(232, 221, 186, .38);
-}
-
 .worldSummary {
-  color: rgba(232, 221, 186, .68);
-  font-size: .69rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 0 .5rem;
+  border: 1px solid rgba(87, 166, 246, .16);
+  border-radius: 5px;
+  background: rgba(87, 166, 246, .055);
+  color: rgba(226, 239, 255, .82);
+  font-size: .68rem;
+  line-height: 1;
 }
 
 .cardFacts {
@@ -878,11 +870,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.onlineUnavailable {
-  color: rgba(232, 221, 186, .52);
-  font-size: .76rem;
 }
 
 .trafficValue {
@@ -1119,7 +1106,7 @@
     flex-basis: 9px;
   }
   .metricText strong { font-size: 1rem; }
-  .metric_online .metricText strong { font-size: 1.1rem; }
+  .metric_blue .metricText strong { font-size: 1.1rem; }
   .metricText em { font-size: .66rem; }
   .sortPills { width: 100%; min-height: 38px; }
   .sortPill { min-height: 34px; }

@@ -76,6 +76,9 @@ export interface Server {
   monthlyVotes?: number;
   weeklyVotes?:  number;
   voteRewardsEnabled?: boolean;
+  manualCheckAt?: string | null;
+  trustLevel?: 'A' | 'B' | 'C' | null;
+  activityLevel?: 'high' | 'medium' | 'low' | 'very_low' | 'unknown' | null;
   onlineValue?: number | null;
   onlineUpdatedAt?: string | null;
   _isVip?:     boolean;

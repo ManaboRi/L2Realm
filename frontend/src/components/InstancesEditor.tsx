@@ -1,6 +1,5 @@
 'use client';
-import { useId, useMemo, useState } from 'react';
-import { api } from '@/lib/api';
+import { useId, useMemo } from 'react';
 import type { ServerInstance } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './InstancesEditor.module.css';
@@ -8,7 +7,6 @@ import styles from './InstancesEditor.module.css';
 interface Props {
   value:    ServerInstance[];
   onChange: (next: ServerInstance[]) => void;
-  token?:   string | null;
 }
 
 function newId(): string {
@@ -50,9 +48,8 @@ function fromDateTimeLocal(value: string) {
   return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
 
-export function InstancesEditor({ value, onChange, token }: Props) {
+export function InstancesEditor({ value, onChange }: Props) {
   const uid = useId();
-  const [checking, setChecking] = useState<Record<string, boolean>>({});
   const list = useMemo(() => Array.isArray(value) ? value : [], [value]);
 
   function update(idx: number, patch: Partial<ServerInstance>) {
@@ -71,57 +68,6 @@ export function InstancesEditor({ value, onChange, token }: Props) {
     const next = [...list];
     [next[idx], next[target]] = [next[target], next[idx]];
     onChange(next);
-  }
-
-  async function checkOnline(idx: number) {
-    const inst = list[idx];
-    if (!inst) return;
-    const mode = inst.onlineMode || 'off';
-    if (mode === 'off') return;
-
-    if (!token) {
-      update(idx, { onlineStatus: 'error', onlineError: 'Нужно войти админом' });
-      return;
-    }
-
-    const key = inst.id || String(idx);
-    setChecking(prev => ({ ...prev, [key]: true }));
-    try {
-      const result = await api.servers.testOnlineSource({
-        mode,
-        manual: inst.onlineManual ?? null,
-        chronicle: inst.chronicle,
-        rates: inst.rates,
-        rateNum: inst.rateNum,
-        instanceId: inst.id,
-        observedAt: inst.onlineEstimatedAt ?? null,
-        sourceUrl: inst.onlineSourceUrl || inst.url,
-        listPath: inst.onlineListPath || 'props.pageProps.home.servers',
-        matchField: inst.onlineMatchField || 'name',
-        matchValue: inst.onlineMatchValue || inst.label || inst.rates,
-        valuePath: inst.onlineValuePath || 'online',
-        jsonVar: inst.onlineJsonVar || '__promoServerOnline',
-        itemIndex: inst.onlineItemIndex ?? 0,
-        regex: inst.onlineRegex || '',
-        regexGroup: inst.onlineRegexGroup ?? 1,
-      }, token);
-
-      update(idx, {
-        onlineValue: result.online,
-        onlineUpdatedAt: result.checkedAt,
-        onlineStatus: 'ok',
-        onlineError: null,
-        ...(result.usedListPath ? { onlineListPath: result.usedListPath } : {}),
-        ...(result.valuePath ? { onlineValuePath: result.valuePath } : {}),
-      });
-    } catch (error) {
-      update(idx, {
-        onlineStatus: 'error',
-        onlineError: error instanceof Error ? error.message : 'Не удалось проверить онлайн',
-      });
-    } finally {
-      setChecking(prev => ({ ...prev, [key]: false }));
-    }
   }
 
   return (
@@ -270,232 +216,6 @@ export function InstancesEditor({ value, onChange, token }: Props) {
                   maxLength={140}
                 />
               </label>
-
-              <div className={styles.onlineBox}>
-                <div className={styles.onlineHead}>
-                  <span>Онлайн запуска</span>
-                  {inst.onlineValue != null && <strong>{Number(inst.onlineValue).toLocaleString('ru-RU')}</strong>}
-                </div>
-
-                <div className={styles.row}>
-                  <label className={styles.field}>
-                    <span>Источник онлайна</span>
-                    <select
-                      className="input"
-                      value={inst.onlineMode || 'off'}
-                      onChange={e => {
-                        const mode = e.target.value as ServerInstance['onlineMode'];
-                        update(idx, {
-                          onlineMode: mode,
-                          ...(mode === 'estimated' ? {
-                            onlineEstimatedAt: inst.onlineEstimatedAt || new Date().toISOString(),
-                          } : {}),
-                          ...(mode === 'next-json' ? {
-                            onlineSourceUrl: inst.onlineSourceUrl || inst.url,
-                            onlineListPath: inst.onlineListPath || 'props.pageProps.home.servers',
-                            onlineMatchField: inst.onlineMatchField || 'name',
-                            onlineMatchValue: inst.onlineMatchValue || inst.label || '',
-                            onlineValuePath: inst.onlineValuePath || 'online',
-                          } : {}),
-                          ...(mode === 'html-json-var' ? {
-                            onlineSourceUrl: inst.onlineSourceUrl || inst.url,
-                            onlineJsonVar: inst.onlineJsonVar || '__promoServerOnline',
-                            onlineItemIndex: inst.onlineItemIndex ?? 0,
-                            onlineValuePath: inst.onlineValuePath || 'onlineCount',
-                          } : {}),
-                          ...(mode === 'html-regex' ? {
-                            onlineSourceUrl: inst.onlineSourceUrl || inst.url,
-                            onlineRegexGroup: inst.onlineRegexGroup ?? 1,
-                          } : {}),
-                        });
-                      }}
-                    >
-                      <option value="off">Выключено</option>
-                      <option value="manual">Ручной онлайн</option>
-                      <option value="estimated">Оценочный онлайн</option>
-                      <option value="next-json">Next.js / JSON</option>
-                      <option value="html-json-var">HTML JSON-переменная</option>
-                      <option value="html-regex">HTML / regex</option>
-                    </select>
-                  </label>
-
-                  <label className={styles.field}>
-                    <span>{(inst.onlineMode || 'off') === 'estimated' ? 'Онлайн при оценке' : 'Ручное значение'}</span>
-                    <input
-                      className="input"
-                      type="number"
-                      min={0}
-                      value={inst.onlineManual ?? ''}
-                      onChange={e => {
-                        const checkedAt = new Date().toISOString();
-                        update(idx, {
-                          onlineManual: e.target.value === '' ? null : Number(e.target.value),
-                          onlineValue: e.target.value === '' ? null : Number(e.target.value),
-                          onlineUpdatedAt: checkedAt,
-                          ...((inst.onlineMode || 'off') === 'estimated' ? { onlineEstimatedAt: checkedAt } : {}),
-                        });
-                      }}
-                      placeholder="8663"
-                      disabled={!['manual', 'estimated'].includes(inst.onlineMode || 'off')}
-                    />
-                  </label>
-                </div>
-
-                {(inst.onlineMode || 'off') === 'next-json' && (
-                  <>
-                    <label className={styles.field}>
-                      <span>URL страницы или JSON</span>
-                      <input
-                        className="input"
-                        type="url"
-                        value={inst.onlineSourceUrl ?? ''}
-                        onChange={e => update(idx, { onlineSourceUrl: e.target.value })}
-                        placeholder="https://ru.scryde.game/"
-                      />
-                    </label>
-
-                    <div className={styles.row}>
-                      <label className={styles.field}>
-                        <span>Путь к списку</span>
-                        <input
-                          className="input"
-                          value={inst.onlineListPath ?? 'props.pageProps.home.servers'}
-                          onChange={e => update(idx, { onlineListPath: e.target.value })}
-                          placeholder="props.pageProps.home.servers"
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        <span>Поле онлайна</span>
-                        <input
-                          className="input"
-                          value={inst.onlineValuePath ?? 'online'}
-                          onChange={e => update(idx, { onlineValuePath: e.target.value })}
-                          placeholder="online"
-                        />
-                      </label>
-                    </div>
-
-                    <div className={styles.row}>
-                      <label className={styles.field}>
-                        <span>Искать по полю</span>
-                        <input
-                          className="input"
-                          value={inst.onlineMatchField ?? 'name'}
-                          onChange={e => update(idx, { onlineMatchField: e.target.value })}
-                          placeholder="name или id"
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        <span>Значение для поиска</span>
-                        <input
-                          className="input"
-                          value={inst.onlineMatchValue ?? ''}
-                          onChange={e => update(idx, { onlineMatchValue: e.target.value })}
-                          placeholder="Скрайд Х50 или 51"
-                        />
-                      </label>
-                    </div>
-                  </>
-                )}
-
-                {(inst.onlineMode || 'off') === 'html-json-var' && (
-                  <>
-                    <label className={styles.field}>
-                      <span>URL страницы</span>
-                      <input
-                        className="input"
-                        type="url"
-                        value={inst.onlineSourceUrl ?? ''}
-                        onChange={e => update(idx, { onlineSourceUrl: e.target.value })}
-                        placeholder="https://arcaneworld.biz/ru"
-                      />
-                    </label>
-
-                    <div className={styles.row}>
-                      <label className={styles.field}>
-                        <span>JS переменная</span>
-                        <input
-                          className="input"
-                          value={inst.onlineJsonVar ?? '__promoServerOnline'}
-                          onChange={e => update(idx, { onlineJsonVar: e.target.value })}
-                          placeholder="__promoServerOnline"
-                        />
-                      </label>
-                      <label className={styles.field}>
-                        <span>Номер в списке</span>
-                        <input
-                          className="input"
-                          type="number"
-                          min={0}
-                          value={inst.onlineItemIndex ?? 0}
-                          onChange={e => update(idx, { onlineItemIndex: Number(e.target.value) || 0 })}
-                          placeholder="0"
-                        />
-                      </label>
-                    </div>
-
-                    <label className={styles.field}>
-                      <span>Поле онлайна</span>
-                      <input
-                        className="input"
-                        value={inst.onlineValuePath ?? 'onlineCount'}
-                        onChange={e => update(idx, { onlineValuePath: e.target.value })}
-                        placeholder="onlineCount"
-                      />
-                    </label>
-                  </>
-                )}
-
-                {(inst.onlineMode || 'off') === 'html-regex' && (
-                  <>
-                    <label className={styles.field}>
-                      <span>URL страницы</span>
-                      <input
-                        className="input"
-                        type="url"
-                        value={inst.onlineSourceUrl ?? ''}
-                        onChange={e => update(idx, { onlineSourceUrl: e.target.value })}
-                        placeholder="https://site.ru/"
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Regex с числом в группе</span>
-                      <input
-                        className="input"
-                        value={inst.onlineRegex ?? ''}
-                        onChange={e => update(idx, { onlineRegex: e.target.value })}
-                        placeholder="Онлайн:\\s*([0-9 ]+)"
-                      />
-                    </label>
-
-                    <label className={styles.field}>
-                      <span>Номер группы</span>
-                      <input
-                        className="input"
-                        type="number"
-                        min={0}
-                        value={inst.onlineRegexGroup ?? 1}
-                        onChange={e => update(idx, { onlineRegexGroup: Number(e.target.value) || 1 })}
-                      />
-                    </label>
-                  </>
-                )}
-
-                <div className={styles.onlineActions}>
-                  <button
-                    type="button"
-                    className={styles.checkBtn}
-                    onClick={() => checkOnline(idx)}
-                    disabled={(inst.onlineMode || 'off') === 'off' || checking[inst.id || String(idx)]}
-                  >
-                    {checking[inst.id || String(idx)] ? 'Проверяю...' : 'Проверить онлайн'}
-                  </button>
-                  {inst.onlineStatus === 'ok' && <span className={styles.onlineOk}>Источник работает</span>}
-                  {inst.onlineStatus === 'error' && <span className={styles.onlineError}>{inst.onlineError || 'Ошибка источника'}</span>}
-                  {inst.onlineUpdatedAt && <span className={styles.onlineMeta}>Обновлено: {new Date(inst.onlineUpdatedAt).toLocaleString('ru-RU')}</span>}
-                </div>
-              </div>
 
             </li>
           ))}

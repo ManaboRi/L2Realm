@@ -56,6 +56,20 @@ function fromDateTimeLocal(value?: string | null) {
   return Number.isNaN(date.getTime()) ? value : date.toISOString();
 }
 
+function toDateInput(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function fromDateInput(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
 function futureOpenings(servers: any[]) {
   const now = Date.now();
   const result: Array<{ key: string; serverId: string; instanceId?: string | null; label: string; openedAt: string }> = [];
@@ -172,6 +186,7 @@ export default function AdminPage() {
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
     url:'', openedDate:'', country:'RU', statusOverride: 'auto',
+    manualCheckAt: '', trustLevel: '', activityLevel: 'unknown',
     serverType: 'pvp-pve',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
@@ -257,6 +272,9 @@ export default function AdminPage() {
       openedDate:  toDateTimeLocal(r.openedDate),
       country:     'RU',
       statusOverride: 'auto',
+      manualCheckAt: '',
+      trustLevel: '',
+      activityLevel: 'unknown',
       serverType: 'pvp-pve',
       type_new: false, type_featured: false, vip: false,
       voteRewardsEnabled: false,
@@ -336,6 +354,9 @@ export default function AdminPage() {
       openedDate:  toDateTimeLocal(s.openedDate),
       country:     s.country     ?? 'RU',
       statusOverride: s.statusOverride ?? 'auto',
+      manualCheckAt: toDateInput(s.manualCheckAt),
+      trustLevel: s.trustLevel ?? '',
+      activityLevel: s.activityLevel ?? 'unknown',
       serverType:  (s.type ?? []).find((t: string) => SERVER_TYPES.some(st => st.v === t)) ?? 'pvp-pve',
       type_new:    s.type?.includes('new')      ?? false,
       type_featured: s.type?.includes('featured') ?? false,
@@ -379,6 +400,9 @@ export default function AdminPage() {
         openedDate:  fromDateTimeLocal(editForm.openedDate) || undefined,
         country:     editForm.country,
         voteRewardsEnabled: !!editForm.voteRewardsEnabled,
+        manualCheckAt: fromDateInput(editForm.manualCheckAt),
+        trustLevel: editForm.trustLevel || null,
+        activityLevel: editForm.activityLevel || 'unknown',
         statusOverride: editForm.statusOverride === 'auto' ? null : editForm.statusOverride,
         type:        types,
         icon:        editForm.icon || undefined,
@@ -419,6 +443,9 @@ export default function AdminPage() {
         type: types, vip: addForm.vip,
         voteRewardsEnabled: !!addForm.voteRewardsEnabled,
         openedDate: fromDateTimeLocal(addForm.openedDate) || undefined, country: addForm.country,
+        manualCheckAt: fromDateInput(addForm.manualCheckAt),
+        trustLevel: addForm.trustLevel || null,
+        activityLevel: addForm.activityLevel || 'unknown',
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
@@ -503,9 +530,29 @@ export default function AdminPage() {
                 <AField label="Ручной статус">
                   <select className="input" value={editForm.statusOverride} onChange={e => setEditForm((p:any) => ({...p,statusOverride:e.target.value}))}>
                     <option value="auto">Авто мониторинг</option>
-                    <option value="online">Всегда online</option>
-                    <option value="offline">Всегда offline</option>
+                    <option value="online">Всегда работает</option>
+                    <option value="offline">Не работает</option>
                     <option value="unknown">Неизвестно</option>
+                  </select>
+                </AField>
+                <AField label="Дата ручной проверки">
+                  <input className="input" type="date" value={editForm.manualCheckAt} onChange={e => setEditForm((p:any) => ({...p,manualCheckAt:e.target.value}))} />
+                </AField>
+                <AField label="Доверие">
+                  <select className="input" value={editForm.trustLevel} onChange={e => setEditForm((p:any) => ({...p,trustLevel:e.target.value}))}>
+                    <option value="">Не указано</option>
+                    <option value="A">A — проверено хорошо</option>
+                    <option value="B">B — есть мелкие вопросы</option>
+                    <option value="C">C — доверие низкое</option>
+                  </select>
+                </AField>
+                <AField label="Активность">
+                  <select className="input" value={editForm.activityLevel} onChange={e => setEditForm((p:any) => ({...p,activityLevel:e.target.value}))}>
+                    <option value="unknown">Не указана</option>
+                    <option value="high">Высокая</option>
+                    <option value="medium">Средняя</option>
+                    <option value="low">Низкая</option>
+                    <option value="very_low">Очень низкая</option>
                   </select>
                 </AField>
                 <AField label="Vote Manager">
@@ -544,7 +591,6 @@ export default function AdminPage() {
                 <InstancesEditor
                   value={editForm.instances ?? []}
                   onChange={v => setEditForm((p:any) => ({ ...p, instances: v }))}
-                  token={token}
                 />
               </div>
 
@@ -920,9 +966,29 @@ export default function AdminPage() {
                     <AField label="Ручной статус">
                       <select className="input" value={addForm.statusOverride} onChange={e => setAddForm(p => ({...p,statusOverride:e.target.value}))}>
                         <option value="auto">Авто мониторинг</option>
-                        <option value="online">Всегда online</option>
-                        <option value="offline">Всегда offline</option>
+                        <option value="online">Всегда работает</option>
+                        <option value="offline">Не работает</option>
                         <option value="unknown">Неизвестно</option>
+                      </select>
+                    </AField>
+                    <AField label="Дата ручной проверки">
+                      <input className="input" type="date" value={addForm.manualCheckAt} onChange={e => setAddForm(p => ({...p,manualCheckAt:e.target.value}))} />
+                    </AField>
+                    <AField label="Доверие">
+                      <select className="input" value={addForm.trustLevel} onChange={e => setAddForm(p => ({...p,trustLevel:e.target.value}))}>
+                        <option value="">Не указано</option>
+                        <option value="A">A — проверено хорошо</option>
+                        <option value="B">B — есть мелкие вопросы</option>
+                        <option value="C">C — доверие низкое</option>
+                      </select>
+                    </AField>
+                    <AField label="Активность">
+                      <select className="input" value={addForm.activityLevel} onChange={e => setAddForm(p => ({...p,activityLevel:e.target.value}))}>
+                        <option value="unknown">Не указана</option>
+                        <option value="high">Высокая</option>
+                        <option value="medium">Средняя</option>
+                        <option value="low">Низкая</option>
+                        <option value="very_low">Очень низкая</option>
                       </select>
                     </AField>
                     <AField label="Vote Manager">
@@ -956,7 +1022,6 @@ export default function AdminPage() {
                   <InstancesEditor
                     value={addForm.instances ?? []}
                     onChange={v => setAddForm(p => ({ ...p, instances: v }))}
-                    token={token}
                   />
 
                   <button className="btn-primary" type="submit" style={{ alignSelf:'flex-start', padding:'.5rem 1.6rem' }}>

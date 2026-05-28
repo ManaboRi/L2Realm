@@ -7,7 +7,6 @@ import { api } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { formatOnline, serverOnlineDisclosure, serverOnlineValue } from '@/lib/online';
 import { currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount } from '@/lib/project-metrics';
 import styles from './page.module.css';
 
@@ -71,11 +70,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const totalProjects = stats?.total ?? servers.length;
   const totalServers = stats?.launchCount ?? totalProjects;
   const totalVotes = stats?.totalVotes ?? servers.reduce((sum, server) => sum + (server.totalVotes ?? 0), 0);
-  const loadedOnline = servers
-    .map(serverOnlineValue)
-    .filter((value): value is number => value != null)
-    .reduce((sum, value) => sum + value, 0);
-  const totalOnline = stats?.onlineTotal && stats.onlineTotal > 0 ? stats.onlineTotal : loadedOnline;
+  const totalReviews = stats?.reviewCount ?? servers.reduce((sum, server) => sum + (server.ratingCount ?? 0), 0);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -266,7 +261,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               <div className={styles.heroStatsWrap}>
                 <div className={styles.heroStats}>
                   <Metric tone="gold" label="Миров" value={totalServers} />
-                  <Metric tone="online" label="Игроков" value={totalOnline} />
+                  <Metric tone="blue" label="Отзывы" value={totalReviews} />
                   <Metric tone="amber" label="Голосов" value={totalVotes} />
                   <Metric tone="red" label="Проектов" value={totalProjects} />
                 </div>
@@ -341,7 +336,7 @@ function Metric({
 }: {
   label: string;
   value: number;
-  tone: 'gold' | 'online' | 'amber' | 'red';
+  tone: 'gold' | 'blue' | 'amber' | 'red';
 }) {
   return (
     <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
@@ -369,9 +364,8 @@ function HomeServerCard({
   onFavorite: () => void;
 }) {
   const projectMeta = collectCardMeta(s);
-  const online = serverOnlineValue(s);
-  const onlineDisclosure = serverOnlineDisclosure(s);
   const worlds = projectWorldCount(s);
+  const verification = verificationBadge(s);
   const latestOpening = latestProjectOpening(s);
   const trafficTrend = projectTrafficTrend(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
@@ -397,6 +391,11 @@ function HomeServerCard({
         <span className={styles.cardShade} />
         <span className={styles.cardBottomFade} />
         {badge && <span className={styles.cardBadge}>{badge}</span>}
+        {verification && (
+          <span className={styles.verificationBadge} title={verification.title}>
+            {verification.label}
+          </span>
+        )}
         <button
           type="button"
           className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
@@ -420,16 +419,9 @@ function HomeServerCard({
       </div>
 
       <div className={styles.cardBody}>
-        <div className={styles.cardLiveRow} title={onlineDisclosure?.title}>
-          {online != null ? (
-            <>
-              <i className={styles.liveDot} aria-hidden="true" />
-              <strong>{formatOnline(online, onlineDisclosure?.estimated ?? false)} <small>онлайн</small></strong>
-            </>
-          ) : <span className={styles.onlineUnavailable}>Нет данных онлайн</span>}
-          <i className={styles.liveSeparator} aria-hidden="true" />
+        <div className={styles.cardLiveRow}>
           <span className={styles.worldSummary}>
-            {onlineDisclosure ? `${onlineDisclosure.tracked} из ${worlds}` : worlds} {worldWord(worlds)}
+            {worlds} {worldWord(worlds)}
           </span>
         </div>
         <div className={styles.cardFacts}>
@@ -456,6 +448,18 @@ function HomeServerCard({
       </div>
     </article>
   );
+}
+
+function verificationBadge(server: Server): { label: string; title: string } | null {
+  const level = server.trustLevel;
+  const checkedAt = server.manualCheckAt ? formatDate(server.manualCheckAt) : '';
+  if (!level && !checkedAt) return null;
+  const label = level ? `Доверие ${level}` : 'Проверено';
+  const title = [
+    level ? `Уровень доверия: ${level}` : '',
+    checkedAt ? `Ручная проверка: ${checkedAt}` : '',
+  ].filter(Boolean).join(' · ');
+  return { label, title };
 }
 
 function ServerIcon({ server, small, eager = false }: { server: Server; small?: boolean; eager?: boolean }) {

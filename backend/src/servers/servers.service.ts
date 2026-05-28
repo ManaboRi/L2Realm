@@ -69,6 +69,9 @@ const serverPayloadSchema = z.object({
   type: z.array(safeText(1, 40)).max(20).optional(),
   vip: z.coerce.boolean().optional(),
   voteRewardsEnabled: z.coerce.boolean().optional(),
+  manualCheckAt: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
+  trustLevel: z.union([z.enum(['A', 'B', 'C']), z.literal(''), z.null()]).optional().transform(value => value || null),
+  activityLevel: z.union([z.enum(['high', 'medium', 'low', 'very_low', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   country: optionalSafeText(80),
   icon: optionalSafeAssetUrl,
@@ -125,6 +128,11 @@ function compactCatalogServer<T>(value: T): T {
       ? instances.map(instance => {
           const {
             onlineHistory: _onlineHistory,
+            onlineMode: _onlineMode,
+            onlineManual: _onlineManual,
+            onlineValue: _onlineValue,
+            onlineUpdatedAt: _onlineUpdatedAt,
+            onlineEstimatedAt: _onlineEstimatedAt,
             onlineSourceUrl: _onlineSourceUrl,
             onlineListPath: _onlineListPath,
             onlineMatchField: _onlineMatchField,
@@ -1046,7 +1054,7 @@ export class ServersService {
   // ── Создать (только admin) ───────────────────
   async create(dto: CreateServerDto) {
     const clean = parseOrThrow(serverPayloadSchema, dto) as any;
-    const { openedDate, trafficHistory: submittedTrafficHistory, ...rest } = clean;
+    const { openedDate, manualCheckAt, trafficHistory: submittedTrafficHistory, ...rest } = clean;
     const manualStatus = normalizeStatusOverride((rest as any).statusOverride);
     const trafficUpdate = submittedTrafficHistory !== undefined
       ? calculateTrafficHistory(submittedTrafficHistory)
@@ -1063,6 +1071,7 @@ export class ServersService {
         }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
+        manualCheckAt: manualCheckAt ? new Date(manualCheckAt) : undefined,
       },
     });
 
@@ -1076,7 +1085,7 @@ export class ServersService {
   async update(id: string, dto: UpdateServerDto) {
     const existing = await this.findOne(id);
     const clean = parseOrThrow(serverUpdateSchema, dto) as any;
-    const { id: _id, openedDate, trafficHistory: submittedTrafficHistory, ...data } = clean as any;
+    const { id: _id, openedDate, manualCheckAt, trafficHistory: submittedTrafficHistory, ...data } = clean as any;
     const manualStatus = normalizeStatusOverride(data.statusOverride);
     const statusOverrideTouched = Object.prototype.hasOwnProperty.call(data, 'statusOverride');
     const trafficUpdate = submittedTrafficHistory !== undefined
@@ -1095,6 +1104,7 @@ export class ServersService {
         }),
         ...(manualStatus && { status: manualStatus }),
         openedDate: openedDate ? new Date(openedDate) : undefined,
+        ...(Object.prototype.hasOwnProperty.call(clean, 'manualCheckAt') && { manualCheckAt: manualCheckAt ? new Date(manualCheckAt) : null }),
       },
     });
     if (statusOverrideTouched && !manualStatus) {

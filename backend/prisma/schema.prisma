@@ -79,6 +79,9 @@ model Server {
   monthlyVotes Int      @default(0)
   weeklyVotes  Int      @default(0)
   voteRewardsEnabled Boolean @default(false)
+  manualCheckAt DateTime?
+  trustLevel   String?
+  activityLevel String?
   status      String   @default("online") // online | offline | unknown
   statusOverride String? // null/auto = мониторинг, online/offline/unknown = ручной статус
   trafficMonthly Int?

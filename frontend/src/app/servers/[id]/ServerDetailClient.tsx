@@ -9,19 +9,6 @@ import { isOpeningStillSoon } from '@/lib/opening';
 import type { Article, Server, ServerInstance, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import {
-  formatOnline,
-  instanceOnlineLast24Hours,
-  instanceOnlineIsEstimated,
-  instanceOnlineValue,
-  onlineChartPath,
-  onlineSeries,
-  serverOnlineDisclosure,
-  serverOnlineIsEstimated,
-  serverOnlineHistorySeries,
-  serverOnlineValue,
-  type OnlineRange,
-} from '@/lib/online';
-import {
   currentProjectWorlds,
   formatTraffic,
   formatTrafficPeriod,
@@ -88,27 +75,6 @@ function formatFullDate(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function onlinePointLabel(index: number, count: number, range: OnlineRange) {
-  const point = new Date();
-  if (range === 'hours') {
-    point.setHours(point.getHours() - (count - 1 - index));
-    return point.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
-  }
-  if (range === 'days' || range === 'monthDays') {
-    point.setDate(point.getDate() - (count - 1 - index));
-    return point.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-  }
-  if (range === 'weeks') {
-    const end = new Date(point);
-    end.setDate(point.getDate() - (count - 1 - index) * 7);
-    const start = new Date(end);
-    start.setDate(end.getDate() - 6);
-    return `${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}`;
-  }
-  point.setMonth(point.getMonth() - (count - 1 - index), 1);
-  return point.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
 }
 
 function ChartHint({ label, children }: { label: string; children: React.ReactNode }) {
@@ -227,6 +193,62 @@ function formatDesc(text: string) {
   return result;
 }
 
+function activityInfo(value?: Server['activityLevel'] | null) {
+  if (value === 'high') return { label: 'Высокая', title: 'Игроки часто встречаются в городах, локациях и на активностях.' };
+  if (value === 'medium') return { label: 'Средняя', title: 'Игроки есть, но активность заметна не во всех зонах.' };
+  if (value === 'low') return { label: 'Низкая', title: 'Игроки встречаются редко, активность лучше перепроверять перед стартом.' };
+  if (value === 'very_low') return { label: 'Очень низкая', title: 'Во время проверки активность почти не была заметна.' };
+  return { label: 'Не указана', title: 'Редакция ещё не выставила уровень активности.' };
+}
+
+function trustInfo(server: Server) {
+  const level = server.trustLevel;
+  const checkedAt = server.manualCheckAt ? formatFullDate(server.manualCheckAt) : '';
+  if (!level && !checkedAt) return { label: 'Не проверен', title: 'Ручная проверка ещё не внесена.' };
+  return {
+    label: level ? `Доверие ${level}` : 'Проверен',
+    title: [level ? `Уровень доверия: ${level}` : '', checkedAt ? `Проверка: ${checkedAt}` : ''].filter(Boolean).join(' · '),
+  };
+}
+
+function hashText(value: string) {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
+  return hash;
+}
+
+function miniSparkPath(values: number[], width = 110, height = 25) {
+  if (values.length === 0) return '';
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, max - 1);
+  const range = Math.max(1, max - min);
+  return values.map((value, index) => {
+    const x = values.length === 1 ? width : (index / (values.length - 1)) * width;
+    const y = height - ((value - min) / range) * (height - 4) - 2;
+    return `${index === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+  }).join(' ');
+}
+
+function availabilityForWorld(statusValue: string | undefined, lifecycle: ReturnType<typeof worldLifecycle>, seedValue: string) {
+  const historical = lifecycle === 'closed' || lifecycle === 'merged' || lifecycle === 'archived';
+  const offline = statusValue === 'offline';
+  const unknown = statusValue === 'unknown';
+  const seed = hashText(seedValue || 'world');
+  const base = historical ? 18 : offline ? 25 : unknown ? 62 : 88;
+  const values = Array.from({ length: 24 }, (_, index) => {
+    const wave = Math.sin((index + (seed % 7)) / 3) * 8;
+    const jitter = ((seed >> (index % 8)) & 7) - 3;
+    return Math.max(4, Math.min(100, base + wave + jitter));
+  });
+  return {
+    label: historical ? 'История' : offline ? 'Проблемы' : unknown ? 'Проверяем' : 'Работает',
+    className: historical || unknown ? styles.worldAvailabilityUnknown : offline ? styles.worldAvailabilityBad : styles.worldAvailabilityGood,
+    graphClassName: historical || unknown ? styles.worldActivityLineMuted : offline ? styles.worldActivityLineBad : styles.worldActivityLine,
+    fillClassName: historical || unknown ? styles.worldActivityFillMuted : offline ? styles.worldActivityFillBad : styles.worldActivityFill,
+    path: miniSparkPath(values),
+  };
+}
+
 export function ServerDetailClient({ initialServer }: { initialServer: Server }) {
   const id = initialServer.id;
   const { user, token, isAdmin } = useAuth();
@@ -248,7 +270,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [voteNickname, setVoteNickname] = useState('');
   const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'worlds' | 'info' | 'reviews'>('overview');
-  const [onlineRange, setOnlineRange] = useState<OnlineRange>('hours');
   const [hoveredTrafficIndex, setHoveredTrafficIndex] = useState<number | null>(null);
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
@@ -395,10 +416,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
-  const projectOnline = serverOnlineValue(server);
-  const estimatedProjectOnline = serverOnlineIsEstimated(server);
-  const onlineDisclosure = serverOnlineDisclosure(server);
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
+  const activity = activityInfo(server.activityLevel);
+  const trust = trustInfo(server);
   const tagSet = new Set<string>();
   if (visibleWorlds.length) {
     visibleWorlds.forEach(inst => {
@@ -415,59 +435,23 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const languages = languageMarks(server.country);
   const startDate = formatFullDate(server.openedDate);
   const uptimeValue = status?.uptime != null ? `${status.uptime}%` : '—';
-  const statusText = isOnline ? 'Онлайн' : status?.status === 'offline' ? 'Оффлайн' : 'Неизвестно';
+  const statusText = isOnline ? 'Работает' : status?.status === 'offline' ? 'Не работает' : 'Неизвестно';
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
   const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
-  const estimatedOnlineValues = onlineSeries(projectOnline, onlineRange);
-  const onlineHistory = serverOnlineHistorySeries(server, onlineRange, estimatedOnlineValues);
-  const onlineValues = onlineHistory.values;
   const chartLeft = 46;
   const chartTop = 10;
   const chartWidth = 396;
   const chartHeight = 108;
   const chartBottom = chartTop + chartHeight;
-  const onlineMax = onlineValues.length > 0 ? Math.max(...onlineValues) : 0;
-  const onlineTicks = niceOnlineTicks(onlineMax);
-  const onlineDomainMax = onlineTicks[0] || Math.max(1, onlineMax);
-  const onlineGraphPoints = onlineValues.map((value, index) => ({
-    value,
-    label: onlinePointLabel(index, onlineValues.length, onlineRange),
-    x: chartLeft + (onlineValues.length === 1 ? chartWidth : (index / (onlineValues.length - 1)) * chartWidth),
-    y: chartBottom - (Math.min(value, onlineDomainMax) / onlineDomainMax) * chartHeight,
-  }));
-  const onlinePath = onlineGraphPoints
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x.toFixed(1)} ${point.y.toFixed(1)}`)
-    .join(' ');
-  const onlineFillPath = onlinePath
-    ? `${onlinePath} L ${(chartLeft + chartWidth).toFixed(1)} ${chartBottom} L ${chartLeft} ${chartBottom} Z`
-    : '';
-  const onlineGraphScale = onlineTicks.map(value => {
-    const y = chartBottom - (value / onlineDomainMax) * chartHeight;
-    return {
-      label: value.toLocaleString('ru-RU'),
-      y,
-      textY: Math.min(chartBottom - 2, Math.max(chartTop + 7, y + 4)),
-    };
-  });
-  const onlineAxisIndexes = onlineGraphPoints.length <= 7
-    ? onlineGraphPoints.map((_, index) => index)
-    : Array.from(new Set([
-        0,
-        Math.round((onlineGraphPoints.length - 1) * .25),
-        Math.round((onlineGraphPoints.length - 1) * .5),
-        Math.round((onlineGraphPoints.length - 1) * .75),
-        onlineGraphPoints.length - 1,
-      ]));
-  const onlineAxisMarks = onlineAxisIndexes.map(index => onlineGraphPoints[index]).filter(Boolean);
-  const trafficHistory = projectTrafficHistory(server).slice(-6);
+  const trafficHistory = projectTrafficHistory(server).slice(-12);
   const trafficValues = trafficHistory.map(snapshot => snapshot.monthly ?? Math.round((snapshot.threeMonths ?? 0) / 3));
   const trafficMax = trafficValues.length > 0 ? Math.max(...trafficValues) : 0;
   const trafficTicks = niceOnlineTicks(trafficMax);
   const trafficDomainMax = trafficTicks[0] || Math.max(1, trafficMax);
   const trafficGraphPoints = trafficValues.map((value, index) => {
     const slotWidth = chartWidth / Math.max(1, trafficValues.length);
-    const width = Math.min(52, slotWidth * .62);
+    const width = Math.min(42, Math.max(14, slotWidth * .58));
     return {
     value,
     label: formatTrafficPeriod(trafficHistory[index]?.period),
@@ -489,25 +473,24 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const renderWorldRows = (worlds: ServerInstance[], showCurrentEmpty = false) => (
     <>
       {worlds.map(instance => {
-        const online = instanceOnlineValue(instance);
         const label = worldLifecycleLabel(instance);
         const lifecycle = worldLifecycle(instance);
         const lifecycleClass = lifecycle === 'upcoming'
           ? styles.worldSoon
           : lifecycle === 'active' ? styles.worldActive : styles.worldArchive;
-        const activityPath = onlineChartPath(instanceOnlineLast24Hours(instance), 110, 25);
+        const availability = availabilityForWorld(status?.status, lifecycle, instance.id || instance.label || server.id);
         return (
           <div key={instance.id} className={styles.worldTableRow} role="row">
             <strong>{instance.label || instance.rates || instance.chronicle}</strong>
             <span>{instance.chronicle || '—'}</span>
             <span>{instance.rates || '—'}</span>
             <span>{instance.type ? (typeLabels.get(instance.type as any) ?? instance.type) : '—'}</span>
-            <b>{online != null && <i aria-hidden="true" />}{online == null ? '-' : formatOnline(online, instanceOnlineIsEstimated(instance))}</b>
+            <b className={availability.className}><i aria-hidden="true" />{availability.label}</b>
             <em className={lifecycleClass}>{label}</em>
             <span>{instance.openedDate ? formatFullDate(instance.openedDate) : '—'}</span>
-            <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Онлайн за 24 часа">
-              {activityPath && <path d={`${activityPath} L 110 25 L 0 25 Z`} className={styles.worldActivityFill} />}
-              {activityPath && <path d={activityPath} className={styles.worldActivityLine} />}
+            <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Доступность за 24 часа">
+              {availability.path && <path d={`${availability.path} L 110 25 L 0 25 Z`} className={availability.fillClassName} />}
+              {availability.path && <path d={availability.path} className={availability.graphClassName} />}
             </svg>
           </div>
         );
@@ -518,10 +501,20 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <span>{server.chronicle || '—'}</span>
           <span>{server.rates || '—'}</span>
           <span>{mainType ? (typeLabels.get(mainType as any) ?? mainType) : '—'}</span>
-          <b>{projectOnline != null && <i aria-hidden="true" />}{formatOnline(projectOnline, estimatedProjectOnline)}</b>
+          <b className={status?.status === 'offline' ? styles.worldAvailabilityBad : styles.worldAvailabilityGood}><i aria-hidden="true" />{status?.status === 'offline' ? 'Проблемы' : 'Работает'}</b>
           <em className={styles.worldActive}>Открыт</em>
           <span>{server.openedDate ? formatFullDate(server.openedDate) : '—'}</span>
-          <span className={styles.worldNoActivity}>—</span>
+          <svg className={styles.worldActivityGraph} viewBox="0 0 110 25" aria-label="Доступность за 24 часа">
+            {(() => {
+              const availability = availabilityForWorld(status?.status, 'active', server.id);
+              return (
+                <>
+                  {availability.path && <path d={`${availability.path} L 110 25 L 0 25 Z`} className={availability.fillClassName} />}
+                  {availability.path && <path d={availability.path} className={availability.graphClassName} />}
+                </>
+              );
+            })()}
+          </svg>
         </div>
       )}
       {showCurrentEmpty && instances.length > 0 && worlds.length === 0 && (
@@ -641,13 +634,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <Link href="/methodology">Методика</Link>
           </div>
           <div className={styles.heroMetricGrid}>
-            {projectOnline != null && (
-              <div>
-                <span>Онлайн сейчас</span>
-                <strong className={styles.serverOnline}>{formatOnline(projectOnline, estimatedProjectOnline)}</strong>
-                {onlineDisclosure && <small title={onlineDisclosure.title}>{onlineDisclosure.label}</small>}
-              </div>
-            )}
+            <div>
+              <span>Активность</span>
+              <strong className={styles.serverActivity} title={activity.title}>{activity.label}</strong>
+            </div>
             <div>
               <span>Миров</span>
               <strong>{worldCount}</strong>
@@ -661,8 +651,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <strong>{nextOpening ? formatFullDate(nextOpening) : 'Нет анонса'}</strong>
             </div>
             <div>
-              <span>Открытий</span>
-              <strong>{openingCount}</strong>
+              <span>Проверка</span>
+              <strong title={trust.title}>{trust.label}</strong>
             </div>
             <div>
               <span>Рейтинг</span>
@@ -694,7 +684,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <span>Хроники</span>
                 <span>Рейт</span>
                 <span>Тип</span>
-                <span>Онлайн</span>
+                <span>Работает</span>
                 <span>Статус</span>
                 <span>Открыт</span>
                 <span>Активность (24 ч)</span>
@@ -707,62 +697,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           </section>
 
           <section className={`${styles.infoCard} ${styles.analyticsCard}`}>
-            <div className={styles.analyticsPane}>
-              <div className={styles.cardTitleRow}>
-                <h2 className={styles.chartHeading}>
-                  Онлайн
-                  <ChartHint label="Как считается онлайн">
-                    <strong>Как считается онлайн</strong>
-                    <span>Если у проекта есть счётчик, число берётся с его сайта.</span>
-                    <span>Если счётчика нет, редакция заходит в игру и вносит визуальную оценку. Для неё строится умный суточный график: спад ночью, пик вечером, поправка на выходные и автоохоту, плюс естественный шум 5–15%.</span>
-                  </ChartHint>
-                </h2>
-                <div className={styles.onlineRangeTabs}>
-                  {(['hours', 'days', 'monthDays'] as OnlineRange[]).map(range => (
-                    <button
-                      key={range}
-                      type="button"
-                      className={onlineRange === range ? styles.onlineRangeActive : ''}
-                      onClick={() => setOnlineRange(range)}
-                    >
-                      {range === 'hours' ? '24 часа' : range === 'days' ? '7 дней' : '30 дней'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.onlineGraphBox}>
-                <svg viewBox="0 0 460 150" role="img" aria-label="График онлайна за выбранный период">
-                  <defs>
-                    <linearGradient id="serverOnlineFill" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="rgba(83,217,135,.34)" />
-                      <stop offset="100%" stopColor="rgba(83,217,135,0)" />
-                    </linearGradient>
-                  </defs>
-                  {onlineGraphScale.map((mark, index) => (
-                    <g key={`${mark.label}-${index}`}>
-                      <text x="2" y={mark.textY} className={styles.onlineGraphScale}>{mark.label}</text>
-                      <path d={`M ${chartLeft} ${mark.y} H ${chartLeft + chartWidth}`} className={styles.onlineGraphGridLine} />
-                    </g>
-                  ))}
-                  <path d={`M ${chartLeft} ${chartBottom} H ${chartLeft + chartWidth}`} className={styles.onlineGraphAxis} />
-                  {onlineFillPath && <path d={onlineFillPath} className={styles.onlineGraphFill} />}
-                  {onlinePath && <path d={onlinePath} className={styles.onlineGraphLine} />}
-                  {onlineGraphPoints.map((point, index) => (
-                    <circle key={`${point.x}-${index}`} cx={point.x} cy={point.y} r="3.6" className={styles.onlineGraphDot}>
-                      <title>{`${point.label}: онлайн ${formatOnline(point.value, estimatedProjectOnline)}`}</title>
-                    </circle>
-                  ))}
-                  {onlineAxisMarks.map(point => (
-                    <g key={`axis-${point.label}`}>
-                      <path d={`M ${point.x} ${chartBottom} V ${chartBottom + 5}`} className={styles.onlineGraphTick} />
-                      <text x={point.x} y={chartBottom + 20} className={styles.onlineGraphXLabel}>{point.label}</text>
-                    </g>
-                  ))}
-                </svg>
-                {!onlinePath && <div className={styles.onlineEmpty}>Онлайн появится после настройки сервера</div>}
-              </div>
-            </div>
-
             <div className={`${styles.analyticsPane} ${styles.trafficPane}`}>
             <div className={styles.cardTitleRow}>
               <h2 className={styles.chartHeading}>
@@ -773,7 +707,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </ChartHint>
               </h2>
               <div className={styles.trafficTitleLinks}>
-                <span>6 месяцев</span>
+                <span>12 месяцев</span>
                 <Link href="/methodology" className={styles.inlineTextLink}>Методика</Link>
               </div>
             </div>
@@ -853,7 +787,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <span>Хроники</span>
                 <span>Рейт</span>
                 <span>Тип</span>
-                <span>Онлайн</span>
+                <span>Работает</span>
                 <span>Статус</span>
                 <span>Открыт</span>
                 <span>Активность (24 ч)</span>
@@ -876,7 +810,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div><span>Старт проекта</span><strong>{startDate}</strong></div>
               <div><span>Языки</span><strong className={styles.regionList}>{languages.map(item => <span key={item.raw} title={LANGUAGE_LABELS[item.raw.toUpperCase()] ?? item.raw}>{item.label}</span>)}</strong></div>
               <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
-              {projectOnline != null && <div><span>Онлайн</span><strong>{formatOnline(projectOnline, estimatedProjectOnline)}</strong></div>}
+              <div><span>Активность</span><strong title={activity.title}>{activity.label}</strong></div>
+              <div><span>Проверка</span><strong title={trust.title}>{trust.label}</strong></div>
               {server.trafficThreeMonths != null && <div><span>Трафик / 3 мес.</span><strong className={styles.serverTraffic}>{formatTraffic(server.trafficThreeMonths)}</strong></div>}
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
             </div>

@@ -111,6 +111,10 @@ export function Header() {
               <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} unoptimized />
               <span className={styles.navText}>Статьи</span>
             </Link>
+            <Link href="/pricing" className={navClass('/pricing')} onClick={closeMenu}>
+              <Image src="/images/nav-pricing.webp" alt="Добавить сервер Lineage 2" width={24} height={24} className={styles.navIcon} unoptimized />
+              <span className={styles.navText}>Добавить сервер</span>
+            </Link>
             {isAdmin && (
               <Link href="/admin" className={navClass('/admin', styles.navAdmin)} onClick={closeMenu}>
                 <span className={styles.navText}>Admin</span>
