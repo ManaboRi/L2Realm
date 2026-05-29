@@ -207,21 +207,21 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <FilterGroup label="Активность">
+            <CollapsibleFilterGroup label="Активность" activeHint={ACTIVITY_FILTERS.find(f => f.v === filters.activity)?.l}>
               {ACTIVITY_FILTERS
                 .filter(({ v }) => (counts?.activities[v] ?? 0) > 0 || filters.activity === v)
                 .map(({ v, l }) => (
                   <FilterItem key={v} label={l} active={filters.activity === v} count={counts?.activities[v]} dotColor={activityMeta(v).color} onClick={() => toggleFilter('activity', v)} />
                 ))}
-            </FilterGroup>
+            </CollapsibleFilterGroup>
 
-            <FilterGroup label="Доверие">
+            <CollapsibleFilterGroup label="Доверие" activeHint={TRUST_FILTERS.find(f => f.v === filters.trust)?.l}>
               {TRUST_FILTERS
                 .filter(({ v }) => (counts?.trusts[v] ?? 0) > 0 || filters.trust === v)
                 .map(({ v, l }) => (
                   <FilterItem key={v} label={l} active={filters.trust === v} count={counts?.trusts[v]} dotColor={trustMeta(v).color} onClick={() => toggleFilter('trust', v)} />
                 ))}
-            </FilterGroup>
+            </CollapsibleFilterGroup>
           </aside>
 
           <section className={styles.content}>
@@ -310,6 +310,22 @@ function FilterGroup({ label, children }: { label: string; children: React.React
     <div className={styles.filterGroup}>
       <span className={styles.filterLabel}>{label}</span>
       <div className={styles.filterList}>{children}</div>
+    </div>
+  );
+}
+
+// Сворачиваемая группа: по умолчанию скрыта, клик по заголовку раскрывает список.
+// Используется для Активности и Доверия, чтобы сайдбар оставался компактным.
+function CollapsibleFilterGroup({ label, activeHint, children }: { label: string; activeHint?: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={styles.filterGroup}>
+      <button type="button" className={styles.filterGroupToggle} onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span className={styles.filterLabel}>{label}</span>
+        {!open && activeHint && <span className={styles.filterActiveHint}>{activeHint}</span>}
+        <span className={styles.filterChevron}>{open ? '▲' : '▼'}</span>
+      </button>
+      {open && <div className={styles.filterList}>{children}</div>}
     </div>
   );
 }

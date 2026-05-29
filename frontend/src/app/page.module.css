@@ -23,9 +23,9 @@
   top: 68px;
   display: flex;
   flex-direction: column;
-  gap: .5rem;
+  gap: .66rem;
   min-height: calc(100vh - 96px);
-  padding: .72rem .68rem;
+  padding: .78rem .72rem;
   border: 1px solid rgba(210, 171, 82, .12);
   border-radius: 8px;
   background:
@@ -69,34 +69,67 @@
 .filterGroup {
   display: flex;
   flex-direction: column;
-  gap: .34rem;
-  padding: .45rem .5rem .5rem;
+  gap: .42rem;
+  padding: .55rem .5rem .58rem;
   border: 1px solid rgba(118, 141, 151, .1);
   border-radius: 7px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, .014), rgba(255, 255, 255, .004)),
     radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .032), transparent 42%);
 }
-/* Чипы фильтров переносятся по строкам — группа занимает 1–2 ряда вместо
-   списка в столбик, и весь сайдбар помещается в экран без прокрутки. */
-.filterList { display: flex; flex-wrap: wrap; gap: .26rem; }
+.filterList { display: flex; flex-direction: column; gap: .16rem; }
 
 .filterItem {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto;
   align-items: center;
-  gap: .32rem;
-  width: auto;
-  min-height: 24px;
-  border: 1px solid rgba(118, 141, 151, .08);
-  border-radius: 999px;
+  gap: .56rem;
+  width: 100%;
+  min-height: 27px;
+  border: 1px solid rgba(118, 141, 151, .07);
+  border-radius: 5px;
   background: rgba(4, 8, 13, .24);
   color: var(--text2);
-  padding: .12rem .5rem;
+  padding: .22rem .4rem;
   text-align: left;
-  font-size: .74rem;
-  line-height: 1;
+  font-size: .8rem;
   transition: background .16s, border-color .16s, color .16s;
 }
+
+/* Сворачиваемые группы (Активность, Доверие): заголовок-кнопка раскрывает список. */
+.filterGroupToggle {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.filterGroupToggle .filterLabel { flex: 0 0 auto; }
+
+.filterActiveHint {
+  margin-left: auto;
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--gold);
+  font-size: .68rem;
+}
+
+.filterChevron {
+  margin-left: auto;
+  color: var(--text3);
+  font-size: .6rem;
+  line-height: 1;
+  transition: color .16s;
+}
+
+.filterActiveHint + .filterChevron { margin-left: .4rem; }
+.filterGroupToggle:hover .filterChevron { color: var(--gold); }
 
 .filterItem:hover,
 .filterItemActive {
@@ -118,15 +151,19 @@
 }
 
 .filterItem em {
+  min-width: 25px;
+  padding: .08rem .34rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .055);
   color: var(--text3);
   font-style: normal;
-  font-size: .64rem;
-  opacity: .68;
+  font-size: .68rem;
+  text-align: center;
 }
 
 .filterItemActive em {
+  background: rgba(210, 171, 82, .16);
   color: var(--gold);
-  opacity: 1;
 }
 
 .filterFooter {
