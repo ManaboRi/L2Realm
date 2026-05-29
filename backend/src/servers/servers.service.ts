@@ -863,7 +863,7 @@ export class ServersService {
   async findAll(filters: FilterServersDto) {
     // sort без default: пустое = «по умолчанию» (пьедестал VIP → сервер недели → Буст
      // → остальные по голосам). Явные значения: opened/name/rating/votes.
-    const { search, chronicle, rate, donate, type, openedWithin, sort, compact = false, page = 1, limit = 50 } = filters;
+    const { search, chronicle, rate, donate, type, activity, trust, openedWithin, sort, compact = false, page = 1, limit = 50 } = filters;
 
     const where: any = {};
 
@@ -873,6 +873,9 @@ export class ServersService {
         { shortDesc: { contains: search, mode: 'insensitive' } },
       ];
     }
+    // Активность и доверие — скалярные колонки Server, фильтруем прямо в запросе.
+    if (activity) where.activityLevel = activity;
+    if (trust) where.trustLevel = trust;
     // donate/type фильтруются в post-processing: у проекта могут быть разные запуски
     // с разными форматами и донатом внутри JSON instances.
     // openedWithin фильтруется в post-processing — у проекта может быть
@@ -1306,7 +1309,7 @@ export class ServersService {
   // ── Счётчики для фильтров ────────────────────
   async getFilterCounts(filters?: FilterServersDto) {
     const all = await this.prisma.server.findMany({
-      select: { chronicle: true, rateNum: true, donate: true, type: true, instances: true, openedDate: true },
+      select: { chronicle: true, rateNum: true, donate: true, type: true, instances: true, openedDate: true, activityLevel: true, trustLevel: true },
     });
 
     // Применяем все фильтры КРОМЕ того, по которому считаем counts.
@@ -1345,6 +1348,14 @@ export class ServersService {
       if (insts.length === 0 && Array.isArray(s.type) && s.type.some((t: string) => typeMatches(t, f.type as string))) return true;
       return false;
     }
+    function activityMatch(s: any): boolean {
+      if (!f.activity) return true;
+      return s.activityLevel === f.activity;
+    }
+    function trustMatch(s: any): boolean {
+      if (!f.trust) return true;
+      return s.trustLevel === f.trust;
+    }
     function openedMatch(s: any): boolean {
       if (!f.openedWithin) return true;
       const days = f.openedWithin === '7d' ? 7 : 30;
@@ -1365,15 +1376,28 @@ export class ServersService {
       return eff >= sinceTs && eff <= nowTs;
     }
 
-    function applyExcept(except: 'chronicle' | 'rate' | 'donate' | 'type' | 'opened'): any[] {
+    function applyExcept(except: 'chronicle' | 'rate' | 'donate' | 'type' | 'opened' | 'activity' | 'trust'): any[] {
       return all.filter(s => {
         if (except !== 'chronicle' && !chronicleMatch(s)) return false;
         if (except !== 'rate'      && !rateMatch(s))      return false;
         if (except !== 'donate'    && !donateMatch(s))    return false;
         if (except !== 'type'      && !typeMatchLocal(s)) return false;
         if (except !== 'opened'    && !openedMatch(s))    return false;
+        if (except !== 'activity'  && !activityMatch(s))  return false;
+        if (except !== 'trust'     && !trustMatch(s))     return false;
         return true;
       });
+    }
+
+    // Активность/доверие — одно скалярное значение на проект (без instances).
+    function scalarCounts(servers: any[], field: 'activityLevel' | 'trustLevel'): Record<string, number> {
+      const out: Record<string, number> = {};
+      for (const s of servers) {
+        const v = s[field];
+        if (!v || v === 'unknown') continue;
+        out[v] = (out[v] || 0) + 1;
+      }
+      return out;
     }
 
     function dimensionCounts(servers: any[], dimension: 'chronicle' | 'rate' | 'donate' | 'type'): Record<string, number> {
@@ -1410,8 +1434,10 @@ export class ServersService {
     const rates    = { ...rateBase, ...dimensionCounts(applyExcept('rate'), 'rate') };
     const donates  = dimensionCounts(applyExcept('donate'), 'donate');
     const types    = dimensionCounts(applyExcept('type'), 'type');
+    const activities = scalarCounts(applyExcept('activity'), 'activityLevel');
+    const trusts     = scalarCounts(applyExcept('trust'), 'trustLevel');
 
-    return { chronicles, rates, donates, types };
+    return { chronicles, rates, donates, types, activities, trusts };
   }
 
   // ── Статистика ───────────────────────────────

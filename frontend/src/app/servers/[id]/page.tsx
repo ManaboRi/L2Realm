@@ -53,7 +53,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ? ` Рейтинг ${server.rating.toFixed(1)} ⭐ по ${server.ratingCount} отзывам игроков.`
     : '';
   const baseDescription = (server.shortDesc && server.shortDesc.trim())
-    || `Приватный сервер Lineage 2 «${server.name}» — хроника ${server.chronicle}, рейты ${server.rates}${typeStr ? ', ' + typeStr : ''}.${ratingStr} Честные отзывы и онлайн-статус на L2Realm.`;
+    || `Приватный сервер Lineage 2 «${server.name}» — хроника ${server.chronicle}, рейты ${server.rates}${typeStr ? ', ' + typeStr : ''}.${ratingStr} Честные отзывы, активность и проверка проекта на L2Realm.`;
   const description = baseDescription;
 
   const ogImage = absoluteUrl(server.banner || server.icon);

@@ -37,7 +37,7 @@ export const api = {
     stats:  ()            => request<Stats>('/servers/stats'),
     counts: (params?: Record<string, string>) => {
       const q = params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : '';
-      return request<{ chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number> }>(`/servers/counts${q}`);
+      return request<{ chronicles: Record<string,number>; rates: Record<string,number>; donates: Record<string,number>; types: Record<string,number>; activities: Record<string,number>; trusts: Record<string,number> }>(`/servers/counts${q}`);
     },
     comingSoon: ()        => request<Server[]>('/servers/coming-soon'),
     create: (data: Partial<Server>, token: string) =>

@@ -15,7 +15,7 @@ export const CHRONICLE_CONFIGS: Record<string, ChronicleCfg> = {
     slug:        'interlude',
     chronicle:   'Interlude',
     title:       'Серверы Lineage 2 Interlude — каталог приватных серверов',
-    description: 'Каталог приватных серверов Lineage 2 Interlude. Хроника C6 — самая популярная и сбалансированная. Рейты, рейтинг, отзывы, мониторинг онлайна.',
+    description: 'Каталог приватных серверов Lineage 2 Interlude. Хроника C6 — самая популярная и сбалансированная. Рейты, рейтинг, отзывы и активность проектов.',
     h1:          'Серверы Lineage 2 Interlude',
     intro:       'Хроника C6 (Interlude) — золотой стандарт классики Lineage 2. Сбалансированный геймплей, эпические битвы, крафт и осады замков.',
   },

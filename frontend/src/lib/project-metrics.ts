@@ -4,7 +4,11 @@ import { isOpeningStillSoon } from './opening';
 export type WorldLifecycle = 'active' | 'upcoming' | 'merged' | 'closed' | 'archived';
 
 export function worldLifecycle(instance: ServerInstance): WorldLifecycle {
-  if (instance.lifecycleStatus) return instance.lifecycleStatus;
+  // Исторические состояния (объединён/закрыт/архив) выставляются явно и имеют приоритет.
+  // «Открыт»/«Скоро» НЕ хранятся вручную — вычисляются из даты открытия, чтобы статус
+  // переключался автоматически и не «залипал» на «Скоро» после открытия сервера.
+  const status = instance.lifecycleStatus;
+  if (status === 'merged' || status === 'closed' || status === 'archived') return status;
   return isOpeningStillSoon(instance.openedDate) ? 'upcoming' : 'active';
 }
 
@@ -60,6 +64,29 @@ export function worldLifecycleLabel(instance: ServerInstance): string {
   if (status === 'closed') return 'Закрыт';
   if (status === 'archived') return 'Архив';
   return 'Открыт';
+}
+
+// Единый источник правды для подписи/цвета/пояснения «Активности» и «Доверия».
+// Используется на карточках, странице проекта и в статьях, чтобы не расходились.
+export interface BadgeMeta { label: string; color: string; title: string; known: boolean; }
+
+export function activityMeta(level?: string | null): BadgeMeta {
+  switch (level) {
+    case 'high':     return { label: 'Высокая',      color: '#5fcf7a', known: true, title: 'Игроки часто встречаются в городах, локациях и на активностях.' };
+    case 'medium':   return { label: 'Средняя',      color: '#d8c24e', known: true, title: 'Игроки есть, но активность заметна не во всех зонах.' };
+    case 'low':      return { label: 'Низкая',       color: '#e0913f', known: true, title: 'Игроки встречаются редко, активность лучше перепроверять перед стартом.' };
+    case 'very_low': return { label: 'Очень низкая', color: '#e25c4b', known: true, title: 'Во время проверки активность почти не была заметна.' };
+    default:         return { label: 'Не указана',   color: 'rgba(232,221,186,.5)', known: false, title: 'Редакция ещё не выставила уровень активности.' };
+  }
+}
+
+export function trustMeta(level?: string | null): BadgeMeta {
+  switch (level) {
+    case 'A': return { label: 'A', color: '#5fcf7a', known: true, title: 'Доверие A — проект проверен, серьёзных вопросов нет.' };
+    case 'B': return { label: 'B', color: '#d8c24e', known: true, title: 'Доверие B — проверен, но есть мелкие вопросы.' };
+    case 'C': return { label: 'C', color: '#e25c4b', known: true, title: 'Доверие C — доверие низкое, изучите внимательнее.' };
+    default:  return { label: '—', color: 'rgba(232,221,186,.5)', known: false, title: 'Уровень доверия ещё не выставлен.' };
+  }
 }
 
 export function formatTraffic(value?: number | null): string {

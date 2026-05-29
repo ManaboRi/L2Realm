@@ -47,6 +47,8 @@ export class FilterServersDto {
   @IsOptional() @IsString() rate?: string;       // low|mid|high|ultra
   @IsOptional() @IsString() donate?: string;
   @IsOptional() @IsString() type?: string;
+  @IsOptional() @IsString() activity?: string;    // high|medium|low|very_low
+  @IsOptional() @IsString() trust?: string;       // A|B|C
   @IsOptional() @IsString() sort?: string;        // opened|name|rating|votes
   @IsOptional() @IsString() openedWithin?: string; // 7d|30d
   @IsOptional() @Transform(({ value }) => value === true || value === 'true' || value === '1') @IsBoolean() compact?: boolean;

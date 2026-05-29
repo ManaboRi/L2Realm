@@ -4,10 +4,9 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
 import type { Server, Stats } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount } from '@/lib/project-metrics';
+import { activityMeta, currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount, trustMeta } from '@/lib/project-metrics';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -15,7 +14,22 @@ export type FilterCounts = {
   rates: Record<string, number>;
   donates: Record<string, number>;
   types: Record<string, number>;
+  activities: Record<string, number>;
+  trusts: Record<string, number>;
 };
+
+// Уровни активности и доверия для фильтров (значение → подпись), в порядке убывания.
+const ACTIVITY_FILTERS: Array<{ v: string; l: string }> = [
+  { v: 'high', l: 'Высокая' },
+  { v: 'medium', l: 'Средняя' },
+  { v: 'low', l: 'Низкая' },
+  { v: 'very_low', l: 'Очень низкая' },
+];
+const TRUST_FILTERS: Array<{ v: string; l: string }> = [
+  { v: 'A', l: 'A — высокое' },
+  { v: 'B', l: 'B — среднее' },
+  { v: 'C', l: 'C — низкое' },
+];
 
 type HomeClientProps = {
   initialServers: Server[];
@@ -44,7 +58,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const { token } = useAuth();
 
   const [servers, setServers] = useState<Server[]>(initialServers);
   const [stats, setStats] = useState<Stats | null>(initialStats);
@@ -52,8 +65,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const [loading, setLoading] = useState(!initialOk);
   const [pages, setPages] = useState(initialPages);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [favoriteBusyId, setFavoriteBusyId] = useState('');
   const firstListEffect = useRef(true);
   const firstCountsEffect = useRef(true);
 
@@ -64,6 +75,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     chr: sp.get('chr') ?? '',
     rate: sp.get('rate') ?? '',
     type: sp.get('type') ?? '',
+    activity: sp.get('activity') ?? '',
+    trust: sp.get('trust') ?? '',
   }));
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
@@ -79,6 +92,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (filters.chr) params.set('chr', filters.chr);
     if (filters.rate) params.set('rate', filters.rate);
     if (filters.type) params.set('type', filters.type);
+    if (filters.activity) params.set('activity', filters.activity);
+    if (filters.trust) params.set('trust', filters.trust);
     if (page > 1) params.set('page', String(page));
     const query = params.toString();
     router.replace(`${pathname}${query ? '?' + query : ''}`, { scroll: false } as any);
@@ -93,6 +108,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       if (filters.chr) params.chronicle = filters.chr;
       if (filters.rate) params.rate = filters.rate;
       if (filters.type) params.type = filters.type;
+      if (filters.activity) params.activity = filters.activity;
+      if (filters.trust) params.trust = filters.trust;
 
       const res = await api.servers.list(params);
       setServers(res.data);
@@ -117,16 +134,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }, [initialStats, initialCounts]);
 
   useEffect(() => {
-    if (!token) {
-      setFavoriteIds(new Set());
-      return;
-    }
-    api.favorites.ids(token)
-      .then(ids => setFavoriteIds(new Set(ids)))
-      .catch(() => {});
-  }, [token]);
-
-  useEffect(() => {
     if (firstCountsEffect.current) {
       firstCountsEffect.current = false;
       if (initialCounts) return;
@@ -135,6 +142,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (filters.chr) params.chronicle = filters.chr;
     if (filters.rate) params.rate = filters.rate;
     if (filters.type) params.type = filters.type;
+    if (filters.activity) params.activity = filters.activity;
+    if (filters.trust) params.trust = filters.trust;
     api.servers.counts(params).then(setCounts).catch(() => {});
   }, [filters, initialCounts]);
 
@@ -144,36 +153,12 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }
 
   function resetFilters() {
-    setFilters({ chr: '', rate: '', type: '' });
+    setFilters({ chr: '', rate: '', type: '', activity: '', trust: '' });
     setSearch('');
     setSort('');
     setPage(1);
   }
 
-  async function toggleFavorite(serverId: string) {
-    if (!token || favoriteBusyId) return;
-    const wasFavorite = favoriteIds.has(serverId);
-    setFavoriteBusyId(serverId);
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (wasFavorite) next.delete(serverId);
-      else next.add(serverId);
-      return next;
-    });
-    try {
-      if (wasFavorite) await api.favorites.remove(serverId, token);
-      else await api.favorites.add(serverId, token);
-    } catch {
-      setFavoriteIds(prev => {
-        const next = new Set(prev);
-        if (wasFavorite) next.add(serverId);
-        else next.delete(serverId);
-        return next;
-      });
-    } finally {
-      setFavoriteBusyId('');
-    }
-  }
 
   return (
     <main className={styles.page}>
@@ -222,7 +207,21 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                 ))}
             </FilterGroup>
 
-            <FilterFooter />
+            <FilterGroup label="Активность">
+              {ACTIVITY_FILTERS
+                .filter(({ v }) => (counts?.activities[v] ?? 0) > 0 || filters.activity === v)
+                .map(({ v, l }) => (
+                  <FilterItem key={v} label={l} active={filters.activity === v} count={counts?.activities[v]} dotColor={activityMeta(v).color} onClick={() => toggleFilter('activity', v)} />
+                ))}
+            </FilterGroup>
+
+            <FilterGroup label="Доверие">
+              {TRUST_FILTERS
+                .filter(({ v }) => (counts?.trusts[v] ?? 0) > 0 || filters.trust === v)
+                .map(({ v, l }) => (
+                  <FilterItem key={v} label={l} active={filters.trust === v} count={counts?.trusts[v]} dotColor={trustMeta(v).color} onClick={() => toggleFilter('trust', v)} />
+                ))}
+            </FilterGroup>
           </aside>
 
           <section className={styles.content}>
@@ -287,10 +286,6 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                     key={s.id}
                     server={s}
                     eagerImage={index < 5}
-                    isFavorite={favoriteIds.has(s.id)}
-                    favoriteBusy={favoriteBusyId === s.id}
-                    canFavorite={!!token}
-                    onFavorite={() => toggleFavorite(s.id)}
                   />
                 ))}
               </div>
@@ -319,10 +314,10 @@ function FilterGroup({ label, children }: { label: string; children: React.React
   );
 }
 
-function FilterItem({ label, active, count, onClick }: { label: string; active: boolean; count?: number; onClick: () => void }) {
+function FilterItem({ label, active, count, dotColor, onClick }: { label: string; active: boolean; count?: number; dotColor?: string; onClick: () => void }) {
   return (
     <button type="button" className={`${styles.filterItem} ${active ? styles.filterItemActive : ''}`} onClick={onClick}>
-      <span className={styles.filterDot} />
+      <span className={styles.filterDot} style={dotColor ? { background: dotColor, boxShadow: `0 0 6px ${dotColor}` } : undefined} />
       <span>{label}</span>
       {typeof count === 'number' && <em>{count}</em>}
     </button>
@@ -351,21 +346,15 @@ function Metric({
 function HomeServerCard({
   server: s,
   eagerImage,
-  isFavorite,
-  favoriteBusy,
-  canFavorite,
-  onFavorite,
 }: {
   server: Server;
   eagerImage: boolean;
-  isFavorite: boolean;
-  favoriteBusy: boolean;
-  canFavorite: boolean;
-  onFavorite: () => void;
 }) {
   const projectMeta = collectCardMeta(s);
   const worlds = projectWorldCount(s);
-  const verification = verificationBadge(s);
+  const trust = trustMeta(s.trustLevel);
+  const activity = activityMeta(s.activityLevel);
+  const checkedAt = s.manualCheckAt ? formatDate(s.manualCheckAt) : '';
   const latestOpening = latestProjectOpening(s);
   const trafficTrend = projectTrafficTrend(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
@@ -391,21 +380,17 @@ function HomeServerCard({
         <span className={styles.cardShade} />
         <span className={styles.cardBottomFade} />
         {badge && <span className={styles.cardBadge}>{badge}</span>}
-        {verification && (
-          <span className={styles.verificationBadge} title={verification.title}>
-            {verification.label}
-          </span>
+        {(trust.known || checkedAt) && (
+          <Link
+            href="/methodology#trust"
+            className={styles.trustBadge}
+            style={{ borderColor: trust.color, color: trust.color }}
+            title={`${trust.title}${checkedAt ? ` · Проверка: ${checkedAt}` : ''} — открыть методику`}
+            aria-label="Как мы проверяем серверы — методика"
+          >
+            {trust.known ? `Доверие ${trust.label}` : 'Проверен'}
+          </Link>
         )}
-        <button
-          type="button"
-          className={`${styles.favoriteBtn} ${isFavorite ? styles.favoriteBtnActive : ''}`}
-          onClick={onFavorite}
-          disabled={favoriteBusy}
-          title={canFavorite ? (isFavorite ? 'Убрать из избранного' : 'Добавить в избранное') : 'Войдите, чтобы добавить в избранное'}
-          aria-label={isFavorite ? 'Убрать из избранного' : 'Добавить в избранное'}
-        >
-          {isFavorite ? '★' : '♡'}
-        </button>
         <div className={styles.cardIdentity}>
           <ServerIcon server={s} eager={eagerImage} />
           <div>
@@ -423,6 +408,12 @@ function HomeServerCard({
           <span className={styles.worldSummary}>
             {worlds} {worldWord(worlds)}
           </span>
+          {activity.known && (
+            <span className={styles.activityChip} style={{ color: activity.color }} title={`Активность: ${activity.label}. ${activity.title}`}>
+              <i aria-hidden="true" style={{ background: activity.color }} />
+              {activity.label}
+            </span>
+          )}
         </div>
         <div className={styles.cardFacts}>
           <span>
@@ -448,18 +439,6 @@ function HomeServerCard({
       </div>
     </article>
   );
-}
-
-function verificationBadge(server: Server): { label: string; title: string } | null {
-  const level = server.trustLevel;
-  const checkedAt = server.manualCheckAt ? formatDate(server.manualCheckAt) : '';
-  if (!level && !checkedAt) return null;
-  const label = level ? `Доверие ${level}` : 'Проверено';
-  const title = [
-    level ? `Уровень доверия: ${level}` : '',
-    checkedAt ? `Ручная проверка: ${checkedAt}` : '',
-  ].filter(Boolean).join(' · ');
-  return { label, title };
 }
 
 function ServerIcon({ server, small, eager = false }: { server: Server; small?: boolean; eager?: boolean }) {
@@ -504,14 +483,6 @@ function worldWord(value: number): string {
   if (mod10 === 1) return 'мир';
   if (mod10 >= 2 && mod10 <= 4) return 'мира';
   return 'миров';
-}
-
-function FilterFooter() {
-  return (
-    <div className={styles.filterFooter}>
-      <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
-    </div>
-  );
 }
 
 function formatDate(value?: string | null) {

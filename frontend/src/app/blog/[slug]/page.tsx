@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Article, Server, ServerInstance } from '@/lib/types';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
-import { formatOnline as formatOnlineValue, serverOnlineIsEstimated, serverOnlineValue } from '@/lib/online';
+import { activityMeta } from '@/lib/project-metrics';
 import { isOpeningStillSoon } from '@/lib/opening';
 import { ArticleSaveButton } from './ArticleSaveButton';
 import styles from './page.module.css';
@@ -320,10 +320,10 @@ function serverTypeLabel(server: Server): string {
   return values.map(typeLabel).slice(0, 2).join(' / ');
 }
 
-function projectOnlineLabel(server: Server): string | null {
-  const online = serverOnlineValue(server);
-  if (online == null) return null;
-  return formatOnlineValue(online, serverOnlineIsEstimated(server));
+function projectActivity(server: Server): { label: string; color: string } | null {
+  const meta = activityMeta(server.activityLevel);
+  if (!meta.known) return null;
+  return { label: meta.label, color: meta.color };
 }
 
 function serverImage(server: Server): string | null {
@@ -385,7 +385,7 @@ function buildServerSummary(server: Server | null): SummaryItem[] {
     ['Хроники', projectChronicles(server)],
     ['Рейты', projectRates(server)],
     ['Тип проекта', knownValue(serverTypeLabel(server))],
-    ['Онлайн', projectOnlineLabel(server)],
+    ['Активность', projectActivity(server)?.label ?? null],
     ['Открытие', projectOpening(server)],
     ['Запусков', String(Math.max(1, server.instances?.length ?? 1))],
   ];
@@ -424,7 +424,7 @@ function pickRelatedServers(primary: Server | null, servers: Server[], linkedIds
 function ArticleServerCard({ server, compact = false }: { server: Server; compact?: boolean }) {
   const media = serverImage(server);
   const rating = server.ratingCount > 0 ? `${server.rating.toFixed(1)} (${server.ratingCount})` : 'Нет отзывов';
-  const online = projectOnlineLabel(server);
+  const activity = projectActivity(server);
   const initials = (server.abbr || server.name.slice(0, 2)).toUpperCase();
   const tags = [
     projectChronicles(server),
@@ -448,10 +448,10 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
         </div>
         {server.shortDesc && <p>{server.shortDesc}</p>}
         <div className={styles.serverStats}>
-          {online && (
+          {activity && (
             <span className={styles.serverOnlineStat}>
-              <small>Сейчас онлайн</small>
-              <strong><i aria-hidden="true" />{online} игроков</strong>
+              <small>Активность</small>
+              <strong style={{ color: activity.color }}><i aria-hidden="true" style={{ background: activity.color }} />{activity.label}</strong>
             </span>
           )}
           <span><small>Открыт</small><strong>{fmtDate(server.openedDate)}</strong></span>

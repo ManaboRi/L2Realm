@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
@@ -9,6 +9,7 @@ import { isOpeningStillSoon } from '@/lib/opening';
 import type { Article, Server, ServerInstance, Review, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import {
+  activityMeta,
   currentProjectWorlds,
   formatTraffic,
   formatTrafficPeriod,
@@ -17,6 +18,7 @@ import {
   projectOpeningCount,
   projectTrafficHistory,
   projectWorldCount,
+  trustMeta,
   worldLifecycle,
   worldLifecycleLabel,
 } from '@/lib/project-metrics';
@@ -94,11 +96,17 @@ function niceChartStep(value: number) {
   return multiplier * power;
 }
 
-function niceOnlineTicks(maxValue: number) {
+// Тиковая шкала с меньшим запасом сверху — бары заполняют высоту графика,
+// а не висят в нижней трети (топ ≈ чуть выше максимума, шаг кратный «красивому»).
+function niceTrafficTicks(maxValue: number) {
   if (!Number.isFinite(maxValue) || maxValue <= 0) return [];
-  const step = niceChartStep(maxValue / 3);
-  const top = step * 3;
-  return [top, top - step, top - step * 2, 0];
+  const step = niceChartStep(maxValue / 4);
+  let top = step * 4;
+  while (top < maxValue) top += step;
+  if (top === maxValue) top += step; // небольшой воздух над самым высоким баром
+  const ticks: number[] = [];
+  for (let value = top; value >= 0; value -= step) ticks.push(value);
+  return ticks;
 }
 
 function normalizeSearchText(value: string) {
@@ -193,23 +201,6 @@ function formatDesc(text: string) {
   return result;
 }
 
-function activityInfo(value?: Server['activityLevel'] | null) {
-  if (value === 'high') return { label: 'Высокая', title: 'Игроки часто встречаются в городах, локациях и на активностях.' };
-  if (value === 'medium') return { label: 'Средняя', title: 'Игроки есть, но активность заметна не во всех зонах.' };
-  if (value === 'low') return { label: 'Низкая', title: 'Игроки встречаются редко, активность лучше перепроверять перед стартом.' };
-  if (value === 'very_low') return { label: 'Очень низкая', title: 'Во время проверки активность почти не была заметна.' };
-  return { label: 'Не указана', title: 'Редакция ещё не выставила уровень активности.' };
-}
-
-function trustInfo(server: Server) {
-  const level = server.trustLevel;
-  const checkedAt = server.manualCheckAt ? formatFullDate(server.manualCheckAt) : '';
-  if (!level && !checkedAt) return { label: 'Не проверен', title: 'Ручная проверка ещё не внесена.' };
-  return {
-    label: level ? `Доверие ${level}` : 'Проверен',
-    title: [level ? `Уровень доверия: ${level}` : '', checkedAt ? `Проверка: ${checkedAt}` : ''].filter(Boolean).join(' · '),
-  };
-}
 
 function hashText(value: string) {
   let hash = 0;
@@ -271,6 +262,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const [authOpen, setAuthOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'worlds' | 'info' | 'reviews'>('overview');
   const [hoveredTrafficIndex, setHoveredTrafficIndex] = useState<number | null>(null);
+  const trafficSvgRef = useRef<SVGSVGElement | null>(null);
+  const [trafficViewport, setTrafficViewport] = useState({ width: 900, height: 160 });
   const [relatedArticles, setRelatedArticles] = useState<Article[]>([]);
 
   // Свежие данные на клиенте: SSR кешируется 5 мин (revalidate:300),
@@ -285,6 +278,23 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     if (!token) { setIsFav(false); return; }
     api.favorites.ids(token).then(ids => setIsFav(ids.includes(id))).catch(() => {});
   }, [token, id]);
+
+  // График трафика рисуется в координатах реального размера контейнера (1 unit = 1px),
+  // чтобы он растягивался на всю ширину блока, а не висел по центру с пустыми полями.
+  useEffect(() => {
+    const svg = trafficSvgRef.current;
+    if (!svg || typeof ResizeObserver === 'undefined') return;
+    const update = () => setTrafficViewport(prev => {
+      const width = Math.round(svg.clientWidth);
+      const height = Math.round(svg.clientHeight);
+      if (!width || !height || (prev.width === width && prev.height === height)) return prev;
+      return { width, height };
+    });
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, [activeTab]);
 
   useEffect(() => {
     api.votes.status(id, token).then(setVoteStatus).catch(() => {});
@@ -417,8 +427,14 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
   const voteRewardsEnabled = voteSummary?.rewardsEnabled ?? server.voteRewardsEnabled ?? false;
-  const activity = activityInfo(server.activityLevel);
-  const trust = trustInfo(server);
+  const activity = activityMeta(server.activityLevel);
+  const trustM = trustMeta(server.trustLevel);
+  const trustCheckedAt = server.manualCheckAt ? formatFullDate(server.manualCheckAt) : '';
+  const trust = {
+    label: trustM.known ? `Доверие ${trustM.label}` : (trustCheckedAt ? 'Проверен' : 'Не проверен'),
+    title: `${trustM.title}${trustCheckedAt ? ` · Проверка: ${trustCheckedAt}` : ''}`,
+    color: trustM.known ? trustM.color : undefined,
+  };
   const tagSet = new Set<string>();
   if (visibleWorlds.length) {
     visibleWorlds.forEach(inst => {
@@ -439,27 +455,30 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
   const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
+  // Координаты = реальные пиксели контейнера (viewBox подстраивается через ResizeObserver),
+  // поэтому график растягивается на всю ширину блока без пустых полей по бокам.
+  const chartVbWidth = trafficViewport.width;
+  const chartVbHeight = trafficViewport.height;
   const chartLeft = 46;
-  const chartTop = 10;
-  const chartWidth = 396;
-  const chartHeight = 108;
+  const chartTop = 12;
+  const chartWidth = Math.max(40, chartVbWidth - chartLeft - 14);
+  const chartHeight = Math.max(40, chartVbHeight - chartTop - 26);
   const chartBottom = chartTop + chartHeight;
   const trafficHistory = projectTrafficHistory(server).slice(-12);
   const trafficValues = trafficHistory.map(snapshot => snapshot.monthly ?? Math.round((snapshot.threeMonths ?? 0) / 3));
   const trafficMax = trafficValues.length > 0 ? Math.max(...trafficValues) : 0;
-  const trafficTicks = niceOnlineTicks(trafficMax);
+  const trafficTicks = niceTrafficTicks(trafficMax);
   const trafficDomainMax = trafficTicks[0] || Math.max(1, trafficMax);
-  const trafficGraphPoints = trafficValues.map((value, index) => {
-    const slotWidth = chartWidth / Math.max(1, trafficValues.length);
-    const width = Math.min(42, Math.max(14, slotWidth * .58));
-    return {
+  const trafficSlot = chartWidth / Math.max(1, trafficValues.length);
+  const trafficGap = trafficValues.length <= 1 ? 0 : Math.min(trafficSlot * .34, 22);
+  const trafficBarWidth = Math.max(12, trafficSlot - trafficGap);
+  const trafficGraphPoints = trafficValues.map((value, index) => ({
     value,
     label: formatTrafficPeriod(trafficHistory[index]?.period),
-    x: chartLeft + slotWidth * index + ((slotWidth - width) / 2),
-    width,
+    x: chartLeft + trafficSlot * index + trafficGap / 2,
+    width: trafficBarWidth,
     y: chartBottom - (Math.min(value, trafficDomainMax) / trafficDomainMax) * chartHeight,
-    };
-  });
+  }));
   const trafficGraphScale = trafficTicks.map(value => {
     const y = chartBottom - (value / trafficDomainMax) * chartHeight;
     return {
@@ -636,7 +655,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <div className={styles.heroMetricGrid}>
             <div>
               <span>Активность</span>
-              <strong className={styles.serverActivity} title={activity.title}>{activity.label}</strong>
+              <strong className={styles.serverActivity} style={{ color: activity.known ? activity.color : undefined }} title={activity.title}>{activity.label}</strong>
             </div>
             <div>
               <span>Миров</span>
@@ -652,7 +671,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
             <div>
               <span>Проверка</span>
-              <strong title={trust.title}>{trust.label}</strong>
+              <strong style={{ color: trust.color }} title={trust.title}>{trust.label}</strong>
             </div>
             <div>
               <span>Рейтинг</span>
@@ -712,7 +731,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               </div>
             </div>
             <div className={`${styles.onlineGraphBox} ${styles.trafficGraphBox}`}>
-              <svg viewBox="0 0 460 150" role="img" aria-label="График оценочного трафика сайта">
+              <svg ref={trafficSvgRef} viewBox={`0 0 ${chartVbWidth} ${chartVbHeight}`} preserveAspectRatio="none" role="img" aria-label="График оценочного трафика сайта">
                 <defs>
                   <linearGradient id="serverTrafficBars" x1="0" x2="0" y1="0" y2="1">
                     <stop offset="0%" stopColor="rgba(87,166,246,.84)" />
@@ -733,7 +752,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     y={point.y}
                     width={point.width}
                     height={chartBottom - point.y}
-                    rx="3"
+                    rx={Math.min(5, point.width / 4)}
                     tabIndex={0}
                     className={`${styles.trafficGraphBar} ${hoveredTrafficIndex === index ? styles.trafficGraphBarActive : ''}`}
                     onMouseEnter={() => setHoveredTrafficIndex(index)}
@@ -756,8 +775,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <div
                   className={styles.trafficTooltip}
                   style={{
-                    left: `${((trafficGraphPoints[hoveredTrafficIndex].x + trafficGraphPoints[hoveredTrafficIndex].width / 2) / 460) * 100}%`,
-                    top: `${Math.max(36, (trafficGraphPoints[hoveredTrafficIndex].y / 150) * 100)}%`,
+                    left: `${((trafficGraphPoints[hoveredTrafficIndex].x + trafficGraphPoints[hoveredTrafficIndex].width / 2) / chartVbWidth) * 100}%`,
+                    top: `${Math.max(36, (trafficGraphPoints[hoveredTrafficIndex].y / chartVbHeight) * 100)}%`,
                   }}
                 >
                   <small>{trafficGraphPoints[hoveredTrafficIndex].label}</small>
@@ -810,8 +829,8 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <div><span>Старт проекта</span><strong>{startDate}</strong></div>
               <div><span>Языки</span><strong className={styles.regionList}>{languages.map(item => <span key={item.raw} title={LANGUAGE_LABELS[item.raw.toUpperCase()] ?? item.raw}>{item.label}</span>)}</strong></div>
               <div><span>Статус</span><strong className={statusClass}>● {statusText}</strong></div>
-              <div><span>Активность</span><strong title={activity.title}>{activity.label}</strong></div>
-              <div><span>Проверка</span><strong title={trust.title}>{trust.label}</strong></div>
+              <div><span>Активность</span><strong style={{ color: activity.known ? activity.color : undefined }} title={activity.title}>{activity.label}</strong></div>
+              <div><span>Проверка</span><strong style={{ color: trust.color }} title={trust.title}>{trust.label}</strong></div>
               {server.trafficThreeMonths != null && <div><span>Трафик / 3 мес.</span><strong className={styles.serverTraffic}>{formatTraffic(server.trafficThreeMonths)}</strong></div>}
               <div><span>Vote Manager</span><strong>{voteRewardsEnabled ? 'Бонусы подключены' : 'Не подключен'}</strong></div>
             </div>

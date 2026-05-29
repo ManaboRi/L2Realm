@@ -43,18 +43,26 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
-  align-items: start;
+  align-items: stretch;
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
   padding: 1.35rem;
   border: 1px solid rgba(118, 141, 151, .16);
   border-radius: 8px;
   background: linear-gradient(180deg, rgba(11, 16, 23, .9), rgba(6, 10, 15, .98));
+  scroll-margin-top: 90px;
 }
 
-.card:first-child {
-  grid-row: span 2;
+/* «note» всегда прижата к низу карточки — ряды в сетке выровнены. */
+.card .note {
+  margin-top: auto !important;
+}
+
+.cardTrust {
+  border-color: rgba(210, 171, 82, .26);
 }
 
 .card h2 {
@@ -72,58 +80,54 @@
   line-height: 1.62;
 }
 
-.legend {
-  display: grid;
-  gap: .85rem;
+/* Цветные чипы для уровней доверия и активности — те же цвета, что и на карточках. */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
   margin-bottom: 1.05rem;
 }
 
-.legend div {
-  padding: .85rem;
-  border: 1px solid rgba(118, 141, 151, .12);
-  border-radius: 6px;
-  background: rgba(5, 9, 14, .38);
-}
-
-.legend strong {
+.chip {
+  min-height: 27px;
   display: inline-flex;
-  margin-bottom: .4rem;
-  font-size: .8rem;
+  align-items: center;
+  padding: 0 .68rem;
+  border: 1px solid;
+  border-radius: 5px;
+  font-size: .74rem;
+  font-weight: 600;
 }
 
-.legend p {
-  margin: 0;
+.trustA,
+.actHigh {
+  border-color: rgba(95, 207, 122, .4);
+  background: rgba(95, 207, 122, .1);
+  color: #6fdc8e;
 }
 
-.site {
-  color: #64db94;
+.trustB,
+.actMedium {
+  border-color: rgba(216, 194, 78, .42);
+  background: rgba(216, 194, 78, .1);
+  color: #e0cb5f;
 }
 
-.estimated {
-  color: #e4c268;
+.actLow {
+  border-color: rgba(224, 145, 63, .42);
+  background: rgba(224, 145, 63, .1);
+  color: #e8a35a;
 }
 
-.smartModel {
-  margin: 0 0 1.05rem;
-  padding: .85rem;
-  border: 1px solid rgba(210, 171, 82, .15);
-  border-radius: 6px;
-  background: rgba(210, 171, 82, .04);
+.trustC,
+.actVeryLow {
+  border-color: rgba(226, 92, 75, .42);
+  background: rgba(226, 92, 75, .1);
+  color: #ec7464;
 }
 
-.smartModel strong {
-  display: inline-flex;
-  margin-bottom: .42rem;
-  color: #f6edd0;
-  font-size: .8rem;
-}
-
-.smartModel p {
-  margin: 0;
-}
-
-.card:nth-child(2) h2,
-.card:nth-child(2) .metricRow strong {
+.cardTraffic h2,
+.cardTraffic .metricRow strong {
   color: #67b1ff;
 }
 

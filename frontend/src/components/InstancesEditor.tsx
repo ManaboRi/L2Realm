@@ -2,6 +2,7 @@
 import { useId, useMemo } from 'react';
 import type { ServerInstance } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
+import { worldLifecycle, worldLifecycleLabel } from '@/lib/project-metrics';
 import styles from './InstancesEditor.module.css';
 
 interface Props {
@@ -25,7 +26,9 @@ function emptyInstance(): ServerInstance {
     type:       'pvp-pve',
     url:        '',
     openedDate: null,
-    lifecycleStatus: 'active',
+    // Состояние не задаётся вручную: «Скоро»/«Открыт» считаются от даты открытия,
+    // а «Архив» выставляется кнопкой архивации.
+    lifecycleStatus: undefined,
     statusNote: '',
   };
 }
@@ -59,6 +62,12 @@ export function InstancesEditor({ value, onChange }: Props) {
   function remove(idx: number) {
     onChange(list.filter((_, i) => i !== idx));
   }
+  function archive(idx: number) {
+    update(idx, { lifecycleStatus: 'archived' });
+  }
+  function restore(idx: number) {
+    update(idx, { lifecycleStatus: undefined });
+  }
   function add() {
     onChange([...list, emptyInstance()]);
   }
@@ -86,14 +95,38 @@ export function InstancesEditor({ value, onChange }: Props) {
         </p>
       ) : (
         <ul className={styles.list}>
-          {list.map((inst, idx) => (
+          {list.map((inst, idx) => {
+            const lifecycle = worldLifecycle(inst);
+            const isArchived = lifecycle === 'archived';
+            const badgeColor = lifecycle === 'upcoming' ? '#d2ab52'
+              : isArchived ? 'rgba(232,221,186,.5)'
+              : '#6ee89e';
+            return (
             <li key={inst.id} className={styles.item}>
               <div className={styles.itemHead}>
                 <span className={styles.itemNum}>#{idx + 1}</span>
+                <span
+                  title="Статус считается автоматически по дате открытия (кроме архива)"
+                  style={{
+                    fontSize: '.66rem', fontWeight: 600, letterSpacing: '.02em',
+                    padding: '.1rem .42rem', borderRadius: 999,
+                    border: `1px solid ${badgeColor}`, color: badgeColor,
+                    background: 'rgba(0,0,0,.18)',
+                  }}
+                >
+                  {worldLifecycleLabel(inst)}
+                </span>
                 <div className={styles.itemActions}>
                   <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} title="Выше">↑</button>
                   <button type="button" onClick={() => move(idx, 1)} disabled={idx === list.length - 1} title="Ниже">↓</button>
-                  <button type="button" onClick={() => remove(idx)} className={styles.removeBtn} title="Удалить">✕</button>
+                  {isArchived ? (
+                    <>
+                      <button type="button" onClick={() => restore(idx)} title="Вернуть из архива">↩</button>
+                      <button type="button" onClick={() => remove(idx)} className={styles.removeBtn} title="Удалить навсегда">✕</button>
+                    </>
+                  ) : (
+                    <button type="button" onClick={() => archive(idx)} className={styles.removeBtn} title="В архив (сохранить в истории проекта)">🗄</button>
+                  )}
                 </div>
               </div>
 
@@ -179,23 +212,9 @@ export function InstancesEditor({ value, onChange }: Props) {
                 </label>
               </div>
 
-              <div className={styles.row}>
+              {isArchived && (
                 <label className={styles.field}>
-                  <span>Состояние мира</span>
-                  <select
-                    className="input"
-                    value={inst.lifecycleStatus ?? 'active'}
-                    onChange={e => update(idx, { lifecycleStatus: e.target.value as ServerInstance['lifecycleStatus'] })}
-                  >
-                    <option value="active">Открыт</option>
-                    <option value="upcoming">Скоро открытие</option>
-                    <option value="merged">Объединён</option>
-                    <option value="closed">Закрыт</option>
-                    <option value="archived">Архив</option>
-                  </select>
-                </label>
-                <label className={styles.field}>
-                  <span>Примечание к статусу</span>
+                  <span>Примечание к архиву</span>
                   <input
                     className="input"
                     value={inst.statusNote ?? ''}
@@ -204,7 +223,7 @@ export function InstancesEditor({ value, onChange }: Props) {
                     maxLength={160}
                   />
                 </label>
-              </div>
+              )}
 
               <label className={styles.field}>
                 <span>Короткое описание (одна строка для карточки)</span>
@@ -218,7 +237,8 @@ export function InstancesEditor({ value, onChange }: Props) {
               </label>
 
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 
