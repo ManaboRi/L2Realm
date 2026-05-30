@@ -63,7 +63,7 @@ export default function MethodologyPage() {
 
         <article className={styles.card}>
           <h2>Голоса и Vote Manager</h2>
-          <p>Голосование на L2Realm ограничено по аккаунту и IP на 24 часа. Голоса формируют активность в каталоге и гонку за «сервер недели».</p>
+          <p>Голосование на L2Realm ограничено по IP на 24 часа. Голоса формируют активность проекта в каталоге.</p>
           <div className={styles.metricRow}>
             <span>Бонусы за голос</span>
             <strong>Только при подключённом API</strong>

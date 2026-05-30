@@ -557,7 +557,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
           <div className={styles.heroCopy}>
             <div className={styles.heroBadges}>
               {server._isVip && <span className={styles.goldBadge}>Рекомендуем</span>}
-              {server._isSod && <span className={styles.goldBadge}>Сервер недели</span>}
               {activeBoost && <span className={styles.boostBadge}>В фокусе</span>}
             </div>
             <h1>{server.name}</h1>

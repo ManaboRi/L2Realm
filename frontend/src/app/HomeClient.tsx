@@ -375,7 +375,6 @@ function HomeServerCard({
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
   const isVip = !!s._isVip || !!s.vip;
   const isBoosted = !!s._isBoosted;
-  const isWeek = !!s._isSod;
   const badge = getServerBadge(s);
 
   return (
@@ -383,7 +382,6 @@ function HomeServerCard({
       styles.serverCard,
       isVip ? styles.serverCardVip : '',
       isBoosted ? styles.serverCardBoost : '',
-      isWeek ? styles.serverCardWeek : '',
     ].filter(Boolean).join(' ')}>
       <Link href={`/servers/${s.id}`} className={styles.cardLink} aria-label={`Открыть сервер ${s.name}`} />
       <div className={styles.cardMedia}>
@@ -476,7 +474,6 @@ function ServerIcon({ server, small, eager = false }: { server: Server; small?: 
 
 function getServerBadge(server: Server) {
   if (server._isVip || server.vip) return 'РЕКОМЕНДУЕМ';
-  if (server._isSod) return 'СЕРВЕР НЕДЕЛИ';
   if (server._isBoosted) return 'В ФОКУСЕ';
   return '';
 }

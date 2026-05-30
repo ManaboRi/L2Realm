@@ -22,26 +22,13 @@
 .row.boosted { border-color: rgba(240,140,70,.45); box-shadow: 0 0 10px rgba(240,140,70,.1); }
 .row.boosted::before { background: linear-gradient(to bottom, #F08C46, #CC4A2A); }
 
-/* Сервер дня — изумрудная акцентная линия */
-.row.sod { border-color: rgba(90,180,130,.45); background: rgba(90,180,130,.04); }
-.row.sod::before { background: #5AB482; }
-
 /* VIP-блок — чуть плотнее */
 .row.vipBlock { background: rgba(200,168,75,.04); }
 
 .row.soon { opacity: .6; }
 
-/* Звёздочка VIP */
+/* Звёздочка «Рекомендуем» */
 .starVip { font-size: .82rem; color: var(--gold); line-height: 1; flex-shrink: 0; }
-
-/* Бейдж «Сервер дня» */
-.sodBadge {
-  font-family: 'Cinzel', serif; font-size: .54rem;
-  background: rgba(90,180,130,.12); color: #5AB482;
-  border: 1px solid rgba(90,180,130,.3);
-  padding: .1rem .45rem; border-radius: 2px;
-  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap;
-}
 
 .icon {
   width: 48px; height: 48px; flex-shrink: 0;

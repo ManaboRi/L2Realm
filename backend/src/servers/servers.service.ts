@@ -861,7 +861,7 @@ export class ServersService {
 
   // ── Получить все с фильтрами ─────────────────
   async findAll(filters: FilterServersDto) {
-    // sort без default: пустое = «по умолчанию» (пьедестал VIP → сервер недели → Буст
+    // sort без default: пустое = «по умолчанию» (пьедестал «Рекомендуем» → «В фокусе»
      // → остальные по голосам). Явные значения: opened/name/rating/votes.
     const { search, chronicle, rate, donate, type, activity, trust, openedWithin, sort, compact = false, page = 1, limit = 50 } = filters;
 
@@ -976,34 +976,23 @@ export class ServersService {
     });
     const boostMap = new Map(boosts.map(b => [b.serverId, b.endDate]));
 
-    // Сервер недели: проект с максимумом недельных голосов. Не зависит от поиска/фильтров.
-    const serverOfWeek = await this.prisma.server.findFirst({
-      where: { weeklyVotes: { gt: 0 } },
-      select: { id: true },
-      orderBy: [{ weeklyVotes: 'desc' }, { id: 'asc' }],
-    });
-    const sodId = serverOfWeek?.id ?? null;
-
-    // Приклеиваем флаги и сортируем: VIP → Сервер недели → Boosted (по endDate DESC) → остальные
+    // Приклеиваем флаги и сортируем: «Рекомендуем» (VIP) → «В фокусе» (Boost) → остальные
     const decorated = filtered.map(s => {
       const plan = (s.subscription as any)?.plan ?? 'FREE';
       const subActive = s.subscription?.endDate && s.subscription.endDate > now;
       const isVip  = plan === 'VIP' && subActive && !isOnlyComingSoonServer(s, nowTs);
       const boostEnd = boostMap.get(s.id) ?? null;
       const isBoosted = !!boostEnd;
-      const isSod    = s.id === sodId;
       const manualStatus = normalizeStatusOverride((s as any).statusOverride);
-      return { ...s, ...(manualStatus && { status: manualStatus }), _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted, _isSod: isSod };
+      return { ...s, ...(manualStatus && { status: manualStatus }), _isVip: isVip, _boostEnd: boostEnd, _isBoosted: isBoosted };
     });
 
-    // При явной сортировке (opened/rating/votes/name) — пиннится только VIP,
-    // остальные (включая сервер недели/Boost) идут в порядке выбранной сортировки.
-    // Это «честный» режим, когда юзер сам выбрал критерий и не хочет видеть
-    // продвижение. Сервер недели/Boost доступны в default-режиме (если sort пуст).
+    // При явной сортировке (opened/votes/name) — пиннится только «Рекомендуем» (VIP),
+    // остальные (включая «В фокусе») идут в порядке выбранной сортировки.
     const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes' || sort === 'opened';
 
     decorated.sort((a, b) => {
-      // VIP всегда наверху — это часть купленной услуги
+      // «Рекомендуем» всегда наверху
       if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
 
       if (isExplicitSort) {
@@ -1011,7 +1000,6 @@ export class ServersService {
         return 0;
       }
 
-      if (a._isSod !== b._isSod) return a._isSod ? -1 : 1;
       if (a._isBoosted !== b._isBoosted) return a._isBoosted ? -1 : 1;
       if (a._isBoosted && b._isBoosted) {
         return (b._boostEnd!.getTime() - a._boostEnd!.getTime());

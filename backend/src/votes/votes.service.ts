@@ -149,7 +149,7 @@ export class VotesService {
     await this.prisma.server.updateMany({ data: { monthlyVotes: 0, weeklyVotes: 0 } });
   }
 
-  // Сервер недели остаётся недельным конкурсом.
+  // Еженедельный сброс недельного счётчика (поле осталось в схеме; «Сервер недели» убран).
   @Cron('0 3 * * 5')
   async resetWeeklyVotes() {
     await this.prisma.server.updateMany({ data: { weeklyVotes: 0 } });

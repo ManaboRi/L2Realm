@@ -501,7 +501,6 @@ export default function AdminPage() {
     { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
   ];
 
-  const sodServer = servers.find((s: any) => s._isSod);
   const vipServerIds = new Set((vipStatus?.slots ?? []).map(s => s.serverId));
   const soonVipKeys = new Set((soonVipStatus?.slots ?? []).map(s => soonVipKey(s.serverId, s.instanceId)));
   const soonVipOptions = futureOpenings(servers).filter(o => !soonVipKeys.has(o.key));
@@ -667,7 +666,7 @@ export default function AdminPage() {
                       {servers.map(s => (
                         <tr key={s.id}>
                           <td className={styles.tdMono}>{s.id}</td>
-                          <td><strong>{s.name}</strong>{s._isSod && <span title="Сервер недели" style={{ marginLeft:'.35rem', color:'#5AB482' }}>★</span>}</td>
+                          <td><strong>{s.name}</strong></td>
                           <td>{hasProjectLaunches(s) ? '—' : s.chronicle}</td>
                           <td>{hasProjectLaunches(s) ? '—' : s.rates}</td>
                           <td style={{ fontSize:'.72rem' }}>
@@ -698,14 +697,6 @@ export default function AdminPage() {
             {tab === 'money' && (
               <div className={styles.section} style={{ gap:'1.4rem' }}>
                 <div className={styles.sectionTitle}>Продвижение</div>
-
-                {sodServer && (
-                  <div style={{ background:'var(--bg2)', border:'1px solid rgba(90,180,130,.35)', borderRadius:3, padding:'.8rem 1rem', display:'flex', alignItems:'center', gap:'.8rem', flexWrap:'wrap' }}>
-                    <span style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'#5AB482', textTransform:'uppercase', letterSpacing:'.14em' }}>★ Сервер недели</span>
-                    <strong style={{ color:'var(--text)' }}>{sodServer.name}</strong>
-                    {!hasProjectLaunches(sodServer) && <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>({sodServer.chronicle} · {sodServer.rates})</span>}
-                  </div>
-                )}
 
                 {/* «Рекомендуем» — поднятие проекта (без лимита мест) */}
                 <div>

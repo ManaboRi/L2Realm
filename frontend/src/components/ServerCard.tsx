@@ -49,7 +49,6 @@ export function ServerCard({ server: s, vipBlock }: Props) {
   const plan      = s.subscription?.plan ?? 'FREE';
   const isVip     = plan === 'VIP' && !isSoon;
   const isBoosted = !!s._isBoosted;
-  const isSod     = !!s._isSod;
   const insts     = s.instances ?? [];
   const chronSet  = new Set<string>();
   const rateSet   = new Set<string>();
@@ -78,7 +77,6 @@ export function ServerCard({ server: s, vipBlock }: Props) {
     styles.row,
     isVip ? styles.planVip : '',
     isBoosted ? styles.boosted : '',
-    isSod ? styles.sod : '',
     isSoon ? styles.soon : '',
     vipBlock ? styles.vipBlock : '',
   ].filter(Boolean).join(' ');
@@ -99,10 +97,9 @@ export function ServerCard({ server: s, vipBlock }: Props) {
           <div className={styles.titleRow}>
             <span className={styles.name}>{s.name}</span>
             {chronTags.map(c => <span key={`c-head-${c}`} className={`${styles.titleTag} tag tc`}>{c}</span>)}
-            {isVip && <span className={styles.starVip} title="VIP">★</span>}
-            {isBoosted && <span className={styles.fire} title="В огне — буст активен">🔥</span>}
-            {isSod && <span className={styles.sodBadge} title="Проект с наибольшим числом голосов за текущую неделю.">★ Сервер недели</span>}
-            {isVip && <span className={styles.vipBadge}>VIP</span>}
+            {isVip && <span className={styles.starVip} title="Рекомендуем">★</span>}
+            {isBoosted && <span className={styles.fire} title="В фокусе">🔥</span>}
+            {isVip && <span className={styles.vipBadge}>Рекомендуем</span>}
           </div>
           <div className={styles.tagStack}>
             <div className={styles.tagLine}>{rateTags.map(r => <span key={`r-${r}`} className="tag tr">{r}</span>)}</div>

@@ -83,7 +83,6 @@ export interface Server {
   onlineUpdatedAt?: string | null;
   _isVip?:     boolean;
   _isBoosted?: boolean;
-  _isSod?:     boolean;
   _boostEnd?:  string | null;
 }
 
