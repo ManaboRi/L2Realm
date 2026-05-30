@@ -887,7 +887,7 @@ export class ServersService {
     // совпадает хоть одно — проект попадает в выдачу.
     const allServers = await this.prisma.server.findMany({
       where,
-      include: { subscription: true, _count: { select: { reviews: true } } },
+      include: { subscription: true },
       orderBy: sort === 'name'   ? { name: 'asc' }
               : sort === 'rating' ? { rating: 'desc' }
               : sort === 'votes'  ? { totalVotes: 'desc' }
@@ -1036,12 +1036,6 @@ export class ServersService {
       where: { id },
       include: {
         subscription: true,
-        reviews: {
-          where: { approved: true },
-          include: { user: { select: { id: true, nickname: true, avatar: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-        },
         news: { orderBy: { date: 'desc' }, take: 10 },
       },
     });
@@ -1456,7 +1450,6 @@ export class ServersService {
         _sum: { monthlyVotes: true, totalVotes: true },
       }),
     ]);
-    const reviewCount = await this.prisma.review.count({ where: { approved: true } });
     const total = servers.length;
     const launchCount = servers.reduce((sum, s) => {
       const instances = activeInstances(s);
@@ -1482,7 +1475,6 @@ export class ServersService {
       launchCount,
       vip,
       newCount,
-      reviewCount,
       monthlyVotes: votesAgg._sum.monthlyVotes ?? 0,
       totalVotes: votesAgg._sum.totalVotes ?? 0,
       onlineTotal,

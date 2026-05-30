@@ -175,14 +175,6 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
   );
 }
 
-function FilterFooter() {
-  return (
-    <div className={styles.filterFooter}>
-      <Link href="/pricing" className={styles.filterAddBtn}>Добавить сервер</Link>
-    </div>
-  );
-}
-
 function OpeningRow({
   opening,
   now,
@@ -419,8 +411,6 @@ export function ComingSoonClient({ initialServers }: { initialServers: Server[] 
                 <FilterItem key={o.v} label={o.l} count={counts.opens[o.v]} active={filters.opens === o.v} onClick={() => toggleFilter('opens', o.v)} />
               ))}
             </FilterGroup>
-
-            <FilterFooter />
           </aside>
 
           <section className={styles.content}>

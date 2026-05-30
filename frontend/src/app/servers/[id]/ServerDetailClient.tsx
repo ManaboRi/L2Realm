@@ -3,10 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
-import { AuthModal } from '@/components/AuthModal';
 import { isOpeningStillSoon } from '@/lib/opening';
-import type { Article, Server, ServerInstance, Review, VoteStatus, VoteSummary } from '@/lib/types';
+import type { Article, Server, ServerInstance, VoteStatus, VoteSummary } from '@/lib/types';
 import { SERVER_TYPES } from '@/lib/types';
 import {
   activityMeta,
@@ -242,25 +240,18 @@ function availabilityForWorld(statusValue: string | undefined, lifecycle: Return
 
 export function ServerDetailClient({ initialServer }: { initialServer: Server }) {
   const id = initialServer.id;
-  const { user, token, isAdmin } = useAuth();
   // Initial data приходит из server component — никакого loading-state для body.
   // Боты и медленный интернет получают полностью отрендеренный HTML сразу.
   const [server,   setServer]   = useState<Server>(initialServer);
   const [status,   setStatus]   = useState<any>(null);
   const [daily,    setDaily]    = useState<any>(null);
-  const [reviewTxt, setReviewTxt] = useState('');
-  const [reviewRating, setReviewRating] = useState(5);
-  const [submitting, setSubmitting] = useState(false);
   const [toast,    setToast]    = useState('');
-  const [isFav,       setIsFav]       = useState(false);
-  const [favBusy,     setFavBusy]     = useState(false);
   const [voteStatus,  setVoteStatus]  = useState<VoteStatus | null>(null);
   const [voteSummary, setVoteSummary] = useState<VoteSummary | null>(null);
   const [voteTab, setVoteTab] = useState<'top' | 'recent'>('top');
   const [voting,      setVoting]      = useState(false);
   const [voteNickname, setVoteNickname] = useState('');
-  const [authOpen, setAuthOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'worlds' | 'info' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'worlds' | 'info'>('overview');
   const [hoveredTrafficIndex, setHoveredTrafficIndex] = useState<number | null>(null);
   const trafficSvgRef = useRef<SVGSVGElement | null>(null);
   const [trafficViewport, setTrafficViewport] = useState({ width: 900, height: 160 });
@@ -273,11 +264,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     api.monitoring.status(id).then(setStatus).catch(() => {});
     api.monitoring.daily(id, 30).then(setDaily).catch(() => {});
   }, [id]);
-
-  useEffect(() => {
-    if (!token) { setIsFav(false); return; }
-    api.favorites.ids(token).then(ids => setIsFav(ids.includes(id))).catch(() => {});
-  }, [token, id]);
 
   // График трафика рисуется в координатах реального размера контейнера (1 unit = 1px),
   // чтобы он растягивался на всю ширину блока, а не висел по центру с пустыми полями.
@@ -297,9 +283,9 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [activeTab]);
 
   useEffect(() => {
-    api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+    api.votes.status(id).then(setVoteStatus).catch(() => {});
     api.votes.summary(id).then(setVoteSummary).catch(() => {});
-  }, [token, id]);
+  }, [id]);
 
   useEffect(() => {
     const needle = normalizeSearchText(server.name);
@@ -322,10 +308,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   }, [server.id, server.name]);
 
   async function handleVote() {
-    if (!token) {
-      setAuthOpen(true);
-      return;
-    }
     const nickname = voteNickname.trim();
     if (nickname.length < 2) {
       showToast('Укажи ник персонажа на сервере');
@@ -333,7 +315,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     }
     setVoting(true);
     try {
-      await api.votes.vote(id, nickname, token);
+      await api.votes.vote(id, nickname);
       showToast('Голос принят! Если проект подключил бонусы, награда придёт по нику');
       setServer(prev => ({
         ...prev,
@@ -341,34 +323,15 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         weeklyVotes: (prev.weeklyVotes ?? 0) + 1,
         monthlyVotes: (prev.monthlyVotes ?? 0) + 1,
       }));
-      const fresh = await api.votes.status(id, token);
+      const fresh = await api.votes.status(id);
       setVoteStatus(fresh);
       api.votes.summary(id).then(setVoteSummary).catch(() => {});
     } catch {
       // Обновляем статус чтобы показать cooldown, если голосование заблокировано
-      api.votes.status(id, token).then(setVoteStatus).catch(() => {});
+      api.votes.status(id).then(setVoteStatus).catch(() => {});
       showToast('Голос уже учтён — следующий через 24 ч.');
     }
     setVoting(false);
-  }
-
-  async function toggleFavorite() {
-    if (!token) return showToast('Войдите, чтобы добавить в избранное');
-    setFavBusy(true);
-    try {
-      if (isFav) {
-        await api.favorites.remove(id, token);
-        setIsFav(false);
-        showToast('Убрано из избранного');
-      } else {
-        await api.favorites.add(id, token);
-        setIsFav(true);
-        showToast('Добавлено в избранное');
-      }
-    } catch (e) {
-      showToast(e instanceof Error ? e.message : 'Ошибка');
-    }
-    setFavBusy(false);
   }
 
   function showToast(msg: string) {
@@ -386,33 +349,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
     }
   }
 
-  async function deleteReview(reviewId: string) {
-    if (!token) return;
-    if (!confirm('Удалить этот отзыв?')) return;
-    try {
-      await api.reviews.delete(reviewId, token);
-      showToast('Отзыв удалён');
-      const fresh = await api.servers.get(id);
-      setServer(fresh);
-    } catch (e: any) {
-      showToast(e.message || 'Ошибка удаления');
-    }
-  }
-
-  async function submitReview(e: { preventDefault(): void }) {
-    e.preventDefault();
-    if (!token) return showToast('Войдите чтобы оставить отзыв');
-    setSubmitting(true);
-    try {
-      await api.reviews.create(id, { rating: reviewRating, text: reviewTxt }, token);
-      showToast('Отзыв отправлен на модерацию');
-      setReviewTxt('');
-    } catch (e: any) {
-      showToast(e.message || 'Ошибка');
-    }
-    setSubmitting(false);
-  }
-
   const isOnline = status?.status === 'online';
   const hasInstances = (server.instances?.length ?? 0) > 0;
   const instances = server.instances ?? [];
@@ -422,7 +358,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const worldCount = projectWorldCount(server);
   const openingCount = projectOpeningCount(server);
   const nextOpening = nextProjectOpening(server);
-  const reviews = server.reviews ?? [];
   const mainType = server.type?.find(t => typeLabels.has(t as any));
   const totalVotes = voteSummary?.totalVotes ?? server.totalVotes ?? server.weeklyVotes ?? 0;
   const monthlyVotes = voteSummary?.monthlyVotes ?? server.monthlyVotes ?? 0;
@@ -559,10 +494,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
             placeholder="Ник на сервере"
             maxLength={32}
-            disabled={!token || !!voteStatus?.voted}
+            disabled={!!voteStatus?.voted}
           />
           <button type="button" onClick={handleVote} disabled={voteDisabled}>
-            {voting ? <span className="spin" /> : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Проголосовать'}
+            {voting ? <span className="spin" /> : voteStatus?.voted ? 'Учтено' : 'Проголосовать'}
           </button>
         </div>
         {voteStatus?.voted && cooldownText(voteStatus.cooldownEnds ?? null) && (
@@ -606,7 +541,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   return (
     <div className={styles.page}>
       {toast && <div className={`${styles.toast} ${toast.includes('Ошибка') ? styles.toastError : ''}`}>{toast}</div>}
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       <section className={styles.serverHero}>
         {server.banner ? (
@@ -633,16 +567,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <p>{heroDescription}</p>
             <div className={styles.heroButtons}>
               <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.primaryHeroButton}>Перейти на сайт <span>↗</span></a>
-              <button
-                type="button"
-                className={`${styles.iconHeroButton} ${isFav ? styles.iconHeroButtonActive : ''}`}
-                onClick={toggleFavorite}
-                disabled={favBusy}
-                title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-                aria-label={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-              >
-                {isFav ? '×' : '♡'}
-              </button>
             </div>
           </div>
         </div>
@@ -673,19 +597,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               <span>Проверка</span>
               <strong style={{ color: trust.color }} title={trust.title}>{trust.label}</strong>
             </div>
-            <div>
-              <span>Рейтинг</span>
-              <strong>★ {server.ratingCount > 0 ? server.rating.toFixed(1) : '—'}</strong>
-            </div>
           </div>
         </aside>
 
         <div className={styles.serverTabs}>
           <button type="button" className={activeTab === 'overview' ? styles.serverTabActive : ''} onClick={() => setActiveTab('overview')}>Обзор</button>
           <button type="button" className={activeTab === 'info' ? styles.serverTabActive : ''} onClick={() => setActiveTab('info')}>Информация</button>
-          <button type="button" className={activeTab === 'reviews' ? styles.serverTabActive : ''} onClick={() => setActiveTab('reviews')}>
-            Отзывы {server.ratingCount > 0 && <span>{server.ratingCount}</span>}
-          </button>
         </div>
       </section>
 
@@ -844,62 +761,12 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         </div>
       )}
 
-      {activeTab === 'reviews' && (
-        <div className={styles.reviewsLayout}>
-          <section className={styles.infoCard}>
-            <h2>Оставить отзыв</h2>
-            {user ? (
-              <form onSubmit={submitReview} className={styles.reviewForm}>
-                <div className={styles.stars}>
-                  {[1,2,3,4,5].map(n => (
-                    <button key={n} type="button" className={n <= reviewRating ? styles.starOn : styles.star} onClick={() => setReviewRating(n)}>★</button>
-                  ))}
-                  <span className={styles.ratingLbl}>{reviewRating} / 5</span>
-                </div>
-                <textarea
-                  className="input"
-                  placeholder="Расскажи об опыте на сервере..."
-                  rows={4}
-                  value={reviewTxt}
-                  onChange={e => setReviewTxt(e.target.value)}
-                  required
-                  style={{ resize: 'vertical' }}
-                />
-                <button className="btn-primary" type="submit" disabled={submitting} style={{ alignSelf: 'flex-start', padding: '.45rem 1.2rem' }}>
-                  {submitting ? <span className="spin" /> : 'Отправить отзыв'}
-                </button>
-              </form>
-            ) : (
-              <p className={styles.empty}>Войдите в аккаунт, чтобы оставить отзыв.</p>
-            )}
-          </section>
-
-          <section className={styles.infoCard}>
-            <h2>Отзывы игроков {server.ratingCount > 0 && `(${server.ratingCount})`}</h2>
-            {reviews.length > 0 ? (
-              <div className={styles.reviewList}>
-                {reviews.map(r => (
-                  <ReviewCard
-                    key={r.id}
-                    review={r}
-                    canDelete={isAdmin || r.user.id === user?.id}
-                    onDelete={() => deleteReview(r.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className={styles.empty}>Отзывов пока нет.</p>
-            )}
-          </section>
-        </div>
-      )}
     </div>
   );
 
   return (
     <div className={styles.page}>
       {toast && <div className={`${styles.toast} ${toast.includes('Ошибка') ? styles.toastError : ''}`}>{toast}</div>}
-      <AuthModal open={authOpen} onClose={() => setAuthOpen(false)} />
 
       {/* Breadcrumb */}
       <div className={styles.bread}>
@@ -949,7 +816,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 {status?.uptime != null && <span className={styles.uptime}>• Аптайм {status.uptime}%</span>}
               </div>
 
-              {/* Быстрая статистика: голоса / рейтинг / отзывы */}
+              {/* Быстрая статистика: голоса */}
               <div className={styles.headerStats}>
                 {totalVotes > 0 && (
                   <span className={styles.hstat}>
@@ -957,14 +824,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                     {totalVotes} {voteWord(totalVotes)}
                     <span className={styles.voteTip}>?</span>
                   </span>
-                )}
-                {server.ratingCount > 0 && (
-                  <>
-                    {totalVotes > 0 && <span className={styles.hstatDot}>·</span>}
-                    <span className={styles.hstat}>★ {server.rating.toFixed(1)} / 5</span>
-                    <span className={styles.hstatDot}>·</span>
-                    <span className={styles.hstat}>{server.ratingCount} {server.ratingCount === 1 ? 'отзыв' : server.ratingCount < 5 ? 'отзыва' : 'отзывов'}</span>
-                  </>
                 )}
               </div>
             </div>
@@ -976,7 +835,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   <span className={styles.voteBoxDot} />
                   {monthlyVotes > 0 ? `${monthlyVotes} ${voteWord(monthlyVotes)} за месяц` : 'Голосов за месяц пока нет'}
                 </span>
-                <span>{voteStatus?.voted && cooldownText(voteStatus?.cooldownEnds ?? null) ? cooldownText(voteStatus?.cooldownEnds ?? null) : '1 голос / 24ч IP + аккаунт'}</span>
+                <span>{voteStatus?.voted && cooldownText(voteStatus?.cooldownEnds ?? null) ? cooldownText(voteStatus?.cooldownEnds ?? null) : '1 голос / 24ч с IP'}</span>
               </div>
 
               <div className={styles.voteInline}>
@@ -987,7 +846,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                   onKeyDown={e => { if (e.key === 'Enter') handleVote(); }}
                   placeholder="Ник на сервере"
                   maxLength={32}
-                  disabled={!token || !!voteStatus?.voted}
+                  disabled={!!voteStatus?.voted}
                   title={voteRewardsEnabled ? 'Ник нужен для выдачи бонуса на сервере' : 'Голос учтётся на L2Realm. Бонусы зависят от подключения Vote Manager проектом'}
                 />
                 <button
@@ -999,7 +858,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 >
                   {voting
                     ? <span className="spin" />
-                    : !token ? 'Войти' : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
+                    : voteStatus?.voted ? 'Учтено' : 'Голосовать'}
                 </button>
               </div>
 
@@ -1007,15 +866,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 <a href={server.url} target="_blank" rel="noopener" className={styles.btnSiteLarge}>
                   <span aria-hidden="true">↗</span> Перейти
                 </a>
-                <button
-                  type="button"
-                  className={styles.saveBtn}
-                  onClick={toggleFavorite}
-                  disabled={favBusy}
-                  title={isFav ? 'Убрать из избранного' : 'Добавить в избранное'}
-                >
-                  <span aria-hidden="true">{isFav ? '★' : '☆'}</span> Сохранить
-                </button>
               </div>
 
               <div className={`${styles.voteBoxHint} ${voteRewardsEnabled ? styles.voteBoxHintOn : ''}`}>
@@ -1051,7 +901,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
               {[
                 ['Языки',      languageMarks(server.country).map(item => item.label).join(' ')],
                 ['Открылся',   relativeOpened(server.openedDate)],
-                ['Рейтинг',    server.ratingCount > 0 ? `${server.rating.toFixed(1)} ⭐ (${server.ratingCount})` : 'Нет отзывов'],
               ].map(([l, v]) => (
                 <div key={l} className={styles.row}><span className={styles.rowLbl}>{l}</span><span className={styles.rowVal}>{v}</span></div>
               ))}
@@ -1239,58 +1088,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             </div>
           )}
 
-          {/* Форма отзыва */}
-          <div className={styles.dblock}>
-            <div className={styles.dblockTitle}>Оставить отзыв</div>
-            <div className={styles.dblockBody}>
-              {user ? (
-                <form onSubmit={submitReview} className={styles.reviewForm}>
-                  <div className={styles.stars}>
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} type="button" className={n <= reviewRating ? styles.starOn : styles.star} onClick={() => setReviewRating(n)}>★</button>
-                    ))}
-                    <span className={styles.ratingLbl}>{reviewRating} / 5</span>
-                  </div>
-                  <textarea
-                    className="input"
-                    placeholder="Расскажи об опыте на сервере..."
-                    rows={4}
-                    value={reviewTxt}
-                    onChange={e => setReviewTxt(e.target.value)}
-                    required
-                    style={{ resize: 'vertical' }}
-                  />
-                  <button className="btn-primary" type="submit" disabled={submitting} style={{ alignSelf: 'flex-start', padding: '.45rem 1.2rem' }}>
-                    {submitting ? <span className="spin" /> : 'Отправить отзыв'}
-                  </button>
-                </form>
-              ) : (
-                <p className={styles.empty}>Войдите в аккаунт чтобы оставить отзыв</p>
-              )}
-            </div>
-          </div>
-
-          {/* Отзывы */}
-          <div className={styles.dblock}>
-            <div className={styles.dblockTitle}>Отзывы игроков {server.ratingCount > 0 && `(${server.ratingCount})`}</div>
-            <div className={styles.dblockBody}>
-              {reviews.length > 0 ? (
-                <div className={styles.reviewList}>
-                  {reviews.map(r => (
-                    <ReviewCard
-                      key={r.id}
-                      review={r}
-                      canDelete={isAdmin || r.user.id === user?.id}
-                      onDelete={() => deleteReview(r.id)}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className={styles.empty}>Отзывов пока нет — будьте первым!</p>
-              )}
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
@@ -1304,57 +1101,5 @@ function SocialLink({ ico, name, href }: { ico: string; name: string; href: stri
       <span>{name}</span>
       <span className={styles.socialVal}>Перейти →</span>
     </a>
-  );
-}
-function ReviewCard({
-  review: r,
-  canDelete,
-  onDelete,
-}: {
-  review: Review;
-  canDelete?: boolean;
-  onDelete?: () => void;
-}) {
-  // Только никнейм — ФИО из VK не светим
-  const displayName = r.user.nickname || 'Игрок';
-  return (
-    <div className={styles.reviewCard}>
-      <div className={styles.reviewHead}>
-        <span className={styles.reviewUser} style={{ display: 'inline-flex', alignItems: 'center', gap: '.5rem' }}>
-          {r.user.avatar && (
-            <img
-              src={r.user.avatar}
-              alt={`Аватар ${displayName}`}
-              style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover' }}
-            />
-          )}
-          {displayName}
-        </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.6rem' }}>
-          <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
-          {canDelete && onDelete && (
-            <button
-              type="button"
-              onClick={onDelete}
-              title="Удалить отзыв"
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--text3)',
-                fontSize: '.7rem',
-                padding: '.15rem .45rem',
-                borderRadius: 2,
-                cursor: 'pointer',
-                lineHeight: 1,
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </span>
-      </div>
-      <div className={styles.reviewStars}>{'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}</div>
-      <p className={styles.reviewTxt}>{r.text}</p>
-    </div>
   );
 }

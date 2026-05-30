@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { NicknamePrompt } from '@/components/NicknamePrompt';
 import { AuthProvider } from '@/context/AuthContext';
 
 const SITE = 'https://l2realm.ru';
@@ -86,7 +85,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main>{children}</main>
           <Footer />
-          <NicknamePrompt />
         </AuthProvider>
       </body>
     </html>

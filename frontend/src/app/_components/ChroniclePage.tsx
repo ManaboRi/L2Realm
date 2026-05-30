@@ -61,10 +61,6 @@ export async function ChroniclePage({ cfg }: { cfg: ChronicleCfg }) {
         </div>
       )}
 
-      <p className={styles.foot}>
-        Не нашли свой сервер? <Link href="/add" className={styles.footLink}>Подайте заявку</Link>{' '}
-        — модерация до 24 часов.
-      </p>
     </div>
   );
 }

@@ -27,6 +27,9 @@
 }
 
 .nav { display: flex; align-items: center; gap: .3rem; flex: 1; justify-content: center; }
+
+/* «Контакты» (и Admin) — отдельная группа справа, как раньше был блок входа. */
+.contactsLink { border-color: rgba(210,171,82,.28); }
 .navLink {
   font-family: 'Cinzel', serif; font-size: .68rem; text-transform: uppercase;
   letter-spacing: .1em; color: var(--text2); padding: .52rem .95rem;

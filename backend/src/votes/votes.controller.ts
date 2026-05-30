@@ -1,54 +1,25 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Req } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
-import { PrismaService } from '../prisma/prisma.service';
 import { VotesService } from './votes.service';
-
-async function optionalUserId(req: Request, jwt: JwtService, prisma: PrismaService): Promise<string | null> {
-  const header = req.header('authorization') || '';
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) return null;
-  try {
-    const payload = jwt.verify<{ sub?: string }>(match[1]);
-    if (!payload.sub) return null;
-    const user = await prisma.user.findUnique({ where: { id: payload.sub }, select: { id: true } });
-    return user?.id ?? null;
-  } catch {
-    return null;
-  }
-}
 
 @Controller('votes')
 export class VotesController {
-  constructor(
-    private readonly votes: VotesService,
-    private readonly jwt: JwtService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly votes: VotesService) {}
 
+  // Голосование анонимное: лимит — один голос с IP в сутки (см. VotesService).
   @Post(':serverId')
   @HttpCode(200)
   @Throttle({ default: { ttl: 60_000, limit: 5 } })
   async vote(@Param('serverId') serverId: string, @Body() body: { nickname?: string }, @Req() req: Request) {
-    const userId = await optionalUserId(req, this.jwt, this.prisma);
-    if (!userId) throw new UnauthorizedException('Войдите, чтобы проголосовать');
     const ip = req.ip ?? '0.0.0.0';
-    return this.votes.vote(userId, serverId, ip, body.nickname);
-  }
-
-  @Get('my/count')
-  async myCount(@Req() req: Request) {
-    const userId = await optionalUserId(req, this.jwt, this.prisma);
-    if (!userId) throw new UnauthorizedException('Войдите, чтобы посмотреть голоса');
-    return this.votes.countByUser(userId);
+    return this.votes.vote(null, serverId, ip, body.nickname);
   }
 
   @Get(':serverId/status')
   async status(@Param('serverId') serverId: string, @Req() req: Request) {
-    const userId = await optionalUserId(req, this.jwt, this.prisma);
     const ip = req.ip ?? '0.0.0.0';
-    return this.votes.getStatus(userId, serverId, ip);
+    return this.votes.getStatus(null, serverId, ip);
   }
 
   @Get(':serverId/summary')

@@ -26,12 +26,11 @@ services:
       DATABASE_URL: postgresql://l2realm:${POSTGRES_PASSWORD}@postgres:5432/l2realm
       JWT_SECRET: ${JWT_SECRET}
       FRONTEND_URL: ${FRONTEND_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASS: ${ADMIN_PASS}
+      ADMIN_KEY: ${ADMIN_KEY}
       PORT: 4000
       NODE_ENV: production
-      VK_CLIENT_ID: ${VK_CLIENT_ID}
-      VK_CLIENT_SECRET: ${VK_CLIENT_SECRET}
-      YOOKASSA_SHOP_ID: ${YOOKASSA_SHOP_ID}
-      YOOKASSA_SECRET_KEY: ${YOOKASSA_SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -41,10 +40,6 @@ services:
   frontend:
     build:
       context: ./frontend
-      args:
-        NEXT_PUBLIC_VK_CLIENT_ID: ${VK_CLIENT_ID}
-        NEXT_PUBLIC_VK_REDIRECT_URI: ${VK_REDIRECT_URI}
-        NEXT_PUBLIC_VK_PIXEL_ID: ${VK_PIXEL_ID}
     restart: unless-stopped
     environment:
       BACKEND_URL: http://backend:4000

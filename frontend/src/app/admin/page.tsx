@@ -11,7 +11,7 @@ import type { VipStatus } from '@/lib/types';
 import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
-type AdminTab = 'servers' | 'reviews' | 'requests' | 'money' | 'add';
+type AdminTab = 'servers' | 'requests' | 'money' | 'add';
 
 function slugify(s: string) {
   return s.toLowerCase()
@@ -163,12 +163,46 @@ function projectInstancesPayload(instances: any[]) {
   return instances.map(({ donate: _donate, ...instance }) => instance);
 }
 
+// Скрытый вход в админку по email+паролю (публичной регистрации на сайте нет).
+function AdminLogin({ onLogin }: { onLogin: (token: string, user: any) => void }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      const res = await api.auth.login(email.trim(), password);
+      onLogin(res.access_token, res.user);
+    } catch (err: any) {
+      setError(err?.message || 'Не удалось войти');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:'70vh', padding:'1rem' }}>
+      <form
+        onSubmit={(e) => { e.preventDefault(); submit(); }}
+        style={{ width:'min(360px,100%)', display:'grid', gap:'.7rem', padding:'1.6rem', border:'1px solid rgba(210,171,82,.2)', borderRadius:10, background:'rgba(11,16,23,.92)' }}
+      >
+        <h1 style={{ fontFamily:"'Cinzel',serif", fontSize:'1rem', letterSpacing:'.12em', textTransform:'uppercase', color:'var(--gold)', textAlign:'center', margin:'0 0 .4rem' }}>Вход</h1>
+        <input className="input" type="email" placeholder="Email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="username" required />
+        <input className="input" type="password" placeholder="Пароль" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" required />
+        {error && <p style={{ color:'#ec7464', fontSize:'.8rem', margin:0 }}>{error}</p>}
+        <button className="btn-gold" type="submit" disabled={busy}>{busy ? <span className="spin" /> : 'Войти'}</button>
+      </form>
+    </div>
+  );
+}
+
 export default function AdminPage() {
-  const { user, token, isAdmin, loading } = useAuth();
+  const { user, token, isAdmin, loading, login } = useAuth();
   const router = useRouter();
   const [tab, setTab]         = useState<AdminTab>('servers');
   const [servers, setServers]     = useState<any[]>([]);
-  const [reviews, setReviews]     = useState<any[]>([]);
   const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
   const [soonVipStatus, setSoonVipStatus] = useState<VipStatus | null>(null);
   const [boosts, setBoosts]       = useState<any[]>([]);
@@ -176,6 +210,21 @@ export default function AdminPage() {
   const [dataLoading, setDataLoading] = useState(false);
   const [toast, setToast]         = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [keyChecking, setKeyChecking] = useState(true);
+
+  // Вход по файлу-ярлыку: открываешь /admin#k=<ключ> → автологин,
+  // ключ сразу стираем из адреса и истории, чтобы не светился.
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const match = hash.match(/[#&]k=([^&]+)/);
+    if (!match) { setKeyChecking(false); return; }
+    const key = decodeURIComponent(match[1]);
+    history.replaceState(null, '', window.location.pathname);
+    api.auth.keyLogin(key)
+      .then(res => login(res.access_token, res.user))
+      .catch(() => {})
+      .finally(() => setKeyChecking(false));
+  }, [login]);
 
   // Модал редактирования
   const [editServer, setEditServer] = useState<any | null>(null);
@@ -196,10 +245,6 @@ export default function AdminPage() {
   });
 
   useEffect(() => {
-    if (!loading && !isAdmin) router.replace('/');
-  }, [loading, isAdmin, router]);
-
-  useEffect(() => {
     if (!token || !isAdmin) return;
     loadTab(tab);
   }, [tab, token, isAdmin]);
@@ -209,7 +254,6 @@ export default function AdminPage() {
     setDataLoading(true);
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
-      if (t === 'reviews')  setReviews(await api.reviews.pending(token));
       if (t === 'requests') setRequests(await api.servers.getRequests(token));
       if (t === 'money') {
         const [vs, svs, bs, sl] = await Promise.all([
@@ -233,27 +277,6 @@ export default function AdminPage() {
     if (!token || !confirm(`Удалить сервер ${id}?`)) return;
     try { await api.servers.delete(id, token); showToast('Удалено'); loadTab('servers'); }
     catch (e: any) { showToast(e.message); }
-  }
-
-  async function approveReview(id: string) {
-    if (!token) return;
-    try { await api.reviews.approve(id, token); showToast('Отзыв одобрен'); loadTab('reviews'); }
-    catch (e: any) { showToast(e.message); }
-  }
-
-  async function rejectReview(id: string) {
-    if (!token) return;
-    try { await api.reviews.delete(id, token); showToast('Отзыв удалён'); loadTab('reviews'); }
-    catch (e: any) { showToast(e.message); }
-  }
-
-  async function recalcAllRatings() {
-    if (!token) return;
-    if (!confirm('Пересчитать рейтинги всех серверов? Исправит залипшие счётчики отзывов после удаления аккаунтов.')) return;
-    try {
-      const res = await api.reviews.recalcAll(token);
-      showToast(`Пересчитано: ${res.recalculated} серверов`);
-    } catch (e: any) { showToast(e.message); }
   }
 
   async function approveRequest(r: any) {
@@ -462,16 +485,17 @@ export default function AdminPage() {
     } catch (e: any) { showToast(`❌ ${e.message}`); }
   }
 
-  if (loading || !isAdmin) return (
+  if (loading || keyChecking) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh', gap:'.6rem', color:'var(--text3)' }}>
       <span className="spin" /> Загрузка...
     </div>
   );
 
+  if (!isAdmin) return <AdminLogin onLogin={login} />;
+
   const pendingRequests = requests.filter(r => r.status === 'pending').length;
   const TABS: { k: AdminTab; l: string }[] = [
     { k: 'servers',  l: `Серверы (${servers.length})` },
-    { k: 'reviews',  l: `Отзывы (${reviews.length})` },
     { k: 'requests', l: `Заявки${pendingRequests ? ` (${pendingRequests})` : ''}` },
     { k: 'money',    l: `Монетизация${vipStatus ? ` (${vipStatus.taken}/${vipStatus.max})` : ''}` },
     { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
@@ -824,36 +848,6 @@ export default function AdminPage() {
             )}
 
             {/* Отзывы на модерации */}
-            {tab === 'reviews' && (
-              <div className={styles.section}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.6rem', flexWrap: 'wrap' }}>
-                  <div className={styles.sectionTitle}>Отзывы на модерации ({reviews.length})</div>
-                  <button className={styles.btnSm} onClick={recalcAllRatings} title="Пересчитать rating/ratingCount на всех серверах">
-                    ↻ Пересчитать рейтинги
-                  </button>
-                </div>
-                {reviews.length === 0 ? <p className={styles.empty}>Нет отзывов на модерации</p> : (
-                  <div className={styles.reviewCards}>
-                    {reviews.map((r: any) => (
-                      <div key={r.id} className={styles.reviewCard}>
-                        <div className={styles.reviewMeta}>
-                          <strong>{r.server?.name}</strong>
-                          <span>от {r.user?.nickname ?? r.user?.email}</span>
-                          <span>{'★'.repeat(r.rating)}</span>
-                          <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleDateString('ru-RU')}</span>
-                        </div>
-                        <p className={styles.reviewTxt}>{r.text}</p>
-                        <div style={{ display:'flex', gap:'.4rem', marginTop:'.6rem' }}>
-                          <button className={`${styles.btnSm} ${styles.btnSuccess}`} onClick={() => approveReview(r.id)}>✓ Одобрить</button>
-                          <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => rejectReview(r.id)}>✕ Удалить</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Заявки */}
             {tab === 'requests' && (
               <div className={styles.section}>

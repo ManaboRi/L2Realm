@@ -42,10 +42,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/`,            lastModified: now, changeFrequency: 'hourly',  priority: 1.0 },
     { url: `${SITE}/coming-soon`, lastModified: now, changeFrequency: 'daily',   priority: 0.8 },
     { url: `${SITE}/blog`,        lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
-    { url: `${SITE}/pricing`,     lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
-    { url: `${SITE}/legal`,       lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
-    { url: `${SITE}/terms`,       lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
-    { url: `${SITE}/privacy`,     lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${SITE}/methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE}/contacts`,    lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
   ];
 
   // Страницы по хроникам — SEO-точки входа

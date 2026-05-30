@@ -2,13 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const BACKEND = process.env.BACKEND_URL || 'http://127.0.0.1:4000';
 
-// Пути, которые НЕ должны быть доступны через публичный proxy.
-// Webhook ЮКассы должен приходить прямо на backend через nginx
-// (nginx отдельным location → backend:4000), иначе X-Forwarded-For
-// от клиента можно спуфить.
-const BLOCKED_PATHS = new Set<string>([
-  'payments/webhook',
-]);
+// Онлайн-оплата удалена — блокировать через прокси больше нечего.
+const BLOCKED_PATHS = new Set<string>([]);
 
 async function proxy(req: NextRequest, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
