@@ -710,16 +710,36 @@
   transform: translateY(-1px);
 }
 
-/* Дата ручной проверки рядом с уровнем доверия */
-.trustBadgeDate {
-  margin-left: .42rem;
-  padding-left: .42rem;
-  border-left: 1px solid currentColor;
-  font-style: normal;
-  font-weight: 600;
-  font-size: .52rem;
-  letter-spacing: .02em;
-  opacity: .85;
+/* Нижняя строка карточки: дата ручной проверки проекта редакцией */
+.cardChecked {
+  display: flex;
+  align-items: center;
+  gap: .34rem;
+  margin-top: .5rem;
+  padding-top: .46rem;
+  border-top: 1px solid rgba(118, 141, 151, .12);
+  color: rgba(232, 221, 186, .5);
+  font-size: .62rem;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardChecked svg {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: #5fcf7a;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.cardChecked span {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Чип активности в строке под баннером. Цвет — по уровню (зелёный → красный). */

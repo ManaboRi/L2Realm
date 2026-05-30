@@ -175,6 +175,96 @@
   margin: .3rem 0 0;
 }
 
+/* Архив миров — компактный список под активными */
+.archiveBox {
+  margin-top: .3rem;
+  padding: .7rem .8rem;
+  border: 1px dashed rgba(118, 141, 151, .28);
+  border-radius: 8px;
+  background: rgba(5, 9, 14, .3);
+}
+
+.archiveHead {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  margin-bottom: .6rem;
+}
+
+.archiveHead span {
+  font-family: 'Cinzel', serif;
+  font-size: .76rem;
+  color: rgba(232, 221, 186, .7);
+}
+
+.archiveHead small {
+  font-size: .68rem;
+  color: var(--text3);
+}
+
+.archiveList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.archiveItem {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(0, 1.6fr) auto;
+  align-items: center;
+  gap: .6rem;
+  padding: .5rem .6rem;
+  border: 1px solid rgba(118, 141, 151, .14);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, .2);
+}
+
+.archiveItemMain {
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
+  min-width: 0;
+}
+
+.archiveItemMain strong {
+  font-size: .82rem;
+  color: rgba(232, 221, 186, .85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archiveItemMain span {
+  font-size: .68rem;
+  color: var(--text3);
+}
+
+.archiveItemActions {
+  display: flex;
+  gap: .35rem;
+  flex: 0 0 auto;
+}
+
+.archiveItemActions button {
+  min-height: 30px;
+  padding: 0 .55rem;
+  border: 1px solid rgba(118, 141, 151, .26);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, .25);
+  color: rgba(232, 221, 186, .8);
+  font-size: .7rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.archiveItemActions button:hover { border-color: rgba(210, 171, 82, .42); color: var(--gold); }
+.archiveItemActions .removeBtn { color: #d27b7b; }
+.archiveItemActions .removeBtn:hover { border-color: rgba(210, 92, 92, .5); color: #e88; }
+
 @media (max-width: 600px) {
   .row { grid-template-columns: 1fr; }
+  .archiveItem { grid-template-columns: 1fr; }
 }

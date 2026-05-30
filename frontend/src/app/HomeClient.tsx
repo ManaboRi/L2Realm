@@ -370,10 +370,6 @@ function HomeServerCard({
   const trust = trustMeta(s.trustLevel);
   const activity = activityMeta(s.activityLevel);
   const checkedAt = s.manualCheckAt ? formatDate(s.manualCheckAt) : '';
-  // Короткая дата для бейджа доверия (без года): «15 мая»
-  const checkedAtShort = s.manualCheckAt
-    ? new Date(s.manualCheckAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '')
-    : '';
   const latestOpening = latestProjectOpening(s);
   const trafficTrend = projectTrafficTrend(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
@@ -408,7 +404,6 @@ function HomeServerCard({
             aria-label="Как мы проверяем серверы — методика"
           >
             {trust.known ? `Доверие ${trust.label}` : 'Проверен'}
-            {checkedAtShort && <em className={styles.trustBadgeDate}>{checkedAtShort}</em>}
           </Link>
         )}
         <div className={styles.cardIdentity}>
@@ -456,6 +451,14 @@ function HomeServerCard({
             <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
           </span>
         </div>
+        {checkedAt && (
+          <div className={styles.cardChecked} title={`Редакция проверяла проект ${checkedAt}`}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+            <span>Проверено редакцией · {checkedAt}</span>
+          </div>
+        )}
       </div>
     </article>
   );

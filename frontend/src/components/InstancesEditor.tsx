@@ -54,6 +54,12 @@ function fromDateTimeLocal(value: string) {
 export function InstancesEditor({ value, onChange }: Props) {
   const uid = useId();
   const list = useMemo(() => Array.isArray(value) ? value : [], [value]);
+  // Делим на активные (редактируются формой) и архивные (свёрнуты в список ниже).
+  // Архивные остаются в данных и показываются на странице проекта во вкладке
+  // «Все открытия» — просто не мешают в редакторе.
+  const indexed = useMemo(() => list.map((inst, idx) => ({ inst, idx })), [list]);
+  const activeItems = useMemo(() => indexed.filter(e => worldLifecycle(e.inst) !== 'archived'), [indexed]);
+  const archivedItems = useMemo(() => indexed.filter(e => worldLifecycle(e.inst) === 'archived'), [indexed]);
 
   function update(idx: number, patch: Partial<ServerInstance>) {
     const next = list.map((it, i) => i === idx ? { ...it, ...patch } : it);
@@ -71,11 +77,15 @@ export function InstancesEditor({ value, onChange }: Props) {
   function add() {
     onChange([...list, emptyInstance()]);
   }
-  function move(idx: number, dir: -1 | 1) {
-    const target = idx + dir;
-    if (target < 0 || target >= list.length) return;
+  // Двигаем активный мир относительно соседнего активного (через архивные перешагиваем),
+  // чтобы порядок не ломался, если архивный мир оказался между активными.
+  function moveActive(pos: number, dir: -1 | 1) {
+    const targetPos = pos + dir;
+    if (targetPos < 0 || targetPos >= activeItems.length) return;
+    const fromIdx = activeItems[pos].idx;
+    const toIdx = activeItems[targetPos].idx;
     const next = [...list];
-    [next[idx], next[target]] = [next[target], next[idx]];
+    [next[fromIdx], next[toIdx]] = [next[toIdx], next[fromIdx]];
     onChange(next);
   }
 
@@ -93,18 +103,19 @@ export function InstancesEditor({ value, onChange }: Props) {
           Нет отдельных миров. Проект будет показан как один запуск. Добавь миры,
           если нужно хранить текущие и прошлые открытия отдельно.
         </p>
+      ) : activeItems.length === 0 ? (
+        <p className={styles.empty}>
+          Активных миров нет — все в архиве (ниже). Добавь новый мир или верни из архива.
+        </p>
       ) : (
         <ul className={styles.list}>
-          {list.map((inst, idx) => {
+          {activeItems.map(({ inst, idx }, pos) => {
             const lifecycle = worldLifecycle(inst);
-            const isArchived = lifecycle === 'archived';
-            const badgeColor = lifecycle === 'upcoming' ? '#d2ab52'
-              : isArchived ? 'rgba(232,221,186,.5)'
-              : '#6ee89e';
+            const badgeColor = lifecycle === 'upcoming' ? '#d2ab52' : '#6ee89e';
             return (
             <li key={inst.id} className={styles.item}>
               <div className={styles.itemHead}>
-                <span className={styles.itemNum}>#{idx + 1}</span>
+                <span className={styles.itemNum}>#{pos + 1}</span>
                 <span
                   title="Статус считается автоматически по дате открытия (кроме архива)"
                   style={{
@@ -117,16 +128,9 @@ export function InstancesEditor({ value, onChange }: Props) {
                   {worldLifecycleLabel(inst)}
                 </span>
                 <div className={styles.itemActions}>
-                  <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} title="Выше">↑</button>
-                  <button type="button" onClick={() => move(idx, 1)} disabled={idx === list.length - 1} title="Ниже">↓</button>
-                  {isArchived ? (
-                    <>
-                      <button type="button" onClick={() => restore(idx)} title="Вернуть из архива">↩</button>
-                      <button type="button" onClick={() => remove(idx)} className={styles.removeBtn} title="Удалить навсегда">✕</button>
-                    </>
-                  ) : (
-                    <button type="button" onClick={() => archive(idx)} className={styles.removeBtn} title="В архив (сохранить в истории проекта)">🗄</button>
-                  )}
+                  <button type="button" onClick={() => moveActive(pos, -1)} disabled={pos === 0} title="Выше">↑</button>
+                  <button type="button" onClick={() => moveActive(pos, 1)} disabled={pos === activeItems.length - 1} title="Ниже">↓</button>
+                  <button type="button" onClick={() => archive(idx)} className={styles.removeBtn} title="В архив (мир уедет в историю проекта)">🗄 В архив</button>
                 </div>
               </div>
 
@@ -212,19 +216,6 @@ export function InstancesEditor({ value, onChange }: Props) {
                 </label>
               </div>
 
-              {isArchived && (
-                <label className={styles.field}>
-                  <span>Примечание к архиву</span>
-                  <input
-                    className="input"
-                    value={inst.statusNote ?? ''}
-                    onChange={e => update(idx, { statusNote: e.target.value })}
-                    placeholder="Например: объединён с Essence x20"
-                    maxLength={160}
-                  />
-                </label>
-              )}
-
               <label className={styles.field}>
                 <span>Короткое описание (одна строка для карточки)</span>
                 <input
@@ -240,6 +231,36 @@ export function InstancesEditor({ value, onChange }: Props) {
             );
           })}
         </ul>
+      )}
+
+      {archivedItems.length > 0 && (
+        <div className={styles.archiveBox}>
+          <div className={styles.archiveHead}>
+            <span>🗄 В архиве ({archivedItems.length})</span>
+            <small>Скрыты из активного списка, но видны на странице проекта во «Все открытия».</small>
+          </div>
+          <ul className={styles.archiveList}>
+            {archivedItems.map(({ inst, idx }) => (
+              <li key={inst.id} className={styles.archiveItem}>
+                <div className={styles.archiveItemMain}>
+                  <strong>{inst.label || inst.rates || inst.chronicle || 'Без названия'}</strong>
+                  <span>{[inst.chronicle, inst.rates].filter(Boolean).join(' · ') || '—'}</span>
+                </div>
+                <input
+                  className="input"
+                  value={inst.statusNote ?? ''}
+                  onChange={e => update(idx, { statusNote: e.target.value })}
+                  placeholder="Примечание (напр. объединён с Essence x20)"
+                  maxLength={160}
+                />
+                <div className={styles.archiveItemActions}>
+                  <button type="button" onClick={() => restore(idx)} title="Вернуть из архива в активные">↩ Вернуть</button>
+                  <button type="button" onClick={() => remove(idx)} className={styles.removeBtn} title="Удалить навсегда (из базы)">✕</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <p className={styles.hint} id={`${uid}-hint`}>
