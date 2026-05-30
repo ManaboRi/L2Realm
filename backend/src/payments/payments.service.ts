@@ -324,5 +324,6 @@ function compactVipSlot(s: any): any {
     instanceId: null,
     instanceLabel: null,
     endDate: s.endDate,
+    server: { id: server.id, name: server.name, icon: server.icon },
   };
 }

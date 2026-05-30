@@ -730,7 +730,7 @@ export default function AdminPage() {
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
                       {vipStatus!.slots.map(slot => (
                         <div key={slot.serverId} style={{ background:'var(--bg2)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
-                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}</strong>
+                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server?.name ?? slot.serverId}</strong>
                           <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
                           <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeVip(slot.serverId)}>Снять</button>
                         </div>
@@ -764,7 +764,7 @@ export default function AdminPage() {
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
                       {soonVipStatus!.slots.map(slot => (
                         <div key={`${slot.serverId}:${slot.instanceId ?? ''}`} style={{ background:'var(--bg2)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
-                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
+                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server?.name ?? slot.serverId}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
                           <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
                           <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeSoonVip(slot.serverId, slot.instanceId)}>Снять</button>
                         </div>
