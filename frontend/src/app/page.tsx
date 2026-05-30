@@ -10,12 +10,12 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'L2Realm — Каталог серверов Lineage 2',
-  description: 'Лучший каталог приватных серверов Lineage 2. Фильтры, честные отзывы, рейтинг.',
+  description: 'Каталог приватных серверов Lineage 2: проверенные проекты, фильтры по хроникам и рейтам, активность и анонсы открытий.',
   alternates: { canonical: SITE },
   openGraph: {
     type: 'website',
     title: 'L2Realm — Каталог серверов Lineage 2',
-    description: 'Лучший каталог приватных серверов Lineage 2. Фильтры, честные отзывы, рейтинг.',
+    description: 'Каталог приватных серверов Lineage 2: проверенные проекты, фильтры по хроникам и рейтам, активность и анонсы открытий.',
     url: SITE,
     siteName: 'L2Realm',
     locale: 'ru_RU',
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'L2Realm — Каталог серверов Lineage 2',
-    description: 'Лучший каталог приватных серверов Lineage 2. Фильтры, честные отзывы, рейтинг.',
+    description: 'Каталог приватных серверов Lineage 2: проверенные проекты, фильтры по хроникам и рейтам, активность и анонсы открытий.',
     images: [DEFAULT_SHARE_IMAGE],
   },
 };

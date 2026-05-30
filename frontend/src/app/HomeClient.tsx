@@ -43,7 +43,6 @@ const SORT_OPTIONS = [
   { value: '', label: 'По умолчанию' },
   { value: 'opened', label: 'Дата открытия' },
   { value: 'votes', label: 'Голоса' },
-  { value: 'rating', label: 'Рейтинг' },
 ] as const;
 
 export function HomeClient(props: HomeClientProps) {
@@ -83,7 +82,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   const totalProjects = stats?.total ?? servers.length;
   const totalServers = stats?.launchCount ?? totalProjects;
   const totalVotes = stats?.totalVotes ?? servers.reduce((sum, server) => sum + (server.totalVotes ?? 0), 0);
-  const totalReviews = stats?.reviewCount ?? servers.reduce((sum, server) => sum + (server.ratingCount ?? 0), 0);
+  const monthlyVotes = stats?.monthlyVotes ?? servers.reduce((sum, server) => sum + (server.monthlyVotes ?? 0), 0);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -228,7 +227,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
             <section className={styles.hero}>
               <div className={styles.heroCopy}>
                 <h1>Твой главный навигатор <br /><span>в мире Lineage 2</span></h1>
-                <p>Каталог приватных серверов с фильтрами, отзывами, голосованием и честной статистикой проектов.</p>
+                <p>Каталог приватных серверов с фильтрами, проверкой проектов, голосованием и честной статистикой.</p>
 
                 <div className={styles.searchControls}>
                   <div className={styles.searchWrap}>
@@ -259,10 +258,10 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
 
               <div className={styles.heroStatsWrap}>
                 <div className={styles.heroStats}>
-                  <Metric tone="gold" label="Миров" value={totalServers} />
-                  <Metric tone="blue" label="Отзывы" value={totalReviews} />
-                  <Metric tone="amber" label="Голосов" value={totalVotes} />
-                  <Metric tone="red" label="Проектов" value={totalProjects} />
+                  <Metric tone="gold" label="Проектов" value={totalProjects} />
+                  <Metric tone="blue" label="Миров" value={totalServers} />
+                  <Metric tone="amber" label="Голосов за месяц" value={monthlyVotes} />
+                  <Metric tone="red" label="Голосов всего" value={totalVotes} />
                 </div>
                 <div className={styles.heroStatsActions}>
                   <Link href="/methodology" className={styles.metricMethodology}>
@@ -371,6 +370,10 @@ function HomeServerCard({
   const trust = trustMeta(s.trustLevel);
   const activity = activityMeta(s.activityLevel);
   const checkedAt = s.manualCheckAt ? formatDate(s.manualCheckAt) : '';
+  // Короткая дата для бейджа доверия (без года): «15 мая»
+  const checkedAtShort = s.manualCheckAt
+    ? new Date(s.manualCheckAt).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '')
+    : '';
   const latestOpening = latestProjectOpening(s);
   const trafficTrend = projectTrafficTrend(s);
   const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
@@ -405,6 +408,7 @@ function HomeServerCard({
             aria-label="Как мы проверяем серверы — методика"
           >
             {trust.known ? `Доверие ${trust.label}` : 'Проверен'}
+            {checkedAtShort && <em className={styles.trustBadgeDate}>{checkedAtShort}</em>}
           </Link>
         )}
         <div className={styles.cardIdentity}>
@@ -468,9 +472,9 @@ function ServerIcon({ server, small, eager = false }: { server: Server; small?: 
 }
 
 function getServerBadge(server: Server) {
-  if (server._isVip || server.vip) return 'VIP';
+  if (server._isVip || server.vip) return 'РЕКОМЕНДУЕМ';
   if (server._isSod) return 'СЕРВЕР НЕДЕЛИ';
-  if (server._isBoosted) return 'БУСТ';
+  if (server._isBoosted) return 'В ФОКУСЕ';
   return '';
 }
 

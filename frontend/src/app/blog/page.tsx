@@ -262,7 +262,6 @@ function ArticleStats({ article, compact = false }: { article: Article; compact?
     <span className={`${styles.stats} ${compact ? styles.statsCompact : ''}`}>
       <span title="Время чтения"><i className={`${styles.statIcon} ${styles.statClock}`} aria-hidden="true" />{readingTime(article.content)} мин</span>
       <span title="Просмотры"><i className={`${styles.statIcon} ${styles.statEye}`} aria-hidden="true" />{formatMetric(articleViews(article))}</span>
-      <span title="Комментарии"><i className={`${styles.statIcon} ${styles.statComment}`} aria-hidden="true" />0</span>
     </span>
   );
 }
@@ -486,11 +485,6 @@ export default async function BlogPage({ searchParams }: Props) {
               <div className={styles.sideArticles}>
                 {latest.map(article => <SidebarArticle key={article.id} article={article} />)}
               </div>
-            </section>
-
-            <section className={styles.sideBlock}>
-              <div className={styles.sideTitle}>Последние комментарии</div>
-              <p className={styles.sideEmpty}>Комментарии к статьям добавим отдельным аккуратным блоком, сейчас раздел подготовлен под них.</p>
             </section>
           </aside>
         </div>

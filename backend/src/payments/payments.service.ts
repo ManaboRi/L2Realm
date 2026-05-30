@@ -61,14 +61,10 @@ export class PaymentsService {
     const soonOpening = findSoonOpening(server, instanceId);
     if (!soonOpening) throw new BadRequestException('Выберите будущий запуск из «Скоро открытие»');
     if (isSoonOpeningVipActive(server, soonOpening.instanceId)) {
-      throw new BadRequestException('У этого запуска уже активен VIP в «Скоро открытие»');
+      throw new BadRequestException('Этот запуск уже в «Рекомендуем»');
     }
 
-    const status = await this.getSoonVipStatus();
-    if (status.taken >= SOON_VIP_MAX) {
-      throw new BadRequestException(`Все ${SOON_VIP_MAX} VIP-места в «Скоро открытие» заняты`);
-    }
-
+    // Лимит мест убран — добавляем сколько нужно вручную из админки.
     return this.activateSoonVip(serverId, null, soonOpening.instanceId);
   }
 

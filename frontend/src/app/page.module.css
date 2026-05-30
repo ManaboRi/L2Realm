@@ -346,8 +346,8 @@
 }
 
 .heroStatsActions {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  justify-content: flex-end;
   margin-top: .42rem;
 }
 
@@ -421,45 +421,46 @@
   letter-spacing: .06em;
 }
 
+/* Лёгкая ссылка-«как считаем» под статами, без давящего золотого фона */
 .metricMethodology {
-  grid-column: 2;
-  justify-self: center;
-  min-height: 25px;
+  min-height: 24px;
   display: inline-flex;
   align-items: center;
-  gap: .34rem;
-  padding: 0 .62rem;
-  border: 1px solid #d4ab4c;
-  border-radius: 4px;
-  background: linear-gradient(135deg, #d7ae50, #af7c29);
-  color: #080b10;
-  font-weight: 700;
-  font-size: .59rem;
+  gap: .4rem;
+  padding: 0 .6rem 0 .4rem;
+  border: 1px solid rgba(210, 171, 82, .26);
+  border-radius: 999px;
+  background: rgba(210, 171, 82, .07);
+  color: rgba(246, 237, 208, .82);
+  font-weight: 600;
+  font-size: .6rem;
   line-height: 1;
+  letter-spacing: .04em;
   text-decoration: none;
   text-transform: uppercase;
+  transition: color .16s, border-color .16s, background .16s;
 }
 
 .metricMethodology span {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(8, 11, 16, .42);
   border-radius: 50%;
-  padding: 0;
+  background: linear-gradient(135deg, #d7ae50, #af7c29);
+  color: #080b10;
   font-family: 'DM Sans', sans-serif;
   font-weight: 700;
-  line-height: 14px;
-  font-size: .56rem;
+  line-height: 1;
+  font-size: .58rem;
 }
 
 .metricMethodology:hover {
-  border-color: #f0cf78;
-  background: linear-gradient(135deg, #edca72, #c38e32);
-  color: #080b10;
+  border-color: rgba(210, 171, 82, .5);
+  background: rgba(210, 171, 82, .14);
+  color: #f6edd0;
 }
 
 .sortPills {
@@ -707,6 +708,18 @@
   filter: brightness(1.18);
   background: rgba(5, 8, 12, .8);
   transform: translateY(-1px);
+}
+
+/* Дата ручной проверки рядом с уровнем доверия */
+.trustBadgeDate {
+  margin-left: .42rem;
+  padding-left: .42rem;
+  border-left: 1px solid currentColor;
+  font-style: normal;
+  font-weight: 600;
+  font-size: .52rem;
+  letter-spacing: .02em;
+  opacity: .85;
 }
 
 /* Чип активности в строке под баннером. Цвет — по уровню (зелёный → красный). */

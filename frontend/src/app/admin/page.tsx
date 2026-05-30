@@ -8,7 +8,7 @@ import { isOpeningStillSoon } from '@/lib/opening';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus } from '@/lib/types';
-import { VIP_MAX, SOON_VIP_MAX, CHRONICLES, SERVER_TYPES } from '@/lib/types';
+import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'requests' | 'money' | 'add';
@@ -325,12 +325,12 @@ export default function AdminPage() {
 
   async function grantVip(serverId: string) {
     if (!token) return;
-    try { await api.payments.grantVip(serverId, token); showToast('◆ VIP выдан'); loadTab(tab); }
+    try { await api.payments.grantVip(serverId, token); showToast('◆ Добавлен в «Рекомендуем»'); loadTab(tab); }
     catch (e: any) { showToast(e.message); }
   }
   async function revokeVip(serverId: string) {
-    if (!token || !confirm('Снять VIP с этого сервера?')) return;
-    try { await api.payments.revokeVip(serverId, token); showToast('VIP снят'); loadTab(tab); }
+    if (!token || !confirm('Убрать из «Рекомендуем»?')) return;
+    try { await api.payments.revokeVip(serverId, token); showToast('Убран из «Рекомендуем»'); loadTab(tab); }
     catch (e: any) { showToast(e.message); }
   }
   async function grantSoonVipFromValue(value: string) {
@@ -338,17 +338,17 @@ export default function AdminPage() {
     const [serverId, instanceId = ''] = value.split('::');
     try {
       await api.payments.grantSoonVip(serverId, instanceId || null, token);
-      showToast('◆ VIP Скоро выдан');
+      showToast('◆ Добавлен в «Рекомендуем · Скоро»');
       loadTab(tab);
     } catch (e: any) {
       showToast(e.message);
     }
   }
   async function revokeSoonVip(serverId: string, instanceId?: string | null) {
-    if (!token || !confirm('Снять VIP Скоро с этого запуска?')) return;
+    if (!token || !confirm('Убрать из «Рекомендуем · Скоро»?')) return;
     try {
       await api.payments.revokeSoonVip(serverId, instanceId, token);
-      showToast('VIP Скоро снят');
+      showToast('Убран из «Рекомендуем · Скоро»');
       loadTab(tab);
     } catch (e: any) {
       showToast(e.message);
@@ -356,12 +356,12 @@ export default function AdminPage() {
   }
   async function grantBoost(serverId: string) {
     if (!token) return;
-    try { await api.payments.grantBoost(serverId, token); showToast('🔥 Буст выдан'); loadTab(tab); }
+    try { await api.payments.grantBoost(serverId, token); showToast('◆ В фокусе'); loadTab(tab); }
     catch (e: any) { showToast(e.message); }
   }
   async function revokeBoost(serverId: string) {
-    if (!token || !confirm('Снять буст с этого сервера?')) return;
-    try { await api.payments.revokeBoost(serverId, token); showToast('Буст снят'); loadTab(tab); }
+    if (!token || !confirm('Убрать из «В фокусе»?')) return;
+    try { await api.payments.revokeBoost(serverId, token); showToast('Убран из «В фокусе»'); loadTab(tab); }
     catch (e: any) { showToast(e.message); }
   }
 
@@ -497,7 +497,7 @@ export default function AdminPage() {
   const TABS: { k: AdminTab; l: string }[] = [
     { k: 'servers',  l: `Серверы (${servers.length})` },
     { k: 'requests', l: `Заявки${pendingRequests ? ` (${pendingRequests})` : ''}` },
-    { k: 'money',    l: `Монетизация${vipStatus ? ` (${vipStatus.taken}/${vipStatus.max})` : ''}` },
+    { k: 'money',    l: `Продвижение${vipStatus ? ` (${vipStatus.taken})` : ''}` },
     { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
   ];
 
@@ -672,8 +672,8 @@ export default function AdminPage() {
                           <td>{hasProjectLaunches(s) ? '—' : s.rates}</td>
                           <td style={{ fontSize:'.72rem' }}>
                             <div style={{ display:'flex', flexDirection:'column', gap:'.15rem' }}>
-                              {s._isVip && <span className={styles.planBadge}>◆ VIP{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
-                              {s._isBoosted && <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>🔥 Буст{s._boostEnd ? ` · до ${new Date(s._boostEnd).toLocaleDateString('ru-RU')}` : ''}</span>}
+                              {s._isVip && <span className={styles.planBadge}>◆ Рекомендуем{s.subscription?.endDate ? ` · до ${new Date(s.subscription.endDate).toLocaleDateString('ru-RU')}` : ''}</span>}
+                              {s._isBoosted && <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>◆ В фокусе{s._boostEnd ? ` · до ${new Date(s._boostEnd).toLocaleDateString('ru-RU')}` : ''}</span>}
                               {s.statusOverride && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#5AB482', borderColor:'rgba(90,180,130,.25)' }}>Статус: {s.statusOverride}</span>}
                               {s.voteRewardsEnabled && <span className={styles.planBadge} style={{ background:'rgba(90,180,130,.1)', color:'#8ED9A7', borderColor:'rgba(90,180,130,.25)' }}>Vote Manager</span>}
                               {!s._isVip && !s._isBoosted && !s.statusOverride && !s.voteRewardsEnabled && <span style={{ color:'var(--text3)' }}>—</span>}
@@ -697,7 +697,7 @@ export default function AdminPage() {
             {/* Монетизация */}
             {tab === 'money' && (
               <div className={styles.section} style={{ gap:'1.4rem' }}>
-                <div className={styles.sectionTitle}>Монетизация</div>
+                <div className={styles.sectionTitle}>Продвижение</div>
 
                 {sodServer && (
                   <div style={{ background:'var(--bg2)', border:'1px solid rgba(90,180,130,.35)', borderRadius:3, padding:'.8rem 1rem', display:'flex', alignItems:'center', gap:'.8rem', flexWrap:'wrap' }}>
@@ -707,99 +707,76 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* VIP слоты */}
+                {/* «Рекомендуем» — поднятие проекта (без лимита мест) */}
                 <div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'.8rem', flexWrap:'wrap', marginBottom:'.7rem' }}>
-                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'var(--gold)', margin:0 }}>◆ VIP слоты</h3>
-                    <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>
-                      {vipStatus ? `${vipStatus.taken} из ${vipStatus.max}` : '…'}
-                      {vipStatus?.nextFreeAt && vipStatus.taken >= vipStatus.max && ` · ближайшее освободится ${new Date(vipStatus.nextFreeAt).toLocaleDateString('ru-RU')}`}
-                    </span>
+                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'var(--gold)', margin:0 }}>◆ Рекомендуем</h3>
+                    <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>{vipStatus ? `${vipStatus.taken} активн.` : '…'}</span>
+                    <select
+                      className="input"
+                      style={{ fontSize:'.76rem', padding:'.3rem .5rem', marginLeft:'auto', width:'auto' }}
+                      defaultValue=""
+                      onChange={e => { if (e.target.value) { grantVip(e.target.value); e.target.value = ''; } }}
+                    >
+                      <option value="">+ Добавить в «Рекомендуем» (31 дн)…</option>
+                      {servers
+                        .filter((sv: any) => !vipServerIds.has(sv.id))
+                        .map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
+                    </select>
                   </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
-                    {Array.from({ length: VIP_MAX }).map((_, i) => {
-                      const slot = vipStatus?.slots[i];
-                      return (
-                        <div key={i} style={{ background:'var(--bg2)', border:`1px solid ${slot ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em' }}>Слот #{i+1}</div>
-                          {slot ? (
-                            <>
-                              <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}</strong>
-                              <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
-                              <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeVip(slot.serverId)}>Снять VIP</button>
-                            </>
-                          ) : (
-                            <>
-                              <span style={{ fontSize:'.84rem', color:'#5AB482' }}>Свободно</span>
-                              <select
-                                className="input"
-                                style={{ fontSize:'.76rem', padding:'.3rem .5rem' }}
-                                defaultValue=""
-                                onChange={e => { if (e.target.value) { grantVip(e.target.value); e.target.value = ''; } }}
-                              >
-                                <option value="">Выдать VIP…</option>
-                                {servers
-                                  .filter((sv: any) => !vipServerIds.has(sv.id))
-                                  .map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
-                              </select>
-                            </>
-                          )}
+                  {(vipStatus?.slots.length ?? 0) === 0 ? (
+                    <p className={styles.empty}>Пока никого не рекомендуем</p>
+                  ) : (
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
+                      {vipStatus!.slots.map(slot => (
+                        <div key={slot.serverId} style={{ background:'var(--bg2)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
+                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}</strong>
+                          <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
+                          <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeVip(slot.serverId)}>Снять</button>
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* VIP Скоро открытие */}
+                {/* «Рекомендуем» в «Скоро открытие» (без лимита мест) */}
                 <div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'.8rem', flexWrap:'wrap', marginBottom:'.7rem' }}>
-                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'var(--gold)', margin:0 }}>◆ VIP Скоро открытие</h3>
-                    <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>
-                      {soonVipStatus ? `${soonVipStatus.taken} из ${soonVipStatus.max}` : '…'}
-                      {soonVipStatus?.nextFreeAt && soonVipStatus.taken >= soonVipStatus.max && ` · ближайшее освободится ${new Date(soonVipStatus.nextFreeAt).toLocaleDateString('ru-RU')}`}
-                    </span>
+                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'var(--gold)', margin:0 }}>◆ Рекомендуем · Скоро открытие</h3>
+                    <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>{soonVipStatus ? `${soonVipStatus.taken} активн.` : '…'}</span>
+                    <select
+                      className="input"
+                      style={{ fontSize:'.76rem', padding:'.3rem .5rem', marginLeft:'auto', width:'auto' }}
+                      defaultValue=""
+                      onChange={e => { if (e.target.value) { grantSoonVipFromValue(e.target.value); e.target.value = ''; } }}
+                    >
+                      <option value="">+ Добавить (до открытия)…</option>
+                      {soonVipOptions.map(o => (
+                        <option key={o.key} value={o.key}>
+                          {o.label} · {new Date(o.openedAt).toLocaleDateString('ru-RU')}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
-                    {Array.from({ length: SOON_VIP_MAX }).map((_, i) => {
-                      const slot = soonVipStatus?.slots[i];
-                      return (
-                        <div key={i} style={{ background:'var(--bg2)', border:`1px solid ${slot ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
-                          <div style={{ fontFamily:"'Cinzel',serif", fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.14em' }}>Слот #{i+1}</div>
-                          {slot ? (
-                            <>
-                              <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
-                              <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
-                              <span style={{ fontSize:'.72rem', color:'var(--text3)' }}>{slot.instanceId ? 'Оплачен конкретный запуск' : 'VIP проекта'}</span>
-                              <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeSoonVip(slot.serverId, slot.instanceId)}>Снять VIP Скоро</button>
-                            </>
-                          ) : (
-                            <>
-                              <span style={{ fontSize:'.84rem', color:'#5AB482' }}>Свободно</span>
-                              <select
-                                className="input"
-                                style={{ fontSize:'.76rem', padding:'.3rem .5rem' }}
-                                defaultValue=""
-                                onChange={e => { if (e.target.value) { grantSoonVipFromValue(e.target.value); e.target.value = ''; } }}
-                              >
-                                <option value="">Выдать VIP Скоро…</option>
-                                {soonVipOptions.map(o => (
-                                  <option key={o.key} value={o.key}>
-                                    {o.label} · {new Date(o.openedAt).toLocaleDateString('ru-RU')}
-                                  </option>
-                                ))}
-                              </select>
-                            </>
-                          )}
+                  {(soonVipStatus?.slots.length ?? 0) === 0 ? (
+                    <p className={styles.empty}>Пока никого не рекомендуем в «Скоро»</p>
+                  ) : (
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:'.7rem' }}>
+                      {soonVipStatus!.slots.map(slot => (
+                        <div key={`${slot.serverId}:${slot.instanceId ?? ''}`} style={{ background:'var(--bg2)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.8rem 1rem', display:'flex', flexDirection:'column', gap:'.4rem' }}>
+                          <strong style={{ fontSize:'.9rem', color:'var(--text)' }}>{slot.server.name}{slot.instanceLabel ? ` · ${slot.instanceLabel}` : ''}</strong>
+                          <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>до {new Date(slot.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' })}</span>
+                          <button className={`${styles.btnSm} ${styles.btnDanger}`} style={{ alignSelf:'flex-start' }} onClick={() => revokeSoonVip(slot.serverId, slot.instanceId)}>Снять</button>
                         </div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Бусты */}
                 <div>
                   <div style={{ display:'flex', alignItems:'baseline', gap:'.8rem', flexWrap:'wrap', marginBottom:'.7rem' }}>
-                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'#F08C46', margin:0 }}>🔥 Активные бусты</h3>
+                    <h3 style={{ fontFamily:"'Cinzel',serif", fontSize:'.86rem', color:'#F08C46', margin:0 }}>◆ В фокусе</h3>
                     <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>{boosts.filter(b => new Date(b.endDate) > new Date()).length} активн.</span>
                     <select
                       className="input"
@@ -807,7 +784,7 @@ export default function AdminPage() {
                       defaultValue=""
                       onChange={e => { if (e.target.value) { grantBoost(e.target.value); e.target.value = ''; } }}
                     >
-                      <option value="">+ Выдать буст (7 дн)…</option>
+                      <option value="">+ Добавить в «В фокусе» (7 дн)…</option>
                       {servers
                         .filter((sv: any) => !boostServerIds.has(sv.id))
                         .map((sv: any) => <option key={sv.id} value={sv.id}>{sv.name}</option>)}
@@ -830,7 +807,7 @@ export default function AdminPage() {
                                 <td style={{ fontSize:'.74rem' }}>{new Date(b.endDate).toLocaleDateString('ru-RU', { day:'numeric', month:'long' })}</td>
                                 <td>
                                   {active
-                                    ? <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>🔥 в топе</span>
+                                    ? <span className={styles.planBadge} style={{ background:'rgba(240,140,70,.1)', color:'#F08C46', borderColor:'rgba(240,140,70,.25)' }}>◆ в фокусе</span>
                                     : <span style={{ fontSize:'.72rem', color:'var(--text3)' }}>истёк</span>}
                                 </td>
                                 <td>

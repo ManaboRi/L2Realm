@@ -89,35 +89,22 @@ export default async function Page({ params }: Props) {
   const canonical = `${SITE}/servers/${id}`;
   const image = absoluteUrl(server.banner || server.icon) || `${SITE}/icon.svg`;
 
-  // Product schema (JSON-LD) — даёт Google возможность показать звёздочки
-  // и количество отзывов прямо в выдаче. Offer нужен Google для страниц без
-  // отзывов, а AggregateRating добавляем только когда есть реальные оценки.
+  // VideoGame schema (JSON-LD) — точнее Product для игрового проекта: помогает
+  // Яндексу/Google понять, что это игровой сервер Lineage 2, без «товарных»
+  // полей (цены/рейтинга), которые после отказа от отзывов стали неуместны.
   const productSchema: any = {
     '@context': 'https://schema.org',
-    '@type': 'Product',
+    '@type': 'VideoGame',
     name: server.name,
     description: server.shortDesc || `Приватный сервер Lineage 2 ${server.chronicle} ${server.rates}`,
     image,
-    brand: { '@type': 'Brand', name: 'L2Realm' },
-    category: `Lineage 2 ${server.chronicle}`,
-    offers: {
-      '@type': 'Offer',
-      url: canonical,
-      price: '0',
-      priceCurrency: 'RUB',
-      availability: 'https://schema.org/InStock',
-      itemCondition: 'https://schema.org/NewCondition',
-    },
+    url: canonical,
+    gamePlatform: 'PC',
+    applicationCategory: 'Game',
+    genre: 'MMORPG',
+    inLanguage: 'ru',
+    publisher: { '@type': 'Organization', name: 'L2Realm', url: SITE },
   };
-  if (server.ratingCount > 0) {
-    productSchema.aggregateRating = {
-      '@type': 'AggregateRating',
-      ratingValue: server.rating.toFixed(1),
-      reviewCount: server.ratingCount,
-      bestRating: 5,
-      worstRating: 1,
-    };
-  }
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',

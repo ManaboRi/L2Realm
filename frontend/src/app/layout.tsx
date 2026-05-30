@@ -13,8 +13,8 @@ export const metadata: Metadata = {
     default: 'L2Realm — Каталог серверов Lineage 2',
     template: '%s | L2Realm',
   },
-  description: 'Лучший каталог приватных серверов Lineage 2. Фильтры, честные отзывы, рейтинг.',
-  keywords: 'lineage 2, l2, приватный сервер, каталог',
+  description: 'Каталог приватных серверов Lineage 2: проверенные проекты, фильтры по хроникам и рейтам, активность, голоса игроков и анонсы открытий.',
+  keywords: 'lineage 2, l2, приватный сервер, каталог, сервера л2, мониторинг lineage 2',
   openGraph: {
     type: 'website',
     locale: 'ru_RU',
@@ -60,7 +60,7 @@ const organizationSchema = {
   url: SITE,
   logo: `${SITE}/favicon.png`,
   image: `${SITE}${DEFAULT_SHARE_IMAGE}`,
-  description: 'Каталог приватных серверов Lineage 2. Фильтры, отзывы, рейтинг.',
+  description: 'Каталог приватных серверов Lineage 2: проверенные проекты, фильтры, активность и анонсы открытий.',
   sameAs: [
     'https://t.me/l2realm_ru',
     'https://vk.com/l2realmru',
