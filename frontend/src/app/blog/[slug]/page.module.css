@@ -148,36 +148,6 @@
   line-height: 1.6;
 }
 
-.saveArticleButton {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: .42rem;
-  padding: 0 .62rem;
-  border: 1px solid rgba(210, 171, 82, .24);
-  border-radius: 6px;
-  background: rgba(7, 11, 16, .46);
-  color: rgba(232, 221, 186, .78);
-  font-family: 'DM Sans', sans-serif;
-  font-size: .72rem;
-  letter-spacing: 0;
-  text-transform: none;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: border-color .15s, background .15s, color .15s, transform .15s;
-}
-
-.saveArticleButton:hover,
-.saveArticleButtonActive {
-  border-color: rgba(210, 171, 82, .48);
-  background: rgba(210, 171, 82, .08);
-  color: var(--gold);
-}
-
-.saveArticleButton:active {
-  transform: translateY(1px);
-}
-
 .quickSummary {
   margin: .15rem 1.5rem 1.6rem;
   padding: 1.05rem;

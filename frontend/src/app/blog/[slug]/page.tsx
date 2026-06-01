@@ -6,7 +6,6 @@ import type { Article, Server, ServerInstance } from '@/lib/types';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
 import { activityMeta } from '@/lib/project-metrics';
 import { isOpeningStillSoon } from '@/lib/opening';
-import { ArticleSaveButton } from './ArticleSaveButton';
 import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -620,15 +619,6 @@ export default async function BlogPostPage({ params }: Props) {
                   </time>
                   <span className={styles.metaDot}>·</span>
                   <span>{readingTime(article.content)} мин чтения</span>
-                  <ArticleSaveButton
-                    article={{
-                      slug: article.slug,
-                      title: article.title,
-                      description: article.description,
-                      image: article.image,
-                      category: article.category,
-                    }}
-                  />
                   <span className={styles.metaDot}>·</span>
                   <time className={styles.updatedMeta} dateTime={modifiedDate}>
                     Обновлено {fmtDate(modifiedDate)}
