@@ -104,9 +104,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     fetchBackend<Article[]>('/articles'),
   ]);
 
-  const initialTopVotes = [...(topPool?.data ?? [])]
-    .sort((left, right) => (right.totalVotes ?? right.weeklyVotes ?? 0) - (left.totalVotes ?? left.weeklyVotes ?? 0))
-    .slice(0, 5);
+  const initialTopVotes = selectWeeklyRailServers(topPool?.data ?? []);
 
   return (
     <HomeClient
@@ -117,6 +115,41 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       initialComingSoon={(comingSoon ?? []).slice(0, 5)}
       initialTopVotes={initialTopVotes}
       initialArticles={(articles ?? []).filter(article => article.publishedAt).slice(0, 4)}
+      initialRailOk={Boolean(comingSoon && topPool && articles)}
     />
   );
+}
+
+function weeklyVoteCount(server: Server): number {
+  return Math.max(0, Number(server.weeklyVotes ?? 0));
+}
+
+function selectWeeklyRailServers(servers: Server[]): Server[] {
+  const ranked = [...servers]
+    .filter(server => weeklyVoteCount(server) > 0)
+    .sort((left, right) => weeklyVoteCount(right) - weeklyVoteCount(left))
+    .slice(0, 5);
+
+  if (ranked.length > 0) return ranked;
+  return stableShuffle(servers, weekSalt()).slice(0, 5);
+}
+
+function weekSalt() {
+  const now = new Date();
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  return `${now.getUTCFullYear()}-${week}`;
+}
+
+function stableShuffle<T extends { id: string }>(items: T[], salt: string): T[] {
+  return [...items].sort((left, right) => stableHash(`${salt}:${left.id}`) - stableHash(`${salt}:${right.id}`));
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }

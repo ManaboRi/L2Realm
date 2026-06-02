@@ -102,6 +102,7 @@ model Server {
   monitorLogs  MonitorLog[]
   favorites    Favorite[]
   openingReminders OpeningReminder[]
+  openingWaits OpeningWait[]
   boosts       Boost[]
   votes        Vote[]
 }
@@ -135,6 +136,22 @@ model OpeningReminder {
   @@unique([userId, serverId, instanceId])
   @@index([userId, notifyAt])
   @@index([notifyAt, notifiedAt])
+}
+
+model OpeningWait {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  instanceId String   @default("")
+  ipHash     String
+  weekKey    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([serverId, instanceId, ipHash, weekKey])
+  @@index([serverId, instanceId, weekKey])
+  @@index([weekKey, createdAt])
+  @@index([ipHash, weekKey])
 }
 
 // ── Подписки / Тарифы ─────────────────────────

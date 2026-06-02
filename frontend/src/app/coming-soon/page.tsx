@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { Server } from '@/lib/types';
+import type { Article, Server } from '@/lib/types';
 import { ComingSoonClient } from './ComingSoonClient';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -33,7 +33,17 @@ async function fetchComingSoon(): Promise<Server[]> {
   }
 }
 
+async function fetchArticles(): Promise<Article[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/articles`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    return (await res.json()) as Article[];
+  } catch {
+    return [];
+  }
+}
+
 export default async function Page() {
-  const servers = await fetchComingSoon();
-  return <ComingSoonClient initialServers={servers} />;
+  const [servers, articles] = await Promise.all([fetchComingSoon(), fetchArticles()]);
+  return <ComingSoonClient initialServers={servers} initialArticles={articles.filter(article => article.publishedAt).slice(0, 4)} initialNow={Date.now()} />;
 }

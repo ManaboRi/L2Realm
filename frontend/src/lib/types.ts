@@ -17,6 +17,7 @@ export interface ServerInstance {
   statusNote?: string | null;
   soonVipUntil?: string | null;
   soonVipPaymentId?: string | null;
+  waitsWeek?: number;
   onlineMode?: 'off' | 'manual' | 'estimated' | 'next-json' | 'html-json-var' | 'html-regex';
   onlineManual?: number | null;
   onlineValue?: number | null;
@@ -75,6 +76,7 @@ export interface Server {
   totalVotes?:   number;
   monthlyVotes?: number;
   weeklyVotes?:  number;
+  waitsWeek?: number;
   voteRewardsEnabled?: boolean;
   manualCheckAt?: string | null;
   trustLevel?: 'A' | 'B' | 'C' | null;
@@ -105,6 +107,32 @@ export interface VoteSummary {
   rewardsEnabled: boolean;
   top: Array<{ place: number; nickname: string; votes: number; lastVoteAt: string | null }>;
   recent: Array<{ nickname: string; votedAt: string }>;
+}
+
+export interface OpeningWaitResult {
+  ok: boolean;
+  counted: boolean;
+  key: string;
+  count: number;
+  weekKey: string;
+}
+
+export interface OpeningWaitTopItem {
+  place: number;
+  key: string;
+  serverId: string;
+  instanceId: string | null;
+  count: number;
+  server: {
+    id: string;
+    name: string;
+    icon: string | null;
+    abbr?: string | null;
+    chronicle: string;
+    rates: string;
+    openedDate?: string | null;
+    label?: string | null;
+  } | null;
 }
 
 export interface Subscription {

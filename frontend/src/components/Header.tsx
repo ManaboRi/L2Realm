@@ -75,7 +75,7 @@ export function Header() {
 
         <div className={styles.right}>
           <Link href="/contacts" className={navClass('/contacts', styles.contactsLink)} onClick={closeMenu}>
-            <span className={styles.navText}>Контакты</span>
+            <span className={styles.navText}>Добавить сервер</span>
           </Link>
           {isAdmin && (
             <Link href="/admin" className={navClass('/admin', styles.navAdmin)} onClick={closeMenu}>

@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder } from './types';
+import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -176,5 +176,19 @@ export const api = {
       const q = instanceId ? `?instanceId=${encodeURIComponent(instanceId)}` : '';
       return request<any>(`/opening-reminders/${serverId}${q}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
     },
+  },
+
+  openingWaits: {
+    wait: (data: { serverId: string; instanceId?: string | null }) =>
+      request<OpeningWaitResult>('/opening-waits', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    status: (keys: string[]) => {
+      const q = new URLSearchParams({ keys: keys.join(',') }).toString();
+      return request<Record<string, boolean>>(`/opening-waits/status?${q}`);
+    },
+    top: (limit = 5) =>
+      request<OpeningWaitTopItem[]>(`/opening-waits/top?limit=${limit}`),
   },
 };

@@ -39,6 +39,7 @@ type HomeClientProps = {
   initialComingSoon?: Server[];
   initialTopVotes?: Server[];
   initialArticles?: Article[];
+  initialRailOk?: boolean;
 };
 
 const PUBLIC_SITE = 'https://l2realm.ru';
@@ -93,7 +94,7 @@ export function HomeClient(props: HomeClientProps) {
   );
 }
 
-function HomeContent({ initialServers, initialCounts, initialPages, initialOk, initialComingSoon = [], initialTopVotes = [], initialArticles = [] }: HomeClientProps) {
+function HomeContent({ initialServers, initialCounts, initialPages, initialOk, initialComingSoon = [], initialTopVotes = [], initialArticles = [], initialRailOk = false }: HomeClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -125,6 +126,7 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
 
   useEffect(() => {
+    if (initialRailOk) return;
     let cancelled = false;
 
     api.servers.comingSoon()
@@ -136,10 +138,7 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
     api.servers.list({ page: '1', limit: '100', compact: 'true' })
       .then(res => {
         if (cancelled) return;
-        const ranked = [...res.data]
-          .sort((left, right) => (right.totalVotes ?? right.weeklyVotes ?? 0) - (left.totalVotes ?? left.weeklyVotes ?? 0))
-          .slice(0, 5);
-        setTopVotes(ranked);
+        setTopVotes(selectWeeklyRailServers(res.data));
       })
       .catch(() => {});
 
@@ -152,7 +151,7 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [initialRailOk]);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -493,6 +492,7 @@ function FilterItem({ label, active, count, dotColor, onClick }: { label: string
 }
 
 function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[]; topVotes: Server[]; articles: Article[] }) {
+  const hasWeeklyVotes = topVotes.some(server => weeklyVoteCount(server) > 0);
   return (
     <aside className={styles.rightRail} aria-label="Сводка каталога">
       <section className={styles.railSection}>
@@ -522,8 +522,7 @@ function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[
 
       <section className={styles.railSection}>
         <div className={styles.railHead}>
-          <h2>Топ голосов</h2>
-          <Link href="/rating">Рейтинг</Link>
+          <h2>Топ голосов за неделю</h2>
         </div>
         <div className={styles.railList}>
           {topVotes.length > 0 ? topVotes.map((server, index) => (
@@ -534,18 +533,18 @@ function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[
                 <strong>{server.name}</strong>
                 <em>{collectCardMeta(server).chronicles}</em>
               </span>
-              <span className={styles.railVotes}>+ {(server.totalVotes ?? server.weeklyVotes ?? 0).toLocaleString('ru-RU')}</span>
+              <span className={styles.railVotes}>{hasWeeklyVotes ? `+ ${weeklyVoteCount(server).toLocaleString('ru-RU')}` : '→'}</span>
             </Link>
           )) : (
-            <span className={styles.railEmpty}>Голоса появятся после первых голосований</span>
+            <span className={styles.railEmpty}>Голоса появятся после первых голосований на этой неделе</span>
           )}
         </div>
       </section>
 
       <section className={styles.railSection}>
         <div className={styles.railHead}>
-          <h2>Новости проектов</h2>
-          <Link href="/blog">Все новости</Link>
+          <h2>Статьи</h2>
+          <Link href="/blog">Все статьи</Link>
         </div>
         <div className={styles.railList}>
           {articles.length > 0 ? articles.map(article => (
@@ -841,6 +840,40 @@ function collectCardMeta(server: Server): { chronicles: string; chroniclesTitle:
     rates: compact(rates, 3),
     ratesTitle: rates.join(' / ') || '-',
   };
+}
+
+function weeklyVoteCount(server: Server): number {
+  return Math.max(0, Number(server.weeklyVotes ?? 0));
+}
+
+function selectWeeklyRailServers(servers: Server[]): Server[] {
+  const ranked = [...servers]
+    .filter(server => weeklyVoteCount(server) > 0)
+    .sort((left, right) => weeklyVoteCount(right) - weeklyVoteCount(left))
+    .slice(0, 5);
+
+  if (ranked.length > 0) return ranked;
+  return stableShuffleServers(servers, weekSalt()).slice(0, 5);
+}
+
+function weekSalt() {
+  const now = new Date();
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  return `${now.getUTCFullYear()}-${week}`;
+}
+
+function stableShuffleServers(servers: Server[], salt: string): Server[] {
+  return [...servers].sort((left, right) => stableHash(`${salt}:${left.id}`) - stableHash(`${salt}:${right.id}`));
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function worldWord(value: number): string {

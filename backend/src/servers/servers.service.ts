@@ -323,6 +323,32 @@ function isOnlyComingSoonServer(s: any, nowTs = Date.now()): boolean {
   return isComingSoonServer(s, nowTs) && !hasOpenedLaunch(s, nowTs);
 }
 
+function currentIsoWeekKey(now = new Date()) {
+  const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const day = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((date.getTime() - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  return `${date.getUTCFullYear()}-${String(week).padStart(2, '0')}`;
+}
+
+function openingWaitCountKey(serverId: string, instanceId?: string | null) {
+  return `${serverId}::${String(instanceId ?? '').trim()}`;
+}
+
+function attachOpeningWaitCounts<T>(server: T, counts: Map<string, number>): T {
+  if (!server || typeof server !== 'object') return server;
+  const copy: any = { ...(server as any) };
+  copy.waitsWeek = counts.get(openingWaitCountKey(copy.id)) ?? 0;
+  if (Array.isArray(copy.instances)) {
+    copy.instances = copy.instances.map((instance: any) => ({
+      ...instance,
+      waitsWeek: counts.get(openingWaitCountKey(copy.id, instance?.id)) ?? 0,
+    }));
+  }
+  return copy;
+}
+
 function normalizeStatusOverride(value?: string | null): 'online' | 'offline' | 'unknown' | null {
   if (value === 'online' || value === 'offline' || value === 'unknown') return value;
   return null;
@@ -1334,7 +1360,21 @@ export class ServersService {
       const bDates = bIsVip ? bVipDates : openingDates(b);
       return Math.min(...aDates) - Math.min(...bDates);
     });
-    return filtered.map(server => stripLegacyDownloadFields(server));
+    const waitGroups = filtered.length > 0
+      ? await this.prisma.openingWait.groupBy({
+          by: ['serverId', 'instanceId'],
+          where: {
+            serverId: { in: filtered.map(server => server.id) },
+            weekKey: currentIsoWeekKey(now),
+          },
+          _count: { id: true },
+        })
+      : [];
+    const waitCounts = new Map<string, number>(
+      waitGroups.map(group => [openingWaitCountKey(group.serverId, group.instanceId), group._count.id]),
+    );
+
+    return filtered.map(server => stripLegacyDownloadFields(attachOpeningWaitCounts(server, waitCounts)));
   }
 
   // ── Счётчики для фильтров ────────────────────

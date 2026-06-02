@@ -12,6 +12,7 @@ import { UploadModule }    from './upload/upload.module';
 import { VotesModule }     from './votes/votes.module';
 import { ArticlesModule }  from './articles/articles.module';
 import { OpeningRemindersModule } from './opening-reminders/opening-reminders.module';
+import { OpeningWaitsModule } from './opening-waits/opening-waits.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { OpeningRemindersModule } from './opening-reminders/opening-reminders.mo
     VotesModule,
     ArticlesModule,
     OpeningRemindersModule,
+    OpeningWaitsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
