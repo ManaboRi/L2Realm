@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem } from './types';
+import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem, OpeningClickResult, OpeningClickReport } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -183,6 +183,15 @@ export const api = {
       request<OpeningWaitResult>('/opening-waits', {
         method: 'POST',
         body: JSON.stringify(data),
+      }),
+    click: (data: { serverId: string; instanceId?: string | null }) =>
+      request<OpeningClickResult>('/opening-waits/click', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    clickReport: (days: number, token: string) =>
+      request<OpeningClickReport>(`/opening-waits/admin/clicks?days=${days}`, {
+        headers: { Authorization: `Bearer ${token}` },
       }),
     status: (keys: string[]) => {
       const q = new URLSearchParams({ keys: keys.join(',') }).toString();

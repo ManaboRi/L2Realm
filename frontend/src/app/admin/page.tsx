@@ -7,11 +7,11 @@ import { api } from '@/lib/api';
 import { isOpeningStillSoon } from '@/lib/opening';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
-import type { VipStatus } from '@/lib/types';
+import type { VipStatus, OpeningClickReport } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
-type AdminTab = 'servers' | 'requests' | 'money' | 'add';
+type AdminTab = 'servers' | 'requests' | 'money' | 'clicks' | 'add';
 
 function slugify(s: string) {
   return s.toLowerCase()
@@ -207,6 +207,8 @@ export default function AdminPage() {
   const [soonVipStatus, setSoonVipStatus] = useState<VipStatus | null>(null);
   const [boosts, setBoosts]       = useState<any[]>([]);
   const [requests, setRequests]   = useState<any[]>([]);
+  const [clickReport, setClickReport] = useState<OpeningClickReport | null>(null);
+  const [clickReportDays, setClickReportDays] = useState(30);
   const [dataLoading, setDataLoading] = useState(false);
   const [toast, setToast]         = useState('');
   const [approvingId, setApprovingId] = useState<string | null>(null);
@@ -247,7 +249,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!token || !isAdmin) return;
     loadTab(tab);
-  }, [tab, token, isAdmin]);
+  }, [tab, token, isAdmin, clickReportDays]);
 
   async function loadTab(t: AdminTab) {
     if (!token) return;
@@ -255,6 +257,7 @@ export default function AdminPage() {
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
       if (t === 'requests') setRequests(await api.servers.getRequests(token));
+      if (t === 'clicks') setClickReport(await api.openingWaits.clickReport(clickReportDays, token));
       if (t === 'money') {
         const [vs, svs, bs, sl] = await Promise.all([
           api.payments.vipStatus(),
@@ -498,6 +501,7 @@ export default function AdminPage() {
     { k: 'servers',  l: `Серверы (${servers.length})` },
     { k: 'requests', l: `Заявки${pendingRequests ? ` (${pendingRequests})` : ''}` },
     { k: 'money',    l: `Продвижение${vipStatus ? ` (${vipStatus.taken})` : ''}` },
+    { k: 'clicks',   l: `Переходы${clickReport ? ` (${clickReport.total})` : ''}` },
     { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
   ];
 
@@ -812,6 +816,66 @@ export default function AdminPage() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Переходы по кнопке "Жду" */}
+            {tab === 'clicks' && (
+              <div className={styles.section}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.8rem', flexWrap:'wrap' }}>
+                  <div className={styles.sectionTitle}>Переходы на сайты из «Скоро открытие»</div>
+                  <select
+                    className="input"
+                    style={{ width:'auto', minWidth:150, padding:'.38rem .6rem', fontSize:'.78rem' }}
+                    value={clickReportDays}
+                    onChange={e => setClickReportDays(Number(e.target.value))}
+                  >
+                    <option value={7}>7 дней</option>
+                    <option value={30}>30 дней</option>
+                    <option value={90}>90 дней</option>
+                    <option value={365}>365 дней</option>
+                  </select>
+                </div>
+
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:'.7rem' }}>
+                  <div style={{ border:'1px solid var(--border)', background:'var(--bg2)', borderRadius:6, padding:'.8rem' }}>
+                    <div style={{ color:'var(--text3)', fontSize:'.72rem', textTransform:'uppercase', letterSpacing:'.08em' }}>Всего переходов</div>
+                    <strong style={{ display:'block', marginTop:'.25rem', fontFamily:"'Cinzel',serif", fontSize:'1.35rem', color:'var(--gold)' }}>{clickReport?.total ?? 0}</strong>
+                  </div>
+                  <div style={{ border:'1px solid var(--border)', background:'var(--bg2)', borderRadius:6, padding:'.8rem' }}>
+                    <div style={{ color:'var(--text3)', fontSize:'.72rem', textTransform:'uppercase', letterSpacing:'.08em' }}>Период</div>
+                    <strong style={{ display:'block', marginTop:'.25rem', fontFamily:"'Cinzel',serif", fontSize:'1.05rem', color:'var(--text)' }}>{clickReportDays} дней</strong>
+                  </div>
+                </div>
+
+                {!clickReport || clickReport.items.length === 0 ? (
+                  <p className={styles.empty}>Переходов пока нет</p>
+                ) : (
+                  <div className={styles.tableWrap}>
+                    <table className={styles.table}>
+                      <thead><tr><th>Сервер</th><th>Запуск</th><th>Переходы</th><th>Последний</th><th>Сайт</th></tr></thead>
+                      <tbody>
+                        {clickReport.items.map(item => (
+                          <tr key={item.key}>
+                            <td><strong>{item.server?.name ?? item.serverId}</strong></td>
+                            <td style={{ fontSize:'.76rem', color:'var(--text2)' }}>
+                              {item.server?.label ? `${item.server.label} · ` : ''}{item.server?.chronicle ?? '—'} {item.server?.rates ?? ''}
+                            </td>
+                            <td><span className={styles.planBadge}>{item.count}</span></td>
+                            <td style={{ fontSize:'.74rem', color:'var(--text3)' }}>
+                              {item.lastClickAt ? new Date(item.lastClickAt).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) : '—'}
+                            </td>
+                            <td>
+                              {item.targetUrl
+                                ? <a href={item.targetUrl} target="_blank" rel="noopener" className={styles.btnSm}>Открыть</a>
+                                : <span style={{ color:'var(--text3)' }}>—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

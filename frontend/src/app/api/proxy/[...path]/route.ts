@@ -16,9 +16,10 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
   const url = new URL(req.url);
   const target = `${BACKEND}/api/${joined}${url.search}`;
 
-  const headers = new Headers(req.headers);
-  for (const h of ['host', 'connection', 'keep-alive', 'upgrade', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailer', 'transfer-encoding', 'content-length']) {
-    headers.delete(h);
+  const headers = new Headers();
+  for (const h of ['accept', 'authorization', 'content-type', 'cookie', 'x-forwarded-for', 'x-real-ip']) {
+    const value = req.headers.get(h);
+    if (value) headers.set(h, value);
   }
 
   const init: RequestInit = { method: req.method, headers };
@@ -28,7 +29,13 @@ async function proxy(req: NextRequest, { params }: { params: Promise<{ path: str
     init.body = ct.startsWith('multipart/') ? await req.blob() : await req.text();
   }
 
-  const res = await fetch(target, init);
+  let res: Response;
+  try {
+    res = await fetch(target, init);
+  } catch (error) {
+    console.error(`[api/proxy] ${joined}`, error);
+    return NextResponse.json({ message: 'Backend proxy failed' }, { status: 502 });
+  }
   const body = await res.text();
 
   return new NextResponse(body, {

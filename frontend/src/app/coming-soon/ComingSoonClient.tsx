@@ -21,6 +21,7 @@ type Opening = {
   label?: string;
   shortDesc?: string;
   openedAt: string;
+  targetUrl?: string | null;
   isVip: boolean;
   waitsWeek: number;
 };
@@ -32,10 +33,16 @@ type Filters = {
   opens: string;
 };
 
+type QuickDateFilter = '' | 'today' | 'tomorrow' | 'week' | 'month';
+
 const typeLabels = new Map(SERVER_TYPES.map(t => [t.v, t.l]));
 const PUBLIC_SITE = 'https://l2realm.ru';
-const TELEGRAM_URL = 'https://t.me/l2realm_ru';
-const VK_URL = 'https://vk.com/l2realmru';
+const QUICK_DATE_FILTERS: Array<{ value: Exclude<QuickDateFilter, ''>; label: string }> = [
+  { value: 'today', label: 'Сегодня' },
+  { value: 'tomorrow', label: 'Завтра' },
+  { value: 'week', label: 'Через неделю' },
+  { value: 'month', label: 'Через месяц' },
+];
 
 function reminderKey(serverId: string, instanceId?: string | null) {
   return instanceId ? `${serverId}::${instanceId}` : serverId;
@@ -66,6 +73,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
           label: i.label,
           shortDesc: i.shortDesc || s.shortDesc || undefined,
           openedAt: i.openedDate!,
+          targetUrl: i.url || s.url || null,
           isVip: !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
           waitsWeek: Math.max(0, Number(i.waitsWeek ?? 0)),
         });
@@ -84,6 +92,7 @@ function flattenOpenings(servers: Server[]): Opening[] {
         type: s.type ?? [],
         shortDesc: s.shortDesc || undefined,
         openedAt: s.openedDate!,
+        targetUrl: s.url || null,
         isVip: serverVip,
         waitsWeek: Math.max(0, Number(s.waitsWeek ?? 0)),
       });
@@ -122,6 +131,25 @@ function openingBucket(openedAt: string, now: number) {
   return 'more';
 }
 
+function startOfLocalDay(value: number) {
+  const date = new Date(value);
+  date.setHours(0, 0, 0, 0);
+  return date.getTime();
+}
+
+function localDayDiff(openedAt: string, now: number) {
+  return Math.round((startOfLocalDay(new Date(openedAt).getTime()) - startOfLocalDay(now)) / 86_400_000);
+}
+
+function quickDateMatches(openedAt: string, now: number, quickDate: QuickDateFilter) {
+  if (!quickDate) return true;
+  const diff = localDayDiff(openedAt, now);
+  if (quickDate === 'today') return diff === 0;
+  if (quickDate === 'tomorrow') return diff === 1;
+  if (quickDate === 'week') return diff >= 0 && diff <= 7;
+  return diff >= 0 && diff <= 30;
+}
+
 function typeMatches(types: string[], value: string) {
   if (!value) return true;
   if (value === 'craft') return types.includes('multicraft');
@@ -157,8 +185,11 @@ function countdownParts(openedAt: string, now: number) {
   return [days, hours, minutes, seconds].map(v => String(v).padStart(2, '0'));
 }
 
-function formatOpenDate(value: string) {
-  return new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s?г\.$/, '');
+function formatOpenDateTime(value: string) {
+  const date = new Date(value);
+  const day = date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).replace(/\s?г\.$/, '');
+  const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  return `${day}, ${time}`;
 }
 
 function formatShortDate(value?: string | null) {
@@ -230,7 +261,6 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
 function OpeningRow({
   opening,
   now,
-  featured = false,
   waitCount,
   waited,
   waiting,
@@ -238,7 +268,6 @@ function OpeningRow({
 }: {
   opening: Opening;
   now: number;
-  featured?: boolean;
   waitCount: number;
   waited: boolean;
   waiting: boolean;
@@ -250,8 +279,7 @@ function OpeningRow({
   const waitDisabled = opened || waited || waiting;
 
   return (
-    <article className={`${styles.rowCard} ${featured ? styles.featuredRow : ''} ${opening.isVip ? styles.vipRow : ''} ${opened ? styles.openedRow : ''}`}>
-      {opening.isVip && <div className={styles.vipBadge}>VIP</div>}
+    <article className={`${styles.rowCard} ${opening.isVip ? styles.vipRow : ''} ${opened ? styles.openedRow : ''}`}>
       <Link href={`/servers/${opening.serverId}`} className={styles.identity}>
         <span className={styles.iconBox}>
           {opening.icon
@@ -264,33 +292,33 @@ function OpeningRow({
             <i className={styles.tagChronicle}>{opening.chronicle}</i>
             <i className={styles.tagRate}>{opening.rates}</i>
             {types.map(type => <i key={type} className={styles.tagType}>{type}</i>)}
-          </span>
-          {opening.shortDesc && <small>{opening.shortDesc}</small>}
-          <span className={styles.waitInline}>
-            <i />
-            <b>{waitCount.toLocaleString('ru-RU')}</b>
-            <span>{waitWord(waitCount)}</span>
+            {opening.isVip && <i className={styles.inlineVipBadge}>Рекомендуем</i>}
           </span>
         </span>
       </Link>
+
+      <div className={styles.waitColumn}>
+        <span className={styles.miniTitle}>Ждут</span>
+        <strong><i />{waitCount.toLocaleString('ru-RU')}</strong>
+        <small>{waitWord(waitCount)}</small>
+      </div>
 
       <div className={`${styles.countdown} ${opened ? styles.openedCountdown : ''}`}>
         <span className={styles.miniTitle}>{opened ? 'Статус' : 'До открытия'}</span>
         {opened ? (
           <div className={styles.openedState}>
             <strong>Открылся</strong>
-            <span>Запуск уже доступен</span>
           </div>
         ) : (
-          <div className={styles.timeGrid}>
+          <div className={styles.countdownPills} suppressHydrationWarning>
             {[
-              ['дня', parts[0]],
-              ['часов', parts[1]],
-              ['минут', parts[2]],
-              ['секунд', parts[3]],
+              ['д', parts[0]],
+              ['ч', parts[1]],
+              ['м', parts[2]],
+              ['с', parts[3]],
             ].map(([label, value]) => (
-              <span key={label} className={styles.timeCell}>
-                <strong>{value}</strong>
+              <span key={label}>
+                <strong suppressHydrationWarning>{value}</strong>
                 <small>{label}</small>
               </span>
             ))}
@@ -299,20 +327,19 @@ function OpeningRow({
       </div>
 
       <div className={styles.openInfo}>
-        <span className={styles.miniTitle}>Дата старта</span>
-        <strong>{formatOpenDate(opening.openedAt)}</strong>
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={`${styles.waitBtn} ${waited ? styles.waitBtnActive : ''}`}
-            disabled={waitDisabled}
-            onClick={() => onWait(opening)}
-          >
-            {opened ? 'Открылся' : waiting ? '...' : waited ? 'Жду' : 'Жду'}
-          </button>
-          <Link href={`/servers/${opening.serverId}`} className={styles.followBtn}>Подробнее</Link>
-          {opened && <span className={styles.openedAction} title="Открытие уже состоялось">✓</span>}
-        </div>
+        <span className={styles.miniTitle}>Старт</span>
+        <strong>{formatOpenDateTime(opening.openedAt)}</strong>
+      </div>
+
+      <div className={styles.actions}>
+        <button
+          type="button"
+          className={`${styles.waitBtn} ${waited ? styles.waitBtnActive : ''}`}
+          disabled={waitDisabled}
+          onClick={() => onWait(opening)}
+        >
+          {opened ? 'Открылся' : waiting ? '...' : '⚡ ЖДУ ОТКРЫТИЕ'}
+        </button>
       </div>
     </article>
   );
@@ -351,23 +378,11 @@ function ComingSoonRail({
                 <strong>{opening.projectName}</strong>
                 <em>{opening.chronicle} · {opening.rates}</em>
               </span>
-              <span className={styles.railVotes}>{opening.waitCount > 0 ? opening.waitCount.toLocaleString('ru-RU') : formatShortDate(opening.openedAt)}</span>
+              <span className={styles.railVotes}>{opening.waitCount.toLocaleString('ru-RU')}</span>
             </Link>
           )) : (
             <span className={styles.railEmpty}>Здесь появятся серверы, которые игроки чаще всего ждут на этой неделе.</span>
           )}
-        </div>
-      </section>
-
-      <section className={`${styles.railSection} ${styles.notifySection}`}>
-        <div className={styles.railHead}>
-          <h2>Следить за стартами</h2>
-        </div>
-        <p>Короткие новости об открытиях будем дублировать в соцсетях L2Realm.</p>
-        <div className={styles.notifyLinks}>
-          <a href={TELEGRAM_URL} target="_blank" rel="noopener">TG</a>
-          <a href={VK_URL} target="_blank" rel="noopener">VK</a>
-          <Link href="/contacts">Добавить</Link>
         </div>
       </section>
 
@@ -402,6 +417,7 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
   const [visibleCount, setVisibleCount] = useState(8);
   const [sort, setSort] = useState('date');
   const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', opens: '' });
+  const [quickDate, setQuickDate] = useState<QuickDateFilter>('');
   const [now, setNow] = useState(initialNow);
   const [waitCounts, setWaitCounts] = useState<Record<string, number>>({});
   const [waitedKeys, setWaitedKeys] = useState<Record<string, boolean>>({});
@@ -432,22 +448,15 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
   }), [openings, now]);
 
   const filtered = useMemo(() => {
-    const data = applyFilters(openings, filters, now);
+    const data = applyFilters(openings, filters, now).filter(opening => quickDateMatches(opening.openedAt, now, quickDate));
     return [...data].sort((a, b) => {
       if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
       if (sort === 'name') return a.projectName.localeCompare(b.projectName, 'ru');
       return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
     });
-  }, [filters, now, openings, sort]);
+  }, [filters, now, openings, quickDate, sort]);
 
   const visible = filtered.slice(0, visibleCount);
-  const featured = visible.filter(opening => opening.isVip);
-  const regular = visible.filter(opening => !opening.isVip);
-  const totalWaits = openings.reduce((sum, opening) => sum + (waitCounts[opening.key] ?? opening.waitsWeek ?? 0), 0);
-  const futureOpenings = openings.filter(opening => !isOpened(opening.openedAt, now));
-  const nearestDays = futureOpenings.length > 0
-    ? Math.min(...futureOpenings.map(opening => daysUntilValue(opening.openedAt, now)))
-    : null;
   const topExpected = useMemo(() => {
     const withCounts = openings.map(opening => ({ ...opening, waitCount: waitCounts[opening.key] ?? opening.waitsWeek ?? 0 }));
     const ranked = withCounts
@@ -467,6 +476,11 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
     setVisibleCount(8);
   }
 
+  function toggleQuickDate(value: QuickDateFilter) {
+    setQuickDate(prev => prev === value ? '' : value);
+    setVisibleCount(8);
+  }
+
   function resetFilters() {
     setFilters({ chronicle: '', rate: '', type: '', opens: '' });
     setVisibleCount(8);
@@ -476,12 +490,30 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
     if (isOpened(opening.openedAt, Date.now()) || waitedKeys[opening.key] || waitingKey) return;
     setWaitingKey(opening.key);
     try {
-      const result = await api.openingWaits.wait({ serverId: opening.serverId, instanceId: opening.instanceId ?? null });
-      setWaitCounts(prev => ({ ...prev, [opening.key]: result.count }));
+      const payload = { serverId: opening.serverId, instanceId: opening.instanceId ?? null };
+      const [waitResult, clickResult] = await Promise.allSettled([
+        api.openingWaits.wait(payload),
+        api.openingWaits.click(payload),
+      ]);
+
+      if (waitResult.status === 'fulfilled') {
+        setWaitCounts(prev => ({ ...prev, [opening.key]: waitResult.value.count }));
+      }
       setWaitedKeys(prev => ({ ...prev, [opening.key]: true }));
-      setToast(result.counted ? 'Отметили, что ты ждешь открытие.' : 'Ты уже ждешь это открытие на этой неделе.');
+
+      if (clickResult.status === 'fulfilled' && clickResult.value.url) {
+        window.location.assign(clickResult.value.url);
+        return;
+      }
+
+      if (opening.targetUrl) {
+        window.location.assign(opening.targetUrl);
+        return;
+      }
+
+      throw clickResult.status === 'rejected' ? clickResult.reason : waitResult.status === 'rejected' ? waitResult.reason : new Error('Сайт проекта не указан.');
     } catch (error: any) {
-      setToast(error?.message || 'Не получилось отметить ожидание. Попробуй позже.');
+      setToast(error?.message || 'Не получилось открыть сайт проекта. Попробуй позже.');
     } finally {
       setWaitingKey(null);
       window.setTimeout(() => setToast(null), 2800);
@@ -532,17 +564,6 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
               ))}
             </FilterGroup>
 
-            <FilterGroup label="До даты открытия">
-              {[
-                { v: 'opened', l: 'Открылся' },
-                { v: '3', l: 'До 3 дней' },
-                { v: '7', l: '3 - 7 дней' },
-                { v: '14', l: '7 - 14 дней' },
-                { v: 'more', l: 'Больше 14 дней' },
-              ].filter(o => counts.opens[o.v] > 0).map(o => (
-                <FilterItem key={o.v} label={o.l} count={counts.opens[o.v]} active={filters.opens === o.v} onClick={() => toggleFilter('opens', o.v)} />
-              ))}
-            </FilterGroup>
           </aside>
 
           <section className={styles.content}>
@@ -550,11 +571,17 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
               <div className={styles.heroCopy}>
                 <h1>Скоро открытие серверов <span>Lineage 2</span></h1>
                 <p>Новые миры уже на подходе. Выбери сервер, следи за новостями и стань одним из первых!</p>
-                <div className={styles.heroStats}>
-                  <span><strong>{openings.length}</strong><em>открытий</em></span>
-                  <span><strong>{openings.filter(opening => opening.isVip).length}</strong><em>рекомендуем</em></span>
-                  <span><strong>{totalWaits.toLocaleString('ru-RU')}</strong><em>ждут</em></span>
-                  <span><strong>{nearestDays === null ? '—' : nearestDays === 0 ? 'сегодня' : `${nearestDays} дн.`}</strong><em>ближайший старт</em></span>
+                <div className={styles.quickDates} aria-label="Быстрый выбор даты открытия">
+                  {QUICK_DATE_FILTERS.map(item => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={`${styles.quickDateButton} ${quickDate === item.value ? styles.quickDateButtonActive : ''}`}
+                      onClick={() => toggleQuickDate(item.value)}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -579,25 +606,15 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
               </div>
             ) : (
               <>
-                {featured.length > 0 && (
-                  <div className={styles.featuredRows}>
-                    {featured.map(opening => (
-                      <OpeningRow
-                        key={opening.key}
-                        opening={opening}
-                        now={now}
-                        featured
-                        waitCount={waitCounts[opening.key] ?? opening.waitsWeek ?? 0}
-                        waited={!!waitedKeys[opening.key]}
-                        waiting={waitingKey === opening.key}
-                        onWait={handleWait}
-                      />
-                    ))}
-                  </div>
-                )}
-
+                <div className={styles.listHeader}>
+                  <span>Сервер</span>
+                  <span>Ждут</span>
+                  <span>До открытия</span>
+                  <span>Старт</span>
+                  <span>Действие</span>
+                </div>
                 <div className={styles.rows}>
-                  {regular.map(opening => (
+                  {visible.map(opening => (
                     <OpeningRow
                       key={opening.key}
                       opening={opening}

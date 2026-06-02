@@ -135,6 +135,34 @@ export interface OpeningWaitTopItem {
   } | null;
 }
 
+export interface OpeningClickResult {
+  ok: boolean;
+  url: string;
+}
+
+export interface OpeningClickReport {
+  days: number;
+  since: string;
+  total: number;
+  items: Array<{
+    key: string;
+    serverId: string;
+    instanceId: string | null;
+    count: number;
+    lastClickAt: string | null;
+    targetUrl: string | null;
+    server: {
+      id: string;
+      name: string;
+      icon: string | null;
+      abbr?: string | null;
+      chronicle: string;
+      rates: string;
+      label?: string | null;
+    } | null;
+  }>;
+}
+
 export interface Subscription {
   id:        string;
   serverId:  string;

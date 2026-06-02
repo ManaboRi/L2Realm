@@ -103,6 +103,7 @@ model Server {
   favorites    Favorite[]
   openingReminders OpeningReminder[]
   openingWaits OpeningWait[]
+  openingClicks OpeningClick[]
   boosts       Boost[]
   votes        Vote[]
 }
@@ -152,6 +153,23 @@ model OpeningWait {
   @@index([serverId, instanceId, weekKey])
   @@index([weekKey, createdAt])
   @@index([ipHash, weekKey])
+}
+
+model OpeningClick {
+  id         String   @id @default(cuid())
+  serverId   String
+  server     Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  instanceId String   @default("")
+  ipHash     String
+  userAgent  String?
+  referer     String?
+  targetUrl  String
+  source     String   @default("coming-soon")
+  createdAt  DateTime @default(now())
+
+  @@index([serverId, instanceId, createdAt])
+  @@index([createdAt])
+  @@index([ipHash, createdAt])
 }
 
 // ── Подписки / Тарифы ─────────────────────────

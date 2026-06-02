@@ -3,6 +3,7 @@ import { createHash } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 
 const MAX_KEYS_PER_REQUEST = 120;
+const CLICK_REPORT_LIMIT = 100;
 
 function normalizeInstanceId(value?: string | null) {
   return String(value ?? '').trim();
@@ -39,6 +40,35 @@ function openingDateFor(server: any, instanceId: string) {
   const instance = instances.find(item => item?.id === instanceId);
   if (!instance) throw new NotFoundException('Opening not found');
   return instance.openedDate ? new Date(instance.openedDate) : null;
+}
+
+function cleanText(value: unknown, max = 300) {
+  const text = String(value ?? '').trim();
+  return text ? text.slice(0, max) : null;
+}
+
+function normalizeTargetUrl(value?: string | null) {
+  const raw = String(value ?? '').trim();
+  if (!raw) throw new BadRequestException('Project site URL is not configured');
+  try {
+    const url = new URL(raw);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new Error('Unsupported protocol');
+    }
+    return url.toString();
+  } catch {
+    throw new BadRequestException('Project site URL is invalid');
+  }
+}
+
+function targetUrlFor(server: any, instanceId: string) {
+  if (instanceId) {
+    const instances = Array.isArray(server.instances) ? server.instances as any[] : [];
+    const instance = instances.find(item => item?.id === instanceId);
+    if (!instance) throw new NotFoundException('Opening not found');
+    return normalizeTargetUrl(instance.url || server.url);
+  }
+  return normalizeTargetUrl(server.url);
 }
 
 @Injectable()
@@ -141,6 +171,100 @@ export class OpeningWaitsService {
         } : null,
       };
     }).filter(item => item.server);
+  }
+
+  async click(
+    serverId: string,
+    instanceId: string | null | undefined,
+    ip: string,
+    userAgent?: string | string[],
+    referer?: string | string[],
+  ) {
+    const cleanServerId = String(serverId || '').trim();
+    if (!cleanServerId) throw new BadRequestException('Server id is required');
+
+    const cleanInstanceId = normalizeInstanceId(instanceId);
+    const server = await this.prisma.server.findUnique({
+      where: { id: cleanServerId },
+      select: { id: true, url: true, instances: true },
+    });
+    if (!server) throw new NotFoundException('Server not found');
+
+    const targetUrl = targetUrlFor(server, cleanInstanceId);
+    await this.prisma.openingClick.create({
+      data: {
+        serverId: cleanServerId,
+        instanceId: cleanInstanceId,
+        ipHash: hashIp(ip),
+        userAgent: cleanText(Array.isArray(userAgent) ? userAgent[0] : userAgent, 300),
+        referer: cleanText(Array.isArray(referer) ? referer[0] : referer, 500),
+        targetUrl,
+      },
+    });
+
+    return { ok: true, url: targetUrl };
+  }
+
+  async clickReport(days = 30) {
+    const cleanDays = Number.isFinite(Number(days)) ? Math.min(Math.max(Number(days), 1), 365) : 30;
+    const since = new Date(Date.now() - cleanDays * 86_400_000);
+
+    const groups = await this.prisma.openingClick.groupBy({
+      by: ['serverId', 'instanceId'],
+      where: { createdAt: { gte: since } },
+      _count: { id: true },
+      _max: { createdAt: true },
+      orderBy: [{ _count: { id: 'desc' } }, { _max: { createdAt: 'desc' } }],
+      take: CLICK_REPORT_LIMIT,
+    });
+
+    const serverIds = [...new Set(groups.map(group => group.serverId))];
+    const servers = await this.prisma.server.findMany({
+      where: { id: { in: serverIds } },
+      select: { id: true, name: true, icon: true, abbr: true, chronicle: true, rates: true, url: true, instances: true },
+    });
+    const byId = new Map(servers.map(server => [server.id, server]));
+
+    const items = groups.map(group => {
+      const server = byId.get(group.serverId);
+      const instanceId = group.instanceId || '';
+      const instance = instanceId && Array.isArray(server?.instances)
+        ? (server!.instances as any[]).find(item => item?.id === instanceId)
+        : null;
+      let targetUrl: string | null = null;
+      if (server) {
+        try {
+          targetUrl = targetUrlFor(server, instanceId);
+        } catch {
+          targetUrl = null;
+        }
+      }
+
+      return {
+        key: waitKey(group.serverId, instanceId),
+        serverId: group.serverId,
+        instanceId: instanceId || null,
+        count: group._count.id,
+        lastClickAt: group._max.createdAt,
+        targetUrl,
+        server: server ? {
+          id: server.id,
+          name: server.name,
+          icon: server.icon,
+          abbr: server.abbr,
+          chronicle: instance?.chronicle || server.chronicle,
+          rates: instance?.rates || server.rates,
+          label: instance?.label || null,
+        } : null,
+      };
+    });
+
+    return {
+      days: cleanDays,
+      since: since.toISOString(),
+      total: items.reduce((sum, item) => sum + item.count, 0),
+      items,
+    };
   }
 }
 
