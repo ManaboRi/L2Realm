@@ -23,13 +23,13 @@
 .shell {
   position: relative;
   z-index: 1;
-  padding: .7rem .9rem 3rem;
+  padding: 0 .9rem 3rem;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 218px minmax(0, 1fr) 286px;
-  gap: .95rem;
+  grid-template-columns: minmax(194px, 218px) minmax(0, 1fr) 286px;
+  gap: .85rem;
   align-items: start;
 }
 
@@ -40,13 +40,13 @@
   flex-direction: column;
   gap: .66rem;
   min-height: calc(100vh - 96px);
-  padding: .78rem .72rem;
-  border: 1px solid rgba(210, 171, 82, .12);
-  border-radius: 8px;
+  padding: .72rem .55rem;
+  border: 1px solid rgba(210, 171, 82, .08);
+  border-radius: 7px;
   background:
-    linear-gradient(180deg, rgba(11, 16, 23, .94), rgba(5, 9, 14, .92)),
-    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .065), transparent 35%);
-  box-shadow: 0 22px 58px rgba(0, 0, 0, .34), inset 0 1px 0 rgba(255, 255, 255, .03);
+    linear-gradient(180deg, rgba(7, 12, 18, .72), rgba(4, 8, 13, .52)),
+    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .045), transparent 38%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
   backdrop-filter: blur(10px);
 }
 
@@ -78,18 +78,18 @@
   text-transform: uppercase;
   letter-spacing: .08em;
 }
+.sidebarHead button:hover { color: var(--gold); }
 .sidebarHead:empty { display: none; }
 
 .filterGroup {
   display: flex;
   flex-direction: column;
   gap: .42rem;
-  padding: .55rem .5rem .58rem;
-  border: 1px solid rgba(118, 141, 151, .1);
-  border-radius: 7px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, .014), rgba(255, 255, 255, .004)),
-    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .032), transparent 42%);
+  padding: .52rem .16rem .6rem;
+  border: 0;
+  border-bottom: 1px solid rgba(118, 141, 151, .1);
+  border-radius: 0;
+  background: transparent;
 }
 
 .filterList {
@@ -103,14 +103,16 @@
   grid-template-columns: 8px minmax(0, 1fr) auto;
   align-items: center;
   gap: .56rem;
+  width: 100%;
   min-height: 27px;
-  border: 1px solid rgba(118, 141, 151, .07);
+  border: 1px solid transparent;
   border-radius: 5px;
-  background: rgba(4, 8, 13, .24);
+  background: transparent;
   color: var(--text2);
   padding: .22rem .4rem;
   text-align: left;
   font-size: .8rem;
+  transition: background .16s, border-color .16s, color .16s;
 }
 
 .filterItem:hover,
@@ -269,6 +271,12 @@
   letter-spacing: .08em;
   font-style: normal;
   text-transform: uppercase;
+}
+
+@media (min-width: 981px) {
+  .sidebar {
+    top: 14px;
+  }
 }
 
 .sortWrap select {
@@ -1077,6 +1085,12 @@
   flex-direction: column;
   gap: .82rem;
   min-width: 0;
+}
+
+@media (min-width: 981px) {
+  .rightRail {
+    top: 14px;
+  }
 }
 
 .railSection {
