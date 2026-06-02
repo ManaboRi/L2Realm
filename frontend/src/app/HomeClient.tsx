@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import type { Server, Stats } from '@/lib/types';
+import type { Article, Server } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
-import { activityMeta, currentProjectWorlds, formatTraffic, latestProjectOpening, projectTrafficTrend, projectWorldCount, trustMeta } from '@/lib/project-metrics';
+import { activityMeta, currentProjectWorlds, formatTraffic, latestProjectOpening, nextProjectOpening, projectTrafficTrend, projectWorldCount, trustMeta } from '@/lib/project-metrics';
 import styles from './page.module.css';
 
 export type FilterCounts = {
@@ -33,17 +33,57 @@ const TRUST_FILTERS: Array<{ v: string; l: string }> = [
 
 type HomeClientProps = {
   initialServers: Server[];
-  initialStats: Stats | null;
   initialCounts: FilterCounts | null;
   initialPages: number;
   initialOk: boolean;
+  initialComingSoon?: Server[];
+  initialTopVotes?: Server[];
+  initialArticles?: Article[];
 };
 
-const SORT_OPTIONS = [
-  { value: '', label: 'По умолчанию' },
-  { value: 'opened', label: 'Дата открытия' },
-  { value: 'votes', label: 'Голоса' },
-] as const;
+const PUBLIC_SITE = 'https://l2realm.ru';
+type ViewMode = 'cards' | 'list';
+type SortDirection = 'asc' | 'desc';
+type ListSortKey = 'trust' | 'worlds' | 'activity' | 'traffic' | 'start' | 'votes' | 'name';
+type ListSortState = { key: ListSortKey; dir: SortDirection } | null;
+
+const LIST_SORT_OPTIONS: Array<{ key: ListSortKey; label: string; defaultDir: SortDirection }> = [
+  { key: 'trust', label: 'Доверие', defaultDir: 'desc' },
+  { key: 'worlds', label: 'Миры', defaultDir: 'desc' },
+  { key: 'activity', label: 'Активность', defaultDir: 'desc' },
+  { key: 'traffic', label: 'Трафик', defaultDir: 'desc' },
+  { key: 'start', label: 'Старт', defaultDir: 'desc' },
+  { key: 'votes', label: 'Голоса', defaultDir: 'desc' },
+  { key: 'name', label: 'Название', defaultDir: 'asc' },
+];
+
+const LIST_SORT_KEYS = new Set<ListSortKey>(LIST_SORT_OPTIONS.map(option => option.key));
+
+type SearchParamReader = { get: (name: string) => string | null };
+
+function readListSortFromParams(params: SearchParamReader): ListSortState {
+  const key = parseListSortKey(params.get('lsort'));
+  if (!key) return null;
+  return { key, dir: parseSortDirection(params.get('ldir')) };
+}
+
+function readListSortFromStorage(): ListSortState {
+  const saved = localStorage.getItem('l2r_catalog_list_sort');
+  if (!saved) return null;
+  const [rawKey, rawDir] = saved.split(':');
+  const key = parseListSortKey(rawKey);
+  if (!key) return null;
+  return { key, dir: parseSortDirection(rawDir) };
+}
+
+function parseListSortKey(value?: string | null): ListSortKey | null {
+  if (!value) return null;
+  return LIST_SORT_KEYS.has(value as ListSortKey) ? value as ListSortKey : null;
+}
+
+function parseSortDirection(value?: string | null): SortDirection {
+  return value === 'asc' ? 'asc' : 'desc';
+}
 
 export function HomeClient(props: HomeClientProps) {
   return (
@@ -53,22 +93,26 @@ export function HomeClient(props: HomeClientProps) {
   );
 }
 
-function HomeContent({ initialServers, initialStats, initialCounts, initialPages, initialOk }: HomeClientProps) {
+function HomeContent({ initialServers, initialCounts, initialPages, initialOk, initialComingSoon = [], initialTopVotes = [], initialArticles = [] }: HomeClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
 
   const [servers, setServers] = useState<Server[]>(initialServers);
-  const [stats, setStats] = useState<Stats | null>(initialStats);
   const [counts, setCounts] = useState<FilterCounts | null>(initialCounts);
   const [loading, setLoading] = useState(!initialOk);
   const [pages, setPages] = useState(initialPages);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [comingSoon, setComingSoon] = useState<Server[]>(initialComingSoon);
+  const [topVotes, setTopVotes] = useState<Server[]>(initialTopVotes);
+  const [articles, setArticles] = useState<Article[]>(initialArticles);
   const firstListEffect = useRef(true);
   const firstCountsEffect = useRef(true);
 
   const [search, setSearch] = useState(() => sp.get('q') ?? '');
   const [sort, setSort] = useState(() => sp.get('sort') ?? '');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => sp.get('view') === 'list' ? 'list' : 'cards');
+  const [listSort, setListSort] = useState<ListSortState>(() => readListSortFromParams(sp));
   const [page, setPage] = useState(() => Number(sp.get('page') ?? 1));
   const [filters, setFilters] = useState<Record<string, string>>(() => ({
     chr: sp.get('chr') ?? '',
@@ -79,10 +123,36 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }));
 
   const activeFiltersCount = Object.values(filters).filter(Boolean).length;
-  const totalProjects = stats?.total ?? servers.length;
-  const totalServers = stats?.launchCount ?? totalProjects;
-  const totalVotes = stats?.totalVotes ?? servers.reduce((sum, server) => sum + (server.totalVotes ?? 0), 0);
-  const monthlyVotes = stats?.monthlyVotes ?? servers.reduce((sum, server) => sum + (server.monthlyVotes ?? 0), 0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    api.servers.comingSoon()
+      .then(data => {
+        if (!cancelled) setComingSoon(data.slice(0, 5));
+      })
+      .catch(() => {});
+
+    api.servers.list({ page: '1', limit: '100', compact: 'true' })
+      .then(res => {
+        if (cancelled) return;
+        const ranked = [...res.data]
+          .sort((left, right) => (right.totalVotes ?? right.weeklyVotes ?? 0) - (left.totalVotes ?? left.weeklyVotes ?? 0))
+          .slice(0, 5);
+        setTopVotes(ranked);
+      })
+      .catch(() => {});
+
+    api.articles.list()
+      .then(data => {
+        if (!cancelled) setArticles(data.filter(article => article.publishedAt).slice(0, 4));
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams();
@@ -93,15 +163,59 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     if (filters.type) params.set('type', filters.type);
     if (filters.activity) params.set('activity', filters.activity);
     if (filters.trust) params.set('trust', filters.trust);
+    if (viewMode === 'list') {
+      params.set('view', 'list');
+      if (listSort) {
+        params.set('lsort', listSort.key);
+        params.set('ldir', listSort.dir);
+      }
+    }
     if (page > 1) params.set('page', String(page));
     const query = params.toString();
     router.replace(`${pathname}${query ? '?' + query : ''}`, { scroll: false } as any);
-  }, [search, sort, filters, page, pathname, router]);
+  }, [search, sort, filters, viewMode, listSort, page, pathname, router]);
+
+  useEffect(() => {
+    if (sp.get('view')) return;
+    try {
+      const saved = localStorage.getItem('l2r_catalog_view');
+      if (saved === 'list' || saved === 'cards') setViewMode(saved);
+    } catch {}
+    // Читаем сохранённый вид только на первом клиентском проходе.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('l2r_catalog_view', viewMode);
+    } catch {}
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (sp.get('lsort')) return;
+    try {
+      const saved = readListSortFromStorage();
+      if (saved) setListSort(saved);
+    } catch {}
+    // Читаем сохранённую сортировку только на первом клиентском проходе.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (listSort) localStorage.setItem('l2r_catalog_list_sort', `${listSort.key}:${listSort.dir}`);
+      else localStorage.removeItem('l2r_catalog_list_sort');
+    } catch {}
+  }, [listSort]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = { page: String(page), limit: '30', compact: 'true' };
+      const params: Record<string, string> = {
+        page: String(page),
+        limit: '30',
+        compact: 'true',
+      };
       if (sort) params.sort = sort;
       if (search) params.search = search;
       if (filters.chr) params.chronicle = filters.chr;
@@ -109,6 +223,10 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
       if (filters.type) params.type = filters.type;
       if (filters.activity) params.activity = filters.activity;
       if (filters.trust) params.trust = filters.trust;
+      if (viewMode === 'list' && listSort) {
+        params.lsort = listSort.key;
+        params.ldir = listSort.dir;
+      }
 
       const res = await api.servers.list(params);
       setServers(res.data);
@@ -117,7 +235,7 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     } finally {
       setLoading(false);
     }
-  }, [search, sort, filters, page]);
+  }, [search, sort, filters, page, viewMode, listSort]);
 
   useEffect(() => {
     if (firstListEffect.current) {
@@ -128,9 +246,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
   }, [load, initialOk]);
 
   useEffect(() => {
-    if (!initialStats) api.servers.stats().then(setStats).catch(() => {});
     if (!initialCounts) api.servers.counts().then(setCounts).catch(() => {});
-  }, [initialStats, initialCounts]);
+  }, [initialCounts]);
 
   useEffect(() => {
     if (firstCountsEffect.current) {
@@ -158,6 +275,20 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
     setPage(1);
   }
 
+  function changeViewMode(next: ViewMode) {
+    setViewMode(next);
+    setPage(1);
+  }
+
+  function toggleListSort(key: ListSortKey) {
+    setListSort(prev => {
+      const option = LIST_SORT_OPTIONS.find(item => item.key === key);
+      const defaultDir = option?.defaultDir ?? 'desc';
+      if (!prev || prev.key !== key) return { key, dir: defaultDir };
+      return { key, dir: prev.dir === 'desc' ? 'asc' : 'desc' };
+    });
+    setPage(1);
+  }
 
   return (
     <main className={styles.page}>
@@ -226,8 +357,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
           <section className={styles.content}>
             <section className={styles.hero}>
               <div className={styles.heroCopy}>
-                <h1>Твой главный навигатор <br /><span>в мире Lineage 2</span></h1>
-                <p>Каталог приватных серверов с фильтрами, проверкой проектов, голосованием и честной статистикой.</p>
+                <h1>Каталог серверов <span>Lineage 2</span></h1>
+                <p>Открытия, голоса, проверка проектов и свежие новости в одном месте.</p>
 
                 <div className={styles.searchControls}>
                   <div className={styles.searchWrap}>
@@ -241,43 +372,63 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
                     {search && <button type="button" className={styles.searchClear} onClick={() => setSearch('')}>×</button>}
                   </div>
 
-                  <div className={styles.sortPills} aria-label="Сортировка серверов">
-                    {SORT_OPTIONS.map(option => (
-                      <button
-                        key={option.value || 'default'}
-                        type="button"
-                        className={`${styles.sortPill} ${sort === option.value ? styles.sortPillActive : ''}`}
-                        onClick={() => { setSort(option.value); setPage(1); }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                  <div className={styles.viewSwitch} aria-label="Вид каталога">
+                    <button
+                      type="button"
+                      className={`${styles.viewButton} ${viewMode === 'cards' ? styles.viewButtonActive : ''}`}
+                      title="Карточки"
+                      aria-label="Показать карточками"
+                      aria-pressed={viewMode === 'cards'}
+                      onClick={() => changeViewMode('cards')}
+                    >
+                      <span className={styles.viewButtonIcon} aria-hidden="true">▦</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.viewButton} ${viewMode === 'list' ? styles.viewButtonActive : ''}`}
+                      title="Список"
+                      aria-label="Показать списком"
+                      aria-pressed={viewMode === 'list'}
+                      onClick={() => changeViewMode('list')}
+                    >
+                      <span className={styles.viewButtonIcon} aria-hidden="true">☰</span>
+                    </button>
                   </div>
-                </div>
-              </div>
-
-              <div className={styles.heroStatsWrap}>
-                <div className={styles.heroStats}>
-                  <Metric tone="gold" label="Проектов" value={totalProjects} />
-                  <Metric tone="blue" label="Миров" value={totalServers} />
-                  <Metric tone="amber" label="Голосов за месяц" value={monthlyVotes} />
-                  <Metric tone="red" label="Голосов всего" value={totalVotes} />
-                </div>
-                <div className={styles.heroStatsActions}>
-                  <Link href="/methodology" className={styles.metricMethodology}>
-                    <span aria-hidden="true">?</span>
-                    Методика
-                  </Link>
                 </div>
               </div>
             </section>
 
+            {viewMode === 'list' && (loading || servers.length > 0) && (
+              <div className={styles.listSortHeader} aria-label="Сортировка списка серверов">
+                <ListSortButton sortKey="name" label="Сервер" activeSort={listSort} onClick={toggleListSort} />
+                <ListSortButton sortKey="trust" label="Доверие" activeSort={listSort} onClick={toggleListSort} />
+                <ListSortButton sortKey="worlds" label="Миры" activeSort={listSort} onClick={toggleListSort} />
+                <ListSortButton sortKey="activity" label="Активность" activeSort={listSort} onClick={toggleListSort} />
+                <ListSortButton sortKey="traffic" label="Трафик" activeSort={listSort} onClick={toggleListSort} className={styles.listSortHeaderTraffic} />
+                <ListSortButton sortKey="start" label="Старт" activeSort={listSort} onClick={toggleListSort} />
+                <ListSortButton sortKey="votes" label="Голоса" activeSort={listSort} onClick={toggleListSort} className={styles.listSortHeaderVotes} />
+                <span className={styles.listSortHeaderSpacer} aria-hidden="true" />
+              </div>
+            )}
+
             {loading ? (
-              <div className={styles.grid}>
-                {Array.from({ length: 6 }).map((_, i) => <div className={styles.cardSkeleton} key={i} />)}
+              <div className={viewMode === 'list' ? styles.serverList : styles.grid}>
+                {Array.from({ length: viewMode === 'list' ? 8 : 6 }).map((_, i) => (
+                  <div className={viewMode === 'list' ? styles.listSkeleton : styles.cardSkeleton} key={i} />
+                ))}
               </div>
             ) : servers.length === 0 ? (
               <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
+            ) : viewMode === 'list' ? (
+              <div className={styles.serverList}>
+                {servers.map((s, index) => (
+                  <HomeServerRow
+                    key={s.id}
+                    server={s}
+                    eagerImage={index < 8}
+                  />
+                ))}
+              </div>
             ) : (
               <div className={styles.grid}>
                 {servers.map((s, index) => (
@@ -298,6 +449,8 @@ function HomeContent({ initialServers, initialStats, initialCounts, initialPages
               </div>
             )}
           </section>
+
+          <HomeRightRail comingSoon={comingSoon} topVotes={topVotes} articles={articles} />
         </div>
       </div>
     </main>
@@ -339,23 +492,121 @@ function FilterItem({ label, active, count, dotColor, onClick }: { label: string
   );
 }
 
-function Metric({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: 'gold' | 'blue' | 'amber' | 'red';
-}) {
+function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[]; topVotes: Server[]; articles: Article[] }) {
   return (
-    <div className={`${styles.metric} ${styles[`metric_${tone}`]}`}>
-      <span className={styles.metricText}>
-        <strong>{value.toLocaleString('ru-RU')}</strong>
-        <em>{label}</em>
-      </span>
-    </div>
+    <aside className={styles.rightRail} aria-label="Сводка каталога">
+      <section className={styles.railSection}>
+        <div className={styles.railHead}>
+          <h2>Скоро открытие</h2>
+          <Link href="/coming-soon">Все</Link>
+        </div>
+        <div className={styles.railList}>
+          {comingSoon.length > 0 ? comingSoon.map(server => {
+            const opening = nextProjectOpening(server) || server.openedDate;
+            const meta = collectCardMeta(server);
+            return (
+              <Link key={server.id} href={`/servers/${server.id}`} className={styles.railServerItem}>
+                <span className={styles.railLogo}><ServerIcon server={server} small /></span>
+                <span className={styles.railText}>
+                  <strong>{server.name}</strong>
+                  <em>{meta.chronicles} · {meta.rates}</em>
+                </span>
+                <span className={styles.railDate}>{opening ? formatShortDate(opening) : 'скоро'}</span>
+              </Link>
+            );
+          }) : (
+            <span className={styles.railEmpty}>Открытия появятся после обновления каталога</span>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.railSection}>
+        <div className={styles.railHead}>
+          <h2>Топ голосов</h2>
+          <Link href="/rating">Рейтинг</Link>
+        </div>
+        <div className={styles.railList}>
+          {topVotes.length > 0 ? topVotes.map((server, index) => (
+            <Link key={server.id} href={`/servers/${server.id}`} className={styles.railVoteItem}>
+              <span className={styles.railRank}>{index + 1}</span>
+              <span className={styles.railLogo}><ServerIcon server={server} small /></span>
+              <span className={styles.railText}>
+                <strong>{server.name}</strong>
+                <em>{collectCardMeta(server).chronicles}</em>
+              </span>
+              <span className={styles.railVotes}>+ {(server.totalVotes ?? server.weeklyVotes ?? 0).toLocaleString('ru-RU')}</span>
+            </Link>
+          )) : (
+            <span className={styles.railEmpty}>Голоса появятся после первых голосований</span>
+          )}
+        </div>
+      </section>
+
+      <section className={styles.railSection}>
+        <div className={styles.railHead}>
+          <h2>Новости проектов</h2>
+          <Link href="/blog">Все новости</Link>
+        </div>
+        <div className={styles.railList}>
+          {articles.length > 0 ? articles.map(article => (
+            <Link key={article.id} href={`/blog/${article.slug}`} className={styles.railArticleItem}>
+              <span className={styles.railArticleThumb}>
+                {article.image && <img src={catalogAssetSrc(article.image)} alt="" loading="lazy" decoding="async" onError={e => handleCatalogImageError(e.currentTarget as HTMLImageElement)} />}
+              </span>
+              <span className={styles.railText}>
+                <strong>{article.title}</strong>
+                <em>{formatShortDate(article.publishedAt || article.createdAt)}</em>
+              </span>
+            </Link>
+          )) : (
+            <span className={styles.railEmpty}>Свежие статьи скоро появятся здесь</span>
+          )}
+        </div>
+      </section>
+    </aside>
   );
+}
+
+function ListSortButton({
+  sortKey,
+  label,
+  activeSort,
+  className,
+  onClick,
+}: {
+  sortKey: ListSortKey;
+  label: string;
+  activeSort: ListSortState;
+  className?: string;
+  onClick: (key: ListSortKey) => void;
+}) {
+  const active = activeSort?.key === sortKey;
+  return (
+    <button
+      type="button"
+      className={[styles.listSortHeaderButton, active ? styles.listSortHeaderButtonActive : '', className ?? ''].filter(Boolean).join(' ')}
+      aria-pressed={active}
+      onClick={() => onClick(sortKey)}
+    >
+      {label}
+      {active && <em>{activeSort?.dir === 'desc' ? '↓' : '↑'}</em>}
+    </button>
+  );
+}
+
+function catalogAssetSrc(src?: string | null) {
+  if (!src) return '';
+  return src.startsWith('/uploads/') ? `${PUBLIC_SITE}${src}` : src;
+}
+
+function handleCatalogImageError(image: HTMLImageElement) {
+  const src = image.getAttribute('src') || '';
+  if (src.startsWith('/uploads/') && image.dataset.remoteFallback !== '1') {
+    image.dataset.remoteFallback = '1';
+    image.src = `${PUBLIC_SITE}${src}`;
+    return;
+  }
+  image.style.display = 'none';
 }
 
 function HomeServerCard({
@@ -386,7 +637,7 @@ function HomeServerCard({
       <Link href={`/servers/${s.id}`} className={styles.cardLink} aria-label={`Открыть сервер ${s.name}`} />
       <div className={styles.cardMedia}>
         {s.banner ? (
-          <img src={s.banner} alt="" loading={eagerImage ? 'eager' : 'lazy'} decoding="async" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+          <img src={catalogAssetSrc(s.banner)} alt="" loading={eagerImage ? 'eager' : 'lazy'} decoding="async" onError={e => handleCatalogImageError(e.currentTarget as HTMLImageElement)} />
         ) : (
           <span className={styles.cardMediaFallback} />
         )}
@@ -462,11 +713,107 @@ function HomeServerCard({
   );
 }
 
+function HomeServerRow({
+  server: s,
+  eagerImage,
+}: {
+  server: Server;
+  eagerImage: boolean;
+}) {
+  const projectMeta = collectCardMeta(s);
+  const worlds = projectWorldCount(s);
+  const trust = trustMeta(s.trustLevel);
+  const activity = activityMeta(s.activityLevel);
+  const latestOpening = latestProjectOpening(s);
+  const trafficTrend = projectTrafficTrend(s);
+  const votes = s.totalVotes ?? s.weeklyVotes ?? 0;
+  const isVip = !!s._isVip || !!s.vip;
+  const isBoosted = !!s._isBoosted;
+  const badge = getServerBadge(s);
+
+  return (
+    <Link
+      href={`/servers/${s.id}`}
+      className={[
+        styles.serverListRow,
+        isVip ? styles.serverListRowVip : '',
+        isBoosted ? styles.serverListRowBoost : '',
+      ].filter(Boolean).join(' ')}
+      aria-label={`Открыть сервер ${s.name}`}
+    >
+      <span className={styles.listProject}>
+        <span className={styles.listLogoBox}>
+          <ServerIcon server={s} small eager={eagerImage} />
+        </span>
+
+        <span className={styles.listIdentity}>
+          <span className={styles.listTitleRow}>
+            <strong>{s.name}</strong>
+            <span className={`${styles.cardTags} ${styles.listTags}`} title={`${projectMeta.chroniclesTitle} / ${projectMeta.ratesTitle}`}>
+              <span className={styles.tagChronicle}>{projectMeta.chronicles}</span>
+              <span className={styles.tagRate}>{projectMeta.rates}</span>
+            </span>
+            {badge && <em>{badge}</em>}
+          </span>
+        </span>
+      </span>
+
+      <span className={styles.listTrust}>
+        <small>Доверие</small>
+        <strong style={{ color: trust.color }}>
+          {trust.known ? trust.label : '-'}
+        </strong>
+      </span>
+
+      <span className={styles.listMetric}>
+        <small>Миры</small>
+        <strong>{worlds} {worldWord(worlds)}</strong>
+      </span>
+
+      <span className={styles.listMetric}>
+        <small>Активность</small>
+        {activity.known ? (
+          <strong className={styles.listActivity} style={{ color: activity.color }}>
+            <i aria-hidden="true" style={{ background: activity.color }} />
+            {activity.label}
+          </strong>
+        ) : (
+          <strong>-</strong>
+        )}
+      </span>
+
+      <span className={`${styles.listMetric} ${styles.listMetricTraffic}`}>
+        <small>Трафик / 3 мес.</small>
+        <strong className={styles.trafficValue}>
+          {formatTraffic(s.trafficThreeMonths)}
+          {trafficTrend && (
+            <em className={trafficTrend.direction === 'up' ? styles.trendUp : trafficTrend.direction === 'down' ? styles.trendDown : styles.trendFlat}>
+              {trafficTrend.direction === 'up' ? '↑' : trafficTrend.direction === 'down' ? '↓' : '•'} {trafficTrend.percent}%
+            </em>
+          )}
+        </strong>
+      </span>
+
+      <span className={styles.listMetric}>
+        <small>Старт</small>
+        <strong>{latestOpening ? formatDate(latestOpening) : '-'}</strong>
+      </span>
+
+      <span className={`${styles.listMetric} ${styles.listMetricVotes}`}>
+        <small>Голоса</small>
+        <strong className={styles.votes}>★ {votes.toLocaleString('ru-RU')}</strong>
+      </span>
+
+      <span className={styles.listArrow} aria-hidden="true">→</span>
+    </Link>
+  );
+}
+
 function ServerIcon({ server, small, eager = false }: { server: Server; small?: boolean; eager?: boolean }) {
   return (
     <span className={`${styles.serverIcon} ${small ? styles.serverIconSmall : ''}`}>
       {server.icon
-        ? <img src={server.icon} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        ? <img src={catalogAssetSrc(server.icon)} alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" onError={e => handleCatalogImageError(e.currentTarget as HTMLImageElement)} />
         : <span>{server.abbr ?? server.name.slice(0, 2).toUpperCase()}</span>}
     </span>
   );
@@ -503,6 +850,13 @@ function worldWord(value: number): string {
   if (mod10 === 1) return 'мир';
   if (mod10 >= 2 && mod10 <= 4) return 'мира';
   return 'миров';
+}
+
+function formatShortDate(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }).replace('.', '');
 }
 
 function formatDate(value?: string | null) {

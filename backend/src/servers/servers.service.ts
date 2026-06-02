@@ -271,6 +271,27 @@ function rateRange(n: number): string {
   return 'extreme';
 }
 
+type CatalogListSort = 'trust' | 'worlds' | 'activity' | 'traffic' | 'start' | 'votes' | 'name';
+type CatalogSortDirection = 'asc' | 'desc';
+
+const CATALOG_LIST_SORTS = new Set<CatalogListSort>(['trust', 'worlds', 'activity', 'traffic', 'start', 'votes', 'name']);
+const CATALOG_TRUST_WEIGHT: Record<string, number> = { A: 3, B: 2, C: 1 };
+const CATALOG_ACTIVITY_WEIGHT: Record<string, number> = { high: 4, medium: 3, low: 2, very_low: 1 };
+
+function normalizeCatalogListSort(value?: string | null): CatalogListSort | null {
+  return value && CATALOG_LIST_SORTS.has(value as CatalogListSort) ? value as CatalogListSort : null;
+}
+
+function normalizeCatalogSortDirection(value?: string | null): CatalogSortDirection {
+  return value === 'asc' ? 'asc' : 'desc';
+}
+
+function catalogWorldCount(server: any): number {
+  const instances = Array.isArray(server?.instances) ? server.instances : [];
+  if (instances.length === 0) return 1;
+  return activeInstances(server).length;
+}
+
 function isComingSoonServer(s: any, nowTs = Date.now()): boolean {
   if (isOpeningStillSoon(s.openedDate, nowTs)) return true;
   const insts = activeInstances(s);
@@ -863,7 +884,9 @@ export class ServersService {
   async findAll(filters: FilterServersDto) {
     // sort без default: пустое = «по умолчанию» (пьедестал «Рекомендуем» → «В фокусе»
      // → остальные по голосам). Явные значения: opened/name/rating/votes.
-    const { search, chronicle, rate, donate, type, activity, trust, openedWithin, sort, compact = false, page = 1, limit = 50 } = filters;
+    const { search, chronicle, rate, donate, type, activity, trust, openedWithin, sort, lsort, ldir, compact = false, page = 1, limit = 50 } = filters;
+    const listSort = normalizeCatalogListSort(lsort);
+    const listDir = normalizeCatalogSortDirection(ldir);
 
     const where: any = {};
 
@@ -992,6 +1015,32 @@ export class ServersService {
     const isExplicitSort = sort === 'name' || sort === 'rating' || sort === 'votes' || sort === 'opened';
 
     decorated.sort((a, b) => {
+      if (listSort) {
+        let result = 0;
+        if (listSort === 'name') {
+          result = String(a.name ?? '').localeCompare(String(b.name ?? ''), 'ru-RU');
+        } else {
+          const value = (server: any): number => {
+            switch (listSort) {
+              case 'trust':    return CATALOG_TRUST_WEIGHT[server.trustLevel ?? ''] ?? 0;
+              case 'worlds':   return catalogWorldCount(server);
+              case 'activity': return CATALOG_ACTIVITY_WEIGHT[server.activityLevel ?? ''] ?? 0;
+              case 'traffic':  return Number(server.trafficThreeMonths ?? 0);
+              case 'start':    return effectiveOpenedTs(server);
+              case 'votes':    return Number(server.totalVotes ?? 0);
+              default:         return 0;
+            }
+          };
+          result = value(a) - value(b);
+        }
+
+        if (listDir === 'desc') result *= -1;
+        if (result !== 0) return result;
+        if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
+        if (a._isBoosted !== b._isBoosted) return a._isBoosted ? -1 : 1;
+        return (b.totalVotes ?? 0) - (a.totalVotes ?? 0) || String(a.name ?? '').localeCompare(String(b.name ?? ''), 'ru-RU');
+      }
+
       // «Рекомендуем» всегда наверху
       if (a._isVip !== b._isVip) return a._isVip ? -1 : 1;
 

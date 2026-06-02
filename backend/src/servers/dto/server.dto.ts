@@ -50,6 +50,8 @@ export class FilterServersDto {
   @IsOptional() @IsString() activity?: string;    // high|medium|low|very_low
   @IsOptional() @IsString() trust?: string;       // A|B|C
   @IsOptional() @IsString() sort?: string;        // opened|name|rating|votes
+  @IsOptional() @IsString() lsort?: string;       // list view sort
+  @IsOptional() @IsString() ldir?: string;        // asc|desc
   @IsOptional() @IsString() openedWithin?: string; // 7d|30d
   @IsOptional() @Transform(({ value }) => value === true || value === 'true' || value === '1') @IsBoolean() compact?: boolean;
   @IsOptional() @Transform(({ value }) => Number(value)) @IsInt() page?: number;

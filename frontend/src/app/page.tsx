@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { Server, ServersResponse, Stats } from '@/lib/types';
+import type { Article, Server, ServersResponse } from '@/lib/types';
 import { HomeClient, type FilterCounts } from './HomeClient';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
@@ -44,6 +44,7 @@ function firstParam(value: string | string[] | undefined): string | undefined {
 
 function buildServerParams(searchParams: Record<string, string | string[] | undefined>) {
   const page = Number(firstParam(searchParams.page) ?? 1);
+  const view = firstParam(searchParams.view);
   const params: Record<string, string> = {
     page: Number.isFinite(page) && page > 0 ? String(page) : '1',
     limit: '30',
@@ -56,6 +57,10 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
   const rate = firstParam(searchParams.rate);
   const opened = firstParam(searchParams.opened);
   const type = firstParam(searchParams.type);
+  const activity = firstParam(searchParams.activity);
+  const trust = firstParam(searchParams.trust);
+  const listSort = firstParam(searchParams.lsort);
+  const listDir = firstParam(searchParams.ldir);
 
   if (sort) params.sort = sort;
   if (search) params.search = search;
@@ -63,6 +68,12 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
   if (rate) params.rate = rate;
   if (opened) params.openedWithin = opened;
   if (type) params.type = type;
+  if (activity) params.activity = activity;
+  if (trust) params.trust = trust;
+  if (view === 'list' && listSort) {
+    params.lsort = listSort;
+    if (listDir) params.ldir = listDir;
+  }
 
   return params;
 }
@@ -82,19 +93,30 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const params = buildServerParams(sp);
   const query = new URLSearchParams(params).toString();
 
-  const [serversResponse, stats, counts] = await Promise.all([
+  const [serversResponse, counts] = await Promise.all([
     fetchBackend<ServersResponse>(`/servers?${query}`),
-    fetchBackend<Stats>('/servers/stats'),
     fetchBackend<FilterCounts>('/servers/counts'),
   ]);
+
+  const [comingSoon, topPool, articles] = await Promise.all([
+    fetchBackend<Server[]>('/servers/coming-soon'),
+    fetchBackend<ServersResponse>('/servers?page=1&limit=100&compact=true'),
+    fetchBackend<Article[]>('/articles'),
+  ]);
+
+  const initialTopVotes = [...(topPool?.data ?? [])]
+    .sort((left, right) => (right.totalVotes ?? right.weeklyVotes ?? 0) - (left.totalVotes ?? left.weeklyVotes ?? 0))
+    .slice(0, 5);
 
   return (
     <HomeClient
       initialServers={(serversResponse?.data ?? []) as Server[]}
-      initialStats={stats}
       initialCounts={counts}
       initialPages={serversResponse?.pages ?? 1}
       initialOk={!!serversResponse}
+      initialComingSoon={(comingSoon ?? []).slice(0, 5)}
+      initialTopVotes={initialTopVotes}
+      initialArticles={(articles ?? []).filter(article => article.publishedAt).slice(0, 4)}
     />
   );
 }
