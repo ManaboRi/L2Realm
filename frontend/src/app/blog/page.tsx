@@ -43,10 +43,11 @@ const CATEGORY_CONFIGS: CategoryConfig[] = [
   { label: 'Новости', aliases: ['новости', 'новости lineage 2'], color: '#6f8dff' },
   { label: 'Патчи и обновления', aliases: ['патчи', 'патчи и обновления', 'обновления'], color: '#d56ee6' },
   { label: 'Корейские новости', aliases: ['корейские новости', 'корея', 'korea'], color: '#f2a044' },
+  { label: 'Скоро открытие', aliases: ['скоро открытие'], color: '#d2ab52' },
 ];
 
 const REVIEW_CATEGORY = 'Обзоры серверов';
-const OPENING_CATEGORY = 'Открытия';
+const OPENING_CATEGORY = 'Скоро открытие';
 const BLOG_TABS = [
   { label: 'Все статьи', category: undefined },
   { label: 'Обзоры серверов', category: REVIEW_CATEGORY },
@@ -144,13 +145,7 @@ function categoryConfigFor(value: string): CategoryConfig | null {
 function categoryMatches(a: Article, selected: string) {
   if (!selected) return true;
   if (normalizeCategory(selected) === normalizeCategory(OPENING_CATEGORY)) {
-    const haystack = normalizeCategory([
-      articleCategory(a),
-      a.title,
-      a.description ?? '',
-      firstParagraph(a.content, 140),
-    ].join(' '));
-    return haystack.includes('открыт') || haystack.includes('старт');
+    return normalizeCategory(articleCategory(a)) === normalizeCategory(OPENING_CATEGORY);
   }
   const articleValue = articleCategory(a);
   const selectedConfig = categoryConfigFor(selected);
