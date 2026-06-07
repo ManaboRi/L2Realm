@@ -8,7 +8,7 @@ import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 5;
 
 export const dynamic = 'force-dynamic';
 
@@ -46,7 +46,13 @@ const CATEGORY_CONFIGS: CategoryConfig[] = [
 ];
 
 const REVIEW_CATEGORY = 'Обзоры серверов';
-const NEWS_CATEGORIES = ['Новости', 'Патчи и обновления', 'Корейские новости'];
+const OPENING_CATEGORY = 'Открытия';
+const BLOG_TABS = [
+  { label: 'Все статьи', category: undefined },
+  { label: 'Обзоры серверов', category: REVIEW_CATEGORY },
+  { label: 'Новости', category: 'Новости' },
+  { label: 'Открытия', category: OPENING_CATEGORY },
+] as const;
 
 export const metadata: Metadata = {
   title: 'Блог L2Realm — статьи, обзоры и гайды Lineage 2',
@@ -137,6 +143,15 @@ function categoryConfigFor(value: string): CategoryConfig | null {
 
 function categoryMatches(a: Article, selected: string) {
   if (!selected) return true;
+  if (normalizeCategory(selected) === normalizeCategory(OPENING_CATEGORY)) {
+    const haystack = normalizeCategory([
+      articleCategory(a),
+      a.title,
+      a.description ?? '',
+      firstParagraph(a.content, 140),
+    ].join(' '));
+    return haystack.includes('открыт') || haystack.includes('старт');
+  }
   const articleValue = articleCategory(a);
   const selectedConfig = categoryConfigFor(selected);
   if (selectedConfig) {
@@ -144,18 +159,6 @@ function categoryMatches(a: Article, selected: string) {
     return articleConfig?.label === selectedConfig.label;
   }
   return normalizeCategory(articleValue) === normalizeCategory(selected);
-}
-
-function isReviewArticle(article: Article) {
-  return categoryMatches(article, REVIEW_CATEGORY);
-}
-
-function isNewsArticle(article: Article) {
-  return NEWS_CATEGORIES.some(category => categoryMatches(article, category));
-}
-
-function displayCategory(article: Article) {
-  return categoryConfigFor(articleCategory(article))?.label ?? articleCategory(article);
 }
 
 function articleTime(a: Article) {
@@ -290,15 +293,6 @@ function articleBadge(article: Article, serverMap: Map<string, Server>): Article
     : null;
 }
 
-function ArticleCover({ article }: { article: Article }) {
-  return (
-    <span className={styles.cover}>
-      {article.image ? <img src={article.image} alt="" loading="lazy" /> : <span className={styles.coverFallback} />}
-      <span className={styles.coverShade} />
-    </span>
-  );
-}
-
 function ArticleStats({ article, compact = false }: { article: Article; compact?: boolean }) {
   return (
     <span className={`${styles.stats} ${compact ? styles.statsCompact : ''}`}>
@@ -308,29 +302,58 @@ function ArticleStats({ article, compact = false }: { article: Article; compact?
   );
 }
 
-function ArticleCard({ article, badge }: { article: Article; badge: ArticleBadge | null }) {
+function BlogTabs({ activeCategory, q }: { activeCategory: string; q: string }) {
+  return (
+    <div className={styles.listHead}>
+      <h2><span>◆</span>Последние статьи</h2>
+      <nav className={styles.articleTabs} aria-label="Категории статей">
+        {BLOG_TABS.map(tab => {
+          const isActive = tab.category
+            ? normalizeCategory(activeCategory) === normalizeCategory(tab.category)
+            : !activeCategory;
+          return (
+            <Link
+              key={tab.label}
+              href={buildBlogHref({ category: tab.category, q })}
+              className={`${styles.articleTab} ${isActive ? styles.articleTabActive : ''}`}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}
+
+function ArticleListItem({ article, badge }: { article: Article; badge: ArticleBadge | null }) {
   const badgeClass = badge?.kind === 'ncsoft'
     ? styles.articleSourceNcsoft
     : badge?.kind === 'fourgame'
       ? styles.articleSourceFourgame
       : '';
+  const description = article.description?.trim() || firstParagraph(article.content, 175);
+
   return (
-    <Link href={`/blog/${article.slug}`} className={styles.articleCard}>
-      <ArticleCover article={article} />
-      {badge && (
-        <span
-          className={`${styles.articleSourceBadge} ${badgeClass}`}
-          title={badge.label}
-        >
-          <img src={badge.src} alt="" loading="lazy" />
+    <Link href={`/blog/${article.slug}`} className={styles.articleListItem}>
+      <span className={styles.listCover}>
+        {article.image ? <img src={article.image} alt="" loading="lazy" /> : <span className={styles.coverFallback} />}
+        {badge && (
+          <span className={`${styles.listSourceBadge} ${badgeClass}`} title={badge.label}>
+            <img src={badge.src} alt="" loading="lazy" />
+          </span>
+        )}
+      </span>
+      <span className={styles.listBody}>
+        <span className={styles.listMetaTop}>
+          <span className={styles.categoryBadge} style={categoryStyle(articleCategory(article))}>{articleCategory(article)}</span>
+          <time dateTime={article.publishedAt ?? article.createdAt}>{fmtDate(article.publishedAt ?? article.createdAt)}</time>
         </span>
-      )}
-      <span className={styles.cardContent}>
-        <span className={styles.categoryBadge} style={categoryStyle(articleCategory(article))}>{articleCategory(article)}</span>
-        <time dateTime={article.publishedAt ?? article.createdAt}>{fmtDate(article.publishedAt ?? article.createdAt)}</time>
         <strong>{article.title}</strong>
+        <span className={styles.listDescription}>{description}</span>
         <ArticleStats article={article} compact />
       </span>
+      <span className={styles.readMore}>Читать далее →</span>
     </Link>
   );
 }
@@ -369,15 +392,6 @@ function SidebarTopVotes({ servers }: { servers: Server[] }) {
       )) : (
         <span className={styles.sideEmpty}>Голоса появятся после первых голосований на этой неделе.</span>
       )}
-    </div>
-  );
-}
-
-function SectionHeader({ title, icon, href }: { title: string; icon: string; href?: string }) {
-  return (
-    <div className={styles.sectionHeader}>
-      <h2><span>{icon}</span>{title}</h2>
-      {href && <Link href={href}>Все →</Link>}
     </div>
   );
 }
@@ -422,22 +436,6 @@ export default async function BlogPage({ searchParams }: Props) {
   const safePage = Math.min(currentPage, pages);
   const pageArticles = visible.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const latest = articles.slice(0, 5);
-  const isFiltered = !!activeCategory || !!q;
-
-  const sectionArticles = isFiltered ? pageArticles : visible;
-  const reviewArticles = sectionArticles.filter(isReviewArticle).slice(0, 4);
-  const newsArticles = sectionArticles.filter(isNewsArticle).slice(0, 4);
-  const otherGroups = Array.from(
-    sectionArticles.reduce((groups, article) => {
-      if (isReviewArticle(article) || isNewsArticle(article)) return groups;
-      const title = displayCategory(article);
-      const group = groups.get(title);
-      if (group) group.push(article);
-      else groups.set(title, [article]);
-      return groups;
-    }, new Map<string, Article[]>()),
-    ([title, groupArticles]) => ({ title, articles: groupArticles.slice(0, 4) }),
-  );
 
   return (
     <main className={styles.page}>
@@ -460,48 +458,19 @@ export default async function BlogPage({ searchParams }: Props) {
       ) : (
         <div className={styles.layout}>
           <section className={styles.feed}>
-            {isFiltered ? (
-              <>
-                <SectionHeader title={q ? 'Результаты поиска' : activeCategory} icon="◆" />
-                {pageArticles.length === 0 ? (
-                  <div className={styles.empty}>По выбранным параметрам статей не найдено.</div>
-                ) : (
-                  <div className={styles.filteredGrid}>
-                    {pageArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
-                  </div>
-                )}
-                <Pagination pages={pages} currentPage={safePage} category={activeCategory} q={q} />
-              </>
-            ) : (
-              <>
-                {reviewArticles.length > 0 && (
-                  <section className={styles.articleSection}>
-                    <SectionHeader title="Обзоры серверов" icon="◆" href={buildBlogHref({ category: REVIEW_CATEGORY })} />
-                    <div className={styles.articleGrid}>
-                      {reviewArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
-                    </div>
-                  </section>
-                )}
-
-                {newsArticles.length > 0 && (
-                  <section className={styles.articleSection}>
-                    <SectionHeader title="Новости Lineage 2" icon="◆" href={buildBlogHref({ category: 'Новости' })} />
-                    <div className={styles.articleGrid}>
-                      {newsArticles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
-                    </div>
-                  </section>
-                )}
-
-                {otherGroups.map(group => (
-                  <section key={group.title} className={styles.articleSection}>
-                    <SectionHeader title={group.title} icon="◆" href={buildBlogHref({ category: group.title })} />
-                    <div className={styles.articleGrid}>
-                      {group.articles.map(article => <ArticleCard key={article.id} article={article} badge={articleBadge(article, articleServers)} />)}
-                    </div>
-                  </section>
-                ))}
-              </>
-            )}
+            <section className={styles.listPanel}>
+              <BlogTabs activeCategory={activeCategory} q={q} />
+              {pageArticles.length === 0 ? (
+                <div className={styles.emptyInline}>По выбранным параметрам статей не найдено.</div>
+              ) : (
+                <div className={styles.articleList}>
+                  {pageArticles.map(article => (
+                    <ArticleListItem key={article.id} article={article} badge={articleBadge(article, articleServers)} />
+                  ))}
+                </div>
+              )}
+              <Pagination pages={pages} currentPage={safePage} category={activeCategory} q={q} />
+            </section>
           </section>
 
           <aside className={styles.sidebar}>
