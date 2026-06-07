@@ -2,9 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import styles from './page.module.css';
 
+const SITE = 'https://l2realm.ru';
+
 export const metadata: Metadata = {
   title: 'Как L2Realm проверяет серверы Lineage 2',
   description: 'Методика L2Realm: ручная проверка и доверие A/B/C, активность проекта, посещаемость сайта, голоса игроков и история открытий.',
+  alternates: { canonical: `${SITE}/methodology` },
 };
 
 export default function MethodologyPage() {

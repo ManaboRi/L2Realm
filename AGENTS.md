@@ -6,6 +6,8 @@ Guidance for Codex when working in L2Realm.
 
 Open `docs/codex-quick-context.md` before starting normal work. It is the short operational memory for this project: deploy rules, checks, critical invariants, and the file map. Use the longer docs only when needed.
 
+If a chat becomes too long or slow, use `docs/new-chat-prompt.md` to start a fresh chat instead of carrying the whole conversation history forward.
+
 ## Project
 
 L2Realm is a private Lineage 2 server catalog: https://l2realm.ru.

@@ -4,7 +4,7 @@ Working notes for the user and Codex. Update when a task changes status.
 
 ## In Progress
 
-- Empty
+- Blog cleanup requested: remove the featured article and yellow promo strips, switch article grids to 3 columns, render news as normal cards, make the sidebar non-sticky, and keep the section order reviews -> news -> other categories.
 
 ## Waiting For Production Check
 

@@ -4,6 +4,7 @@ Short notes for future Codex sessions. Keep this file compact and append newest 
 
 ## 2026-05-24
 
+- Added a fresh-chat handoff prompt in `docs/new-chat-prompt.md` and compressed `docs/codex-quick-context.md` so future Codex chats can start from project rules/current state without rereading the long conversation.
 - Fixed `VIP Скоро открытие` ordering: VIP future launches now stay above ordinary future launches, with each group sorted by opening date.
 - Rebuilt `/blog` into a magazine-style article hub with a featured article, category sections, colored category sidebar, coming-soon sidebar block, prepared latest-comments block, and page-based pagination after 15 visible articles.
 - Removed Yandex Metrika and VK Pixel from the global layout so the privacy policy no longer contradicts the shipped HTML; no cookie-consent banner is needed while analytics trackers stay disabled.

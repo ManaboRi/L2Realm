@@ -37,3 +37,7 @@ certbot/
 # Claude Code local settings (per-user, не для репо)
 .claude/settings.local.json
 l2realm-admin.url
+l2realm-admin-PROD.url
+
+# Локальные заметки / журнал работ (личные, не для репо)
+_local/

@@ -10,8 +10,8 @@ import styles from './page.module.css';
 
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
-
-export const dynamic = 'force-dynamic';
+const ARTICLE_REVALIDATE = 300;
+const OPENINGS_REVALIDATE = 120;
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -54,7 +54,9 @@ async function fetchArticle(slug: string, countView = false): Promise<Article | 
       ? `/api/articles/${encodeURIComponent(slug)}/view`
       : `/api/articles/${encodeURIComponent(slug)}`;
     const res = await fetch(`${BACKEND}${endpoint}`, {
-      cache: 'no-store',
+      ...(countView
+        ? { cache: 'no-store' as const }
+        : { next: { revalidate: ARTICLE_REVALIDATE } }),
     });
     if (!res.ok) return null;
     return await res.json();
@@ -65,7 +67,7 @@ async function fetchArticle(slug: string, countView = false): Promise<Article | 
 
 async function fetchArticles(): Promise<Article[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/articles`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/articles`, { next: { revalidate: ARTICLE_REVALIDATE } });
     if (!res.ok) return [];
     const data = await res.json();
     return (Array.isArray(data) ? data : (data.data ?? []))
@@ -77,7 +79,7 @@ async function fetchArticles(): Promise<Article[]> {
 
 async function fetchServer(id: string): Promise<Server | null> {
   try {
-    const res = await fetch(`${BACKEND}/api/servers/${encodeURIComponent(id)}`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/servers/${encodeURIComponent(id)}`, { next: { revalidate: ARTICLE_REVALIDATE } });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -87,7 +89,7 @@ async function fetchServer(id: string): Promise<Server | null> {
 
 async function fetchServerList(): Promise<Server[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/servers?limit=120`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/servers?limit=120`, { next: { revalidate: ARTICLE_REVALIDATE } });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : (data.data ?? []);
@@ -98,7 +100,7 @@ async function fetchServerList(): Promise<Server[]> {
 
 async function fetchComingSoon(): Promise<OpeningPreview[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { next: { revalidate: OPENINGS_REVALIDATE } });
     if (!res.ok) return [];
     const servers = (await res.json()) as Server[];
     return flattenOpenings(servers).slice(0, 3);

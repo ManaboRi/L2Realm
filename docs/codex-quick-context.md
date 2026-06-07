@@ -1,66 +1,95 @@
 # Codex Quick Context
 
-Read this first before working on L2Realm. Keep it short: it exists so a new Codex chat can continue without rereading the whole repo history.
+Read this file first in every new L2Realm chat. It is the compact operational memory. Do not reread the whole repo unless the task needs it.
 
 ## Project
 
-- Site: `https://l2realm.ru`, a private Lineage 2 server catalog.
-- Windows workspace: `D:\Проекты\L2Realm`.
+- Site: `https://l2realm.ru`, private Lineage 2 server catalog.
+- Workspace on Windows: `D:\Проекты\L2Realm`.
 - Stack: Next.js 16 frontend, NestJS backend, Prisma, PostgreSQL, Docker Compose, nginx.
 - Auth: VK ID. Local VK login is usually not testable because VK requires HTTPS redirect URI.
 - Deploy is manual over SSH to the VPS.
-- Never deploy without explicit user approval. If a Prisma migration is included, make a DB backup on the VPS before deploy.
+- Rule: never deploy without explicit user approval. If Prisma migrations are included, make a DB backup first.
 
-## Safety Rules
+## Current Production State
 
-- Do not change existing public URLs unless the user explicitly asks and 301 redirects are prepared.
-- Do not break Markdown formatting in articles or server descriptions. Line breaks, headings and spaces are important.
+- Latest known deployed commit: `f30274f Harden legal pages and refresh blog`.
+- Legal pages exist: `/terms`, `/legal`, `/privacy`.
+- Yandex Metrika and VK Pixel are disabled, so no cookie banner is currently needed for trackers.
+- Public/admin download-client/patch/updater/start-guide UI is disabled to reduce right-holder risk. Old DB fields may still exist; do not re-enable without user approval.
+- Blog was recently rebuilt into a magazine-style page, but the user now wants it simplified again. See "Next Task".
+
+## Critical Rules
+
+- Do not change public URLs unless the user explicitly asks and redirects are planned.
+- Do not break Markdown formatting in articles or server descriptions. Line breaks, headings and spacing matter.
 - Do not touch `.env` or secrets unless the task clearly requires it.
-- Do not expose VK full names publicly; public UI should use nickname/avatar only.
-- Keep `sitemap.xml`, `robots.txt`, SSR metadata and canonical URLs working after SEO-related changes.
+- Do not expose VK full names publicly. Public UI/API should use nickname/avatar only.
+- Keep `sitemap.xml`, `robots.txt`, SSR metadata and canonical URLs working after SEO changes.
+- For frontend-only CSS/UI changes, backend build can be skipped. For API/schema/backend changes, build both.
+- Use targeted reads with `rg`; avoid scanning the full repo by default.
 
 ## Current Public Routes
 
-- `/` - main server catalog with filters, search, sort and server cards.
-- `/servers/[id]` - project page with SEO metadata, hero, tabs `Обзор / Сервера / Отзывы`, vote/support panel, contacts and linked articles.
-- `/coming-soon` - future openings. A server stays visible for the whole opening date and disappears the next day.
+- `/` - main server catalog with filters, search, sort and compact server cards.
+- `/servers/[id]` - project page with SEO metadata, hero, tabs `Обзор / Информация / Сервера / Отзывы`, online chart, vote/support panel, contacts and linked articles.
+- `/coming-soon` - future openings. A launch stays visible for the whole opening day and can show an opened state briefly after the timer ends.
 - `/pricing` - tariffs and promotion.
 - `/blog` and `/blog/[slug]` - articles.
 - `/profile` - user dashboard: profile, favorites, reminders, reviews, saved articles, security/nickname.
+- `/terms`, `/legal`, `/privacy` - legal pages.
 
-## Important Current Features
+## Important Features
 
 - Catalog sorting: VIP -> Server of the Week -> BOOST -> the rest by all-time votes.
+- Coming-soon sorting: VIP future launches should be above ordinary future launches; each group sorts by opening date.
 - Voting is limited by IP and authenticated account for 24 hours.
 - Vote Manager API for server owners:
   `https://l2realm.ru/api/vote/check?server_id=ID&nickname=НИК`
-- Download/client/patch/updater blocks are intentionally disabled in public UI, admin UI and API validation to reduce right-holder risk.
-- Server pages now have a separate `Сервера` tab for project launches/instances.
+- Server pages have a separate `Сервера` tab for project launches/instances.
 - Articles can be linked to projects through `Article.serverIds`; linked articles appear on the server page.
-- Future banner/article uploads are kept wider and higher quality (`banner` and `article` upload types).
 - Article views are stored in `Article.views` and increment when the article page is opened.
+- Estimated online exists for project launches. It uses Moscow time curves, chronicle/rate-aware night drops, and hourly `instances[].onlineHistory` snapshots without a Prisma migration.
+- Admin server add/edit "Languages" is a free-text field; user may paste flags/country codes manually.
 
-## Recent Migration
+## Next Task From User
 
-- `20260521124500_article_server_links`
-- Adds `Article.serverIds TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]`
-- Adds a GIN index on `Article.serverIds`
-- Deployment with this migration requires DB backup first and `npx prisma migrate deploy`.
+Blog cleanup requested, not yet implemented in this handoff:
+
+- Remove the yellow middle strip on `/blog`.
+- Change article grid from 4 columns to 3 columns.
+- Remove the top featured article block.
+- Render sections in this order: reviews first, then news, then other categories. News should look like normal article cards, not a separate row/table style.
+- Make the right sidebar scroll normally with the page, not sticky.
+- Remove the sidebar promo block:
+  "Не пропусти старт! Следи за будущими открытиями..."
+
+Likely files:
+- `frontend/src/app/blog/page.tsx`
+- `frontend/src/app/blog/page.module.css`
 
 ## Checks Before Commit
 
 ```powershell
-cd D:\Проекты\L2Realm\backend
+cd D:\Проекты\L2Realm\frontend
 npm.cmd run build
 
-cd D:\Проекты\L2Realm\frontend
+cd D:\Проекты\L2Realm\backend
 npm.cmd run build
 
 cd D:\Проекты\L2Realm
 git diff --check
 ```
 
-For frontend-only CSS/UI edits, backend build can be skipped if backend/schema/API did not change. If Prisma/backend/API changed, build both.
+For frontend-only blog/CSS edits, usually run:
+
+```powershell
+cd D:\Проекты\L2Realm\frontend
+npm.cmd run build
+
+cd D:\Проекты\L2Realm
+git diff --check
+```
 
 ## Deploy Commands
 
@@ -84,8 +113,9 @@ Post-deploy smoke checks:
 
 ```powershell
 Invoke-WebRequest -UseBasicParsing https://l2realm.ru/
+Invoke-WebRequest -UseBasicParsing https://l2realm.ru/blog
 Invoke-WebRequest -UseBasicParsing https://l2realm.ru/servers/Scryde
-Invoke-WebRequest -UseBasicParsing https://l2realm.ru/profile
+Invoke-WebRequest -UseBasicParsing https://l2realm.ru/coming-soon
 Invoke-WebRequest -UseBasicParsing https://l2realm.ru/sitemap.xml
 ssh -i C:\Users\Egor_\.ssh\l2realm_vps_20260510 root@194.67.119.113 "cd /opt/l2realm && docker compose ps"
 ```
@@ -104,7 +134,7 @@ Frontend:
 - `frontend/src/lib/api.ts` and `frontend/src/lib/types.ts` - API/types.
 
 Backend:
-- `backend/src/servers/` - projects, filters, add-server requests, subscriptions/boosts.
+- `backend/src/servers/` - projects, filters, add-server requests, subscriptions/boosts, estimated online.
 - `backend/src/articles/` - articles, admin article editing, views, linked server IDs.
 - `backend/src/votes/` - voting and Vote Manager.
 - `backend/src/favorites/` - user favorites.
@@ -113,8 +143,9 @@ Backend:
 - `backend/prisma/schema.prisma` and `backend/prisma/migrations/` - DB schema.
 
 Docs:
+- `docs/new-chat-prompt.md` - copy-paste prompt for starting a fresh chat.
 - `docs/deploy.md` - deployment details.
-- `docs/vote-manager.md` - text/instructions for server owners.
+- `docs/vote-manager.md` - instructions for server owners.
 - `docs/security-audit.md` - security/audit state.
 - `docs/agent-architecture.md` - deeper architecture notes.
 - `docs/change-log.md` - short chronological notes.
