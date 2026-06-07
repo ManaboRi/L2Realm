@@ -85,6 +85,18 @@ async function fetchComingSoon(): Promise<OpeningPreview[]> {
   }
 }
 
+async function fetchTopVoteServers(): Promise<Server[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/servers?page=1&limit=100&compact=true`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = (await res.json()) as Server[] | { data?: Server[] };
+    const servers = Array.isArray(data) ? data : (data.data ?? []);
+    return selectWeeklyRailServers(servers);
+  } catch {
+    return [];
+  }
+}
+
 async function fetchArticleServers(articles: Article[]): Promise<Map<string, Server>> {
   const ids = Array.from(new Set(articles.flatMap(article => article.serverIds ?? [])));
   const servers = await Promise.all(ids.map(async id => {
@@ -146,10 +158,6 @@ function displayCategory(article: Article) {
   return categoryConfigFor(articleCategory(article))?.label ?? articleCategory(article);
 }
 
-function categoryCount(articles: Article[], category: string) {
-  return articles.filter(a => categoryMatches(a, category)).length;
-}
-
 function articleTime(a: Article) {
   return new Date(a.publishedAt ?? a.createdAt).getTime() || 0;
 }
@@ -174,6 +182,40 @@ function formatMetric(value: number): string {
     return `${short.toLocaleString('ru-RU')}K`;
   }
   return value.toLocaleString('ru-RU');
+}
+
+function weeklyVoteCount(server: Server): number {
+  return Math.max(0, Number(server.weeklyVotes ?? 0));
+}
+
+function selectWeeklyRailServers(servers: Server[]): Server[] {
+  const ranked = [...servers]
+    .filter(server => weeklyVoteCount(server) > 0)
+    .sort((left, right) => weeklyVoteCount(right) - weeklyVoteCount(left))
+    .slice(0, 5);
+
+  if (ranked.length > 0) return ranked;
+  return stableShuffle(servers, weekSalt()).slice(0, 5);
+}
+
+function weekSalt() {
+  const now = new Date();
+  const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) - yearStart.getTime()) / 86_400_000) + 1) / 7);
+  return `${now.getUTCFullYear()}-${week}`;
+}
+
+function stableShuffle<T extends { id: string }>(items: T[], salt: string): T[] {
+  return [...items].sort((left, right) => stableHash(`${salt}:${left.id}`) - stableHash(`${salt}:${right.id}`));
+}
+
+function stableHash(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
 }
 
 function buildBlogHref(params: { category?: string; q?: string; page?: number }) {
@@ -307,6 +349,30 @@ function SidebarArticle({ article }: { article: Article }) {
   );
 }
 
+function SidebarTopVotes({ servers }: { servers: Server[] }) {
+  const hasWeeklyVotes = servers.some(server => weeklyVoteCount(server) > 0);
+
+  return (
+    <div className={styles.voteList}>
+      {servers.length > 0 ? servers.map((server, index) => (
+        <Link key={server.id} href={`/servers/${server.id}`} className={styles.voteItem}>
+          <span className={styles.voteRank}>{index + 1}</span>
+          <span className={styles.voteIcon}>
+            {server.icon ? <img src={server.icon} alt="" loading="lazy" /> : (server.abbr || server.name).slice(0, 2)}
+          </span>
+          <span className={styles.voteText}>
+            <strong>{server.name}</strong>
+            <small>{server.chronicle}</small>
+          </span>
+          <span className={styles.voteCount}>{hasWeeklyVotes ? `+ ${weeklyVoteCount(server).toLocaleString('ru-RU')}` : '→'}</span>
+        </Link>
+      )) : (
+        <span className={styles.sideEmpty}>Голоса появятся после первых голосований на этой неделе.</span>
+      )}
+    </div>
+  );
+}
+
 function SectionHeader({ title, icon, href }: { title: string; icon: string; href?: string }) {
   return (
     <div className={styles.sectionHeader}>
@@ -334,20 +400,16 @@ function Pagination({ pages, currentPage, category, q }: { pages: number; curren
 }
 
 export default async function BlogPage({ searchParams }: Props) {
-  const [articles, openings] = await Promise.all([fetchArticles(), fetchComingSoon()]);
+  const [articles, openings, topVotes] = await Promise.all([
+    fetchArticles(),
+    fetchComingSoon(),
+    fetchTopVoteServers(),
+  ]);
   const articleServers = await fetchArticleServers(articles);
   const sp = await searchParams;
   const activeCategory = sp?.category?.trim() || '';
   const q = sp?.q?.trim() || '';
   const currentPage = Math.max(1, Number(sp?.page ?? 1) || 1);
-
-  const customCategories = Array.from(new Set(articles.map(articleCategory)))
-    .filter(name => !categoryConfigFor(name))
-    .map(name => ({ label: name, aliases: [name], color: '#caa050' }));
-  const sidebarCategories = [
-    ...CATEGORY_CONFIGS.filter(config => categoryCount(articles, config.label) > 0),
-    ...customCategories,
-  ];
 
   const searched = q
     ? articles.filter(a => [a.title, a.description, articleCategory(a), firstParagraph(a.content, 120)].join(' ').toLowerCase().includes(q.toLowerCase()))
@@ -444,24 +506,6 @@ export default async function BlogPage({ searchParams }: Props) {
 
           <aside className={styles.sidebar}>
             <section className={styles.sideBlock}>
-              <div className={styles.sideTitle}>Категории</div>
-              <Link href={buildBlogHref({ q })} className={`${styles.categoryLink} ${!activeCategory ? styles.categoryActive : ''}`}>
-                <span><i style={{ '--cat-color': '#6fb7ff' } as CSSProperties} />Все статьи</span>
-                <strong>{articles.length}</strong>
-              </Link>
-              {sidebarCategories.map(config => (
-                <Link
-                  key={config.label}
-                  href={buildBlogHref({ category: config.label, q })}
-                  className={`${styles.categoryLink} ${activeCategory && categoryMatches({ category: config.label } as Article, activeCategory) ? styles.categoryActive : ''}`}
-                >
-                  <span><i style={{ '--cat-color': config.color } as CSSProperties} />{config.label}</span>
-                  <strong>{categoryCount(articles, config.label)}</strong>
-                </Link>
-              ))}
-            </section>
-
-            <section className={styles.sideBlock}>
               <div className={styles.sideTitle}>Скоро открытие</div>
               <div className={styles.openings}>
                 {openings.length === 0 ? (
@@ -478,6 +522,11 @@ export default async function BlogPage({ searchParams }: Props) {
                 ))}
               </div>
               <Link href="/coming-soon" className={styles.sideButton}>Все открытия →</Link>
+            </section>
+
+            <section className={styles.sideBlock}>
+              <div className={styles.sideTitle}>Топ голосов за неделю</div>
+              <SidebarTopVotes servers={topVotes} />
             </section>
 
             <section className={styles.sideBlock}>
