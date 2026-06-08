@@ -89,7 +89,7 @@ async function fetchServer(id: string): Promise<Server | null> {
 
 async function fetchServerList(): Promise<Server[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/servers?limit=120`, { next: { revalidate: ARTICLE_REVALIDATE } });
+    const res = await fetch(`${BACKEND}/api/servers?limit=120&compact=true`, { next: { revalidate: ARTICLE_REVALIDATE } });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : (data.data ?? []);
