@@ -6,7 +6,7 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 const DEFAULT_SHARE_IMAGE = '/images/og-default.jpg';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'L2Realm — Каталог серверов Lineage 2',
@@ -80,12 +80,22 @@ function buildServerParams(searchParams: Record<string, string | string[] | unde
 
 async function fetchBackend<T>(path: string): Promise<T | null> {
   try {
-    const res = await fetch(`${BACKEND}/api${path}`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api${path}`, { next: { revalidate } });
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
     return null;
   }
+}
+
+function articlePreviews(articles: Article[] | null): Article[] {
+  return (articles ?? [])
+    .filter(article => article.publishedAt)
+    .slice(0, 4)
+    .map(article => ({
+      ...article,
+      content: article.content ?? '',
+    }));
 }
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
@@ -101,7 +111,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const [comingSoon, topPool, articles] = await Promise.all([
     fetchBackend<Server[]>('/servers/coming-soon'),
     fetchBackend<ServersResponse>('/servers?page=1&limit=100&compact=true'),
-    fetchBackend<Article[]>('/articles'),
+    fetchBackend<Article[]>('/articles?compact=true&limit=4'),
   ]);
 
   const initialTopVotes = selectWeeklyRailServers(topPool?.data ?? []);
@@ -114,7 +124,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       initialOk={!!serversResponse}
       initialComingSoon={(comingSoon ?? []).slice(0, 5)}
       initialTopVotes={initialTopVotes}
-      initialArticles={(articles ?? []).filter(article => article.publishedAt).slice(0, 4)}
+      initialArticles={articlePreviews(articles)}
       initialRailOk={Boolean(comingSoon && topPool && articles)}
     />
   );

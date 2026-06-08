@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -13,8 +13,11 @@ export class ArticlesController {
   // ── Публичные ────────────────────────────────
   @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @Get()
-  list() {
-    return this.articles.findPublished();
+  list(@Query('compact') compact?: string, @Query('limit') limit?: string) {
+    return this.articles.findPublished({
+      compact: compact === 'true',
+      limit,
+    });
   }
 
   @Throttle({ default: { ttl: 60_000, limit: 120 } })

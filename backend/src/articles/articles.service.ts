@@ -16,6 +16,11 @@ export interface ArticleDto {
   publishedAt?: string | null;
 }
 
+type PublishedListOptions = {
+  compact?: boolean;
+  limit?: string | number;
+};
+
 const articleSchema = z.object({
   slug: safeSlug.optional(),
   title: safeText(3, 140),
@@ -48,10 +53,31 @@ export class ArticlesService {
   constructor(private prisma: PrismaService) {}
 
   // ── Публичный список (только опубликованные) ─
-  async findPublished() {
+  async findPublished(options: PublishedListOptions = {}) {
+    const rawLimit = typeof options.limit === 'number' ? options.limit : Number(options.limit);
+    const take = Number.isFinite(rawLimit) && rawLimit > 0
+      ? Math.min(Math.floor(rawLimit), 50)
+      : undefined;
+
     return this.prisma.article.findMany({
       where:   { publishedAt: { not: null, lte: new Date() } },
       orderBy: { publishedAt: 'desc' },
+      ...(take ? { take } : {}),
+      ...(options.compact ? {
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          image: true,
+          category: true,
+          serverIds: true,
+          views: true,
+          publishedAt: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      } : {}),
     });
   }
 

@@ -5,7 +5,7 @@ import { ComingSoonClient } from './ComingSoonClient';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const SITE = 'https://l2realm.ru';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Скоро открытие — новые сервера Lineage 2',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 async function fetchComingSoon(): Promise<Server[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { next: { revalidate } });
     if (!res.ok) return [];
     return (await res.json()) as Server[];
   } catch {
@@ -35,9 +35,15 @@ async function fetchComingSoon(): Promise<Server[]> {
 
 async function fetchArticles(): Promise<Article[]> {
   try {
-    const res = await fetch(`${BACKEND}/api/articles`, { cache: 'no-store' });
+    const res = await fetch(`${BACKEND}/api/articles?compact=true&limit=4`, { next: { revalidate } });
     if (!res.ok) return [];
-    return (await res.json()) as Article[];
+    const data = await res.json();
+    return Array.isArray(data)
+      ? (data as Article[]).map(article => ({
+          ...article,
+          content: article.content ?? '',
+        }))
+      : [];
   } catch {
     return [];
   }

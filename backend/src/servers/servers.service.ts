@@ -117,16 +117,43 @@ function compactCatalogServer<T>(value: T): T {
 
   const {
     fullDesc: _fullDesc,
+    shortDesc: _shortDesc,
+    country: _country,
+    discord: _discord,
+    telegram: _telegram,
+    vk: _vk,
+    youtube: _youtube,
+    site: _site,
+    rating: _rating,
+    ratingCount: _ratingCount,
+    status: _status,
+    statusOverride: _statusOverride,
+    trafficMonthly: _trafficMonthly,
+    trafficPeriod: _trafficPeriod,
+    trafficSource: _trafficSource,
+    trafficHistory,
     subscription: _subscription,
+    boost: _boost,
+    reviews: _reviews,
+    news: _news,
+    voteRewardsEnabled: _voteRewardsEnabled,
+    onlineValue: _onlineValue,
+    onlineUpdatedAt: _onlineUpdatedAt,
     instances,
     ...server
   } = value as any;
 
   return {
     ...server,
+    ...(Array.isArray(trafficHistory) && { trafficHistory: compactTrafficHistory(trafficHistory) }),
     instances: Array.isArray(instances)
       ? instances.map(instance => {
           const {
+            shortDesc: _shortDesc,
+            donate: _donate,
+            url: _url,
+            statusNote: _statusNote,
+            soonVipPaymentId: _soonVipPaymentId,
             onlineHistory: _onlineHistory,
             onlineMode: _onlineMode,
             onlineManual: _onlineManual,
@@ -149,6 +176,57 @@ function compactCatalogServer<T>(value: T): T {
           return compactInstance;
         })
       : instances,
+  } as T;
+}
+
+function compactTrafficHistory(history: any[]) {
+  return history
+    .filter(item => item && typeof item === 'object')
+    .slice(-2)
+    .map(item => ({
+      period: item.period,
+      monthly: item.monthly ?? null,
+      threeMonths: item.threeMonths ?? null,
+    }));
+}
+
+function compactComingSoonServer<T>(value: T): T {
+  if (!value || typeof value !== 'object') return value;
+  const server = value as any;
+  const subscription = server.subscription
+    ? {
+        plan: server.subscription.plan,
+        endDate: server.subscription.endDate,
+      }
+    : undefined;
+
+  return {
+    id: server.id,
+    name: server.name,
+    abbr: server.abbr,
+    url: server.url,
+    chronicle: server.chronicle,
+    rates: server.rates,
+    rateNum: server.rateNum,
+    type: server.type,
+    vip: server.vip,
+    openedDate: server.openedDate,
+    icon: server.icon,
+    waitsWeek: server.waitsWeek,
+    ...(subscription && { subscription }),
+    instances: activeInstances(server).map(instance => ({
+      id: instance.id,
+      label: instance.label,
+      chronicle: instance.chronicle,
+      rates: instance.rates,
+      rateNum: instance.rateNum,
+      type: instance.type,
+      url: instance.url,
+      openedDate: instance.openedDate,
+      lifecycleStatus: instance.lifecycleStatus,
+      soonVipUntil: instance.soonVipUntil,
+      waitsWeek: instance.waitsWeek,
+    })),
   } as T;
 }
 
@@ -1374,7 +1452,7 @@ export class ServersService {
       waitGroups.map(group => [openingWaitCountKey(group.serverId, group.instanceId), group._count.id]),
     );
 
-    return filtered.map(server => stripLegacyDownloadFields(attachOpeningWaitCounts(server, waitCounts)));
+    return filtered.map(server => compactComingSoonServer(stripLegacyDownloadFields(attachOpeningWaitCounts(server, waitCounts))));
   }
 
   // ── Счётчики для фильтров ────────────────────
