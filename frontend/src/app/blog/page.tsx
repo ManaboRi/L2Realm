@@ -449,7 +449,15 @@ export default async function BlogPage({ searchParams }: Props) {
       </section>
 
       {articles.length === 0 ? (
-        <p className={styles.empty}>Статей пока нет. Скоро напишем — заглядывай.</p>
+        <div className={styles.empty}>
+          <svg className={styles.emptyIcon} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 3h11l3 3v15H5V3Z" />
+            <path d="M15 3v4h4" />
+            <path d="M8 11h8M8 15h8M8 8h3" />
+          </svg>
+          <strong>Статей пока нет</strong>
+          <span>Скоро напишем обзоры серверов и гайды — заглядывай.</span>
+        </div>
       ) : (
         <div className={styles.layout}>
           <section className={styles.feed}>

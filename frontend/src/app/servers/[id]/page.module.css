@@ -1610,7 +1610,13 @@
 .socialLink { display: flex; align-items: center; gap: .6rem; padding: .65rem 1rem; border-bottom: 1px solid var(--border); font-size: .84rem; color: var(--text2); transition: all .18s; }
 .socialLink:last-child { border-bottom: none; }
 .socialLink:hover { background: var(--bg3); color: var(--text); }
-.socialIco { font-size: .95rem; width: 20px; text-align: center; flex-shrink: 0; }
+.socialIco { width: 18px; height: 18px; flex-shrink: 0; fill: currentColor; color: var(--text3); transition: color .18s; }
+.socialLink:hover .socialIco { color: var(--text); }
+/* Бренд-цвета иконок при наведении */
+.social_telegram:hover .socialIco { color: #2ea6e0; }
+.social_discord:hover .socialIco { color: #7b86f2; }
+.social_vk:hover .socialIco { color: #5a8fd6; }
+.social_youtube:hover .socialIco { color: #f0564a; }
 .socialVal { font-size: .74rem; color: var(--text3); margin-left: auto; }
 
 /* Right */

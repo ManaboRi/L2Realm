@@ -528,10 +528,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
         <section className={styles.sideCard}>
           <h2>Контакты</h2>
           <div className={styles.contactLinks}>
-            {server.telegram && <SocialLink ico="TG" name="Telegram" href={server.telegram ?? ''} />}
-            {server.discord && <SocialLink ico="DC" name="Discord" href={server.discord ?? ''} />}
-            {server.vk && <SocialLink ico="VK" name="ВКонтакте" href={server.vk ?? ''} />}
-            {server.youtube && <SocialLink ico="YT" name="YouTube" href={server.youtube ?? ''} />}
+            {server.telegram && <SocialLink kind="telegram" href={server.telegram ?? ''} />}
+            {server.discord && <SocialLink kind="discord" href={server.discord ?? ''} />}
+            {server.vk && <SocialLink kind="vk" href={server.vk ?? ''} />}
+            {server.youtube && <SocialLink kind="youtube" href={server.youtube ?? ''} />}
           </div>
         </section>
       )}
@@ -911,10 +911,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div className={styles.block} style={{ marginTop: 1 }}>
               <div className={styles.blockTitle}>Контакты</div>
               <div className={styles.socials}>
-                {server.telegram && <SocialLink ico="✈️" name="Telegram" href={server.telegram ?? ''} />}
-                {server.discord  && <SocialLink ico="💬" name="Discord"  href={server.discord ?? ''} />}
-                {server.vk       && <SocialLink ico="🔵" name="ВКонтакте" href={server.vk ?? ''} />}
-                {server.youtube  && <SocialLink ico="▶️" name="YouTube"  href={server.youtube ?? ''} />}
+                {server.telegram && <SocialLink kind="telegram" href={server.telegram ?? ''} />}
+                {server.discord  && <SocialLink kind="discord" href={server.discord ?? ''} />}
+                {server.vk       && <SocialLink kind="vk" href={server.vk ?? ''} />}
+                {server.youtube  && <SocialLink kind="youtube" href={server.youtube ?? ''} />}
               </div>
             </div>
           )}
@@ -1093,11 +1093,27 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   );
 }
 
-function SocialLink({ ico, name, href }: { ico: string; name: string; href: string }) {
+type SocialKind = 'telegram' | 'discord' | 'vk' | 'youtube';
+
+const SOCIAL_ICONS: Record<SocialKind, React.ReactNode> = {
+  telegram: <path d="M21.94 4.5 18.9 19.2c-.23 1.02-.84 1.27-1.7.79l-4.7-3.46-2.27 2.18c-.25.25-.46.46-.94.46l.34-4.78L18.32 6.6c.38-.34-.08-.53-.59-.19L6.96 13.4l-4.66-1.46c-1.01-.32-1.03-1.01.21-1.5L20.64 3.2c.84-.31 1.58.2 1.3 1.3Z" />,
+  discord: <path d="M19.27 5.33A16.6 16.6 0 0 0 15.16 4l-.25.51a13 13 0 0 1 3.65 1.86 14.7 14.7 0 0 0-12.6 0 13 13 0 0 1 3.65-1.86L9.36 4a16.6 16.6 0 0 0-4.11 1.33C2.65 9.27 1.94 13.1 2.29 16.88a16.7 16.7 0 0 0 5.1 2.58l.4-.62a10 10 0 0 1-1.6-.78l.26-.2a11.9 11.9 0 0 0 11.1 0l.26.2a10 10 0 0 1-1.6.78l.4.62a16.7 16.7 0 0 0 5.1-2.58c.42-4.39-.71-8.18-2.44-11.55ZM9.3 14.6c-.8 0-1.46-.74-1.46-1.65 0-.92.64-1.66 1.46-1.66.82 0 1.48.75 1.46 1.66 0 .91-.64 1.65-1.46 1.65Zm5.4 0c-.8 0-1.46-.74-1.46-1.65 0-.92.64-1.66 1.46-1.66.82 0 1.48.75 1.46 1.66 0 .91-.64 1.65-1.46 1.65Z" />,
+  vk: <path d="M21.55 7.2c.15-.5 0-.86-.71-.86h-2.35c-.6 0-.87.32-1.02.66 0 0-1.2 2.92-2.9 4.82-.55.55-.8.72-1.1.72-.15 0-.37-.17-.37-.67V7.2c0-.6-.17-.86-.67-.86H8.74c-.37 0-.6.28-.6.54 0 .57.85.7.94 2.3v3.47c0 .76-.14.9-.43.9-.8 0-2.74-2.93-3.9-6.28-.22-.65-.45-.92-1.05-.92H1.35c-.67 0-.8.32-.8.66 0 .62.8 3.71 3.72 7.8 1.94 2.79 4.68 4.3 7.18 4.3 1.5 0 1.68-.34 1.68-.92v-2.11c0-.67.14-.8.62-.8.35 0 .95.18 2.34 1.52 1.6 1.6 1.86 2.31 2.76 2.31h2.35c.67 0 1-.34.81-1-.2-.66-.97-1.62-1.98-2.76-.55-.65-1.38-1.35-1.63-1.7-.35-.45-.25-.65 0-1.05 0 0 2.88-4.06 3.18-5.44Z" />,
+  youtube: <path d="M23.5 7.2a3 3 0 0 0-2.1-2.12C19.55 4.6 12 4.6 12 4.6s-7.55 0-9.4.48A3 3 0 0 0 .5 7.2 31.3 31.3 0 0 0 0 12a31.3 31.3 0 0 0 .5 4.8 3 3 0 0 0 2.1 2.12c1.85.48 9.4.48 9.4.48s7.55 0 9.4-.48a3 3 0 0 0 2.1-2.12A31.3 31.3 0 0 0 24 12a31.3 31.3 0 0 0-.5-4.8ZM9.6 15.6V8.4l6.2 3.6-6.2 3.6Z" />,
+};
+
+const SOCIAL_LABELS: Record<SocialKind, string> = {
+  telegram: 'Telegram',
+  discord: 'Discord',
+  vk: 'ВКонтакте',
+  youtube: 'YouTube',
+};
+
+function SocialLink({ kind, href }: { kind: SocialKind; href: string }) {
   return (
-    <a href={href} target="_blank" rel="noopener" className={styles.socialLink}>
-      <span className={styles.socialIco}>{ico}</span>
-      <span>{name}</span>
+    <a href={href} target="_blank" rel="noopener" className={`${styles.socialLink} ${styles[`social_${kind}`] ?? ''}`}>
+      <svg className={styles.socialIco} viewBox="0 0 24 24" aria-hidden="true">{SOCIAL_ICONS[kind]}</svg>
+      <span>{SOCIAL_LABELS[kind]}</span>
       <span className={styles.socialVal}>Перейти →</span>
     </a>
   );

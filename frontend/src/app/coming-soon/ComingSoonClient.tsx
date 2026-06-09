@@ -596,6 +596,11 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
 
             {openings.length === 0 ? (
               <div className={styles.empty}>
+                <svg className={styles.emptyIcon} viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 2h12M6 22h12" />
+                  <path d="M7 2c0 5 4 6 5 8 1-2 5-3 5-8" />
+                  <path d="M7 22c0-5 4-6 5-8 1 2 5 3 5 8" />
+                </svg>
                 <strong>Пока нет ожидаемых серверов</strong>
                 <span>Когда появятся будущие открытия, они будут здесь.</span>
               </div>

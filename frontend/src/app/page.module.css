@@ -247,13 +247,27 @@
 }
 
 .railHead h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
   margin: 0;
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: .72rem;
+  font-size: .78rem;
   line-height: 1;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   text-transform: uppercase;
+}
+
+/* Маленький ромб-акцент перед заголовком секции — в стиле логотипа */
+.railHead h2::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--gold), var(--gold-d));
+  box-shadow: 0 0 6px rgba(210, 171, 82, .4);
 }
 
 .railHead a {

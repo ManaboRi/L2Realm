@@ -1,0 +1,37 @@
+/* Точечные стили страницы контактов (поверх общего макета методики). */
+.tgBtn {
+  display: inline-flex;
+  align-self: flex-start;
+  width: fit-content;
+  align-items: center;
+  gap: .5rem;
+  min-height: 40px;
+  padding: 0 1.05rem;
+  border: 1px solid rgba(64, 158, 226, .5);
+  border-radius: 7px;
+  background: linear-gradient(135deg, rgba(64, 158, 226, .22), rgba(35, 96, 150, .18));
+  color: #9fd3ff;
+  font-weight: 600;
+  font-size: .82rem;
+  text-decoration: none;
+  transition: border-color .16s, background .16s, transform .16s;
+}
+
+.tgBtn:hover {
+  border-color: rgba(108, 188, 245, .8);
+  background: linear-gradient(135deg, rgba(64, 158, 226, .32), rgba(35, 96, 150, .26));
+  transform: translateY(-1px);
+}
+
+.tgBtn svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: currentColor;
+}
+
+.muted {
+  margin-top: .9rem;
+  font-size: .78rem;
+  color: rgba(232, 221, 186, .5);
+}
