@@ -163,6 +163,247 @@ function projectInstancesPayload(instances: any[]) {
   return instances.map(({ donate: _donate, ...instance }) => instance);
 }
 
+function normalizeImportText(value: string) {
+  return value.toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+}
+
+function importInstanceId() {
+  return `inst_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function importRateNum(value?: string | null) {
+  const match = String(value ?? '').match(/\d+(?:[.,]\d+)?/);
+  return match ? Math.max(1, Math.round(Number(match[0].replace(',', '.')))) : 1;
+}
+
+function importChronicle(value?: string | null) {
+  const text = normalizeImportText(value ?? '');
+  if (!text) return '';
+  const aliases: Array<[string, string]> = [
+    ['hf', 'High Five'], ['h5', 'High Five'], ['хф', 'High Five'], ['хай файв', 'High Five'],
+    ['interlude', 'Interlude'], ['интерлюд', 'Interlude'], ['ил', 'Interlude'],
+    ['essence', 'Essence'], ['эссенс', 'Essence'],
+    ['classic', 'Classic'], ['классик', 'Classic'],
+    ['main', 'Main'], ['мейн', 'Main'],
+    ['kamael', 'Kamael'], ['камаэль', 'Kamael'],
+  ];
+  const alias = aliases.find(([key]) => text === key || text.includes(key));
+  if (alias) return alias[1];
+  return CHRONICLES.find(c => normalizeImportText(c) === text || text.includes(normalizeImportText(c))) ?? value?.trim() ?? '';
+}
+
+function importServerType(value?: string | null) {
+  const text = normalizeImportText(value ?? '');
+  if (!text) return 'pvp-pve';
+  if ((text.includes('multi') && text.includes('craft')) || (text.includes('мульти') && text.includes('крафт'))) return 'multicraft';
+  if (text.includes('multiproff') || text.includes('мультипроф')) return 'multiproff';
+  if (text.includes('gve')) return 'gve';
+  if (text.includes('rvr')) return 'rvr';
+  if ((text.includes('pvp') && text.includes('pve')) || text.includes('mixed') || text.includes('смеш')) return 'pvp-pve';
+  if (text.includes('pve')) return 'pve';
+  if (text.includes('pvp')) return 'pvp';
+  return SERVER_TYPES.some(t => t.v === text) ? text : 'pvp-pve';
+}
+
+function importActivity(value?: string | null) {
+  const text = normalizeImportText(value ?? '');
+  if (!text) return 'unknown';
+  if ((text.includes('очень') && text.includes('низ')) || (text.includes('very') && text.includes('low'))) return 'very_low';
+  if (text.includes('выс') || text.includes('high')) return 'high';
+  if (text.includes('сред') || text.includes('medium')) return 'medium';
+  if (text.includes('низ') || text.includes('low')) return 'low';
+  return 'unknown';
+}
+
+function importTrust(value?: string | null) {
+  const match = String(value ?? '').toUpperCase().match(/[ABC]/);
+  return match?.[0] ?? '';
+}
+
+function importDateIso(value?: string | null) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const monthNames: Record<string, number> = {
+    января: 1, январь: 1, jan: 1,
+    февраля: 2, февраль: 2, feb: 2,
+    марта: 3, март: 3, mar: 3,
+    апреля: 4, апрель: 4, apr: 4,
+    мая: 5, май: 5, may: 5,
+    июня: 6, июнь: 6, jun: 6,
+    июля: 7, июль: 7, jul: 7,
+    августа: 8, август: 8, aug: 8,
+    сентября: 9, сентябрь: 9, sep: 9,
+    октября: 10, октябрь: 10, oct: 10,
+    ноября: 11, ноябрь: 11, nov: 11,
+    декабря: 12, декабрь: 12, dec: 12,
+  };
+  const makeDate = (year: number, month: number, day: number, hour?: string, minute?: string) => {
+    const date = new Date(year, month - 1, day, hour ? Number(hour) : 20, minute ? Number(minute) : 0);
+    return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+  };
+
+  let match = raw.match(/(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:[ T,]+(\d{1,2}):(\d{2}))?/);
+  if (match) return makeDate(Number(match[1]), Number(match[2]), Number(match[3]), match[4], match[5]);
+
+  match = raw.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})(?:[ T,]+(\d{1,2}):(\d{2}))?/);
+  if (match) {
+    const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
+    return makeDate(year, Number(match[2]), Number(match[1]), match[4], match[5]);
+  }
+
+  match = normalizeImportText(raw).match(/(\d{1,2})\s+([а-яa-z]+)\s+(\d{4})(?:[,\s]+(\d{1,2}):(\d{2}))?/);
+  if (match && monthNames[match[2]]) return makeDate(Number(match[3]), monthNames[match[2]], Number(match[1]), match[4], match[5]);
+
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString();
+}
+
+function importFieldKey(value: string) {
+  const key = normalizeImportText(value).replace(/[^\p{L}\p{N}]+/gu, '');
+  if (['id', 'айди', 'slug', 'идентификатор'].includes(key)) return 'id';
+  if (['name', 'название', 'проект', 'сервер', 'server'].includes(key)) return 'name';
+  if (['abbr', 'аббревиатура', 'сокращение'].includes(key)) return 'abbr';
+  if (['url', 'site', 'сайт', 'ссылка', 'адрес'].includes(key)) return 'url';
+  if (['chronicle', 'chronicles', 'хроника', 'хроники'].includes(key)) return 'chronicle';
+  if (['rates', 'rate', 'рейты', 'рейт'].includes(key)) return 'rates';
+  if (['ratenum', 'рейтчисло', 'числорейта'].includes(key)) return 'rateNum';
+  if (['type', 'тип', 'типсервера'].includes(key)) return 'serverType';
+  if (['date', 'start', 'openeddate', 'открытие', 'дата', 'старт', 'датаоткрытия'].includes(key)) return 'openedDate';
+  if (['country', 'languages', 'language', 'языки', 'страна'].includes(key)) return 'country';
+  if (['trust', 'trustlevel', 'доверие'].includes(key)) return 'trustLevel';
+  if (['activity', 'activitylevel', 'активность'].includes(key)) return 'activityLevel';
+  if (['telegram', 'tg', 'телеграм'].includes(key)) return 'telegram';
+  if (['discord', 'дискорд'].includes(key)) return 'discord';
+  if (['vk', 'вк', 'vkontakte', 'вконтакте'].includes(key)) return 'vk';
+  if (['icon', 'иконка', 'лого'].includes(key)) return 'icon';
+  if (['banner', 'баннер', 'фон'].includes(key)) return 'banner';
+  if (['shortdesc', 'short', 'кратко', 'коротко', 'описание'].includes(key)) return 'shortDesc';
+  if (['fulldesc', 'full', 'полноеописание', 'текст', 'подробно'].includes(key)) return 'fullDesc';
+  if (['instances', 'worlds', 'launches', 'миры', 'запуски', 'сервера'].includes(key)) return 'instances';
+  return '';
+}
+
+function parseImportKeyValue(line: string) {
+  const cleaned = line.replace(/^\s*[-*]\s*/, '');
+  const match = cleaned.match(/^([^:=|]{2,42})\s*[:=]\s*(.+)$/);
+  if (!match) return null;
+  const key = importFieldKey(match[1]);
+  return key ? { key, value: match[2].trim() } : null;
+}
+
+function applyImportedField(target: any, key: string, value: string, root = true) {
+  if (key === 'chronicle') target.chronicle = importChronicle(value);
+  else if (key === 'rates') {
+    target.rates = value.trim();
+    target.rateNum = root ? String(importRateNum(value)) : importRateNum(value);
+  } else if (key === 'rateNum') target.rateNum = root ? String(importRateNum(value)) : importRateNum(value);
+  else if (key === 'serverType') {
+    if (root) target.serverType = importServerType(value);
+    else target.type = importServerType(value);
+  } else if (key === 'openedDate') {
+    const iso = importDateIso(value);
+    target.openedDate = root ? toDateTimeLocal(iso) : (iso || null);
+  } else if (key === 'trustLevel') target.trustLevel = importTrust(value);
+  else if (key === 'activityLevel') target.activityLevel = importActivity(value);
+  else if (key !== 'instances') target[key] = value.trim();
+}
+
+function parseImportInstance(line: string, rootUrl: string) {
+  const cleaned = line.replace(/^\s*[-*]\s*/, '').trim();
+  if (!cleaned) return null;
+  const instance: any = {
+    id: importInstanceId(),
+    label: '',
+    shortDesc: '',
+    chronicle: '',
+    rates: '',
+    rateNum: 1,
+    type: 'pvp-pve',
+    url: rootUrl,
+    openedDate: null,
+    lifecycleStatus: undefined,
+    statusNote: '',
+  };
+
+  if (cleaned.includes('|') && !cleaned.includes(':')) {
+    const parts = cleaned.split('|').map(part => part.trim()).filter(Boolean);
+    const [label, chronicle, rates, type, openedDate, url, shortDesc] = parts;
+    if (label) instance.label = label;
+    if (chronicle) instance.chronicle = importChronicle(chronicle);
+    if (rates) {
+      instance.rates = rates;
+      instance.rateNum = importRateNum(rates);
+    }
+    if (type) instance.type = importServerType(type);
+    if (openedDate) instance.openedDate = importDateIso(openedDate) || null;
+    if (url?.startsWith('http')) instance.url = url;
+    if (shortDesc) instance.shortDesc = shortDesc;
+    return instance;
+  }
+
+  const chunks = cleaned.split(/\s*[;|]\s*/).filter(Boolean);
+  for (const chunk of chunks) {
+    const pair = parseImportKeyValue(chunk);
+    if (pair) applyImportedField(instance, pair.key, pair.value, false);
+    else if (!instance.label) instance.label = chunk.trim();
+  }
+  if (!instance.chronicle && instance.label) instance.chronicle = importChronicle(instance.label);
+  return instance;
+}
+
+function parseServerTextImport(text: string) {
+  const patch: any = {};
+  const warnings: string[] = [];
+  const lines = text.replace(/\r/g, '').split('\n');
+  let inInstances = false;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const pair = parseImportKeyValue(line);
+    if (pair?.key === 'instances') {
+      inInstances = true;
+      continue;
+    }
+    if (inInstances && (line.startsWith('-') || line.startsWith('*') || line.includes('|'))) {
+      const instance = parseImportInstance(line, patch.url || '');
+      if (instance) patch.instances = [...(patch.instances ?? []), instance];
+      continue;
+    }
+    if (!pair) {
+      if (!patch.fullDesc && line.length > 35) patch.fullDesc = line;
+      continue;
+    }
+    applyImportedField(patch, pair.key, pair.value, true);
+  }
+
+  if (!patch.id && patch.name) patch.id = slugify(patch.name);
+  if (!patch.abbr && patch.name) patch.abbr = patch.name.slice(0, 3).toUpperCase();
+  if (!patch.rateNum && patch.rates) patch.rateNum = String(importRateNum(patch.rates));
+  if (patch.instances?.length) {
+    patch.instances = patch.instances.map((instance: any) => ({
+      ...instance,
+      url: instance.url || patch.url || '',
+      chronicle: instance.chronicle || patch.chronicle || 'Interlude',
+      rates: instance.rates || patch.rates || '',
+      rateNum: instance.rateNum || importRateNum(instance.rates || patch.rates),
+      type: instance.type || patch.serverType || 'pvp-pve',
+    }));
+  }
+
+  for (const [key, label] of [
+    ['id', 'ID'],
+    ['name', 'название'],
+    ['url', 'сайт'],
+  ] as const) {
+    if (!patch[key]) warnings.push(`не найдено поле: ${label}`);
+  }
+  if (!patch.instances?.length && !patch.rates) warnings.push('не найдены рейты');
+  if (!patch.instances?.length && !patch.chronicle) warnings.push('не найдена хроника');
+
+  return { patch, warnings };
+}
+
 // Скрытый вход в админку по email+паролю (публичной регистрации на сайте нет).
 function AdminLogin({ onLogin }: { onLogin: (token: string, user: any) => void }) {
   const [email, setEmail] = useState('');
@@ -245,6 +486,9 @@ export default function AdminPage() {
     trafficHistory: [] as TrafficDraft[],
     instances: [] as any[],
   });
+  const [textImportOpen, setTextImportOpen] = useState(false);
+  const [serverTextDraft, setServerTextDraft] = useState('');
+  const [serverTextResult, setServerTextResult] = useState('');
 
   useEffect(() => {
     if (!token || !isAdmin) return;
@@ -275,6 +519,36 @@ export default function AdminPage() {
   }
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(''), 3000); }
+
+  function applyServerTextImport() {
+    const source = serverTextDraft.trim();
+    if (!source) {
+      showToast('Вставьте текстовый блок сервера');
+      return;
+    }
+    const { patch, warnings } = parseServerTextImport(source);
+    const parsedKeys = Object.keys(patch);
+    if (parsedKeys.length === 0) {
+      setServerTextResult('Не смог разобрать поля. Попробуйте формат "Название: ...", "Сайт: ...", "Рейты: ...".');
+      return;
+    }
+    setAddForm(prev => ({
+      ...prev,
+      ...patch,
+      icon: patch.icon ?? prev.icon,
+      banner: patch.banner ?? prev.banner,
+      trafficHistory: prev.trafficHistory,
+    }));
+    const parsedLabel = parsedKeys
+      .filter(key => key !== 'instances')
+      .join(', ');
+    const worldCount = patch.instances?.length ?? 0;
+    setServerTextResult([
+      `Заполнено: ${parsedLabel || 'основные поля'}${worldCount ? `, миров: ${worldCount}` : ''}.`,
+      warnings.length ? `Проверьте вручную: ${warnings.join(', ')}.` : 'Можно проверить форму и загрузить иконку/баннер.',
+    ].join(' '));
+    showToast('Текст разобран и перенесен в форму');
+  }
 
   async function deleteServer(id: string) {
     if (!token || !confirm(`Удалить сервер ${id}?`)) return;
@@ -956,6 +1230,50 @@ export default function AdminPage() {
                   </div>
                 )}
                 <form className={styles.addForm} onSubmit={submitAdd}>
+                  <section className={styles.textImport}>
+                    <div className={styles.textImportHeader}>
+                      <div>
+                        <h3>Вставить сервер текстом</h3>
+                        <p>Вставьте готовый блок: поля перенесутся в обычную форму. Картинки можно загрузить ниже через иконку и баннер.</p>
+                      </div>
+                      <button type="button" className={styles.trafficAddButton} onClick={() => setTextImportOpen(value => !value)}>
+                        {textImportOpen ? 'Скрыть' : 'Открыть'}
+                      </button>
+                    </div>
+                    {textImportOpen && (
+                      <>
+                        <textarea
+                          className={`input ${styles.textImportTextarea}`}
+                          rows={11}
+                          value={serverTextDraft}
+                          onChange={e => setServerTextDraft(e.target.value)}
+                          placeholder={[
+                            'id: destarion',
+                            'Название: Destarion',
+                            'Сайт: https://destarion.com',
+                            'Хроника: High Five',
+                            'Рейты: x300',
+                            'Тип: PvP',
+                            'Дата: 5 июня 2026 20:00',
+                            'Кратко: Новый High Five сервер с PvP и живым стартом.',
+                            'Миры:',
+                            '- Summer PvP | High Five | x300 | PvP | 05.06.2026 20:00 | https://destarion.com',
+                          ].join('\n')}
+                        />
+                        <div className={styles.textImportActions}>
+                          <button type="button" className={styles.trafficSaveButton} onClick={applyServerTextImport}>
+                            Разобрать и заполнить
+                          </button>
+                          <button type="button" className={styles.btnSm} onClick={() => { setServerTextDraft(''); setServerTextResult(''); }}>
+                            Очистить
+                          </button>
+                          <span>Если время не указано, парсер поставит 20:00.</span>
+                        </div>
+                        {serverTextResult && <div className={styles.textImportResult}>{serverTextResult}</div>}
+                      </>
+                    )}
+                  </section>
+
                   <div className={styles.formGrid}>
                     {/* Строка 1 */}
                     <AField label="ID *"><input className="input" required value={addForm.id} onChange={e => setAddForm(p => ({...p,id:e.target.value}))} placeholder="l2fantasy" /></AField>

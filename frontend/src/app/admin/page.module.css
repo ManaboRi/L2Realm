@@ -54,6 +54,46 @@
 .checkLabel { display: flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text2); cursor: pointer; }
 .checkLabel input { accent-color: var(--gold-d); }
 
+.textImport {
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(200,168,75,.18);
+  border-radius: 4px;
+  background:
+    linear-gradient(135deg, rgba(200,168,75,.08), rgba(12,17,24,.38)),
+    rgba(200,168,75,.025);
+}
+.textImportHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.textImportHeader h3 {
+  margin: 0 0 .32rem;
+  font-family: 'Cinzel', serif;
+  color: var(--gold);
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.textImportHeader p { margin: 0; color: var(--text2); font-size: .78rem; line-height: 1.55; max-width: 680px; }
+.textImportTextarea {
+  min-height: 230px;
+  font-family: 'Courier New', monospace;
+  font-size: .78rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+.textImportActions { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.textImportActions span { color: var(--text3); font-size: .76rem; }
+.textImportResult {
+  padding: .65rem .75rem;
+  border: 1px solid rgba(74,170,112,.22);
+  border-radius: 3px;
+  background: rgba(74,170,112,.07);
+  color: var(--text2);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
 .trafficEditor {
   display: flex;
   flex-direction: column;
@@ -126,6 +166,8 @@
   .tab { padding: .5rem .7rem; font-size: .62rem; }
   .addForm { padding: 1rem .9rem; }
   .formGrid { grid-template-columns: 1fr; }
+  .textImport { padding: .9rem; }
+  .textImportHeader { flex-direction: column; }
   .trafficEditor { padding: .9rem; }
   .trafficEditorHeader { flex-direction: column; }
   .trafficEditorActions { flex-wrap: wrap; }
