@@ -75,6 +75,11 @@ function trimMetaText(value: string, maxLength: number): string {
   return `${slice.slice(0, cutAt).trim()}...`;
 }
 
+function sentence(value: string | null | undefined): string | null {
+  const text = cleanMetaText(value).replace(/[.。]+$/g, '');
+  return text ? `${text}.` : null;
+}
+
 function uniqueValues(values: Array<string | null | undefined>): string[] {
   const seen = new Set<string>();
   return values
@@ -161,9 +166,10 @@ function buildServerSeo(server: Server, id: string) {
   ].filter(Boolean).join(', ');
 
   const shortDescription = cleanMetaText(server.shortDesc);
+  const intro = sentence(shortDescription);
   const description = trimMetaText(
-    shortDescription
-      ? `${server.name}: ${shortDescription}. ${facts}.`
+    intro
+      ? `${server.name}: ${intro} ${facts}.`
       : `${server.name} - проект Lineage 2: ${facts}. Описания, открытия, трафик, голоса игроков и проверка L2Realm.`,
     MAX_DESCRIPTION_LENGTH,
   );

@@ -136,6 +136,26 @@ function absoluteUrl(url: string | null | undefined): string | undefined {
   }
 }
 
+function cleanMetaText(value: string | null | undefined): string {
+  return (value ?? '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\[\[project:[^\]]+\]\]/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[`*#>~]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function trimMetaText(value: string, maxLength: number): string {
+  const text = cleanMetaText(value);
+  if (text.length <= maxLength) return text;
+
+  const slice = text.slice(0, maxLength - 3);
+  const boundary = slice.lastIndexOf(' ');
+  const cutAt = boundary > Math.floor(maxLength * 0.65) ? boundary : slice.length;
+  return `${slice.slice(0, cutAt).replace(/[,:;.!?]+$/g, '').trim()}...`;
+}
+
 function articleTime(a: Article) {
   return new Date(a.publishedAt ?? a.createdAt).getTime() || 0;
 }
@@ -501,14 +521,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
   const canonical = `${SITE}/blog/${article.slug}`;
   const image = absoluteUrl(article.image) || `${SITE}/apple-touch-icon.png`;
+  const description = trimMetaText(article.description, 160);
   return {
     title: article.title,
-    description: article.description,
+    description,
     alternates: { canonical },
     openGraph: {
       type: 'article',
       title: article.title,
-      description: article.description,
+      description,
       url: canonical,
       siteName: 'L2Realm',
       locale: 'ru_RU',
@@ -519,7 +540,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     twitter: {
       card: 'summary_large_image',
       title: article.title,
-      description: article.description,
+      description,
       images: [image],
     },
   };
@@ -561,7 +582,7 @@ export default async function BlogPostPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'Article',
     headline: article.title,
-    description: article.description,
+    description: trimMetaText(article.description, 160),
     image: articleImage ? [articleImage] : undefined,
     datePublished: article.publishedAt ?? article.createdAt,
     dateModified: article.updatedAt ?? article.publishedAt ?? article.createdAt,
