@@ -44,6 +44,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE}/blog`,        lastModified: now, changeFrequency: 'weekly',  priority: 0.7 },
     { url: `${SITE}/methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE}/contacts`,    lastModified: now, changeFrequency: 'monthly', priority: 0.3 },
+    { url: `${SITE}/guides`,      lastModified: now, changeFrequency: 'weekly',  priority: 0.6 },
+    { url: `${SITE}/privacy`,     lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${SITE}/terms`,       lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
   ];
 
   // Страницы по хроникам — SEO-точки входа

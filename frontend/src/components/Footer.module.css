@@ -53,6 +53,18 @@
 .bottomLink { color: var(--text3); text-decoration: none; }
 .bottomLink:hover { color: var(--gold); }
 
+.ageMark {
+  display: inline-flex;
+  align-items: center;
+  padding: .12rem .4rem;
+  border: 1px solid rgba(232, 221, 186, .28);
+  border-radius: 4px;
+  color: rgba(232, 221, 186, .62);
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
 @media (max-width: 700px) {
   .inner { grid-template-columns: 1fr; gap: 1.4rem; padding: 1.8rem 1rem 1rem; }
   .bottom { flex-direction: column; gap: .4rem; padding: .8rem 1rem; text-align: center; }

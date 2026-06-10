@@ -25,9 +25,16 @@ export function Footer() {
           <Link href="/methodology" className={styles.link}>Как мы проверяем</Link>
           <Link href="/contacts" className={styles.link}>Контакты</Link>
         </div>
+
+        <div className={styles.col}>
+          <div className={styles.colTitle}>Документы</div>
+          <Link href="/privacy" className={styles.link}>Политика конфиденциальности</Link>
+          <Link href="/terms" className={styles.link}>Пользовательское соглашение</Link>
+        </div>
       </div>
       <div className={styles.bottom}>
         <span>© {new Date().getFullYear()} L2Realm</span>
+        <span className={styles.ageMark} title="Сайт предназначен для пользователей 16 лет и старше">16+</span>
       </div>
     </footer>
   );

@@ -1,0 +1,87 @@
+.page { min-height: 100vh; }
+
+.hero {
+  text-align: center;
+  padding: 2.4rem 1.5rem 1.8rem;
+  border-bottom: 1px solid var(--border);
+  max-width: 920px;
+  margin: 0 auto;
+}
+.heroEye {
+  font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .3em;
+  color: var(--gold-d); text-transform: uppercase; margin-bottom: .5rem;
+}
+.heroTitle {
+  font-family: 'Cinzel', serif; font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 700; color: #F0E8C8; margin-bottom: .5rem;
+}
+.heroTitle em { color: var(--gold); font-style: normal; }
+.heroSub {
+  font-family: 'Almendra', serif; font-size: .98rem; color: var(--text2);
+  font-style: italic; max-width: 620px; margin: 0 auto;
+}
+
+.wrap {
+  max-width: 900px; margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+  display: flex; flex-direction: column; gap: 1.4rem;
+}
+
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1.6rem 1.8rem;
+  display: flex; flex-direction: column; gap: .7rem;
+}
+.cardTitle {
+  font-family: 'Cinzel', serif; font-size: 1rem;
+  color: var(--gold); letter-spacing: .14em; text-transform: uppercase;
+  margin: 0 0 .4rem; padding-bottom: .6rem;
+  border-bottom: 1px solid var(--border);
+}
+.meta { font-size: .76rem; color: var(--text3); margin: -.2rem 0 .4rem; }
+
+.h3 {
+  font-family: 'Cinzel', serif; font-size: .92rem; color: #F0E8C8;
+  margin: 1rem 0 .2rem; letter-spacing: .05em;
+}
+.card p {
+  margin: 0; color: var(--text2); line-height: 1.65; font-size: .9rem;
+}
+.card p a, .list a { color: var(--gold); text-decoration: none; }
+.card p a:hover, .list a:hover { text-decoration: underline; }
+
+.list {
+  margin: .2rem 0 .4rem; padding: 0; list-style: none;
+  display: flex; flex-direction: column; gap: .4rem;
+}
+.list li {
+  position: relative; padding-left: 1.1rem;
+  font-size: .88rem; color: var(--text2); line-height: 1.55;
+}
+.list li::before {
+  content: '◆'; position: absolute; left: 0; top: 0;
+  color: var(--gold-d); font-size: .5rem; line-height: 1.7;
+}
+
+.dataGrid {
+  display: grid; grid-template-columns: 1fr; gap: .7rem;
+  margin: .4rem 0;
+}
+.dataItem {
+  border-left: 2px solid var(--gold-d);
+  padding: .3rem 0 .3rem .9rem;
+}
+.dataItemTitle {
+  font-family: 'Cinzel', serif; font-size: .78rem;
+  color: var(--gold); letter-spacing: .08em;
+  text-transform: uppercase; margin-bottom: .25rem;
+}
+.dataItemBody {
+  font-size: .85rem; color: var(--text2); line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  .hero { padding: 1.4rem .8rem 1.2rem; }
+  .wrap { padding: 1.2rem .8rem 3rem; gap: 1rem; }
+  .card { padding: 1.1rem 1rem; }
+}

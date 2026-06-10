@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { AdSlot } from '@/components/AdSlot';
 import type { Article, Server } from '@/lib/types';
 import { CHRONICLES, RATES, SERVER_TYPES } from '@/lib/types';
 import { activityMeta, currentProjectWorlds, formatTraffic, latestProjectOpening, nextProjectOpening, projectTrafficTrend, projectWorldCount, trustMeta } from '@/lib/project-metrics';
@@ -495,6 +496,8 @@ function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[
   const hasWeeklyVotes = topVotes.some(server => weeklyVoteCount(server) > 0);
   return (
     <aside className={styles.rightRail} aria-label="Сводка каталога">
+      {/* Рекламное место (выключено: ADS_ENABLED=false). Включается при подключении ОРД. */}
+      <AdSlot placement="home-rail-top" />
       <section className={styles.railSection}>
         <div className={styles.railHead}>
           <h2>Скоро открытие</h2>
