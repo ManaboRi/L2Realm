@@ -340,6 +340,8 @@ model Guide {
   npc         String?                           // стартовый NPC (для квестов)
   location    String?                           // локация (для квестов/локаций)
   reward      String?                           // награда / краткий итог
+  race        String?                           // 'human'|'elf'|... | null = для всех рас
+  repeatable  Boolean   @default(false)         // повторяемый квест (∞) или одноразовый
   sort        Int       @default(0)             // ручная сортировка внутри категории
   publishedAt DateTime?                         // null = черновик, дата = опубликовано
   views       Int       @default(0)

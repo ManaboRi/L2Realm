@@ -375,6 +375,8 @@ export interface Guide {
   npc?: string | null;
   location?: string | null;
   reward?: string | null;
+  race?: string | null;
+  repeatable?: boolean;
   sort?: number;
   views?: number;
   publishedAt?: string | null;

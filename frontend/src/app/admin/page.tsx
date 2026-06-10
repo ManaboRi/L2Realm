@@ -11,6 +11,7 @@ import type { VipStatus, OpeningClickReport } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides/guides';
 import { GUIDE_CATEGORIES } from '../guides/categories';
+import { GUIDE_RACES } from '../guides/races';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'money' | 'banners' | 'guides' | 'clicks' | 'add';
@@ -485,9 +486,10 @@ export default function AdminPage() {
 
   // Форма гайда (создание/редактирование)
   const emptyGuide = {
-    id: '', slug: '', chronicle: 'interlude', category: 'novichkam',
+    id: '', slug: '', chronicle: 'interlude', category: 'kvesty',
     title: '', description: '', content: '', image: '',
     levelMin: '', levelMax: '', npc: '', location: '', reward: '',
+    race: '', repeatable: false,
     sort: '0', published: true,
   };
   const [guides, setGuides] = useState<any[]>([]);
@@ -1262,8 +1264,18 @@ export default function AdminPage() {
                     <label className={styles.field}><span>Итог / награда (опц.)</span>
                       <input className="input" value={guideForm.reward} onChange={e => setGuideForm((p:any)=>({...p,reward:e.target.value}))} placeholder="Exp · SP · смена профессии" />
                     </label>
+                    <label className={styles.field}><span>Раса (опц.)</span>
+                      <select className="input" value={guideForm.race} onChange={e => setGuideForm((p:any)=>({...p,race:e.target.value}))}>
+                        <option value="">Все расы</option>
+                        {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
+                      </select>
+                    </label>
                     <label className={styles.field}><span>Порядок (сортировка)</span>
                       <input className="input" type="number" value={guideForm.sort} onChange={e => setGuideForm((p:any)=>({...p,sort:e.target.value}))} placeholder="0" />
+                    </label>
+                    <label className={styles.field} style={{ flexDirection:'row', alignItems:'center', gap:'.5rem' }}>
+                      <input type="checkbox" checked={guideForm.repeatable} onChange={e => setGuideForm((p:any)=>({...p,repeatable:e.target.checked}))} />
+                      <span>Повторяемый (∞)</span>
                     </label>
                     <label className={styles.field} style={{ flexDirection:'row', alignItems:'center', gap:'.5rem' }}>
                       <input type="checkbox" checked={guideForm.published} onChange={e => setGuideForm((p:any)=>({...p,published:e.target.checked}))} />
@@ -1306,7 +1318,8 @@ export default function AdminPage() {
                               id:g.id, slug:g.slug, chronicle:g.chronicle, category:g.category,
                               title:g.title, description:g.description??'', content:g.content??'', image:g.image??'',
                               levelMin:g.levelMin??'', levelMax:g.levelMax??'', npc:g.npc??'', location:g.location??'',
-                              reward:g.reward??'', sort:String(g.sort??0), published:!!g.publishedAt,
+                              reward:g.reward??'', race:g.race??'', repeatable:!!g.repeatable,
+                              sort:String(g.sort??0), published:!!g.publishedAt,
                             })}>Править</button>
                             <button className={`${styles.btnSm} ${styles.btnDanger}`} type="button" onClick={() => deleteGuide(g.id)}>Удалить</button>
                           </div>

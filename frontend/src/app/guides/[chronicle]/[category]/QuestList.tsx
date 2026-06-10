@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
+import { GUIDE_RACES } from '../../races';
 import styles from './page.module.css';
 
 type Bracket = { id: string; label: string; min: number; max: number };
@@ -49,6 +50,8 @@ function RewardCell({ reward }: { reward?: string | null }) {
 export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
   const [q, setQ] = useState('');
   const [br, setBr] = useState('all');
+  const [race, setRace] = useState('');
+  const [rep, setRep] = useState<'all' | 'rep' | 'once'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('level');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -67,9 +70,14 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
         || (g.location ?? '').toLowerCase().includes(query)
         || (g.reward ?? '').toLowerCase().includes(query);
       if (!okQ) return false;
-      if (br === 'all') return true;
-      const lvl = g.levelMin ?? g.levelMax ?? -1;
-      return lvl >= bracket.min && lvl <= bracket.max;
+      if (br !== 'all') {
+        const lvl = g.levelMin ?? g.levelMax ?? -1;
+        if (!(lvl >= bracket.min && lvl <= bracket.max)) return false;
+      }
+      if (race && g.race && g.race !== race) return false; // null-раса = для всех
+      if (rep === 'rep' && !g.repeatable) return false;
+      if (rep === 'once' && g.repeatable) return false;
+      return true;
     });
     const dir = sortDir === 'asc' ? 1 : -1;
     return [...arr].sort((a, b) => {
@@ -80,7 +88,7 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
       else r = (a.levelMin ?? 999) - (b.levelMin ?? 999);
       return r * dir;
     });
-  }, [guides, q, br, sortKey, sortDir]);
+  }, [guides, q, br, race, rep, sortKey, sortDir]);
 
   const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '');
 
@@ -111,6 +119,20 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
               {b.label}
             </button>
           ))}
+        </div>
+        <select
+          className={styles.sortSel}
+          value={race}
+          onChange={e => setRace(e.target.value)}
+          aria-label="Раса"
+        >
+          <option value="">Все расы</option>
+          {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
+        </select>
+        <div className={styles.levelChips}>
+          <button type="button" className={`${styles.levelChip} ${rep === 'all' ? styles.levelChipActive : ''}`} onClick={() => setRep('all')}>Любой</button>
+          <button type="button" className={`${styles.levelChip} ${rep === 'rep' ? styles.levelChipActive : ''}`} onClick={() => setRep('rep')} title="Повторяемые">∞</button>
+          <button type="button" className={`${styles.levelChip} ${rep === 'once' ? styles.levelChipActive : ''}`} onClick={() => setRep('once')} title="Одноразовые">1×</button>
         </div>
         <select
           className={styles.sortSel}
@@ -158,7 +180,10 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
                     <Link href={`${base}/${g.slug}`} className={styles.gName}>
                       {g.image && <img src={g.image} alt="" loading="lazy" decoding="async" />}
                       <span>
-                        <strong>{g.title}</strong>
+                        <strong>
+                          {g.title}
+                          {g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
+                        </strong>
                         {g.description && <em>{g.description}</em>}
                       </span>
                     </Link>

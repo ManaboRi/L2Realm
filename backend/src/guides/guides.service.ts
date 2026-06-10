@@ -24,7 +24,8 @@ function slugify(input: string): string {
 const LIST_SELECT = {
   id: true, slug: true, chronicle: true, category: true, title: true,
   description: true, image: true, levelMin: true, levelMax: true,
-  npc: true, location: true, reward: true, views: true, publishedAt: true,
+  npc: true, location: true, reward: true, race: true, repeatable: true,
+  views: true, publishedAt: true,
 } as const;
 
 @Injectable()
@@ -110,6 +111,8 @@ export class GuidesService {
         npc: data.npc ? String(data.npc).slice(0, 80) : null,
         location: data.location ? String(data.location).slice(0, 80) : null,
         reward: data.reward ? String(data.reward).slice(0, 120) : null,
+        race: data.race ? String(data.race).slice(0, 40) : null,
+        repeatable: data.repeatable === true || data.repeatable === 'true',
         sort: this.numOrNull(data.sort) ?? 0,
         publishedAt: data.published ? new Date() : null,
       },
@@ -138,6 +141,8 @@ export class GuidesService {
         ...(data.npc !== undefined && { npc: data.npc ? String(data.npc).slice(0, 80) : null }),
         ...(data.location !== undefined && { location: data.location ? String(data.location).slice(0, 80) : null }),
         ...(data.reward !== undefined && { reward: data.reward ? String(data.reward).slice(0, 120) : null }),
+        ...(data.race !== undefined && { race: data.race ? String(data.race).slice(0, 40) : null }),
+        ...(data.repeatable !== undefined && { repeatable: data.repeatable === true || data.repeatable === 'true' }),
         ...(data.sort !== undefined && { sort: this.numOrNull(data.sort) ?? 0 }),
         ...(data.published !== undefined && { publishedAt: data.published ? (exists.publishedAt ?? new Date()) : null }),
       },
