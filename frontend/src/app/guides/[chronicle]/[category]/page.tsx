@@ -155,13 +155,13 @@ export default async function GuideCategoryPage({ params }: Props) {
             {popular.length > 0 && (
               <section className={home.railSection}>
                 <div className={home.railHead}><h2>Популярное</h2></div>
-                <div className={home.railList}>
+                <div className={styles.popList}>
                   {popular.map((g, i) => (
-                    <Link key={g.id} href={`${base}/${g.slug}`} className={home.railVoteItem}>
-                      <span className={home.railRank}>{i + 1}</span>
-                      <span className={home.railText}>
+                    <Link key={g.id} href={`${base}/${g.slug}`} className={styles.popItem}>
+                      <span className={styles.popRank}>{i + 1}</span>
+                      <span className={styles.popText}>
                         <strong>{g.title}</strong>
-                        <em>{levelText(g)}</em>
+                        <em>{levelText(g)} · {g.views ?? 0} просм.</em>
                       </span>
                     </Link>
                   ))}
