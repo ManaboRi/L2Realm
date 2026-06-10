@@ -132,9 +132,16 @@
 }
 
 .topicIcon {
-  font-size: 1.5rem;
   flex: 0 0 auto;
-  line-height: 1;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid rgba(210, 171, 82, .26);
+  background: linear-gradient(135deg, rgba(210, 171, 82, .14), rgba(210, 171, 82, .05));
+  color: var(--gold);
 }
 
 .topic strong {

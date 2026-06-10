@@ -5,6 +5,7 @@ import { BannersBlock } from '@/components/BannersBlock';
 import { GUIDE_CHRONICLES, findGuideChronicle } from './guides';
 import { GUIDE_CATEGORIES, guideCategoryLabel } from './categories';
 import { GuidesSearch } from './GuidesSearch';
+import { GuideIcon } from './GuideIcon';
 import home from '../page.module.css';
 import g from './page.module.css';
 
@@ -57,6 +58,13 @@ function fmtDate(s?: string | null): string {
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
+function guideWord(n: number): string {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'гайд';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'гайда';
+  return 'гайдов';
+}
+
 export default async function GuidesPage() {
   const [allGuides, comingSoon, articles] = await Promise.all([
     fetchAllGuides(), fetchComingSoon(), fetchArticles(),
@@ -78,7 +86,7 @@ export default async function GuidesPage() {
               <div className={home.filterList}>
                 {GUIDE_CATEGORIES.map(cat => (
                   <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={`${home.filterItem} ${g.navItem}`}>
-                    <span className={g.navIcon} aria-hidden="true">{cat.icon}</span>
+                    <GuideIcon name={cat.slug} size={16} className={g.navIcon} />
                     <span>{cat.label}</span>
                   </Link>
                 ))}
@@ -117,7 +125,7 @@ export default async function GuidesPage() {
             <div className={g.tiles}>
               {GUIDE_CATEGORIES.map(cat => (
                 <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.tile}>
-                  <span className={g.tileIcon} aria-hidden="true">{cat.icon}</span>
+                  <span className={g.tileIcon}><GuideIcon name={cat.slug} size={22} /></span>
                   <span className={g.tileText}>
                     <strong>{cat.label}</strong>
                     <small>{cat.desc}</small>
@@ -139,7 +147,11 @@ export default async function GuidesPage() {
                   <span className={g.chronBody}>
                     <small>{c.tagline}</small>
                     <span className={g.chronFoot}>
-                      <span className={g.chronCount}>{countByChronicle[c.slug] ?? 0} гайд(ов)</span>
+                      <span className={g.chronCount}>
+                        {(countByChronicle[c.slug] ?? 0) > 0
+                          ? `${countByChronicle[c.slug]} ${guideWord(countByChronicle[c.slug])}`
+                          : 'Скоро'}
+                      </span>
                       <span className={g.chronOpen}>Открыть базу →</span>
                     </span>
                   </span>

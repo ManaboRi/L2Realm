@@ -2,8 +2,9 @@
    Здесь — только специфика раздела гайдов. */
 
 /* Левая навигация: иконка + подпись */
-.navItem { gap: .55rem; }
-.navIcon { font-size: 1rem; line-height: 1; }
+.navItem { gap: .6rem; }
+.navIcon { flex: 0 0 auto; color: rgba(210, 171, 82, .68); transition: color .14s; }
+.navItem:hover .navIcon { color: var(--gold); }
 .navLetter {
   width: 20px;
   height: 20px;
@@ -19,24 +20,35 @@
   font-weight: 700;
 }
 
-/* ── Hero с поиском ───────────────────────────── */
-.hero { margin-bottom: 1.6rem; }
+/* ── Hero с поиском (панель с золотой подсветкой) ── */
+.hero {
+  position: relative;
+  margin-bottom: 2rem;
+  padding: 1.7rem 1.8rem 1.8rem;
+  border: 1px solid rgba(118, 141, 151, .14);
+  border-radius: 14px;
+  background:
+    radial-gradient(85% 130% at 88% -10%, rgba(210, 171, 82, .12), transparent 55%),
+    linear-gradient(180deg, rgba(15, 20, 28, .7), rgba(8, 12, 18, .9));
+  overflow: hidden;
+}
 .hero h1 {
-  margin: 0 0 .5rem;
+  margin: 0 0 .55rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
   font-weight: 600;
+  letter-spacing: .01em;
 }
 .hero h1 span { color: var(--gold); }
 .hero p {
-  margin: 0 0 1.2rem;
-  max-width: 620px;
-  color: rgba(232, 221, 186, .66);
-  font-size: .95rem;
-  line-height: 1.55;
+  margin: 0 0 1.4rem;
+  max-width: 640px;
+  color: rgba(232, 221, 186, .68);
+  font-size: .96rem;
+  line-height: 1.6;
 }
-.searchRow { margin-bottom: .85rem; }
+.searchRow { margin-bottom: 1rem; }
 
 .popular {
   display: flex;
@@ -86,15 +98,20 @@
 }
 .tileIcon {
   flex: 0 0 auto;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  border: 1px solid rgba(210, 171, 82, .25);
-  background: rgba(210, 171, 82, .08);
-  font-size: 1.25rem;
+  border-radius: 10px;
+  border: 1px solid rgba(210, 171, 82, .28);
+  background: linear-gradient(135deg, rgba(210, 171, 82, .14), rgba(210, 171, 82, .05));
+  color: var(--gold);
+  transition: border-color .16s, background .16s;
+}
+.tile:hover .tileIcon {
+  border-color: rgba(210, 171, 82, .5);
+  background: linear-gradient(135deg, rgba(210, 171, 82, .22), rgba(210, 171, 82, .08));
 }
 .tileText { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
 .tileText strong { color: #f3e8c6; font-size: .92rem; font-weight: 600; }
@@ -102,11 +119,23 @@
 
 /* ── Заголовки секций ─────────────────────────── */
 .sectionTitle {
-  margin: 0 0 1rem;
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  margin: 0 0 1.1rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
   font-size: 1.25rem;
   font-weight: 600;
+}
+.sectionTitle::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(210, 171, 82, .5);
 }
 
 /* ── Карточки хроник ──────────────────────────── */

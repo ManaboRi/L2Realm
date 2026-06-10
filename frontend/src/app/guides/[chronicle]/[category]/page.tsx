@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { findGuideChronicle } from '../../guides';
 import { findGuideCategory } from '../../categories';
+import { GuideIcon } from '../../GuideIcon';
 import type { Guide } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -82,7 +83,7 @@ export default async function GuideCategoryPage({ params }: Props) {
 
       <header className={styles.head}>
         <span className={styles.kicker}>Хроника {ch.name}</span>
-        <h1><span aria-hidden="true">{cat.icon}</span> {cat.label}</h1>
+        <h1><GuideIcon name={cat.slug} size={28} className={styles.h1Icon} /> {cat.label}</h1>
         <p>{cat.desc}</p>
       </header>
 

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { GUIDE_CHRONICLES, findGuideChronicle } from '../guides';
 import { GUIDE_CATEGORIES } from '../categories';
+import { GuideIcon } from '../GuideIcon';
 import styles from './page.module.css';
 
 const SITE = 'https://l2realm.ru';
@@ -82,7 +83,7 @@ export default async function ChronicleGuidesPage({ params }: Props) {
             const n = counts[cat.slug] ?? 0;
             return (
               <Link key={cat.slug} href={`/guides/${c.slug}/${cat.slug}`} className={styles.topic}>
-                <span className={styles.topicIcon} aria-hidden="true">{cat.icon}</span>
+                <span className={styles.topicIcon}><GuideIcon name={cat.slug} size={22} /></span>
                 <div>
                   <strong>{cat.label}</strong>
                   <p>{cat.desc}</p>
