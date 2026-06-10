@@ -33,12 +33,15 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  compress: true,
   images: {
     // Иконки серверов хостятся пользователями на разных CDN — оставляем HTTPS-любой,
     // HTTP запрещаем (нельзя MITM) и SVG не оптимизируем (anti-XSS).
     remotePatterns: [
       { protocol: "https", hostname: "**" },
     ],
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 86400,
     dangerouslyAllowSVG: false,
   },
   async headers() {

@@ -307,6 +307,7 @@ function OpeningRow({
         <span className={styles.miniTitle}>{opened ? 'Статус' : 'До открытия'}</span>
         {opened ? (
           <div className={styles.openedState}>
+            <span className={styles.openedDot} aria-hidden="true" />
             <strong>Открылся</strong>
           </div>
         ) : (
@@ -415,7 +416,6 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
   const openings = useMemo(() => flattenOpenings(initialServers), [initialServers]);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(8);
-  const [sort, setSort] = useState('date');
   const [filters, setFilters] = useState<Filters>({ chronicle: '', rate: '', type: '', opens: '' });
   const [quickDate, setQuickDate] = useState<QuickDateFilter>('');
   const [now, setNow] = useState(initialNow);
@@ -451,10 +451,9 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
     const data = applyFilters(openings, filters, now).filter(opening => quickDateMatches(opening.openedAt, now, quickDate));
     return [...data].sort((a, b) => {
       if (a.isVip !== b.isVip) return a.isVip ? -1 : 1;
-      if (sort === 'name') return a.projectName.localeCompare(b.projectName, 'ru');
       return new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime();
     });
-  }, [filters, now, openings, quickDate, sort]);
+  }, [filters, now, openings, quickDate]);
 
   const visible = filtered.slice(0, visibleCount);
   const topExpected = useMemo(() => {
@@ -584,14 +583,6 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
                   ))}
                 </div>
               </div>
-
-              <label className={styles.sortWrap}>
-                <span>Сортировать:</span>
-                <select value={sort} onChange={e => setSort(e.target.value)}>
-                  <option value="date">По дате открытия</option>
-                  <option value="name">По названию</option>
-                </select>
-              </label>
             </section>
 
             {openings.length === 0 ? (

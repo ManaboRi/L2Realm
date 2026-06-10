@@ -2,7 +2,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import styles from './Header.module.css';
 
@@ -57,25 +56,18 @@ export function Header() {
       <div className={`${styles.collapsible} ${menuOpen ? styles.collapsibleOpen : ''}`}>
         <nav className={styles.nav}>
           <Link href="/" className={navClass('/', styles.navLinkHome)} onClick={closeMenu}>
-            <Image src="/images/nav-servers.webp" alt="Каталог серверов Lineage 2" width={24} height={24} className={styles.navIcon} unoptimized />
             <span className={styles.navText}>Все серверы</span>
           </Link>
           <Link href="/coming-soon" className={navClass('/coming-soon')} onClick={closeMenu}>
-            <Image src="/images/nav-coming-soon.webp" alt="Скоро открытие серверов Lineage 2" width={24} height={24} className={styles.navIcon} unoptimized />
             <span className={styles.navText}>
               <span className={styles.navTextFull}>Скоро открытие</span>
               <span className={styles.navTextShort}>Скоро</span>
             </span>
           </Link>
           <Link href="/guides" className={navClass('/guides')} onClick={closeMenu}>
-            <svg className={styles.navIcon} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 5a2 2 0 0 1 2-2h6v16H6a2 2 0 0 0-2 2V5Z" />
-              <path d="M20 5a2 2 0 0 0-2-2h-6v16h6a2 2 0 0 1 2 2V5Z" />
-            </svg>
             <span className={styles.navText}>Гайды</span>
           </Link>
           <Link href="/blog" className={navClass('/blog')} onClick={closeMenu}>
-            <Image src="/images/nav-blog.webp" alt="Статьи L2Realm" width={24} height={24} className={styles.navIcon} unoptimized />
             <span className={styles.navText}>Статьи</span>
           </Link>
         </nav>

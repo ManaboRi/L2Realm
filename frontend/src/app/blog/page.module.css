@@ -548,29 +548,43 @@
 }
 
 .readMore {
-  min-width: 134px;
-  min-height: 36px;
+  min-height: 34px;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 0 .9rem;
-  border: 1px solid rgba(210, 171, 82, .28);
-  border-radius: 5px;
-  background: rgba(210, 171, 82, .045);
+  gap: .5rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(210, 171, 82, .3);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(210, 171, 82, .1), rgba(210, 171, 82, .03));
   color: var(--gold);
   font-family: 'Cinzel', serif;
   font-size: .68rem;
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
+  text-transform: uppercase;
   white-space: nowrap;
-  transition: border-color .16s, background .16s, color .16s;
+  transition: border-color .18s, background .18s, color .18s, gap .18s;
+}
+
+/* Аккуратная стрелка-шеврон вместо «кривой» текстовой → */
+.readMore i {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  flex: 0 0 auto;
+  background: currentColor;
+  -webkit-mask: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+  mask: no-repeat center / contain url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14M13 6l6 6-6 6'/%3E%3C/svg%3E");
+  transition: transform .18s;
 }
 
 .articleListItem:hover .readMore {
-  border-color: rgba(210, 171, 82, .48);
-  background: rgba(210, 171, 82, .09);
+  border-color: rgba(210, 171, 82, .55);
+  background: linear-gradient(180deg, rgba(210, 171, 82, .18), rgba(210, 171, 82, .06));
   color: #f6edd0;
+  gap: .65rem;
 }
+.articleListItem:hover .readMore i { transform: translateX(3px); }
 
 .emptyInline {
   padding: 2.2rem 1rem;
@@ -661,20 +675,38 @@
 }
 
 .sideBlock {
-  padding: .95rem;
+  padding: .85rem .8rem;
+  border: 1px solid rgba(210, 171, 82, .14);
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(11, 16, 23, .9), rgba(6, 10, 15, .96));
+  background:
+    linear-gradient(180deg, rgba(10, 15, 22, .86), rgba(5, 9, 14, .78)),
+    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .06), transparent 42%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .028);
+  backdrop-filter: blur(10px);
 }
 
 .sideTitle {
-  margin-bottom: .7rem;
-  padding-bottom: .7rem;
-  border-bottom: 1px solid rgba(210, 171, 82, .13);
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  margin-bottom: .6rem;
+  padding-bottom: .58rem;
+  border-bottom: 1px solid rgba(210, 171, 82, .14);
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: .68rem;
-  letter-spacing: .18em;
+  font-size: .76rem;
+  letter-spacing: .1em;
   text-transform: uppercase;
+}
+
+.sideTitle::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--gold), var(--gold-d));
+  box-shadow: 0 0 6px rgba(210, 171, 82, .4);
 }
 
 .categoryLink {
@@ -792,10 +824,38 @@
 .sideButton {
   width: 100%;
   margin-top: .85rem;
-  min-height: 38px;
-  background: rgba(210, 171, 82, .055);
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  border: 1px solid rgba(210, 171, 82, .28);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(210, 171, 82, .12), rgba(210, 171, 82, .04));
   color: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: border-color .18s, background .18s, transform .18s;
 }
+
+.sideButton::after {
+  content: '→';
+  font-family: 'DM Sans', sans-serif;
+  font-size: .9rem;
+  line-height: 1;
+  transition: transform .18s;
+}
+
+.sideButton:hover {
+  border-color: rgba(210, 171, 82, .55);
+  background: linear-gradient(180deg, rgba(210, 171, 82, .2), rgba(210, 171, 82, .08));
+  transform: translateY(-1px);
+}
+.sideButton:hover::after { transform: translateX(4px); }
 
 .voteList {
   display: grid;

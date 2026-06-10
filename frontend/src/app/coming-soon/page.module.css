@@ -890,39 +890,61 @@
 
 .countdownPills span {
   min-width: 0;
-  min-height: 34px;
+  min-height: 40px;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: .08rem;
-  border: 1px solid rgba(140, 152, 162, .2);
-  border-radius: 5px;
-  background: rgba(5, 8, 12, .38);
+  gap: .12rem;
+  border: 1px solid rgba(210, 171, 82, .2);
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(210, 171, 82, .08), rgba(5, 8, 12, .5));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
 }
 
 .countdownPills strong {
-  color: #fff4dc;
-  font-size: .78rem;
-  font-weight: 800;
+  color: #ffe9b0;
+  font-family: 'Cinzel', serif;
+  font-size: .9rem;
+  font-weight: 700;
   line-height: 1;
+  text-shadow: 0 0 8px rgba(210, 171, 82, .25);
 }
 
 .countdownPills small {
-  color: rgba(232, 221, 186, .48);
-  font-size: .48rem;
+  color: rgba(232, 221, 186, .52);
+  font-size: .5rem;
   line-height: 1;
   text-transform: uppercase;
+  letter-spacing: .04em;
 }
 
 .openedState {
-  min-height: 26px;
-  padding: 0 .54rem;
+  min-height: 40px;
+  flex-direction: row;
+  align-items: center;
+  gap: .45rem;
+  padding: 0 .8rem;
   justify-content: center;
 }
 
 .openedState strong {
-  font-size: .78rem;
+  font-size: .82rem;
+}
+
+.openedDot {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #6ee89e;
+  box-shadow: 0 0 0 3px rgba(110, 232, 158, .16), 0 0 8px rgba(110, 232, 158, .6);
+  animation: openedPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes openedPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 3px rgba(110, 232, 158, .16), 0 0 8px rgba(110, 232, 158, .6); }
+  50% { opacity: .7; box-shadow: 0 0 0 5px rgba(110, 232, 158, .08), 0 0 12px rgba(110, 232, 158, .8); }
 }
 
 .openInfo {
@@ -1126,13 +1148,26 @@
 }
 
 .railHead h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
   margin: 0;
   color: var(--gold);
   font-family: 'Cinzel', serif;
-  font-size: .72rem;
+  font-size: .78rem;
   line-height: 1;
-  letter-spacing: .12em;
+  letter-spacing: .1em;
   text-transform: uppercase;
+}
+
+.railHead h2::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--gold), var(--gold-d));
+  box-shadow: 0 0 6px rgba(210, 171, 82, .4);
 }
 
 .railHead a,

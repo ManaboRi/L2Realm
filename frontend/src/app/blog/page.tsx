@@ -348,7 +348,7 @@ function ArticleListItem({ article, badge }: { article: Article; badge: ArticleB
         <span className={styles.listDescription}>{description}</span>
         <ArticleStats article={article} compact />
       </span>
-      <span className={styles.readMore}>Читать далее →</span>
+      <span className={styles.readMore}>Читать<i aria-hidden="true" /></span>
     </Link>
   );
 }
@@ -493,7 +493,7 @@ export default async function BlogPage({ searchParams }: Props) {
                   </Link>
                 ))}
               </div>
-              <Link href="/coming-soon" className={styles.sideButton}>Все открытия →</Link>
+              <Link href="/coming-soon" className={styles.sideButton}>Все открытия</Link>
             </section>
 
             <section className={styles.sideBlock}>
