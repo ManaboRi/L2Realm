@@ -87,7 +87,7 @@ export default async function GuideCategoryPage({ params }: Props) {
         <div className={home.layout}>
 
           {/* ── Левая навигация ── */}
-          <aside className={home.sidebar}>
+          <aside className={`${home.sidebar} ${styles.gPanel}`}>
             <div className={home.filterGroup}>
               <span className={home.filterLabel}>Хроники</span>
               <div className={home.filterList}>
@@ -151,7 +151,7 @@ export default async function GuideCategoryPage({ params }: Props) {
           </section>
 
           {/* ── Правый сайдбар ── */}
-          <aside className={home.rightRail} aria-label="Сводка">
+          <aside className={`${home.rightRail} ${styles.gPanel}`} aria-label="Сводка">
             {popular.length > 0 && (
               <section className={home.railSection}>
                 <div className={home.railHead}><h2>Популярное</h2></div>

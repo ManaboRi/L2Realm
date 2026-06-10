@@ -5,6 +5,7 @@ import type { Guide } from '@/lib/types';
 import styles from './page.module.css';
 
 type Bracket = { id: string; label: string; min: number; max: number };
+type SortKey = 'level' | 'title' | 'new' | 'views';
 
 const BRACKETS: Bracket[] = [
   { id: 'all', label: 'Все', min: -1, max: 999 },
@@ -21,10 +22,40 @@ function levelText(g: Guide): string {
   return '—';
 }
 
+// Иконки-заглушки наград (Адена / Опыт / SP) — по ключевым словам в тексте.
+const CoinSvg = (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /></svg>
+);
+const ExpSvg = (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.8L20.5 9l-4.5 4 1.3 6.2L12 16l-5.3 3.2L8 13 3.5 9l6.1-.2z" /></svg>
+);
+const SpSvg = (
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2 5 5 .5-3.8 3.4 1.2 5.1L12 19l-4.4 3 1.2-5.1L5 13.5 10 13z" /></svg>
+);
+
+function RewardCell({ reward }: { reward?: string | null }) {
+  if (!reward) return <span className={styles.dash}>—</span>;
+  const low = reward.toLowerCase();
+  return (
+    <span className={styles.rewardCell}>
+      {/(аден|adena)/.test(low) && <span className={`${styles.rIco} ${styles.rAdena}`} title="Адена">{CoinSvg}</span>}
+      {/(exp|опыт|эксп|exp)/.test(low) && <span className={`${styles.rIco} ${styles.rExp}`} title="Опыт">{ExpSvg}</span>}
+      {/\bsp\b/.test(low) && <span className={`${styles.rIco} ${styles.rSp}`} title="SP">{SpSvg}</span>}
+      <span className={styles.rewardText}>{reward}</span>
+    </span>
+  );
+}
+
 export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
   const [q, setQ] = useState('');
   const [br, setBr] = useState('all');
-  const [sort, setSort] = useState<'level' | 'new' | 'views'>('level');
+  const [sortKey, setSortKey] = useState<SortKey>('level');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  function toggleSort(k: SortKey) {
+    if (sortKey === k) { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); }
+    else { setSortKey(k); setSortDir(k === 'new' || k === 'views' ? 'desc' : 'asc'); }
+  }
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
@@ -40,12 +71,18 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
       const lvl = g.levelMin ?? g.levelMax ?? -1;
       return lvl >= bracket.min && lvl <= bracket.max;
     });
+    const dir = sortDir === 'asc' ? 1 : -1;
     return [...arr].sort((a, b) => {
-      if (sort === 'views') return (b.views ?? 0) - (a.views ?? 0);
-      if (sort === 'new') return (b.publishedAt ? Date.parse(b.publishedAt) : 0) - (a.publishedAt ? Date.parse(a.publishedAt) : 0);
-      return (a.levelMin ?? 999) - (b.levelMin ?? 999);
+      let r = 0;
+      if (sortKey === 'title') r = a.title.localeCompare(b.title, 'ru');
+      else if (sortKey === 'views') r = (a.views ?? 0) - (b.views ?? 0);
+      else if (sortKey === 'new') r = (a.publishedAt ? Date.parse(a.publishedAt) : 0) - (b.publishedAt ? Date.parse(b.publishedAt) : 0);
+      else r = (a.levelMin ?? 999) - (b.levelMin ?? 999);
+      return r * dir;
     });
-  }, [guides, q, br, sort]);
+  }, [guides, q, br, sortKey, sortDir]);
+
+  const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '');
 
   return (
     <>
@@ -75,8 +112,14 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
             </button>
           ))}
         </div>
-        <select className={styles.sortSel} value={sort} onChange={e => setSort(e.target.value as 'level' | 'new' | 'views')} aria-label="Сортировка">
+        <select
+          className={styles.sortSel}
+          value={sortKey}
+          onChange={e => toggleSort(e.target.value as SortKey)}
+          aria-label="Сортировка"
+        >
           <option value="level">По уровню</option>
+          <option value="title">По названию</option>
           <option value="new">Сначала новые</option>
           <option value="views">Популярные</option>
         </select>
@@ -93,8 +136,16 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
           <table className={styles.table}>
             <thead>
               <tr>
-                <th>Квест</th>
-                <th className={styles.colLevel}>Уровень</th>
+                <th>
+                  <button type="button" className={`${styles.sortTh} ${sortKey === 'title' ? styles.sortThActive : ''}`} onClick={() => toggleSort('title')}>
+                    Квест <i>{arrow('title')}</i>
+                  </button>
+                </th>
+                <th className={styles.colLevel}>
+                  <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
+                    Уровень <i>{arrow('level')}</i>
+                  </button>
+                </th>
                 <th className={styles.colNpc}>NPC / Локация</th>
                 <th className={styles.colReward}>Награда</th>
                 <th className={styles.colAction}></th>
@@ -118,7 +169,7 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
                     {g.location && <span className={styles.loc}>{g.location}</span>}
                     {!g.npc && !g.location && <span className={styles.dash}>—</span>}
                   </td>
-                  <td className={styles.colReward}>{g.reward || <span className={styles.dash}>—</span>}</td>
+                  <td className={styles.colReward}><RewardCell reward={g.reward} /></td>
                   <td className={styles.colAction}>
                     <Link href={`${base}/${g.slug}`} className={styles.openBtn}>Открыть →</Link>
                   </td>

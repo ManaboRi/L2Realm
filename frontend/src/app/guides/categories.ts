@@ -14,11 +14,7 @@ export const GUIDE_CATEGORIES: GuideCategory[] = [
   { slug: 'lokacii',     label: 'Локации',     icon: '🗺️', desc: 'Зоны охоты, города, инстансы и рейды.' },
   { slug: 'klassy',      label: 'Классы',      icon: '⚔️', desc: 'Описания классов, роли, плюсы и минусы.' },
   { slug: 'skilly',      label: 'Скиллы',      icon: '✨', desc: 'Умения, эффекты, комбинации и гайды.' },
-  { slug: 'farm',        label: 'Фарм',        icon: '💰', desc: 'Лучшие споты для фарма адены и ресурсов.' },
-  { slug: 'ekipirovka',  label: 'Экипировка',  icon: '🎽', desc: 'Сеты, сборки, заточка и лучшие связки.' },
-  { slug: 'pvp',         label: 'PvP',         icon: '🛡️', desc: 'Гайды по PvP, тактики и массовые замесы.' },
   { slug: 'reyd-bossy',  label: 'Рейд-боссы',  icon: '🐉', desc: 'Рейд- и эпик-боссы: респ, локации и дроп.' },
-  { slug: 'novichkam',   label: 'Новичкам',    icon: '🚀', desc: 'Советы, прокачка, старт и полезное.' },
 ];
 
 export function findGuideCategory(slug: string): GuideCategory | undefined {

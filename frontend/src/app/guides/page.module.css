@@ -1,54 +1,64 @@
 /* Гайды наследуют каркас сайта (home page.module.css): .shell/.layout/.sidebar/.content/.rightRail.
    Здесь — только специфика раздела гайдов. */
 
-/* Левая навигация: иконка + подпись */
-.navItem { gap: .6rem; }
-.navIcon { flex: 0 0 auto; color: rgba(210, 171, 82, .68); transition: color .14s; }
+/* Левая навигация: иконка + подпись (крупнее и удобнее) */
+.navItem {
+  display: flex !important;
+  align-items: center;
+  gap: .7rem !important;
+  padding: .5rem .6rem !important;
+  border-radius: 8px;
+  font-size: .9rem !important;
+  font-weight: 500;
+  transition: background .14s, color .14s;
+}
+.navItem:hover { background: rgba(210, 171, 82, .07); }
+.navItem em {
+  margin-left: auto;
+  color: rgba(232, 221, 186, .4);
+  font-style: normal;
+  font-size: .76rem;
+}
+.navIcon { flex: 0 0 auto; color: rgba(210, 171, 82, .72); transition: color .14s; }
 .navItem:hover .navIcon { color: var(--gold); }
 .navLetter {
-  width: 20px;
-  height: 20px;
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
   background: color-mix(in srgb, var(--accent) 16%, transparent);
   color: var(--accent);
   font-family: 'Cinzel', serif;
-  font-size: .68rem;
+  font-size: .78rem;
   font-weight: 700;
 }
 
-/* ── Hero с поиском (панель с золотой подсветкой) ── */
-.hero {
-  position: relative;
-  margin-bottom: 2rem;
-  padding: 1.7rem 1.8rem 1.8rem;
-  border: 1px solid rgba(118, 141, 151, .14);
-  border-radius: 14px;
-  background:
-    radial-gradient(85% 130% at 88% -10%, rgba(210, 171, 82, .12), transparent 55%),
-    linear-gradient(180deg, rgba(15, 20, 28, .7), rgba(8, 12, 18, .9));
-  overflow: hidden;
-}
+/* ── Hero с поиском (плоский, как везде на сайте) ── */
+.hero { margin-bottom: 1.3rem; }
 .hero h1 {
-  margin: 0 0 .55rem;
+  margin: 0 0 .4rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(1.9rem, 3.6vw, 2.7rem);
+  font-size: clamp(1.7rem, 3.2vw, 2.3rem);
   font-weight: 600;
   letter-spacing: .01em;
 }
 .hero h1 span { color: var(--gold); }
 .hero p {
-  margin: 0 0 1.4rem;
+  margin: 0 0 1rem;
   max-width: 640px;
-  color: rgba(232, 221, 186, .68);
-  font-size: .96rem;
-  line-height: 1.6;
+  color: rgba(232, 221, 186, .66);
+  font-size: .92rem;
+  line-height: 1.55;
 }
-.searchRow { margin-bottom: 1rem; }
+.searchRow { margin-bottom: .85rem; }
+
+/* Сайдбар и рейл наследуют home-каркас, но без сдвига главной (-54px) и без растяжки */
+.gPanel { margin-top: 0 !important; min-height: 0 !important; }
 
 .popular {
   display: flex;
@@ -76,9 +86,9 @@
 /* ── Плитки разделов ──────────────────────────── */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
-  gap: .8rem;
-  margin-bottom: 2.4rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: .7rem;
+  margin-bottom: 1.5rem;
 }
 .tile {
   display: flex;
@@ -122,10 +132,10 @@
   display: flex;
   align-items: center;
   gap: .55rem;
-  margin: 0 0 1.1rem;
+  margin: 0 0 .85rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 600;
 }
 .sectionTitle::before {
@@ -143,7 +153,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1rem;
-  margin-bottom: 2.4rem;
+  margin-bottom: 1.6rem;
 }
 .chronCard {
   display: flex;
@@ -163,7 +173,7 @@
 .chronArt {
   position: relative;
   display: block;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
 }
 .chronArt img {

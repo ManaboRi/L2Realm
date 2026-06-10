@@ -80,7 +80,7 @@ export default async function GuidesPage() {
         <div className={home.layout}>
 
           {/* ── Левая навигация (как блок фильтров на сайте) ── */}
-          <aside className={home.sidebar}>
+          <aside className={`${home.sidebar} ${g.gPanel}`}>
             <div className={home.filterGroup}>
               <span className={home.filterLabel}>Разделы гайдов</span>
               <div className={home.filterList}>
@@ -179,7 +179,7 @@ export default async function GuidesPage() {
           </section>
 
           {/* ── Правый рейл (стандартный: баннеры / скоро / статьи) ── */}
-          <aside className={home.rightRail} aria-label="Сводка">
+          <aside className={`${home.rightRail} ${g.gPanel}`} aria-label="Сводка">
             <BannersBlock slot={1} variant="feature" />
 
             <section className={home.railSection}>
