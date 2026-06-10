@@ -1293,15 +1293,17 @@
   z-index: 5;
   right: .7rem;
   top: .7rem;
-  min-height: 24px;
+  min-height: 26px;
   display: inline-flex;
   align-items: center;
-  padding: 0 .55rem;
-  border: 1px solid rgba(232, 221, 186, .3);
+  gap: .3rem;
+  padding: 0 .58rem;
+  border: 1px solid var(--tc, rgba(232, 221, 186, .3));
   border-radius: 6px;
-  background: rgba(5, 8, 12, .62);
-  color: rgba(232, 221, 186, .8);
-  font-size: .58rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--tc, #e8ddba) 22%, rgba(5,8,12,.8)), rgba(5, 8, 12, .82));
+  color: var(--tc, rgba(232, 221, 186, .85));
+  font-size: .6rem;
   font-weight: 700;
   letter-spacing: .04em;
   line-height: 1;
@@ -1309,14 +1311,26 @@
   text-decoration: none;
   white-space: nowrap;
   backdrop-filter: blur(8px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .35), 0 0 0 1px color-mix(in srgb, var(--tc, #e8ddba) 18%, transparent);
   pointer-events: auto;
-  transition: filter .18s, transform .18s, background .18s;
+  transition: filter .18s, transform .18s, box-shadow .18s;
+}
+
+.trustShield {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .trustBadge:hover {
-  filter: brightness(1.18);
-  background: rgba(5, 8, 12, .8);
+  filter: brightness(1.15);
   transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .4), 0 0 0 1px color-mix(in srgb, var(--tc, #e8ddba) 35%, transparent);
 }
 
 /* Нижняя строка карточки: дата ручной проверки проекта редакцией */

@@ -650,10 +650,14 @@ function HomeServerCard({
           <Link
             href="/methodology#trust"
             className={styles.trustBadge}
-            style={{ borderColor: trust.color, color: trust.color }}
+            style={{ borderColor: trust.color, color: trust.color, ['--tc' as string]: trust.color }}
             title={`${trust.title}${checkedAt ? ` · Проверка: ${checkedAt}` : ''} — открыть методику`}
             aria-label="Как мы проверяем серверы — методика"
           >
+            <svg className={styles.trustShield} viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2 4 5v6c0 5 3.4 8.5 8 11 4.6-2.5 8-6 8-11V5l-8-3Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
             {trust.known ? `Доверие ${trust.label}` : 'Проверен'}
           </Link>
         )}

@@ -351,6 +351,96 @@
   box-shadow: 0 0 0 1px rgba(210, 171, 82, .08), 0 12px 28px rgba(210, 171, 82, .08);
 }
 
+/* Лента-таймлайн открытий */
+.timeline {
+  margin-bottom: 1.2rem;
+  padding: .9rem 1rem 1.1rem;
+  border: 1px solid rgba(210, 171, 82, .14);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(11, 16, 23, .9), rgba(6, 10, 15, .96)),
+    radial-gradient(circle at 0% 0%, rgba(210, 171, 82, .06), transparent 40%);
+}
+
+.timelineHead {
+  display: flex;
+  align-items: baseline;
+  gap: .7rem;
+  margin-bottom: .9rem;
+}
+.timelineHead span {
+  font-family: 'Cinzel', serif;
+  font-size: .82rem;
+  color: var(--gold);
+  letter-spacing: .04em;
+}
+.timelineHead small { font-size: .72rem; color: var(--text3); }
+
+.timelineTrack {
+  position: relative;
+  display: flex;
+  gap: .4rem;
+  overflow-x: auto;
+  padding: .6rem .2rem .2rem;
+  scrollbar-width: thin;
+}
+.timelineTrack::-webkit-scrollbar { height: 5px; }
+.timelineTrack::-webkit-scrollbar-thumb { background: rgba(210,171,82,.25); border-radius: 4px; }
+
+.timelineLine {
+  position: absolute;
+  top: .85rem;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(210,171,82,.28), transparent);
+}
+
+.timelinePoint {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 88px;
+  max-width: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .3rem;
+  padding-top: .15rem;
+  text-decoration: none;
+  text-align: center;
+}
+
+.timelineDot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #6ee89e;
+  box-shadow: 0 0 0 3px rgba(110, 232, 158, .14), 0 0 8px rgba(110, 232, 158, .5);
+  transition: transform .16s;
+}
+.timelineDotVip {
+  background: #d2ab52;
+  box-shadow: 0 0 0 3px rgba(210, 171, 82, .16), 0 0 8px rgba(210, 171, 82, .55);
+}
+.timelinePoint:hover .timelineDot { transform: scale(1.25); }
+
+.timelineWhen {
+  color: var(--gold);
+  font-size: .68rem;
+  font-weight: 600;
+}
+.timelineName {
+  color: var(--text2);
+  font-size: .72rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.timelinePoint:hover .timelineName { color: #f6edd0; }
+
 .listHeader {
   display: grid;
   grid-template-columns: minmax(280px, 1.38fr) minmax(72px, .3fr) minmax(164px, .52fr) minmax(150px, .58fr) minmax(128px, .46fr);

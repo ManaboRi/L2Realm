@@ -258,6 +258,46 @@ function FilterItem({ label, count, active, onClick }: { label: string; count?: 
   );
 }
 
+// Лента-таймлайн открытий: ось дат с точками-проектами по близости старта.
+function OpeningsTimeline({ openings, now }: { openings: Opening[]; now: number }) {
+  const future = openings
+    .filter(o => new Date(o.openedAt).getTime() > now)
+    .sort((a, b) => new Date(a.openedAt).getTime() - new Date(b.openedAt).getTime())
+    .slice(0, 12);
+  if (future.length === 0) return null;
+
+  const dayMs = 86_400_000;
+  const bucketLabel = (ts: number) => {
+    const days = Math.ceil((ts - now) / dayMs);
+    if (days <= 1) return 'Завтра';
+    if (days <= 7) return `${days} дн.`;
+    if (days <= 31) return `${Math.ceil(days / 7)} нед.`;
+    return `${Math.ceil(days / 30)} мес.`;
+  };
+
+  return (
+    <div className={styles.timeline} aria-label="Лента ближайших открытий">
+      <div className={styles.timelineHead}>
+        <span>◆ Лента открытий</span>
+        <small>Ближайшие старты по времени</small>
+      </div>
+      <div className={styles.timelineTrack}>
+        <span className={styles.timelineLine} aria-hidden="true" />
+        {future.map(o => {
+          const ts = new Date(o.openedAt).getTime();
+          return (
+            <Link key={o.key} href={`/servers/${o.serverId}`} className={styles.timelinePoint} title={`${o.projectName} — ${formatOpenDateTime(o.openedAt)}`}>
+              <span className={`${styles.timelineDot} ${o.isVip ? styles.timelineDotVip : ''}`} />
+              <span className={styles.timelineWhen}>{bucketLabel(ts)}</span>
+              <span className={styles.timelineName}>{o.projectName}</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function OpeningRow({
   opening,
   now,
@@ -593,6 +633,8 @@ export function ComingSoonClient({ initialServers, initialArticles, initialNow }
                 </select>
               </label>
             </section>
+
+            {openings.length > 0 && <OpeningsTimeline openings={filtered.length > 0 ? filtered : openings} now={now} />}
 
             {openings.length === 0 ? (
               <div className={styles.empty}>
