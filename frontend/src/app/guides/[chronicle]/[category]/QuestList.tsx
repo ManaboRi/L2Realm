@@ -2,14 +2,14 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
+import { GUIDE_CHRONICLES } from '../../guides';
 import { GUIDE_RACES } from '../../races';
 import styles from './page.module.css';
 
-type Bracket = { id: string; label: string; min: number; max: number };
-type SortKey = 'level' | 'title' | 'new' | 'views';
+type SortKey = 'level' | 'title';
 
-const BRACKETS: Bracket[] = [
-  { id: 'all', label: 'Все', min: -1, max: 999 },
+const BRACKETS = [
+  { id: 'all', label: 'Любой уровень', min: -1, max: 999 },
   { id: 'b1', label: '1–20', min: 1, max: 19 },
   { id: 'b2', label: '20–40', min: 20, max: 39 },
   { id: 'b3', label: '40–76', min: 40, max: 75 },
@@ -23,16 +23,9 @@ function levelText(g: Guide): string {
   return '—';
 }
 
-// Иконки-заглушки наград (Адена / Опыт / SP) — по ключевым словам в тексте.
-const CoinSvg = (
-  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /></svg>
-);
-const ExpSvg = (
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.8L20.5 9l-4.5 4 1.3 6.2L12 16l-5.3 3.2L8 13 3.5 9l6.1-.2z" /></svg>
-);
-const SpSvg = (
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2 5 5 .5-3.8 3.4 1.2 5.1L12 19l-4.4 3 1.2-5.1L5 13.5 10 13z" /></svg>
-);
+const CoinSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /></svg>);
+const ExpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.8L20.5 9l-4.5 4 1.3 6.2L12 16l-5.3 3.2L8 13 3.5 9l6.1-.2z" /></svg>);
+const SpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2 5 5 .5-3.8 3.4 1.2 5.1L12 19l-4.4 3 1.2-5.1L5 13.5 10 13z" /></svg>);
 
 function RewardCell({ reward }: { reward?: string | null }) {
   if (!reward) return <span className={styles.dash}>—</span>;
@@ -40,30 +33,38 @@ function RewardCell({ reward }: { reward?: string | null }) {
   return (
     <span className={styles.rewardCell}>
       {/(аден|adena)/.test(low) && <span className={`${styles.rIco} ${styles.rAdena}`} title="Адена">{CoinSvg}</span>}
-      {/(exp|опыт|эксп|exp)/.test(low) && <span className={`${styles.rIco} ${styles.rExp}`} title="Опыт">{ExpSvg}</span>}
+      {/(exp|опыт|эксп)/.test(low) && <span className={`${styles.rIco} ${styles.rExp}`} title="Опыт">{ExpSvg}</span>}
       {/\bsp\b/.test(low) && <span className={`${styles.rIco} ${styles.rSp}`} title="SP">{SpSvg}</span>}
       <span className={styles.rewardText}>{reward}</span>
     </span>
   );
 }
 
-export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
+export function QuestList({ guides, defaultChronicle }: { guides: Guide[]; defaultChronicle: string }) {
   const [q, setQ] = useState('');
+  const [chr, setChr] = useState(defaultChronicle);
   const [br, setBr] = useState('all');
   const [race, setRace] = useState('');
-  const [rep, setRep] = useState<'all' | 'rep' | 'once'>('all');
+  const [loc, setLoc] = useState('');
+  const [type, setType] = useState<'all' | 'rep' | 'once'>('all');
   const [sortKey, setSortKey] = useState<SortKey>('level');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
+  const locations = useMemo(
+    () => [...new Set(guides.map(g => g.location).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'ru')),
+    [guides],
+  );
+
   function toggleSort(k: SortKey) {
-    if (sortKey === k) { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); }
-    else { setSortKey(k); setSortDir(k === 'new' || k === 'views' ? 'desc' : 'asc'); }
+    if (sortKey === k) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortKey(k); setSortDir('asc'); }
   }
 
   const list = useMemo(() => {
     const query = q.trim().toLowerCase();
     const bracket = BRACKETS.find(b => b.id === br) ?? BRACKETS[0];
     const arr = guides.filter(g => {
+      if (chr && g.chronicle !== chr) return false;
       const okQ = !query
         || g.title.toLowerCase().includes(query)
         || (g.npc ?? '').toLowerCase().includes(query)
@@ -74,21 +75,20 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
         const lvl = g.levelMin ?? g.levelMax ?? -1;
         if (!(lvl >= bracket.min && lvl <= bracket.max)) return false;
       }
-      if (race && g.race && g.race !== race) return false; // null-раса = для всех
-      if (rep === 'rep' && !g.repeatable) return false;
-      if (rep === 'once' && g.repeatable) return false;
+      if (race && g.race && g.race !== race) return false;
+      if (loc && g.location !== loc) return false;
+      if (type === 'rep' && !g.repeatable) return false;
+      if (type === 'once' && g.repeatable) return false;
       return true;
     });
     const dir = sortDir === 'asc' ? 1 : -1;
     return [...arr].sort((a, b) => {
-      let r = 0;
-      if (sortKey === 'title') r = a.title.localeCompare(b.title, 'ru');
-      else if (sortKey === 'views') r = (a.views ?? 0) - (b.views ?? 0);
-      else if (sortKey === 'new') r = (a.publishedAt ? Date.parse(a.publishedAt) : 0) - (b.publishedAt ? Date.parse(b.publishedAt) : 0);
-      else r = (a.levelMin ?? 999) - (b.levelMin ?? 999);
+      const r = sortKey === 'title'
+        ? a.title.localeCompare(b.title, 'ru')
+        : (a.levelMin ?? 999) - (b.levelMin ?? 999);
       return r * dir;
     });
-  }, [guides, q, br, race, rep, sortKey, sortDir]);
+  }, [guides, q, chr, br, race, loc, type, sortKey, sortDir]);
 
   const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '');
 
@@ -108,50 +108,33 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
             aria-label="Поиск по квестам"
           />
         </div>
-        <div className={styles.levelChips}>
-          {BRACKETS.map(b => (
-            <button
-              key={b.id}
-              type="button"
-              className={`${styles.levelChip} ${br === b.id ? styles.levelChipActive : ''}`}
-              onClick={() => setBr(b.id)}
-            >
-              {b.label}
-            </button>
-          ))}
+        <div className={styles.selRow}>
+          <select className={styles.sel} value={chr} onChange={e => setChr(e.target.value)} aria-label="Хроника">
+            <option value="">Все хроники</option>
+            {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+          </select>
+          <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
+            {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+          </select>
+          <select className={styles.sel} value={race} onChange={e => setRace(e.target.value)} aria-label="Раса">
+            <option value="">Все расы</option>
+            {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
+          </select>
+          <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
+            <option value="">Все локации</option>
+            {locations.map(l => <option key={l} value={l}>{l}</option>)}
+          </select>
+          <select className={styles.sel} value={type} onChange={e => setType(e.target.value as 'all' | 'rep' | 'once')} aria-label="Тип квеста">
+            <option value="all">Любой тип</option>
+            <option value="rep">Повторяемые ∞</option>
+            <option value="once">Одноразовые</option>
+          </select>
         </div>
-        <select
-          className={styles.sortSel}
-          value={race}
-          onChange={e => setRace(e.target.value)}
-          aria-label="Раса"
-        >
-          <option value="">Все расы</option>
-          {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
-        </select>
-        <div className={styles.levelChips}>
-          <button type="button" className={`${styles.levelChip} ${rep === 'all' ? styles.levelChipActive : ''}`} onClick={() => setRep('all')}>Любой</button>
-          <button type="button" className={`${styles.levelChip} ${rep === 'rep' ? styles.levelChipActive : ''}`} onClick={() => setRep('rep')} title="Повторяемые">∞</button>
-          <button type="button" className={`${styles.levelChip} ${rep === 'once' ? styles.levelChipActive : ''}`} onClick={() => setRep('once')} title="Одноразовые">1×</button>
-        </div>
-        <select
-          className={styles.sortSel}
-          value={sortKey}
-          onChange={e => toggleSort(e.target.value as SortKey)}
-          aria-label="Сортировка"
-        >
-          <option value="level">По уровню</option>
-          <option value="title">По названию</option>
-          <option value="new">Сначала новые</option>
-          <option value="views">Популярные</option>
-        </select>
       </div>
-
-      <div className={styles.countRow}>Найдено: <strong>{list.length}</strong></div>
 
       {list.length === 0 ? (
         <div className={styles.empty}>
-          <p>Ничего не нашлось — измени запрос или сбрось уровень.</p>
+          <p>Ничего не нашлось — измени фильтры или запрос.</p>
         </div>
       ) : (
         <div className={styles.tableWrap}>
@@ -174,32 +157,35 @@ export function QuestList({ guides, base }: { guides: Guide[]; base: string }) {
               </tr>
             </thead>
             <tbody>
-              {list.map(g => (
-                <tr key={g.id}>
-                  <td>
-                    <Link href={`${base}/${g.slug}`} className={styles.gName}>
-                      {g.image && <img src={g.image} alt="" loading="lazy" decoding="async" />}
-                      <span>
-                        <strong>
-                          {g.title}
-                          {g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
-                        </strong>
-                        {g.description && <em>{g.description}</em>}
-                      </span>
-                    </Link>
-                  </td>
-                  <td className={styles.colLevel}><span className={styles.lvl}>{levelText(g)}</span></td>
-                  <td className={styles.colNpc}>
-                    {g.npc && <span className={styles.npc}>{g.npc}</span>}
-                    {g.location && <span className={styles.loc}>{g.location}</span>}
-                    {!g.npc && !g.location && <span className={styles.dash}>—</span>}
-                  </td>
-                  <td className={styles.colReward}><RewardCell reward={g.reward} /></td>
-                  <td className={styles.colAction}>
-                    <Link href={`${base}/${g.slug}`} className={styles.openBtn}>Открыть →</Link>
-                  </td>
-                </tr>
-              ))}
+              {list.map(g => {
+                const href = `/guides/${g.chronicle}/${g.category}/${g.slug}`;
+                return (
+                  <tr key={g.id}>
+                    <td>
+                      <Link href={href} className={styles.gName}>
+                        {g.image && <img src={g.image} alt="" loading="lazy" decoding="async" />}
+                        <span>
+                          <strong>
+                            {g.title}
+                            {g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
+                          </strong>
+                          {g.description && <em>{g.description}</em>}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className={styles.colLevel}><span className={styles.lvl}>{levelText(g)}</span></td>
+                    <td className={styles.colNpc}>
+                      {g.npc && <span className={styles.npc}>{g.npc}</span>}
+                      {g.location && <span className={styles.loc}>{g.location}</span>}
+                      {!g.npc && !g.location && <span className={styles.dash}>—</span>}
+                    </td>
+                    <td className={styles.colReward}><RewardCell reward={g.reward} /></td>
+                    <td className={styles.colAction}>
+                      <Link href={href} className={styles.openBtn}>Открыть →</Link>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

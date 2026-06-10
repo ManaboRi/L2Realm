@@ -17,7 +17,7 @@
 .bread a:hover { text-decoration: underline; }
 .bread span { color: rgba(232, 221, 186, .3); }
 
-.head { margin-bottom: 1.8rem; }
+.head { margin-bottom: 1.1rem; }
 .kicker {
   display: inline-block;
   padding: .12rem .55rem;
@@ -42,6 +42,10 @@
 }
 .h1Icon { flex: 0 0 auto; color: var(--gold); }
 
+/* Единый верхний отступ — заголовок/фильтры не упираются в шапку (как на остальных страницах) */
+.guidesMain { padding-top: 1.5rem; }
+.navLabel { font-size: .74rem !important; letter-spacing: .16em !important; }
+
 /* Сайдбар/рейл без сдвига главной (-54px) и без растяжки на весь экран */
 .gPanel { margin-top: 0 !important; min-height: 0 !important; }
 
@@ -50,10 +54,10 @@
   display: flex !important;
   align-items: center;
   gap: .7rem !important;
-  padding: .5rem .6rem !important;
-  border-radius: 8px;
-  font-size: .9rem !important;
-  font-weight: 500;
+  padding: .62rem .7rem !important;
+  border-radius: 9px;
+  font-size: .95rem !important;
+  font-weight: 600;
   transition: background .14s, color .14s;
 }
 .navItem:hover { background: rgba(210, 171, 82, .07); }
@@ -100,6 +104,29 @@
 }
 .search::placeholder { color: rgba(232, 221, 186, .4); }
 .search:focus { border-color: rgba(210, 171, 82, .5); box-shadow: 0 0 0 3px rgba(210, 171, 82, .08); }
+
+/* Ряд аккуратных дропдаунов-фильтров */
+.selRow { display: flex; flex-wrap: wrap; gap: .5rem; }
+.sel {
+  min-height: 42px;
+  padding: 0 2.2rem 0 .85rem;
+  border: 1px solid rgba(118, 141, 151, .22);
+  border-radius: 9px;
+  background-color: rgba(10, 14, 20, .7);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d2ab52' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .85rem center;
+  color: rgba(232, 221, 186, .9);
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color .14s, background-color .14s;
+}
+.sel:hover { border-color: rgba(210, 171, 82, .42); }
+.sel:focus { outline: none; border-color: rgba(210, 171, 82, .55); box-shadow: 0 0 0 3px rgba(210, 171, 82, .08); }
+.sel option { background: #0c1118; color: #f0e6cf; }
 
 .levelChips { display: flex; flex-wrap: wrap; gap: .35rem; }
 .levelChip {
@@ -192,46 +219,31 @@
   vertical-align: middle;
 }
 
-/* ── Популярное (правый сайдбар) ──────────────── */
-.popList { display: flex; flex-direction: column; gap: .2rem; }
-.popItem {
+/* ── Популярные квесты (правый сайдбар, 1 строка) ── */
+.popList { display: flex; flex-direction: column; gap: .1rem; }
+.popRow {
   display: flex;
-  align-items: flex-start;
-  gap: .6rem;
-  padding: .5rem .25rem;
+  align-items: center;
+  gap: .55rem;
+  padding: .5rem .35rem;
   border-radius: 7px;
   text-decoration: none;
   transition: background .14s;
 }
-.popItem:hover { background: rgba(210, 171, 82, .06); }
-.popRank {
-  flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-  font-family: 'Cinzel', serif;
-  font-size: .72rem;
-  font-weight: 700;
-}
-.popText { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
-.popText strong {
-  color: #f3e8c6;
+.popRow:hover { background: rgba(210, 171, 82, .06); }
+.popFire { flex: 0 0 auto; font-size: .92rem; line-height: 1; }
+.popName {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #f0e6cf;
   font-size: .82rem;
-  font-weight: 600;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  font-weight: 500;
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
-.popItem:hover .popText strong { color: var(--gold); }
-.popText em { color: rgba(232, 221, 186, .45); font-style: normal; font-size: .72rem; }
+.popRow:hover .popName { color: var(--gold); }
+.popViews { flex: 0 0 auto; color: rgba(232, 221, 186, .42); font-size: .74rem; }
 
 /* ── Путь игрока (правый сайдбар) ─────────────── */
 .pathList { display: flex; flex-direction: column; gap: .1rem; padding: .2rem 0; }

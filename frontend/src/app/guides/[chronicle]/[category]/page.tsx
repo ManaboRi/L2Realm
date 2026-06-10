@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { findGuideChronicle, GUIDE_CHRONICLES } from '../../guides';
+import { findGuideChronicle } from '../../guides';
 import { findGuideCategory, GUIDE_CATEGORIES } from '../../categories';
 import { GuideIcon } from '../../GuideIcon';
 import { QuestList } from './QuestList';
@@ -23,25 +23,16 @@ const PLAYER_PATH = [
   { n: '4', title: 'Эндгейм (76+)', desc: 'Пайлака, эпик-квесты и мировые боссы.' },
 ];
 
-async function fetchGuides(chronicle: string, category: string): Promise<Guide[]> {
+// Тянем все гайды категории (по всем хроникам) — фильтр по хронике делает QuestList.
+async function fetchGuides(category: string): Promise<Guide[]> {
   try {
-    const res = await fetch(
-      `${BACKEND}/api/guides?chronicle=${encodeURIComponent(chronicle)}&category=${encodeURIComponent(category)}`,
-      { next: { revalidate } },
-    );
+    const res = await fetch(`${BACKEND}/api/guides?category=${encodeURIComponent(category)}`, { next: { revalidate } });
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
   } catch {
     return [];
   }
-}
-
-function levelText(g: Guide): string {
-  if (g.levelMin != null && g.levelMax != null) return `${g.levelMin}–${g.levelMax}`;
-  if (g.levelMin != null) return `${g.levelMin}+`;
-  if (g.levelMax != null) return `до ${g.levelMax}`;
-  return 'уровень не указан';
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -62,9 +53,8 @@ export default async function GuideCategoryPage({ params }: Props) {
   const cat = findGuideCategory(category);
   if (!ch || !cat) notFound();
 
-  const guides = await fetchGuides(ch.slug, cat.slug);
-  const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 5);
-  const base = `/guides/${ch.slug}/${cat.slug}`;
+  const guides = await fetchGuides(cat.slug);
+  const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -77,7 +67,7 @@ export default async function GuideCategoryPage({ params }: Props) {
   };
 
   return (
-    <main className={home.page} style={{ ['--accent' as string]: ch.accent }}>
+    <main className={`${home.page} ${styles.guidesMain}`} style={{ ['--accent' as string]: ch.accent }}>
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
@@ -86,26 +76,10 @@ export default async function GuideCategoryPage({ params }: Props) {
       <div className={home.shell}>
         <div className={home.layout}>
 
-          {/* ── Левая навигация ── */}
+          {/* ── Левая навигация: только разделы ── */}
           <aside className={`${home.sidebar} ${styles.gPanel}`}>
             <div className={home.filterGroup}>
-              <span className={home.filterLabel}>Хроники</span>
-              <div className={home.filterList}>
-                {GUIDE_CHRONICLES.map(c => (
-                  <Link
-                    key={c.slug}
-                    href={`/guides/${c.slug}/${cat.slug}`}
-                    className={`${home.filterItem} ${styles.navItem} ${c.slug === ch.slug ? styles.navActive : ''}`}
-                  >
-                    <span className={styles.navLetter} style={{ ['--accent' as string]: c.accent }}>{c.name[0]}</span>
-                    <span>{c.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            <div className={home.filterGroup}>
-              <span className={home.filterLabel}>Разделы</span>
+              <span className={`${home.filterLabel} ${styles.navLabel}`}>Разделы гайдов</span>
               <div className={home.filterList}>
                 {GUIDE_CATEGORIES.map(x => (
                   <Link
@@ -113,7 +87,7 @@ export default async function GuideCategoryPage({ params }: Props) {
                     href={`/guides/${ch.slug}/${x.slug}`}
                     className={`${home.filterItem} ${styles.navItem} ${x.slug === cat.slug ? styles.navActive : ''}`}
                   >
-                    <GuideIcon name={x.slug} size={16} className={styles.navIcon} />
+                    <GuideIcon name={x.slug} size={18} className={styles.navIcon} />
                     <span>{x.label}</span>
                   </Link>
                 ))}
@@ -132,21 +106,20 @@ export default async function GuideCategoryPage({ params }: Props) {
             </div>
 
             <header className={styles.head}>
-              <span className={styles.kicker}>Хроника {ch.name}</span>
               <h1><GuideIcon name={cat.slug} size={28} className={styles.h1Icon} /> {cat.label}</h1>
               <p>{cat.desc}</p>
             </header>
 
             {guides.length === 0 ? (
               <div className={styles.empty}>
-                <p>Гайды в разделе «{cat.label}» для {ch.name} скоро появятся — база пополняется.</p>
+                <p>Гайды в разделе «{cat.label}» скоро появятся — база пополняется.</p>
                 <div className={styles.emptyActions}>
                   <Link href={`/guides/${ch.slug}`} className={styles.backBtn}>← К разделам {ch.name}</Link>
                   <Link href="/contacts" className={styles.suggestBtn}>Предложить тему</Link>
                 </div>
               </div>
             ) : (
-              <QuestList guides={guides} base={base} />
+              <QuestList guides={guides} defaultChronicle={ch.slug} />
             )}
           </section>
 
@@ -154,15 +127,13 @@ export default async function GuideCategoryPage({ params }: Props) {
           <aside className={`${home.rightRail} ${styles.gPanel}`} aria-label="Сводка">
             {popular.length > 0 && (
               <section className={home.railSection}>
-                <div className={home.railHead}><h2>Популярное</h2></div>
+                <div className={home.railHead}><h2>Популярные квесты</h2></div>
                 <div className={styles.popList}>
-                  {popular.map((g, i) => (
-                    <Link key={g.id} href={`${base}/${g.slug}`} className={styles.popItem}>
-                      <span className={styles.popRank}>{i + 1}</span>
-                      <span className={styles.popText}>
-                        <strong>{g.title}</strong>
-                        <em>{levelText(g)} · {g.views ?? 0} просм.</em>
-                      </span>
+                  {popular.map(pg => (
+                    <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={styles.popRow}>
+                      <span className={styles.popFire} aria-hidden="true">🔥</span>
+                      <span className={styles.popName}>{pg.title}</span>
+                      <span className={styles.popViews}>{pg.views ?? 0}</span>
                     </Link>
                   ))}
                 </div>

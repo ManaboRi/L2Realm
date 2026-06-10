@@ -1,18 +1,24 @@
 /* Гайды наследуют каркас сайта (home page.module.css): .shell/.layout/.sidebar/.content/.rightRail.
    Здесь — только специфика раздела гайдов. */
 
+/* Единый верхний отступ — чтобы заголовок не упирался в шапку (как на остальных страницах) */
+.guidesMain { padding-top: 1.5rem; }
+
+/* Заголовок группы фильтров — крупнее */
+.navLabel { font-size: .74rem !important; letter-spacing: .16em !important; }
+
 /* Левая навигация: иконка + подпись (крупнее и удобнее) */
 .navItem {
   display: flex !important;
   align-items: center;
   gap: .7rem !important;
-  padding: .5rem .6rem !important;
-  border-radius: 8px;
-  font-size: .9rem !important;
-  font-weight: 500;
+  padding: .62rem .7rem !important;
+  border-radius: 9px;
+  font-size: .95rem !important;
+  font-weight: 600;
   transition: background .14s, color .14s;
 }
-.navItem:hover { background: rgba(210, 171, 82, .07); }
+.navItem:hover { background: rgba(210, 171, 82, .08); }
 .navItem em {
   margin-left: auto;
   color: rgba(232, 221, 186, .4);
@@ -83,49 +89,49 @@
   color: #f6edd0;
 }
 
-/* ── Плитки разделов ──────────────────────────── */
+/* ── Плитки разделов (компактные, один ряд) ───── */
 .tiles {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: .7rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: .6rem;
+  margin-bottom: 1.7rem;
 }
 .tile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: .8rem;
-  padding: .85rem .95rem;
+  gap: .55rem;
+  padding: 1rem .5rem .85rem;
   border: 1px solid rgba(118, 141, 151, .16);
-  border-radius: 10px;
+  border-radius: 12px;
   background: linear-gradient(180deg, rgba(13, 18, 26, .8), rgba(8, 12, 18, .92));
   text-decoration: none;
+  text-align: center;
   transition: border-color .16s, transform .16s, background .16s;
 }
 .tile:hover {
-  border-color: rgba(210, 171, 82, .42);
-  transform: translateY(-2px);
+  border-color: rgba(210, 171, 82, .45);
+  transform: translateY(-3px);
   background: linear-gradient(180deg, rgba(18, 23, 31, .9), rgba(10, 14, 20, .96));
 }
 .tileIcon {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 13px;
   border: 1px solid rgba(210, 171, 82, .28);
-  background: linear-gradient(135deg, rgba(210, 171, 82, .14), rgba(210, 171, 82, .05));
+  background: linear-gradient(135deg, rgba(210, 171, 82, .16), rgba(210, 171, 82, .05));
   color: var(--gold);
   transition: border-color .16s, background .16s;
 }
 .tile:hover .tileIcon {
-  border-color: rgba(210, 171, 82, .5);
-  background: linear-gradient(135deg, rgba(210, 171, 82, .22), rgba(210, 171, 82, .08));
+  border-color: rgba(210, 171, 82, .55);
+  background: linear-gradient(135deg, rgba(210, 171, 82, .24), rgba(210, 171, 82, .08));
 }
-.tileText { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
-.tileText strong { color: #f3e8c6; font-size: .92rem; font-weight: 600; }
-.tileText small { color: rgba(232, 221, 186, .5); font-size: .73rem; line-height: 1.3; }
+.tileLabel { color: #f0e6cf; font-size: .82rem; font-weight: 600; line-height: 1.2; }
 
 /* ── Заголовки секций ─────────────────────────── */
 .sectionTitle {
@@ -243,10 +249,6 @@
 .popularCard strong { color: #f3e8c6; font-size: .86rem; font-weight: 600; line-height: 1.3; }
 .popularCard small { color: rgba(232, 221, 186, .45); font-size: .72rem; }
 
-@media (max-width: 1100px) {
-  .chronGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-@media (max-width: 620px) {
-  .tiles { grid-template-columns: 1fr 1fr; }
-  .chronGrid { grid-template-columns: 1fr; }
-}
+@media (max-width: 1280px) { .tiles { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 640px)  { .tiles { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 420px)  { .tiles { grid-template-columns: repeat(2, 1fr); } }
