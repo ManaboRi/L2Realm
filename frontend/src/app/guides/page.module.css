@@ -1,94 +1,122 @@
-.page {
-  width: min(1320px, calc(100% - 2.5rem));
-  margin: 0 auto;
-  padding: 2.2rem 0 4.5rem;
-}
+/* Гайды наследуют каркас сайта (home page.module.css): .shell/.layout/.sidebar/.content/.rightRail.
+   Здесь — только специфика раздела гайдов. */
 
-/* ── Hero (по центру, с поиском) ──────────────── */
-.hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  margin-bottom: 2.6rem;
-}
-
-.back {
-  align-self: flex-start;
+/* Левая навигация: иконка + подпись */
+.navItem { gap: .55rem; }
+.navIcon { font-size: 1rem; line-height: 1; }
+.navLetter {
+  width: 20px;
+  height: 20px;
   display: inline-flex;
   align-items: center;
-  margin-bottom: 1.4rem;
-  color: rgba(210, 171, 82, .9);
-  font-size: .78rem;
-  text-decoration: none;
+  justify-content: center;
+  border-radius: 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-family: 'Cinzel', serif;
+  font-size: .68rem;
+  font-weight: 700;
 }
-.back::before { content: '\2190'; margin-right: .45rem; }
 
+/* ── Hero с поиском ───────────────────────────── */
+.hero { margin-bottom: 1.6rem; }
 .hero h1 {
-  margin: 0 0 .7rem;
+  margin: 0 0 .5rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
   font-weight: 600;
 }
 .hero h1 span { color: var(--gold); }
-
 .hero p {
-  margin: 0 0 1.6rem;
-  max-width: 680px;
-  color: rgba(232, 221, 186, .68);
-  font-size: 1rem;
-  line-height: 1.6;
+  margin: 0 0 1.2rem;
+  max-width: 620px;
+  color: rgba(232, 221, 186, .66);
+  font-size: .95rem;
+  line-height: 1.55;
 }
+.searchRow { margin-bottom: .85rem; }
 
-.searchRow {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  margin-bottom: 1.1rem;
-}
-
-.chips {
+.popular {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: .7rem;
+  gap: .5rem;
 }
-.chipActive {
+.popularLabel { color: rgba(232, 221, 186, .45); font-size: .78rem; }
+.popularChip {
+  padding: .28rem .7rem;
+  border: 1px solid rgba(118, 141, 151, .2);
+  border-radius: 999px;
+  background: rgba(10, 15, 22, .6);
+  color: rgba(232, 221, 186, .72);
+  font-size: .76rem;
+  text-decoration: none;
+  transition: border-color .14s, color .14s, background .14s;
+}
+.popularChip:hover {
+  border-color: rgba(210, 171, 82, .45);
+  background: rgba(210, 171, 82, .08);
+  color: #f6edd0;
+}
+
+/* ── Плитки разделов ──────────────────────────── */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: .8rem;
+  margin-bottom: 2.4rem;
+}
+.tile {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .85rem .95rem;
+  border: 1px solid rgba(118, 141, 151, .16);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(13, 18, 26, .8), rgba(8, 12, 18, .92));
+  text-decoration: none;
+  transition: border-color .16s, transform .16s, background .16s;
+}
+.tile:hover {
+  border-color: rgba(210, 171, 82, .42);
+  transform: translateY(-2px);
+  background: linear-gradient(180deg, rgba(18, 23, 31, .9), rgba(10, 14, 20, .96));
+}
+.tileIcon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
   display: inline-flex;
   align-items: center;
-  gap: .45rem;
-  padding: .5rem 1.15rem;
-  border: 1px solid rgba(210, 171, 82, .5);
-  border-radius: 999px;
-  background: linear-gradient(135deg, rgba(210, 171, 82, .22), rgba(168, 132, 54, .12));
-  color: #f6e6b8;
-  font-size: .9rem;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 0 18px -6px rgba(210, 171, 82, .5);
-  transition: transform .16s, box-shadow .16s, background .16s;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid rgba(210, 171, 82, .25);
+  background: rgba(210, 171, 82, .08);
+  font-size: 1.25rem;
 }
-.chipActive:hover {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, rgba(210, 171, 82, .32), rgba(168, 132, 54, .18));
-  box-shadow: 0 0 24px -6px rgba(210, 171, 82, .7);
-}
-.chipSoon {
-  color: rgba(232, 221, 186, .4);
-  font-size: .78rem;
+.tileText { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.tileText strong { color: #f3e8c6; font-size: .92rem; font-weight: 600; }
+.tileText small { color: rgba(232, 221, 186, .5); font-size: .73rem; line-height: 1.3; }
+
+/* ── Заголовки секций ─────────────────────────── */
+.sectionTitle {
+  margin: 0 0 1rem;
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
-/* ── Карточки хроник (без статистики) ─────────── */
-.grid {
+/* ── Карточки хроник ──────────────────────────── */
+.chronGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.2rem;
+  gap: 1rem;
+  margin-bottom: 2.4rem;
 }
-
-.card {
-  position: relative;
+.chronCard {
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -98,105 +126,88 @@
   text-decoration: none;
   transition: transform .2s, border-color .2s, box-shadow .2s;
 }
-.card:hover {
-  transform: translateY(-5px);
+.chronCard:hover {
+  transform: translateY(-4px);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
-  box-shadow: 0 24px 54px rgba(0, 0, 0, .45), 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 22px 50px rgba(0, 0, 0, .4), 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
 }
-
-.cardMedia { position: relative; aspect-ratio: 941 / 1672; overflow: hidden; }
-.cardMedia img { width: 100%; height: 100%; object-fit: contain; transition: transform .35s ease; }
-.card:hover .cardMedia img { transform: scale(1.03); }
-
-.cardShade {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 30%;
-  background: linear-gradient(180deg, transparent, rgba(6, 10, 15, .65));
-  pointer-events: none;
-}
-
-.cardBody {
+.chronArt {
   position: relative;
-  z-index: 1;
-  padding: .85rem 1rem 1.15rem;
-  display: flex;
-  flex-direction: column;
-  gap: .32rem;
-  border-top: 1px solid rgba(118, 141, 151, .12);
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
 }
-.cardKicker {
-  align-self: flex-start;
-  padding: .1rem .5rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-  font-size: .58rem;
-  font-weight: 700;
-  letter-spacing: .1em;
-  text-transform: uppercase;
+.chronArt img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18%;
+  transition: transform .35s ease;
 }
-.cardBody h2 {
-  margin: .1rem 0 0;
+.chronCard:hover .chronArt img { transform: scale(1.05); }
+.chronShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(6, 10, 15, .9));
+}
+.chronName {
+  position: absolute;
+  left: .9rem;
+  bottom: .65rem;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: 1.22rem;
-}
-.cardBody p {
-  margin: 0;
-  color: rgba(232, 221, 186, .62);
-  font-size: .8rem;
-  line-height: 1.45;
-}
-.cardLink {
-  margin-top: .5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  color: var(--accent);
-  font-size: .8rem;
+  font-size: 1.5rem;
   font-weight: 600;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .8);
 }
-.cardLink i { transition: transform .2s; font-style: normal; }
-.card:hover .cardLink i { transform: translateX(4px); }
-
-/* ── Полоса «С чего начать» (честная, без цифр) ── */
-.starter {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-  margin-top: 2.4rem;
+.chronBody {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding: .8rem .95rem 1rem;
 }
-.step {
+.chronBody small { color: rgba(232, 221, 186, .6); font-size: .78rem; line-height: 1.4; }
+.chronFoot {
   display: flex;
   align-items: center;
-  gap: .9rem;
-  padding: 1rem 1.2rem;
-  border: 1px solid rgba(118, 141, 151, .14);
-  border-radius: 10px;
-  background: rgba(10, 15, 22, .55);
+  justify-content: space-between;
+  gap: .5rem;
 }
-.stepNum {
-  flex: 0 0 auto;
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(210, 171, 82, .4);
-  border-radius: 999px;
-  color: var(--gold);
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
+.chronCount {
+  color: rgba(232, 221, 186, .45);
+  font-size: .72rem;
 }
-.stepText strong { display: block; color: #f6edd0; font-size: .92rem; margin-bottom: .15rem; }
-.stepText p { margin: 0; color: rgba(232, 221, 186, .55); font-size: .78rem; line-height: 1.4; }
+.chronOpen {
+  color: var(--accent);
+  font-size: .78rem;
+  font-weight: 600;
+}
 
-@media (max-width: 980px) {
-  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .starter { grid-template-columns: 1fr; }
+/* ── Популярные гайды ─────────────────────────── */
+.popularGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: .7rem;
 }
-@media (max-width: 520px) {
-  .grid { grid-template-columns: 1fr; }
+.popularCard {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .8rem .95rem;
+  border: 1px solid rgba(118, 141, 151, .14);
+  border-radius: 9px;
+  background: rgba(10, 15, 22, .55);
+  text-decoration: none;
+  transition: border-color .16s, background .16s;
+}
+.popularCard:hover { border-color: rgba(210, 171, 82, .4); background: rgba(210, 171, 82, .05); }
+.popularCard strong { color: #f3e8c6; font-size: .86rem; font-weight: 600; line-height: 1.3; }
+.popularCard small { color: rgba(232, 221, 186, .45); font-size: .72rem; }
+
+@media (max-width: 1100px) {
+  .chronGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 620px) {
+  .tiles { grid-template-columns: 1fr 1fr; }
+  .chronGrid { grid-template-columns: 1fr; }
 }
