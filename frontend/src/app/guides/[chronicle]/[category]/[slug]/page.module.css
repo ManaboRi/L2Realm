@@ -1,5 +1,5 @@
 .page {
-  width: min(820px, calc(100% - 2rem));
+  width: min(1120px, calc(100% - 2rem));
   margin: 0 auto;
   padding: 2rem 0 4.5rem;
 }
@@ -17,7 +17,14 @@
 .bread a:hover { text-decoration: underline; }
 .bread span { color: rgba(232, 221, 186, .3); }
 
-.article { min-width: 0; }
+/* ── 2-колоночный лейаут ──────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 1.8rem;
+  align-items: start;
+}
+.main { min-width: 0; }
 
 .banner {
   margin-bottom: 1.5rem;
@@ -62,35 +69,66 @@
   line-height: 1.6;
 }
 
-/* Инфо-полоска: уровень / NPC / локация / награда */
-.infoBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .6rem;
-  margin-bottom: 1.8rem;
-  padding: 1rem 1.1rem;
-  border: 1px solid rgba(118, 141, 151, .16);
-  border-radius: 10px;
-  background: rgba(9, 13, 19, .6);
-}
-.infoItem {
-  display: flex;
-  flex-direction: column;
-  gap: .15rem;
-  min-width: 110px;
-  padding-right: 1rem;
-  border-right: 1px solid rgba(118, 141, 151, .14);
-}
-.infoItem:last-child { border-right: none; padding-right: 0; }
-.infoItem small {
-  color: rgba(232, 221, 186, .46);
-  font-size: .68rem;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-}
-.infoItem strong { color: #f3e8c6; font-size: .92rem; font-weight: 600; }
+/* ── Сайдбар с инфо-карточками ────────────────── */
+.aside { min-width: 0; }
+.asideSticky { position: sticky; top: 90px; display: flex; flex-direction: column; gap: .9rem; }
 
-/* Тело гайда (markdown) */
+.infoCard {
+  border: 1px solid rgba(118, 141, 151, .18);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(13, 18, 26, .9), rgba(8, 12, 18, .96));
+  overflow: hidden;
+}
+.cardTitle {
+  padding: .7rem .95rem;
+  border-bottom: 1px solid rgba(118, 141, 151, .14);
+  background: rgba(255, 255, 255, .02);
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: .92rem;
+  font-weight: 600;
+}
+.infoList { margin: 0; padding: .4rem .95rem .7rem; }
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .5rem 0;
+  border-bottom: 1px solid rgba(118, 141, 151, .1);
+}
+.infoRow:last-child { border-bottom: none; }
+.infoRow dt { color: rgba(232, 221, 186, .5); font-size: .8rem; }
+.infoRow dd { margin: 0; color: #f3e8c6; font-size: .82rem; font-weight: 600; text-align: right; }
+
+.rewardCard { border-color: color-mix(in srgb, var(--accent) 30%, transparent); }
+.rewardValue {
+  padding: .85rem .95rem;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.asideMore {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-size: .82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .16s;
+}
+.asideMore:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+
+/* Мобильная инфо-карточка (на десктопе скрыта — она в сайдбаре) */
+.infoMobile { display: none; margin-bottom: 1.6rem; }
+
+/* ── Тело гайда (markdown) ────────────────────── */
 .body {
   color: rgba(232, 221, 186, .86);
   font-size: 1rem;
@@ -103,23 +141,15 @@
   font-size: 1.4rem;
   font-weight: 600;
 }
-.body :global(h3) {
-  margin: 1.5rem 0 .6rem;
-  color: #f0e6cf;
-  font-size: 1.12rem;
-  font-weight: 600;
-}
+.body :global(h3) { margin: 1.5rem 0 .6rem; color: #f0e6cf; font-size: 1.12rem; font-weight: 600; }
 .body :global(p) { margin: 0 0 1rem; }
 .body :global(ul), .body :global(ol) { margin: 0 0 1rem; padding-left: 1.3rem; }
 .body :global(li) { margin-bottom: .4rem; }
 .body :global(a) { color: var(--accent); text-decoration: underline; }
 .body :global(strong) { color: #f3e8c6; }
+.body :global(em) { color: rgba(232, 221, 186, .9); }
 .body :global(table) { width: 100%; border-collapse: collapse; margin: 0 0 1.2rem; font-size: .9rem; }
-.body :global(th), .body :global(td) {
-  padding: .5rem .7rem;
-  border: 1px solid rgba(118, 141, 151, .18);
-  text-align: left;
-}
+.body :global(th), .body :global(td) { padding: .5rem .7rem; border: 1px solid rgba(118, 141, 151, .18); text-align: left; }
 .body :global(th) { background: rgba(255, 255, 255, .03); color: rgba(232, 221, 186, .7); }
 .body :global(blockquote) {
   margin: 0 0 1rem;
@@ -163,6 +193,8 @@
 }
 .serversBtn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
 
-@media (max-width: 560px) {
-  .infoItem { border-right: none; padding-right: 0; }
+@media (max-width: 860px) {
+  .layout { grid-template-columns: 1fr; }
+  .aside { display: none; }
+  .infoMobile { display: block; }
 }

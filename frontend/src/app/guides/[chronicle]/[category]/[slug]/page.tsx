@@ -69,11 +69,10 @@ export default async function GuideDetailPage({ params }: Props) {
   if (!guide || !ch || !cat) notFound();
 
   const lvl = levelText(guide);
-  const info: Array<[string, string]> = [];
-  if (lvl) info.push(['Уровень', lvl]);
+  const info: Array<[string, string]> = [['Раздел', cat.label], ['Хроника', ch.name]];
+  if (lvl) info.unshift(['Уровень', lvl]);
   if (guide.npc) info.push(['Стартовый NPC', guide.npc]);
   if (guide.location) info.push(['Локация', guide.location]);
-  if (guide.reward) info.push(['Награда', guide.reward]);
 
   const guideImage = absoluteUrl(guide.image);
   const articleSchema = {
@@ -118,51 +117,80 @@ export default async function GuideDetailPage({ params }: Props) {
         <span>{guide.title}</span>
       </div>
 
-      <article className={styles.article}>
-        {guide.image && (
-          <div className={styles.banner}>
-            <img src={guide.image} alt={guide.title} />
+      <div className={styles.layout}>
+        <article className={styles.main}>
+          {guide.image && (
+            <div className={styles.banner}>
+              <img src={guide.image} alt={guide.title} />
+            </div>
+          )}
+
+          <header className={styles.head}>
+            <div className={styles.meta}>
+              <span className={styles.category}>{cat.icon} {cat.label}</span>
+              <span className={styles.metaDot}>·</span>
+              <span>Хроника {ch.name}</span>
+              {guide.content && (
+                <>
+                  <span className={styles.metaDot}>·</span>
+                  <span>{readingTime(guide.content)} мин чтения</span>
+                </>
+              )}
+            </div>
+            <h1 className={styles.title}>{guide.title}</h1>
+            {guide.description && <p className={styles.lead}>{guide.description}</p>}
+          </header>
+
+          {/* Инфо-карточка для мобильных (на десктопе она в сайдбаре) */}
+          <div className={styles.infoMobile}>
+            <InfoCard info={info} reward={guide.reward} />
           </div>
-        )}
 
-        <header className={styles.head}>
-          <div className={styles.meta}>
-            <span className={styles.category}>{cat.icon} {cat.label}</span>
-            <span className={styles.metaDot}>·</span>
-            <span>Хроника {ch.name}</span>
-            {guide.content && (
-              <>
-                <span className={styles.metaDot}>·</span>
-                <span>{readingTime(guide.content)} мин чтения</span>
-              </>
-            )}
+          <div className={styles.body}>
+            {guide.content
+              ? renderMarkdown(guide.content)
+              : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
           </div>
-          <h1 className={styles.title}>{guide.title}</h1>
-          {guide.description && <p className={styles.lead}>{guide.description}</p>}
-        </header>
 
-        {info.length > 0 && (
-          <div className={styles.infoBar}>
-            {info.map(([label, value]) => (
-              <div key={label} className={styles.infoItem}>
-                <small>{label}</small>
-                <strong>{value}</strong>
-              </div>
-            ))}
+          <div className={styles.foot}>
+            <Link href={`/guides/${ch.slug}/${cat.slug}`} className={styles.backBtn}>← Все «{cat.label}» {ch.name}</Link>
+            <Link href={`/chronicle/${ch.slug}`} className={styles.serversBtn}>Серверы {ch.name} →</Link>
           </div>
-        )}
+        </article>
 
-        <div className={styles.body}>
-          {guide.content
-            ? renderMarkdown(guide.content)
-            : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
-        </div>
-
-        <div className={styles.foot}>
-          <Link href={`/guides/${ch.slug}/${cat.slug}`} className={styles.backBtn}>← Все «{cat.label}» {ch.name}</Link>
-          <Link href={`/chronicle/${ch.slug}`} className={styles.serversBtn}>Серверы {ch.name} →</Link>
-        </div>
-      </article>
+        <aside className={styles.aside}>
+          <div className={styles.asideSticky}>
+            <InfoCard info={info} reward={guide.reward} />
+            <Link href={`/guides/${ch.slug}/${cat.slug}`} className={styles.asideMore}>
+              Все «{cat.label}» {ch.name} →
+            </Link>
+          </div>
+        </aside>
+      </div>
     </div>
+  );
+}
+
+function InfoCard({ info, reward }: { info: Array<[string, string]>; reward?: string | null }) {
+  return (
+    <>
+      <div className={styles.infoCard}>
+        <div className={styles.cardTitle}>Краткая информация</div>
+        <dl className={styles.infoList}>
+          {info.map(([label, value]) => (
+            <div key={label} className={styles.infoRow}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+      {reward && (
+        <div className={`${styles.infoCard} ${styles.rewardCard}`}>
+          <div className={styles.cardTitle}>Награда за квест</div>
+          <div className={styles.rewardValue}>🪙 {reward}</div>
+        </div>
+      )}
+    </>
   );
 }
