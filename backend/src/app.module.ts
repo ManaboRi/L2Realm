@@ -14,6 +14,7 @@ import { ArticlesModule }  from './articles/articles.module';
 import { OpeningRemindersModule } from './opening-reminders/opening-reminders.module';
 import { OpeningWaitsModule } from './opening-waits/opening-waits.module';
 import { BannersModule } from './banners/banners.module';
+import { GuidesModule } from './guides/guides.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { BannersModule } from './banners/banners.module';
     OpeningRemindersModule,
     OpeningWaitsModule,
     BannersModule,
+    GuidesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

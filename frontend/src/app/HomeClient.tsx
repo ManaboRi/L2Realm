@@ -496,8 +496,8 @@ function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[
   const hasWeeklyVotes = topVotes.some(server => weeklyVoteCount(server) > 0);
   return (
     <aside className={styles.rightRail} aria-label="Сводка каталога">
-      {/* Рекламные баннеры (управляются в админке). Пусто — ничего не рендерится. */}
-      <BannersBlock max={2} />
+      {/* Рекламный баннер №1 (премиальный, сверху). Управляется в админке. Пусто — ничего не рендерится. */}
+      <BannersBlock slot={1} variant="feature" />
       <section className={styles.railSection}>
         <div className={styles.railHead}>
           <h2>Скоро открытие</h2>
@@ -565,6 +565,9 @@ function HomeRightRail({ comingSoon, topVotes, articles }: { comingSoon: Server[
           )}
         </div>
       </section>
+
+      {/* Рекламный баннер №2 (компактный, дешевле — внизу после всех блоков). */}
+      <BannersBlock slot={2} variant="compact" />
     </aside>
   );
 }

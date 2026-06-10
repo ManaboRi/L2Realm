@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem, OpeningClickResult, OpeningClickReport, BannerAd } from './types';
+import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem, OpeningClickResult, OpeningClickReport, BannerAd, Guide } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -175,6 +175,25 @@ export const api = {
       request<any>(`/banners/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     remove: (id: string, token: string) =>
       request<any>(`/banners/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
+  },
+
+  guides: {
+    list: (params?: { chronicle?: string; category?: string }) => {
+      const q = params && Object.keys(params).length
+        ? '?' + new URLSearchParams(params as Record<string, string>).toString()
+        : '';
+      return request<Guide[]>(`/guides${q}`);
+    },
+    counts: (chronicle: string) => request<Record<string, number>>(`/guides/counts?chronicle=${encodeURIComponent(chronicle)}`),
+    get: (slug: string) => request<Guide>(`/guides/${encodeURIComponent(slug)}`),
+    adminList: (token: string) =>
+      request<Guide[]>('/guides/admin/all', { headers: { Authorization: `Bearer ${token}` } }),
+    create: (data: Partial<Guide>, token: string) =>
+      request<Guide>('/guides', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+    update: (id: string, data: Partial<Guide>, token: string) =>
+      request<Guide>(`/guides/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+    remove: (id: string, token: string) =>
+      request<{ ok: boolean }>(`/guides/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   },
 
   openingReminders: {

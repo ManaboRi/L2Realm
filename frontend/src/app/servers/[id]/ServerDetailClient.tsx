@@ -861,6 +861,10 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                 </button>
               </div>
 
+              <p className={styles.voteConsent}>
+                Голосуя, вы соглашаетесь с <Link href="/privacy">обработкой данных</Link>.
+              </p>
+
               <div className={styles.voteQuickActions}>
                 <a href={server.url} target="_blank" rel="noopener" className={styles.btnSiteLarge}>
                   <span aria-hidden="true">↗</span> Перейти

@@ -9,9 +9,11 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus, OpeningClickReport } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
+import { GUIDE_CHRONICLES } from '../guides/guides';
+import { GUIDE_CATEGORIES } from '../guides/categories';
 import styles from './page.module.css';
 
-type AdminTab = 'servers' | 'money' | 'banners' | 'clicks' | 'add';
+type AdminTab = 'servers' | 'money' | 'banners' | 'guides' | 'clicks' | 'add';
 
 function slugify(s: string) {
   return s.toLowerCase()
@@ -481,6 +483,33 @@ export default function AdminPage() {
     catch (e: any) { showToast(e.message); }
   }
 
+  // Форма гайда (создание/редактирование)
+  const emptyGuide = {
+    id: '', slug: '', chronicle: 'interlude', category: 'novichkam',
+    title: '', description: '', content: '', image: '',
+    levelMin: '', levelMax: '', npc: '', location: '', reward: '',
+    sort: '0', published: true,
+  };
+  const [guides, setGuides] = useState<any[]>([]);
+  const [guideForm, setGuideForm] = useState<any>(emptyGuide);
+
+  async function saveGuide() {
+    if (!token) return;
+    if (!guideForm.title.trim()) { showToast('Заголовок гайда обязателен'); return; }
+    try {
+      if (guideForm.id) await api.guides.update(guideForm.id, guideForm, token);
+      else await api.guides.create(guideForm, token);
+      showToast(guideForm.id ? 'Гайд обновлён' : 'Гайд создан');
+      setGuideForm(emptyGuide);
+      loadTab('guides');
+    } catch (e: any) { showToast(e.message); }
+  }
+  async function deleteGuide(id: string) {
+    if (!token || !confirm('Удалить гайд?')) return;
+    try { await api.guides.remove(id, token); showToast('Гайд удалён'); loadTab('guides'); }
+    catch (e: any) { showToast(e.message); }
+  }
+
   // Форма добавления
   const [addForm, setAddForm] = useState({
     id:'', name:'', abbr:'', chronicle:'Interlude', rates:'', rateNum:'1',
@@ -508,6 +537,7 @@ export default function AdminPage() {
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
       if (t === 'banners')  setBanners(await api.banners.adminList(token));
+      if (t === 'guides')   setGuides(await api.guides.adminList(token));
       if (t === 'clicks') setClickReport(await api.openingWaits.clickReport(clickReportDays, token));
       if (t === 'money') {
         const [vs, svs, bs, sl] = await Promise.all([
@@ -733,6 +763,7 @@ export default function AdminPage() {
     { k: 'servers',  l: `Серверы (${servers.length})` },
     { k: 'money',    l: `Продвижение${vipStatus ? ` (${vipStatus.taken})` : ''}` },
     { k: 'banners',  l: `Баннеры${banners.length ? ` (${banners.length})` : ''}` },
+    { k: 'guides',   l: `Гайды${guides.length ? ` (${guides.length})` : ''}` },
     { k: 'clicks',   l: `Переходы${clickReport ? ` (${clickReport.total})` : ''}` },
     { k: 'add',      l: '+ Добавить сервер' },
   ];
@@ -1181,6 +1212,107 @@ export default function AdminPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Гайды (CMS) */}
+            {tab === 'guides' && (
+              <div className={styles.section} style={{ gap:'1.2rem' }}>
+                <div className={styles.sectionTitle}>Гайды по Lineage 2</div>
+                <p style={{ fontSize:'.82rem', color:'var(--text3)', margin:0 }}>
+                  Добавляй реальные гайды — они появятся на <Link href="/guides" style={{ color:'var(--gold)' }}>/guides</Link> в выбранной
+                  хронике и разделе. Уровни/NPC/локация/награда формируют строку таблицы (как в каталоге квестов).
+                  Чем подробнее текст (от 600 слов) — тем лучше для SEO. Slug можно оставить пустым — соберётся из заголовка.
+                </p>
+
+                {/* Форма создания/редактирования */}
+                <div style={{ display:'grid', gap:'.7rem', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, padding:'1rem' }}>
+                  <strong style={{ color:'var(--gold)', fontSize:'.86rem' }}>{guideForm.id ? 'Редактировать гайд' : 'Новый гайд'}</strong>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'.6rem' }}>
+                    <label className={styles.field}><span>Хроника *</span>
+                      <select className="input" value={guideForm.chronicle} onChange={e => setGuideForm((p:any)=>({...p,chronicle:e.target.value}))}>
+                        {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                      </select>
+                    </label>
+                    <label className={styles.field}><span>Раздел *</span>
+                      <select className="input" value={guideForm.category} onChange={e => setGuideForm((p:any)=>({...p,category:e.target.value}))}>
+                        {GUIDE_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
+                      </select>
+                    </label>
+                    <label className={styles.field}><span>Заголовок *</span>
+                      <input className="input" value={guideForm.title} onChange={e => setGuideForm((p:any)=>({...p,title:e.target.value}))} placeholder="Квесты на 1 профессию — полный список" />
+                    </label>
+                    <label className={styles.field}><span>Slug (опц.)</span>
+                      <input className="input" value={guideForm.slug} onChange={e => setGuideForm((p:any)=>({...p,slug:e.target.value}))} placeholder="kvesty-na-1-professiyu" />
+                    </label>
+                    <label className={styles.field}><span>Уровень с</span>
+                      <input className="input" type="number" value={guideForm.levelMin} onChange={e => setGuideForm((p:any)=>({...p,levelMin:e.target.value}))} placeholder="1" />
+                    </label>
+                    <label className={styles.field}><span>Уровень по</span>
+                      <input className="input" type="number" value={guideForm.levelMax} onChange={e => setGuideForm((p:any)=>({...p,levelMax:e.target.value}))} placeholder="20" />
+                    </label>
+                    <label className={styles.field}><span>Стартовый NPC (опц.)</span>
+                      <input className="input" value={guideForm.npc} onChange={e => setGuideForm((p:any)=>({...p,npc:e.target.value}))} placeholder="Sir Gustav Athebaldt" />
+                    </label>
+                    <label className={styles.field}><span>Локация (опц.)</span>
+                      <input className="input" value={guideForm.location} onChange={e => setGuideForm((p:any)=>({...p,location:e.target.value}))} placeholder="Aden Castle Town" />
+                    </label>
+                    <label className={styles.field}><span>Итог / награда (опц.)</span>
+                      <input className="input" value={guideForm.reward} onChange={e => setGuideForm((p:any)=>({...p,reward:e.target.value}))} placeholder="Exp · SP · смена профессии" />
+                    </label>
+                    <label className={styles.field}><span>Порядок (сортировка)</span>
+                      <input className="input" type="number" value={guideForm.sort} onChange={e => setGuideForm((p:any)=>({...p,sort:e.target.value}))} placeholder="0" />
+                    </label>
+                    <label className={styles.field} style={{ flexDirection:'row', alignItems:'center', gap:'.5rem' }}>
+                      <input type="checkbox" checked={guideForm.published} onChange={e => setGuideForm((p:any)=>({...p,published:e.target.checked}))} />
+                      <span>Опубликован</span>
+                    </label>
+                  </div>
+                  <label className={styles.field}><span>Краткое описание (SEO, 120–160 симв.)</span>
+                    <input className="input" value={guideForm.description} maxLength={320} onChange={e => setGuideForm((p:any)=>({...p,description:e.target.value}))} placeholder="Все квесты на первую профессию: NPC, локации, награды и пошаговый порядок." />
+                  </label>
+                  <label className={styles.field}><span>Текст гайда (Markdown)</span>
+                    <textarea className="input" style={{ minHeight:'220px', fontFamily:'monospace', lineHeight:1.5 }} value={guideForm.content} onChange={e => setGuideForm((p:any)=>({...p,content:e.target.value}))} placeholder={'## Заголовок раздела\n\nТекст абзаца...\n\n- пункт списка\n- ещё пункт\n\n| Колонка | Значение |\n|---|---|\n| ... | ... |'} />
+                  </label>
+                  <ImageUpload label="Обложка гайда (1200×630, опц.)" value={guideForm.image} type="banner" token={token!} onChange={url => setGuideForm((p:any)=>({...p,image:url}))} />
+                  <div style={{ display:'flex', gap:'.5rem' }}>
+                    <button className="btn-gold" type="button" onClick={saveGuide}>{guideForm.id ? 'Сохранить' : 'Создать гайд'}</button>
+                    {guideForm.id && <button className={styles.btnSm} type="button" onClick={() => setGuideForm(emptyGuide)}>Отмена</button>}
+                  </div>
+                </div>
+
+                {/* Список гайдов */}
+                {guides.length === 0 ? <p className={styles.empty}>Гайдов пока нет — добавь первый выше</p> : (
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'.7rem' }}>
+                    {guides.map((g:any) => {
+                      const chr = GUIDE_CHRONICLES.find(c => c.slug === g.chronicle);
+                      const cat = GUIDE_CATEGORIES.find(c => c.slug === g.category);
+                      const lvl = g.levelMin != null && g.levelMax != null ? `${g.levelMin}–${g.levelMax}` : (g.levelMin != null ? `${g.levelMin}+` : '');
+                      return (
+                        <div key={g.id} style={{ background:'var(--bg2)', border:`1px solid ${g.publishedAt ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:6, padding:'.8rem', display:'flex', flexDirection:'column', gap:'.35rem' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:'.5rem', flexWrap:'wrap' }}>
+                            <span style={{ fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.08em' }}>{chr?.name ?? g.chronicle} · {cat?.label ?? g.category}</span>
+                            {!g.publishedAt && <span style={{ fontSize:'.62rem', color:'#CC6060' }}>черновик</span>}
+                            {lvl && <span style={{ marginLeft:'auto', fontSize:'.66rem', color:'var(--text3)' }}>ур. {lvl}</span>}
+                          </div>
+                          <strong style={{ color:'var(--text)', fontSize:'.88rem' }}>{g.title}</strong>
+                          {g.description && <span style={{ fontSize:'.74rem', color:'var(--text3)', lineHeight:1.3 }}>{g.description.slice(0,90)}</span>}
+                          <span style={{ fontSize:'.68rem', color:'var(--text3)' }}>/{g.slug} · {g.views ?? 0} просм.</span>
+                          <div style={{ display:'flex', gap:'.4rem', marginTop:'.3rem' }}>
+                            {g.publishedAt && <a href={`/guides/${g.chronicle}/${g.category}/${g.slug}`} target="_blank" rel="noopener" className={styles.btnSm}>Открыть</a>}
+                            <button className={styles.btnSm} type="button" onClick={() => setGuideForm({
+                              id:g.id, slug:g.slug, chronicle:g.chronicle, category:g.category,
+                              title:g.title, description:g.description??'', content:g.content??'', image:g.image??'',
+                              levelMin:g.levelMin??'', levelMax:g.levelMax??'', npc:g.npc??'', location:g.location??'',
+                              reward:g.reward??'', sort:String(g.sort??0), published:!!g.publishedAt,
+                            })}>Править</button>
+                            <button className={`${styles.btnSm} ${styles.btnDanger}`} type="button" onClick={() => deleteGuide(g.id)}>Удалить</button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

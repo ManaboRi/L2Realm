@@ -1563,6 +1563,15 @@
 }
 .voteInlineBtn:hover:not(:disabled) { background: rgba(200,168,75,.18); border-color: var(--gold-d); }
 .voteInlineBtn:disabled { cursor: default; opacity: .55; }
+.voteConsent {
+  margin: -.1rem 0 .1rem;
+  color: var(--text3);
+  font-size: .62rem;
+  line-height: 1.35;
+  text-align: center;
+}
+.voteConsent a { color: rgba(210,171,82,.85); text-decoration: none; }
+.voteConsent a:hover { text-decoration: underline; }
 .voteQuickActions { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; min-width: 0; }
 .btnSiteLarge,
 .saveBtn {

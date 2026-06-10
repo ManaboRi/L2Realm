@@ -359,3 +359,25 @@ export interface BannerAd {
   advertiser?: string | null;
   erid?: string | null;
 }
+
+// Гайд (CMS). content приходит только в детальной выдаче.
+export interface Guide {
+  id: string;
+  slug: string;
+  chronicle: string;
+  category: string;
+  title: string;
+  description: string;
+  content?: string;
+  image?: string | null;
+  levelMin?: number | null;
+  levelMax?: number | null;
+  npc?: string | null;
+  location?: string | null;
+  reward?: string | null;
+  sort?: number;
+  views?: number;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}

@@ -324,3 +324,29 @@ model Article {
   @@index([slug])
   @@index([serverIds], type: Gin)
 }
+
+// ── Гайды (CMS, наполняются через админку) ───
+model Guide {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  chronicle   String                            // 'interlude' | 'high-five' | 'essence' | 'main'
+  category    String                            // 'novichkam' | 'kvesty' | 'klassy' | ...
+  title       String
+  description String    @default("")            // SEO description, 1-2 предложения
+  content     String    @default("")            // Markdown
+  image       String?                           // URL обложки (1200×630)
+  levelMin    Int?                              // диапазон уровней «с»
+  levelMax    Int?                              // диапазон уровней «по»
+  npc         String?                           // стартовый NPC (для квестов)
+  location    String?                           // локация (для квестов/локаций)
+  reward      String?                           // награда / краткий итог
+  sort        Int       @default(0)             // ручная сортировка внутри категории
+  publishedAt DateTime?                         // null = черновик, дата = опубликовано
+  views       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([chronicle, category])
+  @@index([publishedAt])
+  @@index([slug])
+}
