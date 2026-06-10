@@ -13,6 +13,7 @@ import { VotesModule }     from './votes/votes.module';
 import { ArticlesModule }  from './articles/articles.module';
 import { OpeningRemindersModule } from './opening-reminders/opening-reminders.module';
 import { OpeningWaitsModule } from './opening-waits/opening-waits.module';
+import { BannersModule } from './banners/banners.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { OpeningWaitsModule } from './opening-waits/opening-waits.module';
     ArticlesModule,
     OpeningRemindersModule,
     OpeningWaitsModule,
+    BannersModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

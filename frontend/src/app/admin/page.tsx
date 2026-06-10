@@ -11,7 +11,7 @@ import type { VipStatus, OpeningClickReport } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import styles from './page.module.css';
 
-type AdminTab = 'servers' | 'requests' | 'money' | 'clicks' | 'add';
+type AdminTab = 'servers' | 'money' | 'banners' | 'clicks' | 'add';
 
 function slugify(s: string) {
   return s.toLowerCase()
@@ -19,19 +19,6 @@ function slugify(s: string) {
     .trim()
     .replace(/\s+/g, '-')
     .slice(0, 40) || 'server-' + Math.random().toString(36).slice(2, 8);
-}
-
-function requestStatusInfo(r: any) {
-  if (r.status === 'approved') return { label: 'Одобрена', color: '#4AAA70' };
-  if (r.status === 'rejected') return { label: 'Отклонена', color: '#CC6060' };
-  if (r.status === 'pending_payment') return { label: 'Ожидает оплаты', color: '#D18A3D' };
-  return { label: 'На модерации', color: 'var(--gold-d)' };
-}
-
-function requestPaymentInfo(r: any) {
-  if (r.paid) return { label: 'Оплачено', className: `${styles.paymentBadge} ${styles.paymentPaid}` };
-  if (r.status === 'pending_payment') return { label: 'Оплата не завершена', className: `${styles.paymentBadge} ${styles.paymentWaiting}` };
-  return { label: 'Бесплатная заявка', className: `${styles.paymentBadge} ${styles.paymentFree}` };
 }
 
 function soonVipKey(serverId: string, instanceId?: string | null) {
@@ -447,12 +434,11 @@ export default function AdminPage() {
   const [vipStatus, setVipStatus] = useState<VipStatus | null>(null);
   const [soonVipStatus, setSoonVipStatus] = useState<VipStatus | null>(null);
   const [boosts, setBoosts]       = useState<any[]>([]);
-  const [requests, setRequests]   = useState<any[]>([]);
+  const [banners, setBanners]     = useState<any[]>([]);
   const [clickReport, setClickReport] = useState<OpeningClickReport | null>(null);
   const [clickReportDays, setClickReportDays] = useState(30);
   const [dataLoading, setDataLoading] = useState(false);
   const [toast, setToast]         = useState('');
-  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [keyChecking, setKeyChecking] = useState(true);
 
   // Вход по файлу-ярлыку: открываешь /admin#k=<ключ> → автологин,
@@ -473,6 +459,27 @@ export default function AdminPage() {
   const [editServer, setEditServer] = useState<any | null>(null);
   const [editForm, setEditForm]   = useState<any>({});
   const [editLoading, setEditLoading] = useState(false);
+
+  // Форма баннера (создание/редактирование)
+  const emptyBanner = { id: '', slot: 1, title: '', subtitle: '', image: '', href: '', advertiser: '', erid: '', endDate: '', active: true };
+  const [bannerForm, setBannerForm] = useState<any>(emptyBanner);
+
+  async function saveBanner() {
+    if (!token) return;
+    if (!bannerForm.title.trim() || !bannerForm.href.trim()) { showToast('Заголовок и ссылка обязательны'); return; }
+    try {
+      if (bannerForm.id) await api.banners.update(bannerForm.id, bannerForm, token);
+      else await api.banners.create(bannerForm, token);
+      showToast(bannerForm.id ? 'Баннер обновлён' : 'Баннер создан');
+      setBannerForm(emptyBanner);
+      loadTab('banners');
+    } catch (e: any) { showToast(e.message); }
+  }
+  async function deleteBanner(id: string) {
+    if (!token || !confirm('Удалить баннер?')) return;
+    try { await api.banners.remove(id, token); showToast('Баннер удалён'); loadTab('banners'); }
+    catch (e: any) { showToast(e.message); }
+  }
 
   // Форма добавления
   const [addForm, setAddForm] = useState({
@@ -500,7 +507,7 @@ export default function AdminPage() {
     setDataLoading(true);
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
-      if (t === 'requests') setRequests(await api.servers.getRequests(token));
+      if (t === 'banners')  setBanners(await api.banners.adminList(token));
       if (t === 'clicks') setClickReport(await api.openingWaits.clickReport(clickReportDays, token));
       if (t === 'money') {
         const [vs, svs, bs, sl] = await Promise.all([
@@ -553,50 +560,6 @@ export default function AdminPage() {
   async function deleteServer(id: string) {
     if (!token || !confirm(`Удалить сервер ${id}?`)) return;
     try { await api.servers.delete(id, token); showToast('Удалено'); loadTab('servers'); }
-    catch (e: any) { showToast(e.message); }
-  }
-
-  async function approveRequest(r: any) {
-    if (r.status === 'pending_payment') {
-      showToast('Эта заявка еще не оплачена. Одобрение станет доступно после webhook от ЮКассы.');
-      return;
-    }
-    setAddForm({
-      id:          slugify(r.name),
-      name:        r.name,
-      abbr:        r.name.slice(0, 3).toUpperCase(),
-      chronicle:   r.chronicle || 'Interlude',
-      rates:       r.rates,
-      rateNum:     String((r.rates?.match(/\d+/) ?? ['1'])[0]),
-      url:         r.url,
-      openedDate:  toDateTimeLocal(r.openedDate),
-      country:     'RU',
-      statusOverride: 'auto',
-      manualCheckAt: '',
-      trustLevel: '',
-      activityLevel: 'unknown',
-      serverType: 'pvp-pve',
-      type_new: false, type_featured: false, vip: false,
-      voteRewardsEnabled: false,
-      icon:'', banner:'', telegram:'', discord:'', vk:'',
-      shortDesc:'', fullDesc:'',
-      trafficHistory: [] as TrafficDraft[],
-      instances: [],
-    });
-    setApprovingId(r.id);
-    setTab('add');
-    showToast('Заполните детали и сохраните — заявка пометится одобренной');
-  }
-
-  async function rejectRequest(id: string) {
-    if (!token || !confirm('Отклонить заявку?')) return;
-    try { await api.servers.updateRequest(id, 'rejected', token); showToast('Заявка отклонена'); loadTab('requests'); }
-    catch (e: any) { showToast(e.message); }
-  }
-
-  async function deleteRequest(id: string) {
-    if (!token || !confirm('Удалить заявку навсегда?')) return;
-    try { await api.servers.deleteRequest(id, token); showToast('Заявка удалена'); loadTab('requests'); }
     catch (e: any) { showToast(e.message); }
   }
 
@@ -753,10 +716,6 @@ export default function AdminPage() {
         trafficHistory: trafficPayload(addForm.trafficHistory ?? []),
         instances: projectInstancesPayload(addForm.instances ?? []),
       } as any, token);
-      if (approvingId) {
-        try { await api.servers.updateRequest(approvingId, 'approved', token); } catch {}
-        setApprovingId(null);
-      }
       showToast(`✅ Сервер ${addForm.name} добавлен!`);
       setTab('servers');
     } catch (e: any) { showToast(`❌ ${e.message}`); }
@@ -770,13 +729,12 @@ export default function AdminPage() {
 
   if (!isAdmin) return <AdminLogin onLogin={login} />;
 
-  const pendingRequests = requests.filter(r => r.status === 'pending').length;
   const TABS: { k: AdminTab; l: string }[] = [
     { k: 'servers',  l: `Серверы (${servers.length})` },
-    { k: 'requests', l: `Заявки${pendingRequests ? ` (${pendingRequests})` : ''}` },
     { k: 'money',    l: `Продвижение${vipStatus ? ` (${vipStatus.taken})` : ''}` },
+    { k: 'banners',  l: `Баннеры${banners.length ? ` (${banners.length})` : ''}` },
     { k: 'clicks',   l: `Переходы${clickReport ? ` (${clickReport.total})` : ''}` },
-    { k: 'add',      l: approvingId ? '+ Заявка → сервер' : '+ Добавить сервер' },
+    { k: 'add',      l: '+ Добавить сервер' },
   ];
 
   const vipServerIds = new Set((vipStatus?.slots ?? []).map(s => s.serverId));
@@ -1153,58 +1111,76 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* Отзывы на модерации */}
-            {/* Заявки */}
-            {tab === 'requests' && (
-              <div className={styles.section}>
-                <div className={styles.sectionTitle}>Заявки на добавление ({requests.length})</div>
-                {requests.length === 0 ? <p className={styles.empty}>Заявок пока нет</p> : (
-                  <div className={styles.reviewCards}>
-                    {requests.map((r: any) => {
-                      const u = r.user;
-                      const name = u?.nickname ?? u?.name ?? u?.email ?? 'Аноним';
-                      const status = requestStatusInfo(r);
-                      const payment = requestPaymentInfo(r);
-                      return (
-                        <div key={r.id} className={styles.reviewCard}>
-                          <div style={{ display:'flex', alignItems:'center', gap:'.6rem', marginBottom:'.5rem', flexWrap:'wrap' }}>
-                            {u?.avatar && <img src={u.avatar} alt={`Аватар ${name}`} style={{ width:24, height:24, borderRadius:'50%' }} />}
-                            <strong style={{ color:'var(--text)' }}>{name}</strong>
-                            {u?.vkId && <span style={{ fontSize:'.7rem', color:'var(--text3)' }}>VK {u.vkId}</span>}
-                            <span className={styles.reviewDate}>{new Date(r.createdAt).toLocaleString('ru-RU')}</span>
-                            <span className={payment.className}>{payment.label}</span>
-                            <span style={{ marginLeft:'auto', fontSize:'.7rem', color: status.color, fontFamily:"'Cinzel',serif", letterSpacing:'.08em', textTransform:'uppercase' }}>{status.label}</span>
-                          </div>
-                          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))', gap:'.4rem .9rem', fontSize:'.82rem', color:'var(--text2)' }}>
-                            <div><span style={{ color:'var(--text3)' }}>Название: </span><strong style={{ color:'var(--text)' }}>{r.name}</strong></div>
-                            <div><span style={{ color:'var(--text3)' }}>Хроника: </span>{r.chronicle}</div>
-                            <div><span style={{ color:'var(--text3)' }}>Рейты: </span>{r.rates}</div>
-                            <div><span style={{ color:'var(--text3)' }}>Открытие: </span>{r.openedDate ? new Date(r.openedDate).toLocaleDateString('ru-RU') : '—'}</div>
-                            {r.contact && <div><span style={{ color:'var(--text3)' }}>Контакт: </span><strong style={{ color:'var(--text)' }}>{r.contact}</strong></div>}
-                            {r.paymentId && <div><span style={{ color:'var(--text3)' }}>Платеж: </span><span className={styles.tdMono}>{r.paymentId}</span></div>}
-                            <div style={{ gridColumn:'1/-1' }}><span style={{ color:'var(--text3)' }}>URL: </span><a href={r.url} target="_blank" rel="noopener" style={{ color:'var(--gold)' }}>{r.url}</a></div>
-                          </div>
-                          {r.status === 'pending' && (
-                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem', flexWrap:'wrap' }}>
-                              <button className={`${styles.btnSm} ${styles.btnSuccess}`} onClick={() => approveRequest(r)}>✓ Одобрить → создать сервер</button>
-                              <button className={styles.btnSm} onClick={() => rejectRequest(r.id)}>✕ Отклонить</button>
-                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
-                            </div>
-                          )}
-                          {r.status === 'pending_payment' && (
-                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem', alignItems:'center', flexWrap:'wrap' }}>
-                              <span style={{ fontSize:'.78rem', color:'var(--text3)' }}>Одобрение появится после успешной оплаты.</span>
-                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
-                            </div>
-                          )}
-                          {r.status !== 'pending' && r.status !== 'pending_payment' && (
-                            <div style={{ display:'flex', gap:'.4rem', marginTop:'.7rem' }}>
-                              <button className={`${styles.btnSm} ${styles.btnDanger}`} onClick={() => deleteRequest(r.id)}>🗑 Удалить</button>
-                            </div>
-                          )}
+
+            {/* Баннеры (реклама) */}
+            {tab === 'banners' && (
+              <div className={styles.section} style={{ gap:'1.2rem' }}>
+                <div className={styles.sectionTitle}>Рекламные баннеры</div>
+                <p style={{ fontSize:'.82rem', color:'var(--text3)', margin:0 }}>
+                  Показываются справа сверху на всех страницах (слоты 1 и 2). Продаются вручную через Telegram —
+                  здесь только создаёшь/правишь. Пометка «Реклама» ставится автоматически.
+                </p>
+
+                {/* Форма создания/редактирования */}
+                <div style={{ display:'grid', gap:'.7rem', background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:6, padding:'1rem' }}>
+                  <strong style={{ color:'var(--gold)', fontSize:'.86rem' }}>{bannerForm.id ? 'Редактировать баннер' : 'Новый баннер'}</strong>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'.6rem' }}>
+                    <label className={styles.field}><span>Слот</span>
+                      <select className="input" value={bannerForm.slot} onChange={e => setBannerForm((p:any)=>({...p,slot:Number(e.target.value)}))}>
+                        <option value={1}>Слот 1 (верхний)</option>
+                        <option value={2}>Слот 2</option>
+                      </select>
+                    </label>
+                    <label className={styles.field}><span>Заголовок *</span>
+                      <input className="input" value={bannerForm.title} onChange={e => setBannerForm((p:any)=>({...p,title:e.target.value}))} placeholder="Asgard x50 — открытие 20 июня" />
+                    </label>
+                    <label className={styles.field}><span>Подзаголовок</span>
+                      <input className="input" value={bannerForm.subtitle} onChange={e => setBannerForm((p:any)=>({...p,subtitle:e.target.value}))} placeholder="Interlude · без p2w" />
+                    </label>
+                    <label className={styles.field}><span>Ссылка (куда ведёт) *</span>
+                      <input className="input" value={bannerForm.href} onChange={e => setBannerForm((p:any)=>({...p,href:e.target.value}))} placeholder="https://asgard.ru" />
+                    </label>
+                    <label className={styles.field}><span>Рекламодатель (для маркировки)</span>
+                      <input className="input" value={bannerForm.advertiser} onChange={e => setBannerForm((p:any)=>({...p,advertiser:e.target.value}))} placeholder="ИП / ИНН / название" />
+                    </label>
+                    <label className={styles.field}><span>erid (если есть)</span>
+                      <input className="input" value={bannerForm.erid} onChange={e => setBannerForm((p:any)=>({...p,erid:e.target.value}))} placeholder="токен ОРД (пока можно пусто)" />
+                    </label>
+                    <label className={styles.field}><span>Крутить до (дата, опц.)</span>
+                      <input className="input" type="date" value={bannerForm.endDate} onChange={e => setBannerForm((p:any)=>({...p,endDate:e.target.value}))} />
+                    </label>
+                    <label className={styles.field} style={{ flexDirection:'row', alignItems:'center', gap:'.5rem' }}>
+                      <input type="checkbox" checked={bannerForm.active} onChange={e => setBannerForm((p:any)=>({...p,active:e.target.checked}))} />
+                      <span>Активен</span>
+                    </label>
+                  </div>
+                  <ImageUpload label="Картинка баннера (опц.)" value={bannerForm.image} type="icon" token={token!} onChange={url => setBannerForm((p:any)=>({...p,image:url}))} />
+                  <div style={{ display:'flex', gap:'.5rem' }}>
+                    <button className="btn-gold" type="button" onClick={saveBanner}>{bannerForm.id ? 'Сохранить' : 'Создать баннер'}</button>
+                    {bannerForm.id && <button className={styles.btnSm} type="button" onClick={() => setBannerForm(emptyBanner)}>Отмена</button>}
+                  </div>
+                </div>
+
+                {/* Список баннеров */}
+                {banners.length === 0 ? <p className={styles.empty}>Баннеров пока нет</p> : (
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'.7rem' }}>
+                    {banners.map((b:any) => (
+                      <div key={b.id} style={{ background:'var(--bg2)', border:`1px solid ${b.active ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:6, padding:'.8rem', display:'flex', flexDirection:'column', gap:'.35rem' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:'.5rem' }}>
+                          <span style={{ fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.1em' }}>Слот {b.slot}</span>
+                          {!b.active && <span style={{ fontSize:'.62rem', color:'#CC6060' }}>выключен</span>}
+                          <span style={{ marginLeft:'auto', fontSize:'.66rem', color:'var(--text3)' }}>{b.clicks} клик.</span>
                         </div>
-                      );
-                    })}
+                        <strong style={{ color:'var(--text)', fontSize:'.88rem' }}>{b.title}</strong>
+                        {b.subtitle && <span style={{ fontSize:'.76rem', color:'var(--text3)' }}>{b.subtitle}</span>}
+                        <a href={b.href} target="_blank" rel="noopener" style={{ fontSize:'.72rem', color:'var(--gold)', wordBreak:'break-all' }}>{b.href}</a>
+                        {b.endDate && <span style={{ fontSize:'.7rem', color:'var(--text3)' }}>до {new Date(b.endDate).toLocaleDateString('ru-RU')}</span>}
+                        <div style={{ display:'flex', gap:'.4rem', marginTop:'.3rem' }}>
+                          <button className={styles.btnSm} type="button" onClick={() => setBannerForm({ id:b.id, slot:b.slot, title:b.title, subtitle:b.subtitle??'', image:b.image??'', href:b.href, advertiser:b.advertiser??'', erid:b.erid??'', endDate:b.endDate?b.endDate.slice(0,10):'', active:b.active })}>Править</button>
+                          <button className={`${styles.btnSm} ${styles.btnDanger}`} type="button" onClick={() => deleteBanner(b.id)}>Удалить</button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1213,22 +1189,7 @@ export default function AdminPage() {
             {/* Добавить сервер */}
             {tab === 'add' && (
               <div className={styles.section}>
-                <div className={styles.sectionTitle}>
-                  {approvingId ? 'Одобрение заявки — заполните детали сервера' : 'Добавить сервер вручную'}
-                </div>
-                {approvingId && (
-                  <div style={{ background:'rgba(200,168,75,.08)', border:'1px solid var(--gold-d)', borderRadius:3, padding:'.7rem 1rem', display:'flex', gap:'.6rem', alignItems:'center', flexWrap:'wrap' }}>
-                    <span style={{ fontSize:'.82rem', color:'var(--text1)' }}>После сохранения заявка пометится <strong>approved</strong>.</span>
-                    <button
-                      type="button"
-                      className={styles.btnSm}
-                      style={{ marginLeft:'auto' }}
-                      onClick={() => { setApprovingId(null); showToast('Отвязано от заявки'); }}
-                    >
-                      Отвязать от заявки
-                    </button>
-                  </div>
-                )}
+                <div className={styles.sectionTitle}>Добавить сервер вручную</div>
                 <form className={styles.addForm} onSubmit={submitAdd}>
                   <section className={styles.textImport}>
                     <div className={styles.textImportHeader}>

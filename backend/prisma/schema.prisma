@@ -284,6 +284,26 @@ model ServerRequest {
   @@index([paymentId])
 }
 
+// ── Рекламные баннеры (продаются вручную через Telegram) ──
+// Управляются в админке. На сайте показываются справа сверху с пометкой «Реклама».
+model Banner {
+  id          String    @id @default(cuid())
+  slot        Int       @default(1)              // 1 или 2 — позиция в правом блоке
+  title       String                             // заголовок объявления
+  subtitle    String?                            // подзаголовок (хроника/рейты/дата)
+  image       String?                            // URL загруженной картинки (/uploads/...)
+  href        String                             // куда ведёт клик (сайт сервера)
+  advertiser  String?                            // рекламодатель (для маркировки 38-ФЗ)
+  erid        String?                            // токен ОРД (если уже получен)
+  active      Boolean   @default(true)
+  endDate     DateTime?                          // до какой даты крутить (null = бессрочно)
+  clicks      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([active, slot])
+}
+
 // ── Статьи блога ─────────────────────────────
 model Article {
   id          String    @id @default(cuid())

@@ -1,0 +1,70 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  margin-bottom: 1rem;
+}
+
+.ad {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .75rem .85rem;
+  border: 1px solid rgba(210, 171, 82, .22);
+  border-radius: 9px;
+  background:
+    linear-gradient(180deg, rgba(14, 19, 27, .92), rgba(8, 12, 18, .96)),
+    radial-gradient(circle at 100% 0%, rgba(210, 171, 82, .07), transparent 45%);
+  text-decoration: none;
+  transition: border-color .18s, transform .18s;
+}
+.ad:hover { border-color: rgba(210, 171, 82, .42); transform: translateY(-1px); }
+
+.mark {
+  position: absolute;
+  top: .42rem;
+  right: .52rem;
+  padding: .06rem .36rem;
+  border-radius: 4px;
+  background: rgba(232, 221, 186, .12);
+  color: rgba(232, 221, 186, .6);
+  font-size: .52rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+.media {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.media img { width: 100%; height: 100%; object-fit: cover; }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
+  min-width: 0;
+}
+.body strong {
+  color: #f6edd0;
+  font-size: .86rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.body > span {
+  color: rgba(232, 221, 186, .6);
+  font-size: .74rem;
+  line-height: 1.2;
+}
+
+.advertiser {
+  color: rgba(232, 221, 186, .36);
+  font-size: .58rem;
+}

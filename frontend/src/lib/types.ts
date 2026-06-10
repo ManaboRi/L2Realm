@@ -347,3 +347,15 @@ export const RATES = [
   { v: 'mega',    l: 'x1000–x9999' },
   { v: 'extreme', l: 'x10000+' },
 ] as const;
+
+// Рекламный баннер (публичные поля)
+export interface BannerAd {
+  id: string;
+  slot: number;
+  title: string;
+  subtitle?: string | null;
+  image?: string | null;
+  href: string;
+  advertiser?: string | null;
+  erid?: string | null;
+}

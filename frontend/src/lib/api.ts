@@ -1,7 +1,7 @@
 // ══════════════════════════════════════════════
 // L2Realm — API клиент
 // ══════════════════════════════════════════════
-import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem, OpeningClickResult, OpeningClickReport } from './types';
+import type { Server, ServersResponse, Stats, VipStatus, Boost, Subscription, VoteStatus, VoteSummary, Article, OpeningReminder, OpeningWaitResult, OpeningWaitTopItem, OpeningClickResult, OpeningClickReport, BannerAd } from './types';
 
 const BASE = typeof window !== 'undefined'
   ? '/api/proxy'
@@ -159,6 +159,22 @@ export const api = {
       request<VoteStatus>(`/votes/${serverId}/status`),
     summary: (serverId: string) =>
       request<VoteSummary>(`/votes/${serverId}/summary`),
+  },
+
+  // ── Рекламные баннеры ────────────────────────
+  banners: {
+    active: () => request<BannerAd[]>('/banners/active'),
+    click: (id: string) => {
+      try { navigator.sendBeacon?.(`/api/proxy/banners/${id}/click`); } catch {}
+    },
+    adminList: (token: string) =>
+      request<any[]>('/banners/admin/all', { headers: { Authorization: `Bearer ${token}` } }),
+    create: (data: any, token: string) =>
+      request<any>('/banners', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+    update: (id: string, data: any, token: string) =>
+      request<any>(`/banners/${id}`, { method: 'PUT', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
+    remove: (id: string, token: string) =>
+      request<any>(`/banners/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }),
   },
 
   openingReminders: {
