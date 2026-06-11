@@ -11,7 +11,7 @@ import g from './page.module.css';
 const SITE = 'https://l2realm.ru';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const FLAGSHIP = 'interlude';
-const HERO_BG = '/images/bann%20fo%20guides.png';
+const HERO_BG = '/images/guides-hero.png';
 
 export const revalidate = 300;
 
