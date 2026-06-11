@@ -3,31 +3,36 @@
 .guidesMain { padding: 1.4rem 0 4rem; }
 .wrap { width: min(1480px, calc(100% - 2.4rem)); margin: 0 auto; }
 
-/* ── Hero на всю ширину с артом-замком ────────── */
+/* ── Hero-баннер (компактный, фикс-высота, текст поверх) ── */
 .heroBand {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: .7rem;
-  min-height: 236px;
-  margin-bottom: 1.3rem;
-  padding: 2rem 2.1rem;
-  border: 1px solid rgba(210, 171, 82, .18);
+  height: 280px;
+  margin-bottom: 1.1rem;
+  border: 1px solid rgba(210, 171, 82, .2);
   border-radius: 13px;
   overflow: hidden;
 }
 .heroBg { position: absolute; inset: 0; z-index: 0; }
-.heroBg img { width: 100%; height: 100%; object-fit: cover; object-position: right center; }
+.heroBg img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .heroBg::after {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 8, 13, .97) 0%, rgba(5, 8, 13, .86) 42%, rgba(5, 8, 13, .35) 78%, rgba(5, 8, 13, .2) 100%),
-    linear-gradient(180deg, transparent 55%, rgba(5, 8, 13, .55));
+    linear-gradient(90deg, rgba(5, 8, 13, .92) 0%, rgba(5, 8, 13, .58) 44%, rgba(5, 8, 13, .08) 80%, transparent 100%),
+    linear-gradient(0deg, rgba(5, 8, 13, .95) 0%, rgba(5, 8, 13, .35) 26%, transparent 52%);
 }
-.heroBand > * { position: relative; z-index: 1; }
+.heroContent {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: 1.4rem 1.9rem 1.55rem;
+}
 .heroKicker {
   width: fit-content;
   color: var(--gold);
@@ -41,20 +46,24 @@
   margin: 0;
   color: #f6edd0;
   font-family: 'Cinzel', serif;
-  font-size: clamp(2.1rem, 4vw, 3.1rem);
+  font-size: clamp(2rem, 3.6vw, 2.8rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: .01em;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, .6);
 }
 .heroTitle span { color: var(--gold); }
 .heroSub {
   margin: 0;
-  max-width: 640px;
-  color: rgba(232, 221, 186, .72);
-  font-size: .98rem;
-  line-height: 1.55;
+  max-width: 600px;
+  color: rgba(232, 221, 186, .78);
+  font-size: .92rem;
+  line-height: 1.5;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .6);
 }
-.heroSearch { width: min(680px, 100%); margin-top: .35rem; }
+
+/* Поиск — отдельной строкой под баннером */
+.searchRow { width: min(720px, 100%); margin-bottom: 1.4rem; }
 
 /* ── 3 колонки ────────────────────────────────── */
 .gGrid {

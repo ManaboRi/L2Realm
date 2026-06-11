@@ -11,7 +11,7 @@ import g from './page.module.css';
 const SITE = 'https://l2realm.ru';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const FLAGSHIP = 'interlude';
-const HERO_BG = '/images/hero-catalog-bg.webp';
+const HERO_BG = '/images/bann%20fo%20guides.png';
 
 export const revalidate = 300;
 
@@ -54,14 +54,18 @@ export default async function GuidesPage() {
     <main className={g.guidesMain}>
       <div className={g.wrap}>
 
-        {/* ── Hero на всю ширину ── */}
+        {/* ── Hero-баннер (компактный, текст поверх) ── */}
         <div className={g.heroBand}>
           <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
-          <span className={g.heroKicker}>База знаний L2Realm</span>
-          <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
-          <p className={g.heroSub}>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — всё в одном справочнике. Выбери раздел и начни путь к вершинам.</p>
-          <div className={g.heroSearch}><GuidesSearch /></div>
+          <div className={g.heroContent}>
+            <span className={g.heroKicker}>База знаний L2Realm</span>
+            <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
+            <p className={g.heroSub}>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — всё в одном справочнике.</p>
+          </div>
         </div>
+
+        {/* Поиск — отдельной строкой под баннером */}
+        <div className={g.searchRow}><GuidesSearch /></div>
 
         {/* ── 3 колонки ── */}
         <div className={g.gGrid}>
