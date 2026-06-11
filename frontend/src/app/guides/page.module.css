@@ -1,38 +1,39 @@
 /* /guides — хаб-страница по референсу. Собственный широкий layout. */
 
-.guidesMain { padding: 1.3rem 0 4rem; }
+.guidesMain { padding: 0 0 4rem; }
 .wrap { width: min(1760px, calc(100% - 2.2rem)); margin: 0 auto; }
 
-/* ── Hero: картинка + текст слева, без рамок и поиска ── */
+/* ── Hero full-bleed: на всю ширину, под шапку, низ растворяется в фоне ── */
 .heroBand {
   position: relative;
-  height: 300px;
-  margin-bottom: 1rem;
-  border-radius: 12px;
+  width: 100%;
+  height: 380px;
   overflow: hidden;
 }
 .heroBg { position: absolute; inset: 0; z-index: 0; }
-.heroBg img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+.heroBg img { width: 100%; height: 100%; object-fit: cover; object-position: center 32%; display: block; }
 .heroBg::after {
   content: '';
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, rgba(5, 8, 13, .94) 0%, rgba(5, 8, 13, .7) 32%, rgba(5, 8, 13, .16) 66%, transparent 100%),
-    linear-gradient(0deg, rgba(5, 8, 13, .9) 0%, rgba(5, 8, 13, .22) 22%, transparent 46%);
+    linear-gradient(90deg, rgba(9, 11, 16, .95) 0%, rgba(9, 11, 16, .68) 30%, rgba(9, 11, 16, .15) 62%, transparent 100%),
+    linear-gradient(180deg, transparent 30%, rgba(9, 11, 16, .55) 72%, #090B10 100%);
+}
+.heroInner {
+  position: relative;
+  z-index: 1;
+  width: min(1760px, calc(100% - 2.2rem));
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
 }
 .heroContent {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  top: 0;
-  bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: .55rem;
   max-width: 640px;
-  padding: 0 2rem 0 2.5rem;
 }
 .heroKicker {
   width: fit-content;
@@ -64,7 +65,7 @@
 }
 
 /* ── Кнопки-разделы (вместо поиска) ── */
-.catNav { display: flex; flex-wrap: wrap; gap: .55rem; margin-bottom: 1.4rem; }
+.catNav { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.6rem; margin-bottom: 1.4rem; }
 .catBtn {
   display: inline-flex;
   align-items: center;

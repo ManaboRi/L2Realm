@@ -69,18 +69,19 @@ export default async function GuidesPage() {
 
   return (
     <main className={g.guidesMain}>
-      <div className={g.wrap}>
-
-        {/* ── Hero-баннер: картинка + текст слева, без рамок и поиска ── */}
-        <div className={g.heroBand}>
-          <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
+      {/* ── Hero на всю ширину (full-bleed, низ растворяется в фоне) ── */}
+      <div className={g.heroBand}>
+        <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
+        <div className={g.heroInner}>
           <div className={g.heroContent}>
             <span className={g.heroKicker}>База знаний L2Realm</span>
             <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
             <p className={g.heroSub}>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — всё в одном справочнике.</p>
           </div>
         </div>
+      </div>
 
+      <div className={g.wrap}>
         {/* ── Кнопки-разделы (вместо поиска) ── */}
         <nav className={g.catNav} aria-label="Разделы гайдов">
           {NAV.map(item => (
