@@ -8,13 +8,13 @@ export type GuideCategory = {
 };
 
 export const GUIDE_CATEGORIES: GuideCategory[] = [
-  { slug: 'kvesty',      label: 'Квесты',      icon: '📜', desc: 'Прохождения, награды, условия и требования.' },
-  { slug: 'predmety',    label: 'Предметы',    icon: '💎', desc: 'Оружие, броня, аксессуары, ресурсы и рецепты.' },
-  { slug: 'npc',         label: 'NPC',         icon: '🧙', desc: 'Торговцы, мастера, квестодатели и где их найти.' },
-  { slug: 'lokacii',     label: 'Локации',     icon: '🗺️', desc: 'Зоны охоты, города, инстансы и рейды.' },
-  { slug: 'klassy',      label: 'Классы',      icon: '⚔️', desc: 'Описания классов, роли, плюсы и минусы.' },
-  { slug: 'skilly',      label: 'Скиллы',      icon: '✨', desc: 'Умения, эффекты, комбинации и гайды.' },
-  { slug: 'reyd-bossy',  label: 'Рейд-боссы',  icon: '🐉', desc: 'Рейд- и эпик-боссы: респ, локации и дроп.' },
+  { slug: 'quests',       label: 'Квесты',      icon: '📜', desc: 'Прохождения, награды, условия и требования.' },
+  { slug: 'items',        label: 'Предметы',    icon: '💎', desc: 'Оружие, броня, аксессуары, ресурсы и рецепты.' },
+  { slug: 'npc',          label: 'NPC',         icon: '🧙', desc: 'Торговцы, мастера, квестодатели и где их найти.' },
+  { slug: 'locations',    label: 'Локации',     icon: '🗺️', desc: 'Зоны охоты, города, инстансы и рейды.' },
+  { slug: 'classes',      label: 'Классы',      icon: '⚔️', desc: 'Описания классов, роли, плюсы и минусы.' },
+  { slug: 'skills',       label: 'Скиллы',      icon: '✨', desc: 'Умения, эффекты, комбинации и гайды.' },
+  { slug: 'raid-bosses',  label: 'Рейд-боссы',  icon: '🐉', desc: 'Рейд- и эпик-боссы: респ, локации и дроп.' },
 ];
 
 export function findGuideCategory(slug: string): GuideCategory | undefined {

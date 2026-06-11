@@ -486,7 +486,7 @@ export default function AdminPage() {
 
   // Форма гайда (создание/редактирование)
   const emptyGuide = {
-    id: '', slug: '', chronicle: 'interlude', category: 'kvesty',
+    id: '', slug: '', chronicle: 'interlude', category: 'quests',
     title: '', description: '', content: '', image: '',
     levelMin: '', levelMax: '', npc: '', location: '', reward: '',
     race: '', repeatable: false,
@@ -1313,7 +1313,7 @@ export default function AdminPage() {
                           {g.description && <span style={{ fontSize:'.74rem', color:'var(--text3)', lineHeight:1.3 }}>{g.description.slice(0,90)}</span>}
                           <span style={{ fontSize:'.68rem', color:'var(--text3)' }}>/{g.slug} · {g.views ?? 0} просм.</span>
                           <div style={{ display:'flex', gap:'.4rem', marginTop:'.3rem' }}>
-                            {g.publishedAt && <a href={`/guides/${g.chronicle}/${g.category}/${g.slug}`} target="_blank" rel="noopener" className={styles.btnSm}>Открыть</a>}
+                            {g.publishedAt && <a href={`/guides/${g.category}/${g.slug}`} target="_blank" rel="noopener" className={styles.btnSm}>Открыть</a>}
                             <button className={styles.btnSm} type="button" onClick={() => setGuideForm({
                               id:g.id, slug:g.slug, chronicle:g.chronicle, category:g.category,
                               title:g.title, description:g.description??'', content:g.content??'', image:g.image??'',

@@ -69,7 +69,7 @@ export function GuidesSearch() {
               return (
                 <Link
                   key={g.id}
-                  href={`/guides/${g.chronicle}/${g.category}/${g.slug}`}
+                  href={`/guides/${g.category}/${g.slug}`}
                   className={styles.result}
                   onClick={() => setOpen(false)}
                 >

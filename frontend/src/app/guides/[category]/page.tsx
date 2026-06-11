@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { findGuideChronicle } from '../../guides';
-import { findGuideCategory, GUIDE_CATEGORIES } from '../../categories';
-import { GuideIcon } from '../../GuideIcon';
+import { findGuideCategory, GUIDE_CATEGORIES } from '../categories';
+import { GuideIcon } from '../GuideIcon';
 import { QuestList } from './QuestList';
 import type { Guide } from '@/lib/types';
-import home from '../../../page.module.css';
+import home from '../../page.module.css';
 import styles from './page.module.css';
 
 const SITE = 'https://l2realm.ru';
@@ -14,7 +13,7 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 
 export const revalidate = 300;
 
-type Props = { params: Promise<{ chronicle: string; category: string }>; searchParams: Promise<{ lvl?: string }> };
+type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ lvl?: string; chr?: string }> };
 
 const PLAYER_PATH = [
   { n: '1', title: 'Новичок (1–20)', desc: 'Первые квесты, основы и квест на 1 профессию.' },
@@ -23,7 +22,6 @@ const PLAYER_PATH = [
   { n: '4', title: 'Эндгейм (76+)', desc: 'Пайлака, эпик-квесты и мировые боссы.' },
 ];
 
-// Тянем все гайды категории (по всем хроникам) — фильтр по хронике делает QuestList.
 async function fetchGuides(category: string): Promise<Guide[]> {
   try {
     const res = await fetch(`${BACKEND}/api/guides?category=${encodeURIComponent(category)}`, { next: { revalidate } });
@@ -36,26 +34,25 @@ async function fetchGuides(category: string): Promise<Guide[]> {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { chronicle, category } = await params;
-  const ch = findGuideChronicle(chronicle);
+  const { category } = await params;
   const cat = findGuideCategory(category);
-  if (!ch || !cat) return { title: 'Гайды не найдены', robots: { index: false, follow: false } };
+  if (!cat) return { title: 'Гайды не найдены', robots: { index: false, follow: false } };
   return {
-    title: `${ch.name} — ${cat.label} | Гайды Lineage 2 — L2Realm`,
-    description: `${cat.label} Lineage 2 ${ch.name}: ${cat.desc} Список гайдов, уровни, локации и награды.`,
-    alternates: { canonical: `${SITE}/guides/${ch.slug}/${cat.slug}` },
+    title: `${cat.label} Lineage 2 — гайды и список | L2Realm`,
+    description: `${cat.label} Lineage 2: ${cat.desc} Фильтр по хронике, уровню, расе и локации.`,
+    alternates: { canonical: `${SITE}/guides/${cat.slug}` },
   };
 }
 
 export default async function GuideCategoryPage({ params, searchParams }: Props) {
-  const { chronicle, category } = await params;
-  const initialLevel = (await searchParams).lvl ?? 'all';
-  const ch = findGuideChronicle(chronicle);
+  const { category } = await params;
+  const sp = await searchParams;
+  const initialLevel = sp.lvl ?? 'all';
+  const initialChronicle = sp.chr ?? '';
   const cat = findGuideCategory(category);
-  if (!ch || !cat) notFound();
+  if (!cat) notFound();
 
   const guides = await fetchGuides(cat.slug);
-  const activeChronicleCount = guides.filter(g => g.chronicle === ch.slug).length;
   const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
 
   const breadcrumbSchema = {
@@ -63,13 +60,12 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: 'Гайды', item: `${SITE}/guides` },
-      { '@type': 'ListItem', position: 2, name: ch.name, item: `${SITE}/guides/${ch.slug}` },
-      { '@type': 'ListItem', position: 3, name: cat.label, item: `${SITE}/guides/${ch.slug}/${cat.slug}` },
+      { '@type': 'ListItem', position: 2, name: cat.label, item: `${SITE}/guides/${cat.slug}` },
     ],
   };
 
   return (
-    <main className={`${home.page} ${styles.guidesMain}`} style={{ ['--accent' as string]: ch.accent }}>
+    <main className={`${home.page} ${styles.guidesMain}`} style={{ ['--accent' as string]: '#d2ab52' }}>
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
@@ -78,7 +74,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
       <div className={home.shell}>
         <div className={home.layout}>
 
-          {/* ── Левая навигация: только разделы ── */}
+          {/* ── Левая навигация: разделы ── */}
           <aside className={`${home.sidebar} ${styles.gPanel}`}>
             <div className={home.filterGroup}>
               <span className={`${home.filterLabel} ${styles.navLabel}`}>Разделы гайдов</span>
@@ -86,7 +82,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
                 {GUIDE_CATEGORIES.map(x => (
                   <Link
                     key={x.slug}
-                    href={`/guides/${ch.slug}/${x.slug}`}
+                    href={`/guides/${x.slug}`}
                     className={`${home.filterItem} ${styles.navItem} ${x.slug === cat.slug ? styles.navActive : ''}`}
                   >
                     <GuideIcon name={x.slug} size={18} className={styles.navIcon} />
@@ -103,18 +99,14 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
               <div className={styles.bread}>
                 <Link href="/guides">Гайды</Link>
                 <span>›</span>
-                <Link href={`/guides/${ch.slug}`}>{ch.name}</Link>
-                <span>›</span>
                 <span>{cat.label}</span>
               </div>
 
               <header className={styles.head}>
-                <span className={styles.kicker}>{ch.name}</span>
                 <h1><GuideIcon name={cat.slug} size={28} className={styles.h1Icon} /> {cat.label}</h1>
-                <p>{cat.desc} Сводка по уровню, NPC, локации и награде помогает быстро понять, с чего начать.</p>
+                <p>{cat.desc} Хроника, уровень, раса и локация — это фильтры, выбирай нужное.</p>
                 <div className={styles.headStats} aria-label="Сводка раздела">
-                  <span><strong>{activeChronicleCount}</strong><em>в {ch.name}</em></span>
-                  <span><strong>{guides.length}</strong><em>во всех хрониках</em></span>
+                  <span><strong>{guides.length}</strong><em>гайдов</em></span>
                   <span><strong>{popular.length}</strong><em>в топе</em></span>
                 </div>
               </header>
@@ -124,12 +116,12 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
               <div className={styles.empty}>
                 <p>Гайды в разделе «{cat.label}» скоро появятся — база пополняется.</p>
                 <div className={styles.emptyActions}>
-                  <Link href={`/guides/${ch.slug}`} className={styles.backBtn}>← К разделам {ch.name}</Link>
+                  <Link href="/guides" className={styles.backBtn}>← Ко всем разделам</Link>
                   <Link href="/contacts" className={styles.suggestBtn}>Предложить тему</Link>
                 </div>
               </div>
             ) : (
-              <QuestList guides={guides} defaultChronicle={ch.slug} initialLevel={initialLevel} />
+              <QuestList guides={guides} defaultChronicle={initialChronicle} initialLevel={initialLevel} />
             )}
           </section>
 
@@ -140,7 +132,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
                 <div className={home.railHead}><h2>Популярные квесты</h2></div>
                 <div className={styles.popList}>
                   {popular.map((pg, index) => (
-                    <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={styles.popRow}>
+                    <Link key={pg.id} href={`/guides/${pg.category}/${pg.slug}`} className={styles.popRow}>
                       <span className={styles.popRank} aria-hidden="true">{index + 1}</span>
                       <span className={styles.popName}>{pg.title}</span>
                       <span className={styles.popViews}>{pg.views ?? 0}</span>

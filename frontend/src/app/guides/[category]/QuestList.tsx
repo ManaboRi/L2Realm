@@ -2,8 +2,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
-import { GUIDE_CHRONICLES } from '../../guides';
-import { GUIDE_RACES } from '../../races';
+import { GUIDE_CHRONICLES } from '../guides';
+import { GUIDE_RACES } from '../races';
 import styles from './page.module.css';
 
 type SortKey = 'level' | 'title';
@@ -165,7 +165,7 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
           </div>
           <div className={styles.questRows}>
             {list.map(g => {
-              const href = `/guides/${g.chronicle}/${g.category}/${g.slug}`;
+              const href = `/guides/${g.category}/${g.slug}`;
               return (
                 <article key={g.id} className={styles.questRow}>
                   <Link href={href} className={styles.questMain}>

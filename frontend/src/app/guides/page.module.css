@@ -294,6 +294,7 @@
 }
 .popRow:hover .popName { color: var(--gold); }
 .popMeta { flex: 0 0 auto; color: rgba(232, 221, 186, .4); font-size: .72rem; }
+.popEmpty { margin: 0; color: rgba(232, 221, 186, .5); font-size: .78rem; line-height: 1.45; }
 
 /* ── Полезный совет ── */
 .tipCard {

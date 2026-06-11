@@ -8,7 +8,6 @@ import g from './page.module.css';
 
 const SITE = 'https://l2realm.ru';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
-const FLAGSHIP = 'interlude';
 const HERO_BG = '/images/guides-hero.webp';
 
 export const revalidate = 300;
@@ -22,12 +21,12 @@ export const metadata: Metadata = {
 // Кнопки-разделы (вместо поиска), как на референсе.
 const NAV = [
   { slug: 'novichkam', label: 'Новичкам', href: '/guides', active: true },
-  { slug: 'kvesty', label: 'Квесты', href: `/guides/${FLAGSHIP}/kvesty` },
-  { slug: 'klassy', label: 'Классы', href: `/guides/${FLAGSHIP}/klassy` },
-  { slug: 'skilly', label: 'Скиллы', href: `/guides/${FLAGSHIP}/skilly` },
-  { slug: 'predmety', label: 'Предметы', href: `/guides/${FLAGSHIP}/predmety` },
-  { slug: 'npc', label: 'NPC', href: `/guides/${FLAGSHIP}/npc` },
-  { slug: 'lokacii', label: 'Локации', href: `/guides/${FLAGSHIP}/lokacii` },
+  { slug: 'quests', label: 'Квесты', href: '/guides/quests' },
+  { slug: 'classes', label: 'Классы', href: '/guides/classes' },
+  { slug: 'skills', label: 'Скиллы', href: '/guides/skills' },
+  { slug: 'items', label: 'Предметы', href: '/guides/items' },
+  { slug: 'npc', label: 'NPC', href: '/guides/npc' },
+  { slug: 'locations', label: 'Локации', href: '/guides/locations' },
 ];
 
 const START_PATH = [
@@ -39,21 +38,14 @@ const START_PATH = [
 
 // 8 быстрых карточек-переходов (4 в ряд × 2). image — арт-шапка карточки.
 const CARDS = [
-  { title: 'Старт с нуля', desc: 'Про игру и интерфейс на разных хрониках. Скоро добавим.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Скоро', image: '/images/guide-card-1.webp' },
-  { title: 'Первые квесты 1–20', desc: 'Стартовые квесты для новых персонажей.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b1`, btn: 'Перейти к квестам', image: '/images/guide-card-2.webp' },
-  { title: 'Маршрут прокачки 20–40', desc: 'Локации и маршрут для уверенного роста.', href: `/guides/${FLAGSHIP}/lokacii?lvl=b2`, btn: 'Открыть локации', image: '/images/guide-card-3.webp' },
-  { title: 'Квесты 40–75', desc: 'Развитие от Interlude до High Five.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b3`, btn: 'Перейти к квестам', image: '/images/guide-card-4.webp' },
-  { title: 'Экипировка по уровням', desc: 'Что надеть на старте и как улучшить.', href: `/guides/${FLAGSHIP}/predmety`, btn: 'Смотреть экипировку', image: '/images/guide-card-5.webp' },
-  { title: 'Квесты на профессию', desc: 'Квесты на 1-ю, 2-ю и 3-ю профессию.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Перейти к квестам', image: '/images/guide-card-6.webp' },
-  { title: 'Прокачка Essence 1–85', desc: 'Быстрый маршрут для хроники Essence.', href: '/guides/essence/kvesty', btn: 'Открыть', image: '/images/guide-card-7.webp' },
-  { title: 'Прокачка Main 99–105', desc: 'Эндгейм-маршрут для актуальных хроник.', href: '/guides/main/kvesty', btn: 'Открыть', image: '/images/guide-card-8.webp' },
-];
-
-const NEXT_LINKS = [
-  { href: `/guides/${FLAGSHIP}/kvesty`, icon: 'kvesty', label: 'Все квесты', desc: 'Уровни, NPC и награды' },
-  { href: `/guides/${FLAGSHIP}/klassy`, icon: 'klassy', label: 'Классы и роли', desc: 'Описания и сложность' },
-  { href: `/guides/${FLAGSHIP}/lokacii`, icon: 'lokacii', label: 'Локации', desc: 'Зоны охоты и инстансы' },
-  { href: `/guides/${FLAGSHIP}/reyd-bossy`, icon: 'reyd-bossy', label: 'Рейд-боссы', desc: 'Респ, локации и дроп' },
+  { title: 'Старт с нуля', desc: 'Про игру и интерфейс на разных хрониках. Скоро добавим.', href: '/guides/quests', btn: 'Скоро', image: '/images/guide-card-1.webp' },
+  { title: 'Первые квесты 1–20', desc: 'Стартовые квесты для новых персонажей.', href: '/guides/quests?lvl=b1', btn: 'Перейти к квестам', image: '/images/guide-card-2.webp' },
+  { title: 'Маршрут прокачки 20–40', desc: 'Локации и маршрут для уверенного роста.', href: '/guides/locations?lvl=b2', btn: 'Открыть локации', image: '/images/guide-card-3.webp' },
+  { title: 'Квесты 40–75', desc: 'Развитие от Interlude до High Five.', href: '/guides/quests?lvl=b3', btn: 'Перейти к квестам', image: '/images/guide-card-4.webp' },
+  { title: 'Экипировка по уровням', desc: 'Что надеть на старте и как улучшить.', href: '/guides/items', btn: 'Смотреть экипировку', image: '/images/guide-card-5.webp' },
+  { title: 'Квесты на профессию', desc: 'Квесты на 1-ю, 2-ю и 3-ю профессию.', href: '/guides/quests', btn: 'Перейти к квестам', image: '/images/guide-card-6.webp' },
+  { title: 'Прокачка Essence 1–85', desc: 'Быстрый маршрут для хроники Essence.', href: '/guides/quests?chr=essence', btn: 'Открыть', image: '/images/guide-card-7.webp' },
+  { title: 'Прокачка Main 99–105', desc: 'Эндгейм-маршрут для актуальных хроник.', href: '/guides/quests?chr=main&lvl=b4', btn: 'Открыть', image: '/images/guide-card-8.webp' },
 ];
 
 async function fetchAllGuides(): Promise<Guide[]> {
@@ -112,7 +104,7 @@ export default async function GuidesPage() {
                   </div>
                 ))}
               </div>
-              <Link href={`/guides/${FLAGSHIP}/kvesty`} className={g.panelBtn}>Начать с квестов <i aria-hidden="true">→</i></Link>
+              <Link href="/guides/quests" className={g.panelBtn}>Начать с квестов <i aria-hidden="true">→</i></Link>
             </div>
           </aside>
 
@@ -132,32 +124,18 @@ export default async function GuidesPage() {
             </div>
           </section>
 
-          {/* RIGHT: Куда дальше + Популярные квесты */}
+          {/* RIGHT: Популярные квесты + совет */}
           <aside className={g.rightCol}>
             <BannersBlock slot={1} variant="feature" />
 
             <div className={g.panel}>
-              <div className={g.panelTitle}>Куда дальше?</div>
-              {NEXT_LINKS.map(l => (
-                <Link key={l.href} href={l.href} className={g.nextLink}>
-                  <span className={g.nextIcon}><GuideIcon name={l.icon} size={18} /></span>
-                  <span className={g.nextText}>
-                    <strong>{l.label}</strong>
-                    <small>{l.desc}</small>
-                  </span>
-                  <span className={g.nextArrow} aria-hidden="true">›</span>
-                </Link>
-              ))}
-            </div>
-
-            {popular.length > 0 && (
-              <div className={g.panel}>
-                <div className={g.panelTitle}>Популярные квесты</div>
+              <div className={g.panelTitle}>Популярные квесты</div>
+              {popular.length > 0 ? (
                 <div className={g.popList}>
                   {popular.map(pg => {
                     const ch = findGuideChronicle(pg.chronicle);
                     return (
-                      <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={g.popRow}>
+                      <Link key={pg.id} href={`/guides/${pg.category}/${pg.slug}`} className={g.popRow}>
                         <span className={g.popFire} aria-hidden="true">🔥</span>
                         <span className={g.popName}>{pg.title}</span>
                         <span className={g.popMeta}>{ch?.name ?? pg.chronicle}</span>
@@ -165,8 +143,10 @@ export default async function GuidesPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
+              ) : (
+                <p className={g.popEmpty}>Скоро здесь будут самые просматриваемые квесты.</p>
+              )}
+            </div>
 
             <div className={g.tipCard}>
               <div className={g.tipHead}>💡 Полезный совет</div>
