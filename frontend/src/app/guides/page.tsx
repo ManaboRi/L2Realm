@@ -1,17 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import type { Server, Article, Guide } from '@/lib/types';
+import type { Guide } from '@/lib/types';
 import { BannersBlock } from '@/components/BannersBlock';
 import { findGuideChronicle } from './guides';
 import { GUIDE_CATEGORIES, guideCategoryLabel } from './categories';
 import { GuidesSearch } from './GuidesSearch';
 import { GuideIcon } from './GuideIcon';
-import home from '../page.module.css';
 import g from './page.module.css';
 
 const SITE = 'https://l2realm.ru';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const FLAGSHIP = 'interlude';
+const HERO_BG = '/images/hero-catalog-bg.webp';
 
 export const revalidate = 300;
 
@@ -43,46 +43,33 @@ async function fetchAllGuides(): Promise<Guide[]> {
     return Array.isArray(data) ? data : [];
   } catch { return []; }
 }
-async function fetchComingSoon(): Promise<Server[]> {
-  try {
-    const res = await fetch(`${BACKEND}/api/servers/coming-soon`, { next: { revalidate: 120 } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch { return []; }
-}
-async function fetchArticles(): Promise<Article[]> {
-  try {
-    const res = await fetch(`${BACKEND}/api/articles`, { next: { revalidate } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : (data.data ?? []);
-  } catch { return []; }
-}
-
-function fmtDate(s?: string | null): string {
-  if (!s) return '';
-  const d = new Date(s);
-  return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-}
 
 export default async function GuidesPage() {
-  const [allGuides, comingSoon, articles] = await Promise.all([
-    fetchAllGuides(), fetchComingSoon(), fetchArticles(),
-  ]);
-  const popular = [...allGuides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
+  const allGuides = await fetchAllGuides();
+  const popular = [...allGuides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 4);
   const categoryCounts = new Map<string, number>();
   allGuides.forEach(item => categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1));
 
   return (
-    <main className={`${home.page} ${g.guidesMain}`}>
-      <div className={home.shell}>
-        <div className={home.layout}>
+    <main className={g.guidesMain}>
+      <div className={g.wrap}>
 
-          {/* ── Слева: Путь новичка ── */}
-          <aside className={`${home.sidebar} ${g.gPanel}`}>
-            <div className={g.pathCard}>
-              <div className={g.pathTitle}>Путь новичка</div>
+        {/* ── Hero на всю ширину ── */}
+        <div className={g.heroBand}>
+          <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
+          <span className={g.heroKicker}>База знаний L2Realm</span>
+          <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
+          <p className={g.heroSub}>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — всё в одном справочнике. Выбери раздел и начни путь к вершинам.</p>
+          <div className={g.heroSearch}><GuidesSearch /></div>
+        </div>
+
+        {/* ── 3 колонки ── */}
+        <div className={g.gGrid}>
+
+          {/* LEFT: Путь новичка */}
+          <aside className={g.leftCol}>
+            <div className={g.panel}>
+              <div className={g.panelTitle}>Путь новичка</div>
               <div className={g.pathSteps}>
                 {START_PATH.map(s => (
                   <div key={s.n} className={g.pathStep}>
@@ -94,68 +81,63 @@ export default async function GuidesPage() {
                   </div>
                 ))}
               </div>
+              <Link href={`/guides/${FLAGSHIP}/kvesty`} className={g.panelBtn}>Начать с квестов <i aria-hidden="true">→</i></Link>
             </div>
           </aside>
 
-          {/* ── Центр ── */}
-          <section className={home.content}>
-            <div className={g.hero}>
-              <span className={g.kicker}>База знаний L2Realm</span>
-              <h1>Гайды по <span>Lineage 2</span></h1>
-              <p>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — в одном спокойном справочнике без лишней мишуры.</p>
-              <div className={g.heroSearch}><GuidesSearch /></div>
-            </div>
-
-            {/* Разделы гайдов — единая нав-лента */}
-            <nav className={g.catNav} aria-label="Разделы гайдов">
+          {/* CENTER: крупные карточки разделов */}
+          <section className={g.centerCol}>
+            <div className={g.cards}>
               {GUIDE_CATEGORIES.map(cat => {
                 const count = categoryCounts.get(cat.slug) ?? 0;
                 return (
-                  <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.catPill}>
-                    <GuideIcon name={cat.slug} size={18} className={g.catPillIcon} />
-                    <span>{cat.label}</span>
-                    {count > 0 && <em>{count}</em>}
+                  <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.card}>
+                    <span className={g.cardArt}>
+                      <GuideIcon name={cat.slug} size={40} className={g.cardArtIcon} />
+                      {count > 0 && <em className={g.cardCount}>{count}</em>}
+                    </span>
+                    <span className={g.cardBody}>
+                      <strong>{cat.label}</strong>
+                      <small>{cat.desc}</small>
+                      <span className={g.cardBtn}>Открыть раздел <i aria-hidden="true">→</i></span>
+                    </span>
                   </Link>
                 );
               })}
-            </nav>
+            </div>
 
-            {popular.length > 0 ? (
-              <section className={g.sectionBlock}>
-                <div className={g.sectionHead}>
-                  <h2 className={g.sectionTitle}>Популярные гайды</h2>
-                  <Link href={`/guides/${FLAGSHIP}/kvesty`} className={g.sectionLink}>Все квесты</Link>
+            {popular.length > 0 && (
+              <div className={g.popBlock}>
+                <div className={g.popHead}>
+                  <h2>Популярные гайды</h2>
+                  <Link href={`/guides/${FLAGSHIP}/kvesty`}>Все квесты</Link>
                 </div>
-                <div className={g.popularGrid}>
+                <div className={g.popGrid}>
                   {popular.map(pg => {
                     const ch = findGuideChronicle(pg.chronicle);
                     return (
-                      <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={g.popularCard}>
-                        <span className={g.popularThumb}>
-                          {pg.image ? <img src={pg.image} alt="" loading="lazy" decoding="async" /> : <GuideIcon name={pg.category} size={22} />}
+                      <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={g.popCard}>
+                        <span className={g.popThumb}>
+                          {pg.image ? <img src={pg.image} alt="" loading="lazy" decoding="async" /> : <GuideIcon name={pg.category} size={20} />}
                         </span>
-                        <span className={g.popularBody}>
+                        <span className={g.popText}>
                           <strong>{pg.title}</strong>
                           <small>{ch?.name ?? pg.chronicle} · {guideCategoryLabel(pg.category)} · {pg.views ?? 0} просм.</small>
                         </span>
-                        <span className={g.popularOpen}>Открыть</span>
                       </Link>
                     );
                   })}
                 </div>
-              </section>
-            ) : (
-              <div className={g.emptyHint}>
-                База гайдов наполняется — скоро здесь появятся первые материалы. Начни с раздела{' '}
-                <Link href={`/guides/${FLAGSHIP}/kvesty`}>Квесты</Link>.
               </div>
             )}
           </section>
 
-          {/* ── Справа: Куда дальше + рейл ── */}
-          <aside className={`${home.rightRail} ${g.gPanel}`} aria-label="Сводка">
-            <div className={g.nextCard}>
-              <div className={g.nextTitle}>Куда дальше?</div>
+          {/* RIGHT: Куда дальше + совет */}
+          <aside className={g.rightCol}>
+            <BannersBlock slot={1} variant="feature" />
+
+            <div className={g.panel}>
+              <div className={g.panelTitle}>Куда дальше?</div>
               {NEXT_LINKS.map(l => (
                 <Link key={l.href} href={l.href} className={g.nextLink}>
                   <span className={g.nextIcon}><GuideIcon name={l.icon} size={18} /></span>
@@ -168,48 +150,10 @@ export default async function GuidesPage() {
               ))}
             </div>
 
-            <BannersBlock slot={1} variant="feature" />
-
-            <section className={home.railSection}>
-              <div className={home.railHead}>
-                <h2>Скоро открытие</h2>
-                <Link href="/coming-soon">Все</Link>
-              </div>
-              <div className={home.railList}>
-                {comingSoon.length > 0 ? comingSoon.slice(0, 4).map(s => (
-                  <Link key={s.id} href={`/servers/${s.id}`} className={home.railServerItem}>
-                    <span className={home.railLogo}>
-                      {s.icon ? <img src={s.icon} alt="" loading="lazy" /> : <span>{s.name.slice(0, 2)}</span>}
-                    </span>
-                    <span className={home.railText}>
-                      <strong>{s.name}</strong>
-                      <em>{s.chronicle} · {s.rates}</em>
-                    </span>
-                    <span className={home.railDate}>{fmtDate(s.openedDate) || 'скоро'}</span>
-                  </Link>
-                )) : <span className={home.railEmpty}>Открытия появятся после обновления каталога</span>}
-              </div>
-            </section>
-
-            <section className={home.railSection}>
-              <div className={home.railHead}>
-                <h2>Статьи</h2>
-                <Link href="/blog">Все статьи</Link>
-              </div>
-              <div className={home.railList}>
-                {articles.length > 0 ? articles.slice(0, 4).map(a => (
-                  <Link key={a.id} href={`/blog/${a.slug}`} className={home.railArticleItem}>
-                    <span className={home.railArticleThumb}>
-                      {a.image && <img src={a.image} alt="" loading="lazy" />}
-                    </span>
-                    <span className={home.railText}>
-                      <strong>{a.title}</strong>
-                      <em>{fmtDate(a.publishedAt || a.createdAt)}</em>
-                    </span>
-                  </Link>
-                )) : <span className={home.railEmpty}>Свежие статьи скоро появятся</span>}
-              </div>
-            </section>
+            <div className={g.tipCard}>
+              <div className={g.tipHead}>💡 Полезный совет</div>
+              <p className={g.tipText}>Не спеши: проходи квесты, изучай мир и получай максимум удовольствия от игры. Качество прохождения важнее скорости.</p>
+            </div>
 
             <BannersBlock slot={2} variant="compact" />
           </aside>
