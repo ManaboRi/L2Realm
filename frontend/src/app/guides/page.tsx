@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { Server, Article, Guide } from '@/lib/types';
 import { BannersBlock } from '@/components/BannersBlock';
-import { findGuideChronicle, GUIDE_CHRONICLES } from './guides';
+import { findGuideChronicle } from './guides';
 import { GUIDE_CATEGORIES, guideCategoryLabel } from './categories';
 import { GuidesSearch } from './GuidesSearch';
 import { GuideIcon } from './GuideIcon';
@@ -20,6 +20,20 @@ export const metadata: Metadata = {
   description: 'База знаний по Lineage 2: квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы. Гайды для хроник Interlude, High Five, Essence и Main.',
   alternates: { canonical: `${SITE}/guides` },
 };
+
+const START_PATH = [
+  { n: '1', title: 'Выбери раздел', desc: 'Квесты, классы, локации, предметы и другое.' },
+  { n: '2', title: 'Выбери хронику', desc: 'Фильтр по хронике под свой сервер.' },
+  { n: '3', title: 'Открывай гайды', desc: 'Пошагово — с уровнями, NPC и наградами.' },
+  { n: '4', title: 'Прокачивайся', desc: 'От первых уровней до эндгейма.' },
+];
+
+const NEXT_LINKS = [
+  { href: `/guides/${FLAGSHIP}/kvesty`, icon: 'kvesty', label: 'Все квесты', desc: 'Уровни, NPC и награды' },
+  { href: `/guides/${FLAGSHIP}/klassy`, icon: 'klassy', label: 'Классы и роли', desc: 'Описания и сложность' },
+  { href: `/guides/${FLAGSHIP}/lokacii`, icon: 'lokacii', label: 'Локации', desc: 'Зоны охоты и инстансы' },
+  { href: `/guides/${FLAGSHIP}/reyd-bossy`, icon: 'reyd-bossy', label: 'Рейд-боссы', desc: 'Респ, локации и дроп' },
+];
 
 async function fetchAllGuides(): Promise<Guide[]> {
   try {
@@ -52,47 +66,32 @@ function fmtDate(s?: string | null): string {
   return isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 }
 
-function guideCountText(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return `${n} гайд`;
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} гайда`;
-  return `${n} гайдов`;
-}
-
 export default async function GuidesPage() {
   const [allGuides, comingSoon, articles] = await Promise.all([
     fetchAllGuides(), fetchComingSoon(), fetchArticles(),
   ]);
   const popular = [...allGuides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
   const categoryCounts = new Map<string, number>();
-  const chronicleCounts = new Map<string, number>();
-  allGuides.forEach(item => {
-    categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1);
-    chronicleCounts.set(item.chronicle, (chronicleCounts.get(item.chronicle) ?? 0) + 1);
-  });
-  const featuredRoutes = [
-    { href: '/guides/interlude/kvesty', label: 'Квесты Interlude', text: 'уровни, NPC, награды' },
-    { href: '/guides/interlude/npc', label: 'NPC и локации', text: 'где искать нужных персонажей' },
-    { href: '/guides/interlude/predmety', label: 'Предметы', text: 'ресурсы, рецепты, снаряжение' },
-  ];
+  allGuides.forEach(item => categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1));
 
   return (
     <main className={`${home.page} ${g.guidesMain}`}>
       <div className={home.shell}>
         <div className={home.layout}>
 
-          {/* ── Левая навигация: только разделы ── */}
+          {/* ── Слева: Путь новичка ── */}
           <aside className={`${home.sidebar} ${g.gPanel}`}>
-            <div className={home.filterGroup}>
-              <span className={`${home.filterLabel} ${g.navLabel}`}>Разделы гайдов</span>
-              <div className={home.filterList}>
-                {GUIDE_CATEGORIES.map(cat => (
-                  <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={`${home.filterItem} ${g.navItem}`}>
-                    <GuideIcon name={cat.slug} size={18} className={g.navIcon} />
-                    <span>{cat.label}</span>
-                    {(categoryCounts.get(cat.slug) ?? 0) > 0 && <em>{categoryCounts.get(cat.slug)}</em>}
-                  </Link>
+            <div className={g.pathCard}>
+              <div className={g.pathTitle}>Путь новичка</div>
+              <div className={g.pathSteps}>
+                {START_PATH.map(s => (
+                  <div key={s.n} className={g.pathStep}>
+                    <span className={g.pathNum}>{s.n}</span>
+                    <div className={g.pathText}>
+                      <strong>{s.title}</strong>
+                      <p>{s.desc}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -103,54 +102,29 @@ export default async function GuidesPage() {
             <div className={g.hero}>
               <span className={g.kicker}>База знаний L2Realm</span>
               <h1>Гайды по <span>Lineage 2</span></h1>
-              <p>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы в одном спокойном справочнике без лишней мишуры.</p>
+              <p>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — в одном спокойном справочнике без лишней мишуры.</p>
               <div className={g.heroSearch}><GuidesSearch /></div>
-              <div className={g.routeStrip} aria-label="Быстрые разделы гайдов">
-                {featuredRoutes.map(route => (
-                  <Link key={route.href} href={route.href} className={g.routeCard}>
-                    <strong>{route.label}</strong>
-                    <span>{route.text}</span>
-                  </Link>
-                ))}
-              </div>
             </div>
 
-            <section className={g.sectionBlock}>
-              <div className={g.sectionHead}>
-                <h2 className={g.sectionTitle}>Разделы гайдов</h2>
-                <div className={g.chronicleChips} aria-label="Хроники">
-                  {GUIDE_CHRONICLES.map(ch => (
-                    <Link key={ch.slug} href={`/guides/${ch.slug}`} className={g.chronicleChip}>
-                      {ch.name}
-                      {(chronicleCounts.get(ch.slug) ?? 0) > 0 && <span>{chronicleCounts.get(ch.slug)}</span>}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+            {/* Разделы гайдов — единая нав-лента */}
+            <nav className={g.catNav} aria-label="Разделы гайдов">
+              {GUIDE_CATEGORIES.map(cat => {
+                const count = categoryCounts.get(cat.slug) ?? 0;
+                return (
+                  <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.catPill}>
+                    <GuideIcon name={cat.slug} size={18} className={g.catPillIcon} />
+                    <span>{cat.label}</span>
+                    {count > 0 && <em>{count}</em>}
+                  </Link>
+                );
+              })}
+            </nav>
 
-              <div className={g.tiles}>
-                {GUIDE_CATEGORIES.map(cat => {
-                  const count = categoryCounts.get(cat.slug) ?? 0;
-                  return (
-                    <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.tile}>
-                      <span className={g.tileTop}>
-                        <span className={g.tileIcon}><GuideIcon name={cat.slug} size={22} /></span>
-                        {count > 0 && <em>{guideCountText(count)}</em>}
-                      </span>
-                      <span className={g.tileLabel}>{cat.label}</span>
-                      <span className={g.tileDesc}>{cat.desc}</span>
-                      <span className={g.tileOpen}>Открыть раздел</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            </section>
-
-            {popular.length > 0 && (
+            {popular.length > 0 ? (
               <section className={g.sectionBlock}>
                 <div className={g.sectionHead}>
                   <h2 className={g.sectionTitle}>Популярные гайды</h2>
-                  <Link href="/guides/interlude/kvesty" className={g.sectionLink}>Все квесты</Link>
+                  <Link href={`/guides/${FLAGSHIP}/kvesty`} className={g.sectionLink}>Все квесты</Link>
                 </div>
                 <div className={g.popularGrid}>
                   {popular.map(pg => {
@@ -170,11 +144,30 @@ export default async function GuidesPage() {
                   })}
                 </div>
               </section>
+            ) : (
+              <div className={g.emptyHint}>
+                База гайдов наполняется — скоро здесь появятся первые материалы. Начни с раздела{' '}
+                <Link href={`/guides/${FLAGSHIP}/kvesty`}>Квесты</Link>.
+              </div>
             )}
           </section>
 
-          {/* ── Правый рейл (стандартный) ── */}
+          {/* ── Справа: Куда дальше + рейл ── */}
           <aside className={`${home.rightRail} ${g.gPanel}`} aria-label="Сводка">
+            <div className={g.nextCard}>
+              <div className={g.nextTitle}>Куда дальше?</div>
+              {NEXT_LINKS.map(l => (
+                <Link key={l.href} href={l.href} className={g.nextLink}>
+                  <span className={g.nextIcon}><GuideIcon name={l.icon} size={18} /></span>
+                  <span className={g.nextText}>
+                    <strong>{l.label}</strong>
+                    <small>{l.desc}</small>
+                  </span>
+                  <span className={g.nextArrow} aria-hidden="true">›</span>
+                </Link>
+              ))}
+            </div>
+
             <BannersBlock slot={1} variant="feature" />
 
             <section className={home.railSection}>
