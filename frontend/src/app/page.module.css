@@ -485,9 +485,9 @@
   align-content: end;
   align-items: end;
   gap: .8rem;
-  min-height: 226px;
+  min-height: 150px;
   margin-top: 0;
-  padding: 3.75rem 1.08rem 1rem;
+  padding: 1.5rem 1.08rem 1rem;
   overflow: visible;
   border: 0;
   border-radius: 0;
