@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { findGuideChronicle } from '../../guides';
 import { findGuideCategory } from '../../categories';
+import { GuidesDisclaimer } from '../../GuidesDisclaimer';
 import { renderMarkdown, readingTime } from '@/lib/markdown';
 import type { Guide } from '@/lib/types';
 import styles from './page.module.css';
@@ -167,6 +168,8 @@ export default async function GuideDetailPage({ params }: Props) {
           </div>
         </aside>
       </div>
+
+      <GuidesDisclaimer />
     </div>
   );
 }

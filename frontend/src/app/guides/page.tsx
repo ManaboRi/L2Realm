@@ -4,6 +4,7 @@ import type { Guide } from '@/lib/types';
 import { BannersBlock } from '@/components/BannersBlock';
 import { findGuideChronicle } from './guides';
 import { GuideIcon } from './GuideIcon';
+import { GuidesDisclaimer } from './GuidesDisclaimer';
 import g from './page.module.css';
 
 const SITE = 'https://l2realm.ru';
@@ -155,6 +156,8 @@ export default async function GuidesPage() {
           </aside>
 
         </div>
+
+        <GuidesDisclaimer />
       </div>
     </main>
   );

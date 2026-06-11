@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { findGuideChronicle } from '../guides';
 import { findGuideCategory } from '../categories';
 import { GuideIcon } from '../GuideIcon';
+import { GuidesDisclaimer } from '../GuidesDisclaimer';
 import { QuestList } from './QuestList';
 import type { Guide } from '@/lib/types';
 import g from '../page.module.css';
@@ -194,6 +195,8 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
           </aside>
 
         </div>
+
+        <GuidesDisclaimer />
       </div>
     </main>
   );
