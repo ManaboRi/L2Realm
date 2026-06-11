@@ -5,6 +5,7 @@ import type { Guide } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides';
 import { GUIDE_RACES } from '../races';
 import { QUEST_TYPES, QUEST_TYPE_COLOR } from '../questTypes';
+import { RewardIconRow } from '../reward';
 import styles from './page.module.css';
 
 type SortKey = 'level' | 'title';
@@ -32,35 +33,17 @@ function questCountText(n: number): string {
   return `${n} квестов`;
 }
 
-// Иконки наград вставляются в текст шорткодами :adena: :exp: :sp:
-const REWARD_ICONS: Record<string, string> = {
-  adena: '/images/icon-adena.webp',
-  exp: '/images/icon-exp.webp',
-  sp: '/images/icon-sp.webp',
-};
-
 function RewardCell({ reward }: { reward?: string | null }) {
   if (!reward) return <span className={styles.dash}>—</span>;
-  const parts = reward.split(/(:(?:adena|exp|sp):)/gi);
-  return (
-    <span className={styles.rewardCell}>
-      {parts.map((p, i) => {
-        const m = /^:(adena|exp|sp):$/i.exec(p);
-        if (m) {
-          const key = m[1].toLowerCase();
-          return <img key={i} className={styles.rewardIco} src={REWARD_ICONS[key]} alt={key} title={key.toUpperCase()} loading="lazy" />;
-        }
-        return p ? <span key={i} className={styles.rewardText}>{p}</span> : null;
-      })}
-    </span>
-  );
+  const row = <RewardIconRow reward={reward} imgClass={styles.rewardIco} fallbackClass={styles.rewardFallback} />;
+  return <span className={styles.rewardCell}>{row ?? <span className={styles.dash}>—</span>}</span>;
 }
 
 function TypeCell({ types }: { types?: string[] }) {
   const list = (types ?? []).filter(Boolean);
   if (list.length === 0) return <span className={styles.dash}>—</span>;
   return (
-    <span className={`${styles.typeTags}${list.length === 1 ? ' ' + styles.typeTagsCenter : ''}`}>
+    <span className={styles.typeTags}>
       {list.map(t => (
         <span
           key={t}

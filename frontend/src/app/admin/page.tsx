@@ -488,7 +488,7 @@ export default function AdminPage() {
   // Форма гайда (создание/редактирование)
   const emptyGuide = {
     id: '', slug: '', chronicle: 'interlude', category: 'quests',
-    title: '', description: '', content: '', image: '',
+    title: '', titleEn: '', description: '', content: '', image: '',
     levelMin: '', levelMax: '', npc: '', location: '', reward: '',
     race: '', repeatable: false, types: [] as string[],
     sort: '0', published: true,
@@ -1244,8 +1244,11 @@ export default function AdminPage() {
                         {GUIDE_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
                       </select>
                     </label>
-                    <label className={styles.field}><span>Заголовок *</span>
-                      <input className="input" value={guideForm.title} onChange={e => setGuideForm((p:any)=>({...p,title:e.target.value}))} placeholder="Квесты на 1 профессию — полный список" />
+                    <label className={styles.field}><span>Заголовок * (русский)</span>
+                      <input className="input" value={guideForm.title} onChange={e => setGuideForm((p:any)=>({...p,title:e.target.value}))} placeholder="Покаяние" />
+                    </label>
+                    <label className={styles.field}><span>Англ. название (подзаголовок)</span>
+                      <input className="input" value={guideForm.titleEn} onChange={e => setGuideForm((p:any)=>({...p,titleEn:e.target.value}))} placeholder="Repent Your Sins" />
                     </label>
                     <label className={styles.field}><span>Slug (опц.)</span>
                       <input className="input" value={guideForm.slug} onChange={e => setGuideForm((p:any)=>({...p,slug:e.target.value}))} placeholder="kvesty-na-1-professiyu" />
@@ -1346,7 +1349,7 @@ export default function AdminPage() {
                             {g.publishedAt && <a href={`/guides/${g.category}/${g.slug}`} target="_blank" rel="noopener" className={styles.btnSm}>Открыть</a>}
                             <button className={styles.btnSm} type="button" onClick={() => setGuideForm({
                               id:g.id, slug:g.slug, chronicle:g.chronicle, category:g.category,
-                              title:g.title, description:g.description??'', content:g.content??'', image:g.image??'',
+                              title:g.title, titleEn:g.titleEn??'', description:g.description??'', content:g.content??'', image:g.image??'',
                               levelMin:g.levelMin??'', levelMax:g.levelMax??'', npc:g.npc??'', location:g.location??'',
                               reward:g.reward??'', race:g.race??'', repeatable:!!g.repeatable,
                               types:g.types??[],

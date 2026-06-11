@@ -332,6 +332,7 @@ model Guide {
   chronicle   String                            // 'interlude' | 'high-five' | 'essence' | 'main'
   category    String                            // 'novichkam' | 'kvesty' | 'klassy' | ...
   title       String
+  titleEn     String?                           // англ. название (подзаголовок под русским)
   description String    @default("")            // SEO description, 1-2 предложения
   content     String    @default("")            // Markdown
   image       String?                           // URL обложки (1200×630)

@@ -367,6 +367,7 @@ export interface Guide {
   chronicle: string;
   category: string;
   title: string;
+  titleEn?: string | null;
   description: string;
   content?: string;
   image?: string | null;

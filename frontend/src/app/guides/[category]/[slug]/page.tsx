@@ -4,7 +4,8 @@ import { notFound } from 'next/navigation';
 import { findGuideChronicle } from '../../guides';
 import { findGuideCategory } from '../../categories';
 import { GuidesDisclaimer } from '../../GuidesDisclaimer';
-import { renderMarkdown, readingTime } from '@/lib/markdown';
+import { renderMarkdown } from '@/lib/markdown';
+import { parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
 import type { Guide } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -74,6 +75,7 @@ export default async function GuideDetailPage({ params }: Props) {
   if (lvl) info.unshift(['Уровень', lvl]);
   if (guide.npc) info.push(['Стартовый NPC', guide.npc]);
   if (guide.location) info.push(['Локация', guide.location]);
+  if (guide.repeatable) info.push(['Повторяемый', 'Да']);
 
   const guideImage = absoluteUrl(guide.image);
   const articleSchema = {
@@ -117,34 +119,21 @@ export default async function GuideDetailPage({ params }: Props) {
 
       <div className={styles.layout}>
         <article className={styles.main}>
-          {guide.image && (
-            <div className={styles.banner}>
-              <img src={guide.image} alt={guide.title} />
-            </div>
-          )}
-
           <header className={styles.head}>
-            <div className={styles.meta}>
-              <span className={styles.category}>{cat.icon} {cat.label}</span>
-              {ch && (
-                <>
-                  <span className={styles.metaDot}>·</span>
-                  <span>Хроника {ch.name}</span>
-                </>
-              )}
-              {guide.content && (
-                <>
-                  <span className={styles.metaDot}>·</span>
-                  <span>{readingTime(guide.content)} мин чтения</span>
-                </>
-              )}
+            <div className={styles.headText}>
+              <h1 className={styles.title}>{guide.title}</h1>
+              {guide.titleEn && <p className={styles.titleEn}>{guide.titleEn}</p>}
+              {guide.description && <p className={styles.lead}>{guide.description}</p>}
             </div>
-            <h1 className={styles.title}>{guide.title}</h1>
-            {guide.description && <p className={styles.lead}>{guide.description}</p>}
+            {guide.image && (
+              <div className={styles.heroImg}>
+                <img src={guide.image} alt={guide.title} />
+              </div>
+            )}
           </header>
 
           <div className={styles.infoMobile}>
-            <InfoCard info={info} reward={guide.reward} />
+            <InfoCard info={info} reward={guide.reward} catLabel={cat.label} catSlug={cat.slug} />
           </div>
 
           <div className={styles.body}>
@@ -161,10 +150,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
         <aside className={styles.aside}>
           <div className={styles.asideSticky}>
-            <InfoCard info={info} reward={guide.reward} />
-            <Link href={`/guides/${cat.slug}`} className={styles.asideMore}>
-              Все «{cat.label}» →
-            </Link>
+            <InfoCard info={info} reward={guide.reward} catLabel={cat.label} catSlug={cat.slug} />
           </div>
         </aside>
       </div>
@@ -174,7 +160,8 @@ export default async function GuideDetailPage({ params }: Props) {
   );
 }
 
-function InfoCard({ info, reward }: { info: Array<[string, string]>; reward?: string | null }) {
+function InfoCard({ info, reward, catLabel, catSlug }: { info: Array<[string, string]>; reward?: string | null; catLabel: string; catSlug: string }) {
+  const rewardParts = parseReward(reward);
   return (
     <>
       <div className={styles.infoCard}>
@@ -188,12 +175,38 @@ function InfoCard({ info, reward }: { info: Array<[string, string]>; reward?: st
           ))}
         </dl>
       </div>
-      {reward && (
+
+      {rewardParts.length > 0 && (
         <div className={`${styles.infoCard} ${styles.rewardCard}`}>
           <div className={styles.cardTitle}>Награда за квест</div>
-          <div className={styles.rewardValue}>🪙 {reward}</div>
+          <ul className={styles.rewardList}>
+            {rewardParts.map((p, i) => (
+              <li key={i} className={styles.rewardRow}>
+                {p.kind === 'icon' ? (
+                  <>
+                    <img className={styles.rewardRowIco} src={REWARD_ICONS[p.key]} alt={REWARD_LABEL[p.key]} loading="lazy" />
+                    <span className={styles.rewardRowLabel}>
+                      {REWARD_LABEL[p.key]}{p.amount ? <span className={styles.rewardRowAmt}> ({p.amount})</span> : null}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <svg className={styles.rewardRowIco} viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                      <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
+                    <span className={styles.rewardRowLabel}>{p.text}</span>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
+
+      <Link href={`/guides/${catSlug}`} className={styles.asideMore}>
+        Все «{catLabel}» →
+      </Link>
     </>
   );
 }

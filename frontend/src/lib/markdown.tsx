@@ -101,6 +101,9 @@ function renderInline(raw: string): string {
         : `<span class="md-pill"><b>${lab}</b></span>`;
     },
   );
+  // Иконки-шорткоды наград :adena: :exp: :sp: → span с фоновой картинкой (img режется DOMPurify).
+  // Применяется в гайдах; в обычных статьях такие токены не встречаются.
+  s = s.replace(/:(adena|exp|sp):/gi, (_m, key: string) => `<span class="md-ico md-ico-${key.toLowerCase()}"></span>`);
   // Финальный пропуск через DOMPurify — гарантирует что ни одного <script>
   // или on*-атрибута не дойдёт до dangerouslySetInnerHTML.
   // String() конвертит TrustedHTML → string (тип DOMPurify в новых версиях).

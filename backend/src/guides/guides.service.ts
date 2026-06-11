@@ -22,7 +22,7 @@ function slugify(input: string): string {
 
 // Поля для публичного списка (без тяжёлого content).
 const LIST_SELECT = {
-  id: true, slug: true, chronicle: true, category: true, title: true,
+  id: true, slug: true, chronicle: true, category: true, title: true, titleEn: true,
   description: true, image: true, levelMin: true, levelMax: true,
   npc: true, location: true, reward: true, race: true, repeatable: true,
   types: true, views: true, publishedAt: true,
@@ -119,6 +119,7 @@ export class GuidesService {
         chronicle: String(data.chronicle ?? 'interlude'),
         category: String(data.category ?? 'novichkam'),
         title: String(data.title ?? '').slice(0, 160),
+        titleEn: data.titleEn ? String(data.titleEn).slice(0, 160) : null,
         description: data.description ? String(data.description).slice(0, 320) : '',
         content: data.content ? String(data.content) : '',
         image: data.image ? String(data.image) : null,
@@ -150,6 +151,7 @@ export class GuidesService {
         ...(data.chronicle !== undefined && { chronicle: String(data.chronicle) }),
         ...(data.category !== undefined && { category: String(data.category) }),
         ...(data.title !== undefined && { title: String(data.title).slice(0, 160) }),
+        ...(data.titleEn !== undefined && { titleEn: data.titleEn ? String(data.titleEn).slice(0, 160) : null }),
         ...(data.description !== undefined && { description: data.description ? String(data.description).slice(0, 320) : '' }),
         ...(data.content !== undefined && { content: data.content ? String(data.content) : '' }),
         ...(data.image !== undefined && { image: data.image ? String(data.image) : null }),
