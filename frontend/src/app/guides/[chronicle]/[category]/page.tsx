@@ -54,6 +54,7 @@ export default async function GuideCategoryPage({ params }: Props) {
   if (!ch || !cat) notFound();
 
   const guides = await fetchGuides(cat.slug);
+  const activeChronicleCount = guides.filter(g => g.chronicle === ch.slug).length;
   const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
 
   const breadcrumbSchema = {
@@ -97,18 +98,26 @@ export default async function GuideCategoryPage({ params }: Props) {
 
           {/* ── Центр ── */}
           <section className={home.content}>
-            <div className={styles.bread}>
-              <Link href="/guides">Гайды</Link>
-              <span>›</span>
-              <Link href={`/guides/${ch.slug}`}>{ch.name}</Link>
-              <span>›</span>
-              <span>{cat.label}</span>
-            </div>
+            <div className={styles.categoryHero}>
+              <div className={styles.bread}>
+                <Link href="/guides">Гайды</Link>
+                <span>›</span>
+                <Link href={`/guides/${ch.slug}`}>{ch.name}</Link>
+                <span>›</span>
+                <span>{cat.label}</span>
+              </div>
 
-            <header className={styles.head}>
-              <h1><GuideIcon name={cat.slug} size={28} className={styles.h1Icon} /> {cat.label}</h1>
-              <p>{cat.desc}</p>
-            </header>
+              <header className={styles.head}>
+                <span className={styles.kicker}>{ch.name}</span>
+                <h1><GuideIcon name={cat.slug} size={28} className={styles.h1Icon} /> {cat.label}</h1>
+                <p>{cat.desc} Сводка по уровню, NPC, локации и награде помогает быстро понять, с чего начать.</p>
+                <div className={styles.headStats} aria-label="Сводка раздела">
+                  <span><strong>{activeChronicleCount}</strong><em>в {ch.name}</em></span>
+                  <span><strong>{guides.length}</strong><em>во всех хрониках</em></span>
+                  <span><strong>{popular.length}</strong><em>в топе</em></span>
+                </div>
+              </header>
+            </div>
 
             {guides.length === 0 ? (
               <div className={styles.empty}>
@@ -129,9 +138,9 @@ export default async function GuideCategoryPage({ params }: Props) {
               <section className={home.railSection}>
                 <div className={home.railHead}><h2>Популярные квесты</h2></div>
                 <div className={styles.popList}>
-                  {popular.map(pg => (
+                  {popular.map((pg, index) => (
                     <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={styles.popRow}>
-                      <span className={styles.popFire} aria-hidden="true">🔥</span>
+                      <span className={styles.popRank} aria-hidden="true">{index + 1}</span>
                       <span className={styles.popName}>{pg.title}</span>
                       <span className={styles.popViews}>{pg.views ?? 0}</span>
                     </Link>

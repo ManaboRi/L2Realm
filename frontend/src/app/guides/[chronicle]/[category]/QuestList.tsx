@@ -23,6 +23,14 @@ function levelText(g: Guide): string {
   return '—';
 }
 
+function questCountText(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} квест`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} квеста`;
+  return `${n} квестов`;
+}
+
 const CoinSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /></svg>);
 const ExpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.8L20.5 9l-4.5 4 1.3 6.2L12 16l-5.3 3.2L8 13 3.5 9l6.1-.2z" /></svg>);
 const SpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2 5 5 .5-3.8 3.4 1.2 5.1L12 19l-4.4 3 1.2-5.1L5 13.5 10 13z" /></svg>);
@@ -94,41 +102,47 @@ export function QuestList({ guides, defaultChronicle }: { guides: Guide[]; defau
 
   return (
     <>
-      <div className={styles.filters}>
-        <div className={styles.searchWrap}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <input
-            className={styles.search}
-            type="search"
-            value={q}
-            onChange={e => setQ(e.target.value)}
-            placeholder="Поиск квеста, NPC, награды…"
-            aria-label="Поиск по квестам"
-          />
+      <div className={styles.filterCard}>
+        <div className={styles.filterTop}>
+          <span>Навигация по квестам</span>
+          <strong>{questCountText(list.length)}</strong>
         </div>
-        <div className={styles.selRow}>
-          <select className={styles.sel} value={chr} onChange={e => setChr(e.target.value)} aria-label="Хроника">
-            <option value="">Все хроники</option>
-            {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-          </select>
-          <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
-            {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
-          </select>
-          <select className={styles.sel} value={race} onChange={e => setRace(e.target.value)} aria-label="Раса">
-            <option value="">Все расы</option>
-            {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
-          </select>
-          <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
-            <option value="">Все локации</option>
-            {locations.map(l => <option key={l} value={l}>{l}</option>)}
-          </select>
-          <select className={styles.sel} value={type} onChange={e => setType(e.target.value as 'all' | 'rep' | 'once')} aria-label="Тип квеста">
-            <option value="all">Любой тип</option>
-            <option value="rep">Повторяемые ∞</option>
-            <option value="once">Одноразовые</option>
-          </select>
+        <div className={styles.filters}>
+          <div className={styles.searchWrap}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <input
+              className={styles.search}
+              type="search"
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="Поиск квеста, NPC, награды…"
+              aria-label="Поиск по квестам"
+            />
+          </div>
+          <div className={styles.selRow}>
+            <select className={styles.sel} value={chr} onChange={e => setChr(e.target.value)} aria-label="Хроника">
+              <option value="">Все хроники</option>
+              {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            </select>
+            <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
+              {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+            </select>
+            <select className={styles.sel} value={race} onChange={e => setRace(e.target.value)} aria-label="Раса">
+              <option value="">Все расы</option>
+              {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
+            </select>
+            <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
+              <option value="">Все локации</option>
+              {locations.map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+            <select className={styles.sel} value={type} onChange={e => setType(e.target.value as 'all' | 'rep' | 'once')} aria-label="Тип квеста">
+              <option value="all">Любой тип</option>
+              <option value="rep">Повторяемые ∞</option>
+              <option value="once">Одноразовые</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -137,57 +151,54 @@ export function QuestList({ guides, defaultChronicle }: { guides: Guide[]; defau
           <p>Ничего не нашлось — измени фильтры или запрос.</p>
         </div>
       ) : (
-        <div className={styles.tableWrap}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>
-                  <button type="button" className={`${styles.sortTh} ${sortKey === 'title' ? styles.sortThActive : ''}`} onClick={() => toggleSort('title')}>
-                    Квест <i>{arrow('title')}</i>
-                  </button>
-                </th>
-                <th className={styles.colLevel}>
-                  <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
-                    Уровень <i>{arrow('level')}</i>
-                  </button>
-                </th>
-                <th className={styles.colNpc}>NPC / Локация</th>
-                <th className={styles.colReward}>Награда</th>
-                <th className={styles.colAction}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map(g => {
-                const href = `/guides/${g.chronicle}/${g.category}/${g.slug}`;
-                return (
-                  <tr key={g.id}>
-                    <td>
-                      <Link href={href} className={styles.gName}>
-                        {g.image && <img src={g.image} alt="" loading="lazy" decoding="async" />}
-                        <span>
-                          <strong>
-                            {g.title}
-                            {g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
-                          </strong>
-                          {g.description && <em>{g.description}</em>}
-                        </span>
-                      </Link>
-                    </td>
-                    <td className={styles.colLevel}><span className={styles.lvl}>{levelText(g)}</span></td>
-                    <td className={styles.colNpc}>
-                      {g.npc && <span className={styles.npc}>{g.npc}</span>}
-                      {g.location && <span className={styles.loc}>{g.location}</span>}
-                      {!g.npc && !g.location && <span className={styles.dash}>—</span>}
-                    </td>
-                    <td className={styles.colReward}><RewardCell reward={g.reward} /></td>
-                    <td className={styles.colAction}>
-                      <Link href={href} className={styles.openBtn}>Открыть →</Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div className={styles.questList}>
+          <div className={styles.questListHead}>
+            <button type="button" className={`${styles.sortTh} ${sortKey === 'title' ? styles.sortThActive : ''}`} onClick={() => toggleSort('title')}>
+              Квест <i>{arrow('title')}</i>
+            </button>
+            <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
+              Уровень <i>{arrow('level')}</i>
+            </button>
+            <span>NPC / локация</span>
+            <span>Награда</span>
+            <span></span>
+          </div>
+          <div className={styles.questRows}>
+            {list.map(g => {
+              const href = `/guides/${g.chronicle}/${g.category}/${g.slug}`;
+              return (
+                <article key={g.id} className={styles.questRow}>
+                  <Link href={href} className={styles.questMain}>
+                    <span className={styles.questThumb}>
+                      {g.image ? <img src={g.image} alt="" loading="lazy" decoding="async" /> : <span>{g.title.slice(0, 1)}</span>}
+                    </span>
+                    <span className={styles.questTitleBlock}>
+                      <strong>
+                        {g.title}
+                        {g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
+                      </strong>
+                      {g.description && <em>{g.description}</em>}
+                    </span>
+                  </Link>
+                  <div className={styles.questMetric}>
+                    <small>Уровень</small>
+                    <span className={styles.lvl}>{levelText(g)}</span>
+                  </div>
+                  <div className={styles.questMetric}>
+                    <small>NPC / локация</small>
+                    {g.npc && <span className={styles.npc}>{g.npc}</span>}
+                    {g.location && <span className={styles.loc}>{g.location}</span>}
+                    {!g.npc && !g.location && <span className={styles.dash}>—</span>}
+                  </div>
+                  <div className={styles.questMetric}>
+                    <small>Награда</small>
+                    <RewardCell reward={g.reward} />
+                  </div>
+                  <Link href={href} className={styles.openBtn}>Открыть</Link>
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
     </>
