@@ -9,7 +9,7 @@ import g from './page.module.css';
 const SITE = 'https://l2realm.ru';
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 const FLAGSHIP = 'interlude';
-const HERO_BG = '/images/guides-hero.png';
+const HERO_BG = '/images/guides-hero.webp';
 
 export const revalidate = 300;
 
@@ -37,16 +37,16 @@ const START_PATH = [
   { n: '4', title: 'Прокачивайся', desc: 'От первых уровней до эндгейма.' },
 ];
 
-// 8 быстрых карточек-переходов (4 в ряд × 2).
+// 8 быстрых карточек-переходов (4 в ряд × 2). image — арт-шапка карточки.
 const CARDS = [
-  { title: 'Старт с нуля', desc: 'Про игру и интерфейс на разных хрониках. Скоро добавим.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Скоро', icon: 'novichkam' },
-  { title: 'Первые квесты 1–20', desc: 'Стартовые квесты для новых персонажей.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b1`, btn: 'Перейти к квестам', icon: 'kvesty' },
-  { title: 'Маршрут прокачки 20–40', desc: 'Локации и маршрут для уверенного роста.', href: `/guides/${FLAGSHIP}/lokacii?lvl=b2`, btn: 'Открыть локации', icon: 'lokacii' },
-  { title: 'Квесты 40–75', desc: 'Развитие от Interlude до High Five.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b3`, btn: 'Перейти к квестам', icon: 'kvesty' },
-  { title: 'Экипировка по уровням', desc: 'Что надеть на старте и как улучшить.', href: `/guides/${FLAGSHIP}/predmety`, btn: 'Смотреть экипировку', icon: 'predmety' },
-  { title: 'Квесты на профессию', desc: 'Квесты на 1-ю, 2-ю и 3-ю профессию.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Перейти к квестам', icon: 'kvesty' },
-  { title: 'Прокачка Essence 1–85', desc: 'Быстрый маршрут для хроники Essence.', href: '/guides/essence/kvesty', btn: 'Открыть', icon: 'klassy' },
-  { title: 'Прокачка Main 99–105', desc: 'Эндгейм-маршрут для актуальных хроник.', href: '/guides/main/kvesty', btn: 'Открыть', icon: 'reyd-bossy' },
+  { title: 'Старт с нуля', desc: 'Про игру и интерфейс на разных хрониках. Скоро добавим.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Скоро', image: '/images/guide-card-1.webp' },
+  { title: 'Первые квесты 1–20', desc: 'Стартовые квесты для новых персонажей.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b1`, btn: 'Перейти к квестам', image: '/images/guide-card-2.webp' },
+  { title: 'Маршрут прокачки 20–40', desc: 'Локации и маршрут для уверенного роста.', href: `/guides/${FLAGSHIP}/lokacii?lvl=b2`, btn: 'Открыть локации', image: '/images/guide-card-3.webp' },
+  { title: 'Квесты 40–75', desc: 'Развитие от Interlude до High Five.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b3`, btn: 'Перейти к квестам', image: '/images/guide-card-4.webp' },
+  { title: 'Экипировка по уровням', desc: 'Что надеть на старте и как улучшить.', href: `/guides/${FLAGSHIP}/predmety`, btn: 'Смотреть экипировку', image: '/images/guide-card-5.webp' },
+  { title: 'Квесты на профессию', desc: 'Квесты на 1-ю, 2-ю и 3-ю профессию.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Перейти к квестам', image: '/images/guide-card-6.webp' },
+  { title: 'Прокачка Essence 1–85', desc: 'Быстрый маршрут для хроники Essence.', href: '/guides/essence/kvesty', btn: 'Открыть', image: '/images/guide-card-7.webp' },
+  { title: 'Прокачка Main 99–105', desc: 'Эндгейм-маршрут для актуальных хроник.', href: '/guides/main/kvesty', btn: 'Открыть', image: '/images/guide-card-8.webp' },
 ];
 
 const NEXT_LINKS = [
@@ -121,7 +121,7 @@ export default async function GuidesPage() {
             <div className={g.cards}>
               {CARDS.map(c => (
                 <Link key={c.title} href={c.href} className={g.card}>
-                  <span className={g.cardArt}><GuideIcon name={c.icon} size={38} className={g.cardArtIcon} /></span>
+                  <span className={g.cardArt}><img src={c.image} alt="" loading="lazy" decoding="async" /></span>
                   <span className={g.cardBody}>
                     <strong>{c.title}</strong>
                     <small>{c.desc}</small>

@@ -7,7 +7,7 @@
 .heroBand {
   position: relative;
   width: 100%;
-  height: 268px;
+  height: 216px;
   overflow: hidden;
 }
 .heroBg { position: absolute; inset: 0; z-index: 0; }
@@ -65,7 +65,7 @@
 }
 
 /* ── Кнопки-разделы (вместо поиска) ── */
-.catNav { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .7rem; margin-bottom: 1.3rem; }
+.catNav { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: .35rem; margin-bottom: 1.3rem; }
 .catBtn {
   display: inline-flex;
   align-items: center;
@@ -196,17 +196,19 @@
 }
 .cardArt {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100px;
+  height: 126px;
+  overflow: hidden;
   border-bottom: 1px solid rgba(210, 171, 82, .14);
-  background:
-    radial-gradient(circle at 50% 120%, rgba(210, 171, 82, .22), transparent 60%),
-    linear-gradient(180deg, rgba(24, 28, 36, .9), rgba(12, 16, 22, .92));
+  background: linear-gradient(180deg, rgba(24, 28, 36, .9), rgba(12, 16, 22, .92));
 }
-.cardArtIcon { color: var(--gold); opacity: .92; }
-.card:hover .cardArtIcon { opacity: 1; }
+.cardArt img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .28s ease; }
+.card:hover .cardArt img { transform: scale(1.06); }
+.cardArt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 52%, rgba(7, 11, 16, .55));
+}
 .cardBody {
   display: flex;
   flex-direction: column;
