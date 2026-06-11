@@ -12,6 +12,7 @@ import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides/guides';
 import { GUIDE_CATEGORIES } from '../guides/categories';
 import { GUIDE_RACES } from '../guides/races';
+import { QUEST_TYPES } from '../guides/questTypes';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'money' | 'banners' | 'guides' | 'clicks' | 'add';
@@ -489,7 +490,7 @@ export default function AdminPage() {
     id: '', slug: '', chronicle: 'interlude', category: 'quests',
     title: '', description: '', content: '', image: '',
     levelMin: '', levelMax: '', npc: '', location: '', reward: '',
-    race: '', repeatable: false,
+    race: '', repeatable: false, types: [] as string[],
     sort: '0', published: true,
   };
   const [guides, setGuides] = useState<any[]>([]);
@@ -1282,6 +1283,35 @@ export default function AdminPage() {
                       <span>Опубликован</span>
                     </label>
                   </div>
+                  <div className={styles.field}><span>Тип квеста (теги — можно несколько)</span>
+                    <div style={{ display:'flex', flexWrap:'wrap', gap:'.4rem', marginTop:'.25rem' }}>
+                      {QUEST_TYPES.map(t => {
+                        const on = (guideForm.types ?? []).includes(t.label);
+                        return (
+                          <button
+                            key={t.label}
+                            type="button"
+                            onClick={() => setGuideForm((p:any) => ({
+                              ...p,
+                              types: on
+                                ? (p.types ?? []).filter((x:string) => x !== t.label)
+                                : [...(p.types ?? []), t.label],
+                            }))}
+                            style={{
+                              padding:'.2rem .56rem', borderRadius:'6px', cursor:'pointer',
+                              fontSize:'.74rem', fontWeight:700, lineHeight:1.4,
+                              border:`1px solid ${on ? t.color : 'rgba(118,141,151,.3)'}`,
+                              background: on ? `color-mix(in srgb, ${t.color} 20%, transparent)` : 'transparent',
+                              color: on ? t.color : 'rgba(232,221,186,.55)',
+                              transition:'all .14s',
+                            }}
+                          >
+                            {t.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                   <label className={styles.field}><span>Краткое описание (SEO, 120–160 симв.)</span>
                     <input className="input" value={guideForm.description} maxLength={320} onChange={e => setGuideForm((p:any)=>({...p,description:e.target.value}))} placeholder="Все квесты на первую профессию: NPC, локации, награды и пошаговый порядок." />
                   </label>
@@ -1319,6 +1349,7 @@ export default function AdminPage() {
                               title:g.title, description:g.description??'', content:g.content??'', image:g.image??'',
                               levelMin:g.levelMin??'', levelMax:g.levelMax??'', npc:g.npc??'', location:g.location??'',
                               reward:g.reward??'', race:g.race??'', repeatable:!!g.repeatable,
+                              types:g.types??[],
                               sort:String(g.sort??0), published:!!g.publishedAt,
                             })}>Править</button>
                             <button className={`${styles.btnSm} ${styles.btnDanger}`} type="button" onClick={() => deleteGuide(g.id)}>Удалить</button>

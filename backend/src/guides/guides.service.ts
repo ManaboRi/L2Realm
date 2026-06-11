@@ -25,8 +25,24 @@ const LIST_SELECT = {
   id: true, slug: true, chronicle: true, category: true, title: true,
   description: true, image: true, levelMin: true, levelMax: true,
   npc: true, location: true, reward: true, race: true, repeatable: true,
-  views: true, publishedAt: true,
+  types: true, views: true, publishedAt: true,
 } as const;
+
+// Допустимые теги-типы квестов (синхронно с фронтом questTypes.ts).
+const QUEST_TYPES = new Set([
+  'Сюжетный', 'Профессия', 'Сабкласс', 'Дуал-Класс', 'Ноблес', 'Олимпиада',
+  'Клановые', 'Ежедневные', 'Повторяемые', 'Рейд-Босс', 'Питомцы', 'Разовые',
+]);
+
+function normTypes(v: any): string[] {
+  const raw = Array.isArray(v) ? v : typeof v === 'string' ? v.split(',') : [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    const t = String(item).trim();
+    if (QUEST_TYPES.has(t)) seen.add(t);
+  }
+  return [...seen];
+}
 
 @Injectable()
 export class GuidesService {
@@ -113,6 +129,7 @@ export class GuidesService {
         reward: data.reward ? String(data.reward).slice(0, 120) : null,
         race: data.race ? String(data.race).slice(0, 40) : null,
         repeatable: data.repeatable === true || data.repeatable === 'true',
+        types: normTypes(data.types),
         sort: this.numOrNull(data.sort) ?? 0,
         publishedAt: data.published ? new Date() : null,
       },
@@ -143,6 +160,7 @@ export class GuidesService {
         ...(data.reward !== undefined && { reward: data.reward ? String(data.reward).slice(0, 120) : null }),
         ...(data.race !== undefined && { race: data.race ? String(data.race).slice(0, 40) : null }),
         ...(data.repeatable !== undefined && { repeatable: data.repeatable === true || data.repeatable === 'true' }),
+        ...(data.types !== undefined && { types: normTypes(data.types) }),
         ...(data.sort !== undefined && { sort: this.numOrNull(data.sort) ?? 0 }),
         ...(data.published !== undefined && { publishedAt: data.published ? (exists.publishedAt ?? new Date()) : null }),
       },

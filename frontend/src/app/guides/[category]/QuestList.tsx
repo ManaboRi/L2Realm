@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Guide } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides';
 import { GUIDE_RACES } from '../races';
+import { QUEST_TYPES, QUEST_TYPE_COLOR } from '../questTypes';
 import styles from './page.module.css';
 
 type SortKey = 'level' | 'title';
@@ -55,13 +56,31 @@ function RewardCell({ reward }: { reward?: string | null }) {
   );
 }
 
+function TypeCell({ types }: { types?: string[] }) {
+  const list = (types ?? []).filter(Boolean);
+  if (list.length === 0) return <span className={styles.dash}>—</span>;
+  return (
+    <span className={`${styles.typeTags}${list.length === 1 ? ' ' + styles.typeTagsCenter : ''}`}>
+      {list.map(t => (
+        <span
+          key={t}
+          className={styles.typeTag}
+          style={{ '--tc': QUEST_TYPE_COLOR[t] ?? '#7e96a0' } as React.CSSProperties}
+        >
+          {t}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { guides: Guide[]; defaultChronicle: string; initialLevel?: string }) {
   const [q, setQ] = useState('');
   const [chr, setChr] = useState(defaultChronicle);
   const [br, setBr] = useState(initialLevel);
   const [race, setRace] = useState('');
   const [loc, setLoc] = useState('');
-  const [type, setType] = useState<'all' | 'rep' | 'once'>('all');
+  const [typeTag, setTypeTag] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('level');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -69,6 +88,13 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
     () => [...new Set(guides.map(g => g.location).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'ru')),
     [guides],
   );
+
+  // показываем в фильтре только реально встречающиеся типы
+  const usedTypes = useMemo(() => {
+    const set = new Set<string>();
+    guides.forEach(g => (g.types ?? []).forEach(t => set.add(t)));
+    return QUEST_TYPES.filter(t => set.has(t.label));
+  }, [guides]);
 
   function toggleSort(k: SortKey) {
     if (sortKey === k) setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
@@ -92,8 +118,7 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
       }
       if (race && g.race && g.race !== race) return false;
       if (loc && g.location !== loc) return false;
-      if (type === 'rep' && !g.repeatable) return false;
-      if (type === 'once' && g.repeatable) return false;
+      if (typeTag && !(g.types ?? []).includes(typeTag)) return false;
       return true;
     });
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -103,7 +128,7 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
         : (a.levelMin ?? 999) - (b.levelMin ?? 999);
       return r * dir;
     });
-  }, [guides, q, chr, br, race, loc, type, sortKey, sortDir]);
+  }, [guides, q, chr, br, race, loc, typeTag, sortKey, sortDir]);
 
   const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '');
 
@@ -136,6 +161,10 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
             <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
               {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
             </select>
+            <select className={styles.sel} value={typeTag} onChange={e => setTypeTag(e.target.value)} aria-label="Тип квеста">
+              <option value="">Все типы</option>
+              {usedTypes.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
+            </select>
             <select className={styles.sel} value={race} onChange={e => setRace(e.target.value)} aria-label="Раса">
               <option value="">Все расы</option>
               {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
@@ -143,11 +172,6 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
             <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
               <option value="">Все локации</option>
               {locations.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-            <select className={styles.sel} value={type} onChange={e => setType(e.target.value as 'all' | 'rep' | 'once')} aria-label="Тип квеста">
-              <option value="all">Любой тип</option>
-              <option value="rep">Повторяемые ∞</option>
-              <option value="once">Одноразовые</option>
             </select>
           </div>
         </div>
@@ -166,9 +190,9 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
             <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
               Уровень <i>{arrow('level')}</i>
             </button>
-            <span>NPC / локация</span>
+            <span>Тип</span>
+            <span>Локация</span>
             <span>Награда</span>
-            <span></span>
           </div>
           <div className={styles.questRows}>
             {list.map(g => {
@@ -192,16 +216,18 @@ export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { 
                     <span className={styles.lvl}>{levelText(g)}</span>
                   </div>
                   <div className={styles.questMetric}>
-                    <small>NPC / локация</small>
+                    <small>Тип</small>
+                    <TypeCell types={g.types} />
+                  </div>
+                  <div className={styles.questMetric}>
+                    <small>Локация</small>
+                    {g.location ? <span className={styles.loc}>{g.location}</span> : <span className={styles.dash}>—</span>}
                     {g.npc && <span className={styles.npc}>{g.npc}</span>}
-                    {g.location && <span className={styles.loc}>{g.location}</span>}
-                    {!g.npc && !g.location && <span className={styles.dash}>—</span>}
                   </div>
                   <div className={styles.questMetric}>
                     <small>Награда</small>
                     <RewardCell reward={g.reward} />
                   </div>
-                  <Link href={href} className={styles.openBtn}>Открыть</Link>
                 </article>
               );
             })}
