@@ -48,10 +48,10 @@ function RewardCell({ reward }: { reward?: string | null }) {
   );
 }
 
-export function QuestList({ guides, defaultChronicle }: { guides: Guide[]; defaultChronicle: string }) {
+export function QuestList({ guides, defaultChronicle, initialLevel = 'all' }: { guides: Guide[]; defaultChronicle: string; initialLevel?: string }) {
   const [q, setQ] = useState('');
   const [chr, setChr] = useState(defaultChronicle);
-  const [br, setBr] = useState('all');
+  const [br, setBr] = useState(initialLevel);
   const [race, setRace] = useState('');
   const [loc, setLoc] = useState('');
   const [type, setType] = useState<'all' | 'rep' | 'once'>('all');

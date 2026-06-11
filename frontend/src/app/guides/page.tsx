@@ -3,8 +3,6 @@ import Link from 'next/link';
 import type { Guide } from '@/lib/types';
 import { BannersBlock } from '@/components/BannersBlock';
 import { findGuideChronicle } from './guides';
-import { GUIDE_CATEGORIES, guideCategoryLabel } from './categories';
-import { GuidesSearch } from './GuidesSearch';
 import { GuideIcon } from './GuideIcon';
 import g from './page.module.css';
 
@@ -21,11 +19,32 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE}/guides` },
 };
 
+// Кнопки-разделы (вместо поиска), как на референсе.
+const NAV = [
+  { slug: 'novichkam', label: 'Новичкам', href: '/guides', active: true },
+  { slug: 'kvesty', label: 'Квесты', href: `/guides/${FLAGSHIP}/kvesty` },
+  { slug: 'klassy', label: 'Классы', href: `/guides/${FLAGSHIP}/klassy` },
+  { slug: 'skilly', label: 'Скиллы', href: `/guides/${FLAGSHIP}/skilly` },
+  { slug: 'predmety', label: 'Предметы', href: `/guides/${FLAGSHIP}/predmety` },
+  { slug: 'npc', label: 'NPC', href: `/guides/${FLAGSHIP}/npc` },
+  { slug: 'lokacii', label: 'Локации', href: `/guides/${FLAGSHIP}/lokacii` },
+];
+
 const START_PATH = [
   { n: '1', title: 'Выбери раздел', desc: 'Квесты, классы, локации, предметы и другое.' },
   { n: '2', title: 'Выбери хронику', desc: 'Фильтр по хронике под свой сервер.' },
   { n: '3', title: 'Открывай гайды', desc: 'Пошагово — с уровнями, NPC и наградами.' },
   { n: '4', title: 'Прокачивайся', desc: 'От первых уровней до эндгейма.' },
+];
+
+// 6 быстрых карточек-переходов (как на референсе).
+const CARDS = [
+  { title: 'Старт с нуля', desc: 'Про игру и интерфейс на разных хрониках. Скоро добавим.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Скоро', icon: 'novichkam' },
+  { title: 'Первые квесты 1–20', desc: 'Стартовые квесты для новых персонажей.', href: `/guides/${FLAGSHIP}/kvesty?lvl=b1`, btn: 'Перейти к квестам', icon: 'kvesty' },
+  { title: 'Маршрут прокачки 20–40', desc: 'Локации и маршрут для уверенного роста.', href: `/guides/${FLAGSHIP}/lokacii?lvl=b2`, btn: 'Открыть локации', icon: 'lokacii' },
+  { title: 'Экипировка по уровням', desc: 'Что надеть на старте и как улучшить.', href: `/guides/${FLAGSHIP}/predmety`, btn: 'Смотреть экипировку', icon: 'predmety' },
+  { title: 'Квесты на профессию', desc: 'Квесты на 1-ю, 2-ю и 3-ю профессию.', href: `/guides/${FLAGSHIP}/kvesty`, btn: 'Перейти к квестам', icon: 'kvesty' },
+  { title: 'Прокачка Essence 1–85', desc: 'Быстрый маршрут для хроники Essence.', href: '/guides/essence/kvesty', btn: 'Открыть', icon: 'klassy' },
 ];
 
 const NEXT_LINKS = [
@@ -46,15 +65,13 @@ async function fetchAllGuides(): Promise<Guide[]> {
 
 export default async function GuidesPage() {
   const allGuides = await fetchAllGuides();
-  const popular = [...allGuides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 4);
-  const categoryCounts = new Map<string, number>();
-  allGuides.forEach(item => categoryCounts.set(item.category, (categoryCounts.get(item.category) ?? 0) + 1));
+  const popular = [...allGuides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
 
   return (
     <main className={g.guidesMain}>
       <div className={g.wrap}>
 
-        {/* ── Hero-баннер (компактный, текст поверх) ── */}
+        {/* ── Hero-баннер: картинка + текст слева, без рамок и поиска ── */}
         <div className={g.heroBand}>
           <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
           <div className={g.heroContent}>
@@ -64,8 +81,15 @@ export default async function GuidesPage() {
           </div>
         </div>
 
-        {/* Поиск — отдельной строкой под баннером */}
-        <div className={g.searchRow}><GuidesSearch /></div>
+        {/* ── Кнопки-разделы (вместо поиска) ── */}
+        <nav className={g.catNav} aria-label="Разделы гайдов">
+          {NAV.map(item => (
+            <Link key={item.slug} href={item.href} className={`${g.catBtn} ${item.active ? g.catBtnActive : ''}`}>
+              <GuideIcon name={item.slug} size={18} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
         {/* ── 3 колонки ── */}
         <div className={g.gGrid}>
@@ -89,54 +113,23 @@ export default async function GuidesPage() {
             </div>
           </aside>
 
-          {/* CENTER: крупные карточки разделов */}
+          {/* CENTER: 6 карточек-переходов */}
           <section className={g.centerCol}>
             <div className={g.cards}>
-              {GUIDE_CATEGORIES.map(cat => {
-                const count = categoryCounts.get(cat.slug) ?? 0;
-                return (
-                  <Link key={cat.slug} href={`/guides/${FLAGSHIP}/${cat.slug}`} className={g.card}>
-                    <span className={g.cardArt}>
-                      <GuideIcon name={cat.slug} size={40} className={g.cardArtIcon} />
-                      {count > 0 && <em className={g.cardCount}>{count}</em>}
-                    </span>
-                    <span className={g.cardBody}>
-                      <strong>{cat.label}</strong>
-                      <small>{cat.desc}</small>
-                      <span className={g.cardBtn}>Открыть раздел <i aria-hidden="true">→</i></span>
-                    </span>
-                  </Link>
-                );
-              })}
+              {CARDS.map(c => (
+                <Link key={c.title} href={c.href} className={g.card}>
+                  <span className={g.cardArt}><GuideIcon name={c.icon} size={38} className={g.cardArtIcon} /></span>
+                  <span className={g.cardBody}>
+                    <strong>{c.title}</strong>
+                    <small>{c.desc}</small>
+                    <span className={g.cardBtn}>{c.btn} <i aria-hidden="true">→</i></span>
+                  </span>
+                </Link>
+              ))}
             </div>
-
-            {popular.length > 0 && (
-              <div className={g.popBlock}>
-                <div className={g.popHead}>
-                  <h2>Популярные гайды</h2>
-                  <Link href={`/guides/${FLAGSHIP}/kvesty`}>Все квесты</Link>
-                </div>
-                <div className={g.popGrid}>
-                  {popular.map(pg => {
-                    const ch = findGuideChronicle(pg.chronicle);
-                    return (
-                      <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={g.popCard}>
-                        <span className={g.popThumb}>
-                          {pg.image ? <img src={pg.image} alt="" loading="lazy" decoding="async" /> : <GuideIcon name={pg.category} size={20} />}
-                        </span>
-                        <span className={g.popText}>
-                          <strong>{pg.title}</strong>
-                          <small>{ch?.name ?? pg.chronicle} · {guideCategoryLabel(pg.category)} · {pg.views ?? 0} просм.</small>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </section>
 
-          {/* RIGHT: Куда дальше + совет */}
+          {/* RIGHT: Куда дальше + Популярные квесты */}
           <aside className={g.rightCol}>
             <BannersBlock slot={1} variant="feature" />
 
@@ -154,12 +147,28 @@ export default async function GuidesPage() {
               ))}
             </div>
 
+            {popular.length > 0 && (
+              <div className={g.panel}>
+                <div className={g.panelTitle}>Популярные квесты</div>
+                <div className={g.popList}>
+                  {popular.map(pg => {
+                    const ch = findGuideChronicle(pg.chronicle);
+                    return (
+                      <Link key={pg.id} href={`/guides/${pg.chronicle}/${pg.category}/${pg.slug}`} className={g.popRow}>
+                        <span className={g.popFire} aria-hidden="true">🔥</span>
+                        <span className={g.popName}>{pg.title}</span>
+                        <span className={g.popMeta}>{ch?.name ?? pg.chronicle}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <div className={g.tipCard}>
               <div className={g.tipHead}>💡 Полезный совет</div>
-              <p className={g.tipText}>Не спеши: проходи квесты, изучай мир и получай максимум удовольствия от игры. Качество прохождения важнее скорости.</p>
+              <p className={g.tipText}>Не спеши: проходи квесты, изучай мир и получай максимум удовольствия от игры.</p>
             </div>
-
-            <BannersBlock slot={2} variant="compact" />
           </aside>
 
         </div>

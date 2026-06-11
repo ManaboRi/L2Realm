@@ -14,7 +14,7 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 
 export const revalidate = 300;
 
-type Props = { params: Promise<{ chronicle: string; category: string }> };
+type Props = { params: Promise<{ chronicle: string; category: string }>; searchParams: Promise<{ lvl?: string }> };
 
 const PLAYER_PATH = [
   { n: '1', title: 'Новичок (1–20)', desc: 'Первые квесты, основы и квест на 1 профессию.' },
@@ -47,8 +47,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function GuideCategoryPage({ params }: Props) {
+export default async function GuideCategoryPage({ params, searchParams }: Props) {
   const { chronicle, category } = await params;
+  const initialLevel = (await searchParams).lvl ?? 'all';
   const ch = findGuideChronicle(chronicle);
   const cat = findGuideCategory(category);
   if (!ch || !cat) notFound();
@@ -128,7 +129,7 @@ export default async function GuideCategoryPage({ params }: Props) {
                 </div>
               </div>
             ) : (
-              <QuestList guides={guides} defaultChronicle={ch.slug} />
+              <QuestList guides={guides} defaultChronicle={ch.slug} initialLevel={initialLevel} />
             )}
           </section>
 
