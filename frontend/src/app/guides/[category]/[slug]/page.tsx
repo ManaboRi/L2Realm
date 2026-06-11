@@ -119,7 +119,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
       <div className={styles.layout}>
         <article className={styles.main}>
-          <header className={styles.head}>
+          <header className={`${styles.head}${guide.image ? '' : ' ' + styles.headNoImg}`}>
             <div className={styles.headText}>
               <h1 className={styles.title}>{guide.title}</h1>
               {guide.titleEn && <p className={styles.titleEn}>{guide.titleEn}</p>}
