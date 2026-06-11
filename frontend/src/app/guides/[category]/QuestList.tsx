@@ -31,19 +31,26 @@ function questCountText(n: number): string {
   return `${n} квестов`;
 }
 
-const CoinSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /></svg>);
-const ExpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.4 5.8L20.5 9l-4.5 4 1.3 6.2L12 16l-5.3 3.2L8 13 3.5 9l6.1-.2z" /></svg>);
-const SpSvg = (<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2 5 5 .5-3.8 3.4 1.2 5.1L12 19l-4.4 3 1.2-5.1L5 13.5 10 13z" /></svg>);
+// Иконки наград вставляются в текст шорткодами :adena: :exp: :sp:
+const REWARD_ICONS: Record<string, string> = {
+  adena: '/images/icon-adena.webp',
+  exp: '/images/icon-exp.webp',
+  sp: '/images/icon-sp.webp',
+};
 
 function RewardCell({ reward }: { reward?: string | null }) {
   if (!reward) return <span className={styles.dash}>—</span>;
-  const low = reward.toLowerCase();
+  const parts = reward.split(/(:(?:adena|exp|sp):)/gi);
   return (
     <span className={styles.rewardCell}>
-      {/(аден|adena)/.test(low) && <span className={`${styles.rIco} ${styles.rAdena}`} title="Адена">{CoinSvg}</span>}
-      {/(exp|опыт|эксп)/.test(low) && <span className={`${styles.rIco} ${styles.rExp}`} title="Опыт">{ExpSvg}</span>}
-      {/\bsp\b/.test(low) && <span className={`${styles.rIco} ${styles.rSp}`} title="SP">{SpSvg}</span>}
-      <span className={styles.rewardText}>{reward}</span>
+      {parts.map((p, i) => {
+        const m = /^:(adena|exp|sp):$/i.exec(p);
+        if (m) {
+          const key = m[1].toLowerCase();
+          return <img key={i} className={styles.rewardIco} src={REWARD_ICONS[key]} alt={key} title={key.toUpperCase()} loading="lazy" />;
+        }
+        return p ? <span key={i} className={styles.rewardText}>{p}</span> : null;
+      })}
     </span>
   );
 }
