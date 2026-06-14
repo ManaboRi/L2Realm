@@ -282,6 +282,12 @@ function parseImportKeyValue(line: string) {
   return key ? { key, value: match[2].trim() } : null;
 }
 
+function parseImportSectionKey(line: string) {
+  const cleaned = line.replace(/^\s*[-*]\s*/, '');
+  const match = cleaned.match(/^([^:=|]{2,42})\s*[:=]\s*$/);
+  return match ? importFieldKey(match[1]) : '';
+}
+
 function applyImportedField(target: any, key: string, value: string, root = true) {
   if (key === 'chronicle') target.chronicle = importChronicle(value);
   else if (key === 'rates') {
@@ -342,18 +348,102 @@ function parseImportInstance(line: string, rootUrl: string) {
   return instance;
 }
 
+function importTypeLabel(value?: string | null) {
+  const type = importServerType(value);
+  return SERVER_TYPES.find(item => item.v === type)?.l ?? value?.trim() ?? 'PvP/PvE';
+}
+
+function formatImportDescDate(value?: string | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('ru-RU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).replace(',', '');
+}
+
+function buildImportedFullDesc(patch: any) {
+  const worlds = Array.isArray(patch.instances) && patch.instances.length > 0 ? patch.instances : [patch];
+  const primary = worlds[0] ?? patch;
+  const name = patch.name || 'Проект Lineage 2';
+  const chronicle = primary.chronicle || patch.chronicle || 'Lineage 2';
+  const rates = primary.rates || patch.rates || '';
+  const typeLabel = importTypeLabel(primary.type || patch.serverType);
+  const openedDate = formatImportDescDate(primary.openedDate || patch.openedDate);
+  const worldLines = worlds.map((world: any) => {
+    const label = world.label || name;
+    const worldChronicle = world.chronicle || chronicle;
+    const worldRates = world.rates || rates;
+    const worldType = importTypeLabel(world.type || patch.serverType);
+    const worldDate = formatImportDescDate(world.openedDate || patch.openedDate);
+    return `- **${label}** — ${worldChronicle}${worldRates ? ` ${worldRates}` : ''}, ${worldType}${worldDate ? `, старт ${worldDate}` : ''}.`;
+  }).join('\n');
+
+  return [
+    '## Коротко о проекте',
+    `${name} — проект Lineage 2 ${chronicle}${rates ? ` ${rates}` : ''} в формате ${typeLabel}. ${openedDate ? `Ближайший старт запланирован на ${openedDate}.` : 'Дата старта указана в карточке проекта.'}`,
+    '',
+    '## Особенности',
+    `- Хроника: **${chronicle}**`,
+    rates ? `- Рейты: **${rates}**` : '',
+    `- Тип: **${typeLabel}**`,
+    openedDate ? `- Старт: **${openedDate}**` : '',
+    patch.url ? `- Официальный сайт: **${patch.url}**` : '',
+    '',
+    '## Миры проекта',
+    worldLines,
+    '',
+    '## Для кого подойдет',
+    'Подойдет игрокам, которые выбирают свежий сервер Lineage 2 и хотят заранее сравнить хронику, рейты, формат игры и дату открытия.',
+  ].filter(line => line !== '').join('\n');
+}
+
 function parseServerTextImport(text: string) {
   const patch: any = {};
   const warnings: string[] = [];
   const lines = text.replace(/\r/g, '').split('\n');
   let inInstances = false;
+  let inFullDesc = false;
+  let fullDescLines: string[] = [];
+
+  function flushFullDesc() {
+    const value = fullDescLines.join('\n').trim();
+    if (value) patch.fullDesc = value;
+    fullDescLines = [];
+  }
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line) continue;
+    if (!line) {
+      if (inFullDesc) fullDescLines.push('');
+      continue;
+    }
+    const sectionKey = parseImportSectionKey(line);
+    if (sectionKey === 'instances') {
+      flushFullDesc();
+      inFullDesc = false;
+      inInstances = true;
+      continue;
+    }
+    if (sectionKey === 'fullDesc') {
+      flushFullDesc();
+      inFullDesc = true;
+      inInstances = false;
+      continue;
+    }
     const pair = parseImportKeyValue(line);
     if (pair?.key === 'instances') {
+      flushFullDesc();
+      inFullDesc = false;
       inInstances = true;
+      continue;
+    }
+    if (inFullDesc && pair?.key !== 'fullDesc') {
+      fullDescLines.push(rawLine.trimEnd());
       continue;
     }
     if (inInstances && (line.startsWith('-') || line.startsWith('*') || line.includes('|'))) {
@@ -365,8 +455,16 @@ function parseServerTextImport(text: string) {
       if (!patch.fullDesc && line.length > 35) patch.fullDesc = line;
       continue;
     }
+    if (pair.key === 'fullDesc') {
+      flushFullDesc();
+      patch.fullDesc = pair.value;
+      inFullDesc = false;
+      inInstances = false;
+      continue;
+    }
     applyImportedField(patch, pair.key, pair.value, true);
   }
+  flushFullDesc();
 
   if (!patch.id && patch.name) patch.id = slugify(patch.name);
   if (!patch.abbr && patch.name) patch.abbr = patch.name.slice(0, 3).toUpperCase();
@@ -381,6 +479,7 @@ function parseServerTextImport(text: string) {
       type: instance.type || patch.serverType || 'pvp-pve',
     }));
   }
+  if (!patch.fullDesc && (patch.name || patch.instances?.length)) patch.fullDesc = buildImportedFullDesc(patch);
 
   for (const [key, label] of [
     ['id', 'ID'],
