@@ -1,0 +1,1 @@
+ALTER TABLE "Server" DROP COLUMN IF EXISTS "shortDesc";

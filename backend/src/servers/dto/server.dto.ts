@@ -27,7 +27,6 @@ export class CreateServerDto {
   @IsOptional() @IsString() vk?: string;
   @IsOptional() @IsString() youtube?: string;
   @IsOptional() @IsString() site?: string;
-  @IsOptional() @IsString() shortDesc?: string;
   @IsOptional() @IsString() fullDesc?: string;
   @IsOptional() @IsString() statusOverride?: string | null;
   @IsOptional() @IsInt() trafficMonthly?: number | null;

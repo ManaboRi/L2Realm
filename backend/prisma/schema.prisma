@@ -71,7 +71,6 @@ model Server {
   updaterUrl  String?
   downloadLinks Json    @default("[]")
   installGuide String?
-  shortDesc   String?
   fullDesc    String?
   rating       Float    @default(0)
   ratingCount  Int      @default(0)

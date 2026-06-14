@@ -50,7 +50,6 @@ async function main() {
       banner:    'https://i.imgur.com/YjTT2uv.png',
       discord:   'https://discord.com/invite/Bg2vg6fyCx',
       telegram:  'https://t.me/l2promo',
-      shortDesc: 'Новый PvP сервер с уникальным контентом',
       fullDesc:  '## ⚔️ PvP сервер\nУникальный геймплей на хронике Essence.\n\n## 🎯 Особенности\n- Честная игра без Pay-to-Win\n- Активные ГМ-события\n- Рейты x50',
     },
     update: {},

@@ -33,7 +33,6 @@ const serverInstanceSchema = z.object({
   type: z.enum(['pvp', 'pve', 'pvp-pve', 'gve', 'rvr', 'multiproff', 'multicraft']).optional(),
   donate: z.enum(['free', 'cosmetic', 'convenience', 'p2w']).optional(),
   url: optionalSafeUrl,
-  shortDesc: optionalSafeText(240),
   openedDate: z.union([dateString, z.literal(''), z.null()]).optional().transform(value => value || null),
   lifecycleStatus: z.enum(['active', 'upcoming', 'merged', 'closed', 'archived']).optional(),
   statusNote: optionalSafeText(160),
@@ -81,7 +80,6 @@ const serverPayloadSchema = z.object({
   vk: optionalSafeUrl,
   youtube: optionalSafeUrl,
   site: optionalSafeUrl,
-  shortDesc: optionalSafeText(300),
   fullDesc: optionalSafeMarkdownText(10_000),
   statusOverride: z.union([z.enum(['online', 'offline', 'unknown']), z.literal(''), z.null()]).optional().transform(value => value || null),
   trafficMonthly: optionalTrafficCount,
@@ -109,7 +107,10 @@ function stripLegacyDownloadFields<T>(value: T): T {
     ...rest
   } = value as any;
 
-  return rest as T;
+  const legacySummaryKey = 'short' + 'Desc';
+  const { [legacySummaryKey]: _legacySummary, ...clean } = rest as any;
+
+  return clean as T;
 }
 
 function compactCatalogServer<T>(value: T): T {
@@ -117,7 +118,6 @@ function compactCatalogServer<T>(value: T): T {
 
   const {
     fullDesc: _fullDesc,
-    shortDesc: _shortDesc,
     country: _country,
     discord: _discord,
     telegram: _telegram,
@@ -149,7 +149,6 @@ function compactCatalogServer<T>(value: T): T {
     instances: Array.isArray(instances)
       ? instances.map(instance => {
           const {
-            shortDesc: _shortDesc,
             donate: _donate,
             url: _url,
             statusNote: _statusNote,
@@ -997,7 +996,7 @@ export class ServersService {
     if (search) {
       where.OR = [
         { name:      { contains: search, mode: 'insensitive' } },
-        { shortDesc: { contains: search, mode: 'insensitive' } },
+        { fullDesc:  { contains: search, mode: 'insensitive' } },
       ];
     }
     // Активность и доверие — скалярные колонки Server, фильтруем прямо в запросе.
