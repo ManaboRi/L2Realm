@@ -19,7 +19,6 @@ type Opening = {
   rateNum: number;
   type: string[];
   label?: string;
-  shortDesc?: string;
   openedAt: string;
   targetUrl?: string | null;
   isVip: boolean;
@@ -71,7 +70,6 @@ function flattenOpenings(servers: Server[]): Opening[] {
           rateNum: i.rateNum,
           type: i.type ? [i.type] : [],
           label: i.label,
-          shortDesc: i.shortDesc || s.shortDesc || undefined,
           openedAt: i.openedDate!,
           targetUrl: i.url || s.url || null,
           isVip: !!i.soonVipUntil && new Date(i.soonVipUntil).getTime() > now,
@@ -90,7 +88,6 @@ function flattenOpenings(servers: Server[]): Opening[] {
         rates: s.rates,
         rateNum: s.rateNum,
         type: s.type ?? [],
-        shortDesc: s.shortDesc || undefined,
         openedAt: s.openedDate!,
         targetUrl: s.url || null,
         isVip: serverVip,

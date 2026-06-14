@@ -5,7 +5,6 @@
 export interface ServerInstance {
   id:          string;       // uuid внутри проекта
   label?:      string;       // опционально: "Interlude PvP" или "x100"
-  shortDesc?:  string;       // короткое описание этого запуска (1 строка)
   chronicle:   string;
   rates:       string;
   rateNum:     number;
@@ -58,7 +57,6 @@ export interface Server {
   vk?:         string;
   youtube?:    string;
   site?:       string;
-  shortDesc?:  string;
   fullDesc?:   string;
   rating:      number;
   ratingCount: number;

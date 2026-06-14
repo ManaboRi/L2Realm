@@ -47,18 +47,23 @@ function relativeOpened(s?: string | null): string {
 function languageMark(value?: string) {
   const clean = String(value || '').trim();
   if (!clean) return '';
-  return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦',KZ:'🇰🇿' }[clean.toUpperCase()] ?? clean;
+  return { RU:'🇷🇺',EU:'🇪🇺',US:'🇺🇸',GB:'🇬🇧',EN:'🇬🇧',GE:'🇬🇪',DE:'🇩🇪',PL:'🇵🇱',BY:'🇧🇾',UA:'🇺🇦',KZ:'🇰🇿',ES:'🇪🇸',PT:'🇵🇹' }[clean.toUpperCase()] ?? clean;
 }
 
 const LANGUAGE_LABELS: Record<string, string> = {
   RU: 'Россия',
   EU: 'Европа',
   US: 'США',
+  GB: 'Великобритания / английский',
+  EN: 'Английский',
+  GE: 'Грузия',
   DE: 'Германия',
   PL: 'Польша',
   BY: 'Беларусь',
   UA: 'Украина',
   KZ: 'Казахстан',
+  ES: 'Испания / испанский',
+  PT: 'Португалия / португальский',
 };
 
 function languageMarks(value?: string | null) {
@@ -197,6 +202,20 @@ function formatDesc(text: string) {
   }
   flushBullets();
   return result;
+}
+
+function fullDescIntro(text?: string | null) {
+  const firstBlock = String(text || '')
+    .split(/\n\s*\n/)
+    .map(block => block.trim())
+    .find(Boolean);
+  if (!firstBlock) return '';
+  return firstBlock
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[`*#>~]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 
@@ -388,7 +407,7 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const uptimeValue = status?.uptime != null ? `${status.uptime}%` : '—';
   const statusText = isOnline ? 'Работает' : status?.status === 'offline' ? 'Не работает' : 'Неизвестно';
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
-  const heroDescription = server.shortDesc || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
+  const heroDescription = fullDescIntro(server.fullDesc) || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
   // Координаты = реальные пиксели контейнера (viewBox подстраивается через ResizeObserver),
   // поэтому график растягивается на всю ширину блока без пустых полей по бокам.
@@ -960,7 +979,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
                             <span className="tag tc">{inst.chronicle}</span>
                             {inst.type && <span className="tag tn">{typeLabels.get(inst.type as any) ?? inst.type}</span>}
                           </div>
-                          {inst.shortDesc && <div className={styles.instTileDesc}>{inst.shortDesc}</div>}
                           {isFuture && (
                             <div className={styles.instTileDate}>
                               {new Date(inst.openedDate!).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}

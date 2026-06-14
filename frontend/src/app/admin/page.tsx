@@ -268,8 +268,8 @@ function importFieldKey(value: string) {
   if (['vk', 'вк', 'vkontakte', 'вконтакте'].includes(key)) return 'vk';
   if (['icon', 'иконка', 'лого'].includes(key)) return 'icon';
   if (['banner', 'баннер', 'фон'].includes(key)) return 'banner';
-  if (['shortdesc', 'short', 'кратко', 'коротко', 'описание'].includes(key)) return 'shortDesc';
-  if (['fulldesc', 'full', 'полноеописание', 'текст', 'подробно'].includes(key)) return 'fullDesc';
+  if (['shortdesc', 'short', 'кратко', 'коротко'].includes(key)) return 'ignore';
+  if (['description', 'desc', 'описание', 'fulldesc', 'full', 'полноеописание', 'текст', 'подробно'].includes(key)) return 'fullDesc';
   if (['instances', 'worlds', 'launches', 'миры', 'запуски', 'сервера'].includes(key)) return 'instances';
   return '';
 }
@@ -311,7 +311,6 @@ function parseImportInstance(line: string, rootUrl: string) {
   const instance: any = {
     id: importInstanceId(),
     label: '',
-    shortDesc: '',
     chronicle: '',
     rates: '',
     rateNum: 1,
@@ -324,7 +323,7 @@ function parseImportInstance(line: string, rootUrl: string) {
 
   if (cleaned.includes('|') && !cleaned.includes(':')) {
     const parts = cleaned.split('|').map(part => part.trim()).filter(Boolean);
-    const [label, chronicle, rates, type, openedDate, url, shortDesc] = parts;
+    const [label, chronicle, rates, type, openedDate, url] = parts;
     if (label) instance.label = label;
     if (chronicle) instance.chronicle = importChronicle(chronicle);
     if (rates) {
@@ -334,13 +333,13 @@ function parseImportInstance(line: string, rootUrl: string) {
     if (type) instance.type = importServerType(type);
     if (openedDate) instance.openedDate = importDateIso(openedDate) || null;
     if (url?.startsWith('http')) instance.url = url;
-    if (shortDesc) instance.shortDesc = shortDesc;
     return instance;
   }
 
   const chunks = cleaned.split(/\s*[;|]\s*/).filter(Boolean);
   for (const chunk of chunks) {
     const pair = parseImportKeyValue(chunk);
+    if (pair?.key === 'ignore') continue;
     if (pair) applyImportedField(instance, pair.key, pair.value, false);
     else if (!instance.label) instance.label = chunk.trim();
   }
@@ -380,25 +379,16 @@ function buildImportedFullDesc(patch: any) {
     const worldRates = world.rates || rates;
     const worldType = importTypeLabel(world.type || patch.serverType);
     const worldDate = formatImportDescDate(world.openedDate || patch.openedDate);
-    return `- **${label}** — ${worldChronicle}${worldRates ? ` ${worldRates}` : ''}, ${worldType}${worldDate ? `, старт ${worldDate}` : ''}.`;
+    return `**${label}** — ${worldChronicle}${worldRates ? ` ${worldRates}` : ''}, ${worldType}${worldDate ? `, старт ${worldDate}` : ''}`;
   }).join('\n');
+  const languages = patch.country ? ` Поддерживаемые языки указаны в карточке: ${patch.country}.` : '';
+  const officialSite = patch.url ? ` Официальный сайт проекта: ${patch.url}.` : '';
 
   return [
-    '## Коротко о проекте',
-    `${name} — проект Lineage 2 ${chronicle}${rates ? ` ${rates}` : ''} в формате ${typeLabel}. ${openedDate ? `Ближайший старт запланирован на ${openedDate}.` : 'Дата старта указана в карточке проекта.'}`,
-    '',
-    '## Особенности',
-    `- Хроника: **${chronicle}**`,
-    rates ? `- Рейты: **${rates}**` : '',
-    `- Тип: **${typeLabel}**`,
-    openedDate ? `- Старт: **${openedDate}**` : '',
-    patch.url ? `- Официальный сайт: **${patch.url}**` : '',
-    '',
-    '## Миры проекта',
-    worldLines,
-    '',
-    '## Для кого подойдет',
-    'Подойдет игрокам, которые выбирают свежий сервер Lineage 2 и хотят заранее сравнить хронику, рейты, формат игры и дату открытия.',
+    `**${name}** — проект Lineage 2 на хронике ${chronicle}${rates ? ` с рейтами ${rates}` : ''}. ${openedDate ? `Ближайшее открытие запланировано на ${openedDate}.` : 'Дата открытия указана в карточке проекта.'}${languages}${officialSite}`,
+    `**Хроника и рейты:** ${chronicle}${rates ? ` ${rates}` : ''}. Формат сервера — ${typeLabel}.`,
+    `**Миры и открытия:**\n${worldLines}.`,
+    `**Для кого подойдет:** проект стоит рассмотреть игрокам, которые выбирают свежий сервер Lineage 2 и хотят заранее сравнить хронику, рейты, формат игры и дату старта на L2Realm.`,
   ].filter(line => line !== '').join('\n');
 }
 
@@ -436,6 +426,7 @@ function parseServerTextImport(text: string) {
       continue;
     }
     const pair = parseImportKeyValue(line);
+    if (pair?.key === 'ignore') continue;
     if (pair?.key === 'instances') {
       flushFullDesc();
       inFullDesc = false;
@@ -620,7 +611,7 @@ export default function AdminPage() {
     serverType: 'pvp-pve',
     type_new: false, type_featured: false, vip: false, voteRewardsEnabled: false,
     icon:'', banner:'', telegram:'', discord:'', vk:'',
-    shortDesc:'', fullDesc:'',
+    fullDesc:'',
     trafficHistory: [] as TrafficDraft[],
     instances: [] as any[],
   });
@@ -761,7 +752,6 @@ export default function AdminPage() {
       telegram:    s.telegram    ?? '',
       discord:     s.discord     ?? '',
       vk:          s.vk          ?? '',
-      shortDesc:   s.shortDesc   ?? '',
       fullDesc:    s.fullDesc    ?? '',
       trafficHistory: trafficDrafts(s),
       instances:   Array.isArray(s.instances) ? s.instances : [],
@@ -805,7 +795,6 @@ export default function AdminPage() {
         telegram:    editForm.telegram || undefined,
         discord:     editForm.discord || undefined,
         vk:          editForm.vk || undefined,
-        shortDesc:   editForm.shortDesc,
         fullDesc:    editForm.fullDesc,
         instances:   projectInstancesPayload(editForm.instances ?? []),
       } as any, token);
@@ -844,7 +833,7 @@ export default function AdminPage() {
         statusOverride: addForm.statusOverride === 'auto' ? null : addForm.statusOverride,
         icon: addForm.icon || undefined, banner: addForm.banner || undefined,
         telegram: addForm.telegram || undefined, discord: addForm.discord || undefined, vk: addForm.vk || undefined,
-        shortDesc: addForm.shortDesc, fullDesc: addForm.fullDesc,
+        fullDesc: addForm.fullDesc,
         trafficHistory: trafficPayload(addForm.trafficHistory ?? []),
         instances: projectInstancesPayload(addForm.instances ?? []),
       } as any, token);
@@ -916,7 +905,7 @@ export default function AdminPage() {
                     className="input"
                     value={editForm.country}
                     onChange={e => setEditForm((p:any) => ({...p,country:e.target.value}))}
-                    placeholder="🇷🇺 🇺🇦 🇪🇺 или RU EU"
+                    placeholder="🇷🇺 🇬🇪 🇺🇦 🇬🇧 🇵🇱 🇪🇸 🇵🇹 или RU GE UA GB PL ES PT"
                   />
                 </AField>
                 <AField label="Ручной статус">
@@ -972,9 +961,6 @@ export default function AdminPage() {
                 }}
               />
 
-              <AField label="Краткое описание">
-                <input className="input" value={editForm.shortDesc} onChange={e => setEditForm((p:any) => ({...p,shortDesc:e.target.value}))} />
-              </AField>
               <AField label="Полное описание">
                 <textarea className="input" rows={5} value={editForm.fullDesc} onChange={e => setEditForm((p:any) => ({...p,fullDesc:e.target.value}))} style={{ resize:'vertical' }} />
               </AField>
@@ -1494,9 +1480,12 @@ export default function AdminPage() {
                             'Рейты: x300',
                             'Тип: PvP',
                             'Дата: 5 июня 2026 20:00',
-                            'Кратко: Новый High Five сервер с PvP и живым стартом.',
+                            'Языки: 🇷🇺 🇬🇪 🇺🇦 🇬🇧 🇵🇱 🇪🇸 🇵🇹',
                             'Миры:',
                             '- Summer PvP | High Five | x300 | PvP | 05.06.2026 20:00 | https://destarion.com',
+                            'Полное описание:',
+                            '**Destarion** — проект Lineage 2 на хронике High Five с рейтами x300.',
+                            '**Хроника и рейты:** High Five x300. Формат сервера — PvP.',
                           ].join('\n')}
                         />
                         <div className={styles.textImportActions}>
@@ -1543,7 +1532,7 @@ export default function AdminPage() {
                         className="input"
                         value={addForm.country}
                         onChange={e => setAddForm(p => ({...p,country:e.target.value}))}
-                        placeholder="🇷🇺 🇺🇦 🇪🇺 или RU EU"
+                        placeholder="🇷🇺 🇬🇪 🇺🇦 🇬🇧 🇵🇱 🇪🇸 🇵🇹 или RU GE UA GB PL ES PT"
                       />
                     </AField>
                     <AField label="Ручной статус">
@@ -1595,9 +1584,6 @@ export default function AdminPage() {
                     onChange={(trafficHistory) => setAddForm(p => ({ ...p, trafficHistory }))}
                   />
 
-                  <AField label="Краткое описание">
-                    <input className="input" value={addForm.shortDesc} onChange={e => setAddForm(p => ({...p,shortDesc:e.target.value}))} placeholder="Одна строка для карточки" />
-                  </AField>
                   <AField label="Полное описание">
                     <textarea className="input" rows={6} value={addForm.fullDesc} onChange={e => setAddForm(p => ({...p,fullDesc:e.target.value}))} placeholder="## Заголовок&#10;- пункт 1&#10;- пункт 2" style={{ resize:'vertical' }} />
                   </AField>

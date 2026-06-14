@@ -111,7 +111,6 @@ export function ServerCard({ server: s, vipBlock }: Props) {
             )}
           </div>
         </div>
-        <div className={styles.desc}>{s.shortDesc}</div>
       </Link>
 
       {/* Правая часть. Дата: основная — последний открывшийся сервер проекта

@@ -467,7 +467,6 @@ function ArticleServerCard({ server, compact = false }: { server: Server; compac
         <div className={styles.serverTags}>
           {tags.map(tag => <span key={tag}>{tag}</span>)}
         </div>
-        {server.shortDesc && <p>{server.shortDesc}</p>}
         <div className={styles.serverStats}>
           {activity && (
             <span className={styles.serverOnlineStat}>

@@ -165,8 +165,7 @@ function buildServerSeo(server: Server, id: string) {
     trust.known ? `доверие ${trust.label}` : server.manualCheckAt ? 'ручная проверка L2Realm' : null,
   ].filter(Boolean).join(', ');
 
-  const shortDescription = cleanMetaText(server.shortDesc);
-  const intro = sentence(shortDescription);
+  const intro = sentence((server.fullDesc ?? '').split(/\n\s*\n/)[0]);
   const description = trimMetaText(
     intro
       ? `${server.name}: ${intro} ${facts}.`
