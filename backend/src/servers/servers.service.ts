@@ -96,6 +96,7 @@ const serverUpdateSchema = serverPayloadSchema.partial().omit({ id: true }).exte
 
 function stripLegacyDownloadFields<T>(value: T): T {
   if (Array.isArray(value)) return value.map(item => stripLegacyDownloadFields(item)) as T;
+  if (value instanceof Date) return value;
   if (!value || typeof value !== 'object') return value;
 
   const {
@@ -110,7 +111,9 @@ function stripLegacyDownloadFields<T>(value: T): T {
   const legacySummaryKey = 'short' + 'Desc';
   const { [legacySummaryKey]: _legacySummary, ...clean } = rest as any;
 
-  return clean as T;
+  return Object.fromEntries(
+    Object.entries(clean).map(([key, item]) => [key, stripLegacyDownloadFields(item)]),
+  ) as T;
 }
 
 function compactCatalogServer<T>(value: T): T {
