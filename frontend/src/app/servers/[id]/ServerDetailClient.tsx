@@ -204,21 +204,6 @@ function formatDesc(text: string) {
   return result;
 }
 
-function fullDescIntro(text?: string | null) {
-  const firstBlock = String(text || '')
-    .split(/\n\s*\n/)
-    .map(block => block.trim())
-    .find(Boolean);
-  if (!firstBlock) return '';
-  return firstBlock
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/[`*#>~]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-
 function hashText(value: string) {
   let hash = 0;
   for (let i = 0; i < value.length; i += 1) hash = (hash * 31 + value.charCodeAt(i)) >>> 0;
@@ -308,13 +293,15 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
 
   useEffect(() => {
     const needle = normalizeSearchText(server.name);
-    api.articles.list()
+    // compact=true: тянем только метаданные статей (без полного content ~400 КБ),
+    // привязка идёт по serverIds, текстовый фолбэк — по title/description.
+    api.articles.list({ compact: 'true' })
       .then(list => {
         const linked = list.filter(article => article.serverIds?.includes(server.id));
         const fallback = linked.length > 0
           ? []
           : list.filter(article => {
-              const haystack = normalizeSearchText(`${article.title} ${article.description} ${article.content}`);
+              const haystack = normalizeSearchText(`${article.title} ${article.description} ${article.content ?? ''}`);
               return haystack.includes(needle);
             });
         setRelatedArticles(
@@ -407,7 +394,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
   const uptimeValue = status?.uptime != null ? `${status.uptime}%` : '—';
   const statusText = isOnline ? 'Работает' : status?.status === 'offline' ? 'Не работает' : 'Неизвестно';
   const statusClass = isOnline ? styles.serverOnline : styles.serverUnknown;
-  const heroDescription = fullDescIntro(server.fullDesc) || 'Каталог проекта на L2Realm: хроники, рейты, описание, отзывы игроков и голосование.';
   const activeBoost = Boolean(server.boost?.endDate && new Date(server.boost.endDate) > new Date());
   // Координаты = реальные пиксели контейнера (viewBox подстраивается через ResizeObserver),
   // поэтому график растягивается на всю ширину блока без пустых полей по бокам.
@@ -582,7 +568,6 @@ export function ServerDetailClient({ initialServer }: { initialServer: Server })
             <div className={styles.heroTags}>
               {displayTags.map(tag => <span key={tag}>{tag}</span>)}
             </div>
-            <p>{heroDescription}</p>
             <div className={styles.heroButtons}>
               <a href={server.url} target="_blank" rel="noopener nofollow" className={styles.primaryHeroButton}>Перейти на сайт <span>↗</span></a>
             </div>

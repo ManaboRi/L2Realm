@@ -116,7 +116,8 @@ export const api = {
 
   // ── Статьи блога ─────────────────────────────
   articles: {
-    list:  ()                  => request<Article[]>('/articles'),
+    list:  (params?: Record<string, string>) =>
+      request<Article[]>(`/articles${params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''}`),
     get:   (slug: string)      => request<Article>(`/articles/${slug}`),
     adminList: (token: string) =>
       request<Article[]>('/articles/admin/all', { headers: { Authorization: `Bearer ${token}` } }),

@@ -192,6 +192,39 @@ function compactTrafficHistory(history: any[]) {
     }));
 }
 
+// Облегчает ответ детальной страницы: убирает из instances тяжёлую
+// onlineHistory (графики берутся из /monitoring/daily, не отсюда) и
+// внутренний scraping-конфиг (onlineMode/regex/paths/paymentId) — его не
+// нужно отдавать публично. Дисплейные поля миров остаются.
+function stripServerDetail<T>(value: T): T {
+  if (!value || typeof value !== 'object') return value;
+  const v = value as any;
+  if (!Array.isArray(v.instances)) return value;
+  return {
+    ...v,
+    instances: v.instances.map((instance: any) => {
+      const {
+        onlineHistory: _onlineHistory,
+        onlineMode: _onlineMode,
+        onlineManual: _onlineManual,
+        onlineSourceUrl: _onlineSourceUrl,
+        onlineListPath: _onlineListPath,
+        onlineMatchField: _onlineMatchField,
+        onlineMatchValue: _onlineMatchValue,
+        onlineValuePath: _onlineValuePath,
+        onlineJsonVar: _onlineJsonVar,
+        onlineItemIndex: _onlineItemIndex,
+        onlineRegex: _onlineRegex,
+        onlineRegexGroup: _onlineRegexGroup,
+        onlineError: _onlineError,
+        soonVipPaymentId: _soonVipPaymentId,
+        ...rest
+      } = instance ?? {};
+      return rest;
+    }),
+  } as T;
+}
+
 function compactComingSoonServer<T>(value: T): T {
   if (!value || typeof value !== 'object') return value;
   const server = value as any;
@@ -1189,6 +1222,12 @@ export class ServersService {
     });
     const manualStatus = normalizeStatusOverride((server as any).statusOverride);
     return stripLegacyDownloadFields({ ...server, ...(manualStatus && { status: manualStatus }), boost });
+  }
+
+  // Публичная детальная выдача: как findOne, но без тяжёлой/служебной
+  // нагрузки в instances (onlineHistory + scraping-конфиг).
+  async findOnePublic(id: string) {
+    return stripServerDetail(await this.findOne(id));
   }
 
   // ── Создать (только admin) ───────────────────

@@ -40,7 +40,7 @@ export class ServersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.srv.findOne(id);
+    return this.srv.findOnePublic(id);
   }
 
   // ── Заявка (только авторизованные, 1/24ч по IP, 1/24ч по аккаунту) ───
