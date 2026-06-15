@@ -118,6 +118,9 @@ function normalizeMarkdownSource(text: string): string {
     s = s.replace(/\s+(\*\*(?:Сайт|Рейт|Рейты|Хроника|Онлайн|Открытие|Дата открытия|Для кого|Осторожно):\*\*)/gi, '\n\n$1');
     s = s.replace(/\s+(-{3,})\s+/g, '\n\n$1\n\n');
   }
+  if (/(^|\s)1[.)]\s+[\s\S]*\s2[.)]\s+/.test(s)) {
+    s = s.replace(/([^\n])\s+(\d+[.)]\s+)/g, '$1\n$2');
+  }
   return s;
 }
 
@@ -147,6 +150,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
   const lines = normalizeMarkdownSource(text).split('\n');
   const out: React.ReactNode[] = [];
   let bullets: string[] = [];
+  let ordered: string[] = [];
   let paraBuf: string[] = [];
   let codeLines: string[] | null = null;
   let key = 0;
@@ -161,6 +165,18 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
       </ul>,
     );
     bullets = [];
+  }
+
+  function flushOrdered() {
+    if (!ordered.length) return;
+    out.push(
+      <ol key={`ol-${key++}`}>
+        {ordered.map((b, i) => (
+          <li key={i} dangerouslySetInnerHTML={{ __html: renderInline(b) }} />
+        ))}
+      </ol>,
+    );
+    ordered = [];
   }
 
   function flushParagraph() {
@@ -181,6 +197,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
 
   function flushAll() {
     flushBullets();
+    flushOrdered();
     flushParagraph();
   }
 
@@ -286,7 +303,17 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
     const bMatch = line.match(/^[-*]\s+(.+)$/);
     if (bMatch) {
       flushParagraph();
+      flushOrdered();
       bullets.push(bMatch[1]);
+      continue;
+    }
+
+    // ordered list: 1. step / 1) step
+    const oMatch = line.match(/^\d+[.)]\s+(.+)$/);
+    if (oMatch) {
+      flushParagraph();
+      flushBullets();
+      ordered.push(oMatch[1]);
       continue;
     }
 
