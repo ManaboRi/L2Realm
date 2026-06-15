@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
-import type { ServersResponse, Article } from '@/lib/types';
+import type { ServersResponse, Article, Guide } from '@/lib/types';
 import { CHRONICLE_CONFIGS } from './_lib/chronicleConfig';
+import { GUIDE_CATEGORIES } from './guides/categories';
 
 // force-dynamic: sitemap всегда генерится на запрос, не пре-рендерится в build.
 // ISR (revalidate = N) не подходит — Next.js всё равно пре-рендерит в build,
@@ -34,8 +35,19 @@ async function fetchAllArticles(): Promise<Article[]> {
   }
 }
 
+async function fetchAllGuides(): Promise<Guide[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/guides`, { cache: 'no-store' });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [servers, articles] = await Promise.all([fetchAllServers(), fetchAllArticles()]);
+  const [servers, articles, guides] = await Promise.all([fetchAllServers(), fetchAllArticles(), fetchAllGuides()]);
   const now = new Date();
 
   const staticUrls: MetadataRoute.Sitemap = [
@@ -71,5 +83,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticUrls, ...chronicleUrls, ...serverUrls, ...articleUrls];
+  const guideCategoryUrls: MetadataRoute.Sitemap = GUIDE_CATEGORIES.map(c => ({
+    url: `${SITE}/guides/${c.slug}`,
+    lastModified: now,
+    changeFrequency: 'weekly',
+    priority: 0.55,
+  }));
+
+  const guideUrls: MetadataRoute.Sitemap = guides.map(g => ({
+    url: `${SITE}/guides/${g.category}/${g.slug}`,
+    lastModified: g.updatedAt ? new Date(g.updatedAt) : (g.publishedAt ? new Date(g.publishedAt) : now),
+    changeFrequency: 'monthly',
+    priority: g.category === 'quests' ? 0.58 : 0.5,
+  }));
+
+  return [...staticUrls, ...chronicleUrls, ...serverUrls, ...articleUrls, ...guideCategoryUrls, ...guideUrls];
 }

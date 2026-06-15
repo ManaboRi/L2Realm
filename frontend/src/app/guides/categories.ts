@@ -11,6 +11,7 @@ export const GUIDE_CATEGORIES: GuideCategory[] = [
   { slug: 'quests',       label: 'Квесты',      icon: '📜', desc: 'Прохождения, награды, условия и требования.' },
   { slug: 'items',        label: 'Предметы',    icon: '💎', desc: 'Оружие, броня, аксессуары, ресурсы и рецепты.' },
   { slug: 'npc',          label: 'NPC',         icon: '🧙', desc: 'Торговцы, мастера, квестодатели и где их найти.' },
+  { slug: 'monsters',     label: 'Монстры',     icon: '☠️', desc: 'Обычные монстры: уровни, локации, дроп и спойл.' },
   { slug: 'locations',    label: 'Локации',     icon: '🗺️', desc: 'Зоны охоты, города, инстансы и рейды.' },
   { slug: 'classes',      label: 'Классы',      icon: '⚔️', desc: 'Описания классов, роли, плюсы и минусы.' },
   { slug: 'skills',       label: 'Скиллы',      icon: '✨', desc: 'Умения, эффекты, комбинации и гайды.' },

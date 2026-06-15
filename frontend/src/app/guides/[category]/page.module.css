@@ -406,6 +406,47 @@
   flex-direction: column;
   gap: .45rem;
 }
+.pager {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .35rem;
+  margin-top: .9rem;
+}
+.pager button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0 .58rem;
+  border: 1px solid rgba(210, 171, 82, .22);
+  border-radius: 8px;
+  background: rgba(10, 15, 22, .66);
+  color: rgba(232, 221, 186, .72);
+  font-family: 'Cinzel', serif;
+  font-size: .78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color .14s, background .14s, color .14s;
+}
+.pager button:hover:not(:disabled),
+.pager .pageActive {
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+.pager button:disabled {
+  cursor: not-allowed;
+  opacity: .35;
+}
+.pageSlot {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+.pageSlot i {
+  color: rgba(232, 221, 186, .38);
+  font-style: normal;
+  font-weight: 700;
+}
 .questRow {
   position: relative;
   display: grid;

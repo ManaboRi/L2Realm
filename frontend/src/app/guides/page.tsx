@@ -14,8 +14,8 @@ const HERO_BG = '/images/guides-hero.webp';
 export const revalidate = 300;
 
 export const metadata: Metadata = {
-  title: 'Гайды по Lineage 2 — квесты, предметы, NPC, локации, классы',
-  description: 'База знаний по Lineage 2: квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы. Гайды для хроник Interlude, High Five, Essence и Main.',
+  title: 'Гайды по Lineage 2 — квесты, предметы, NPC, монстры, локации',
+  description: 'База знаний по Lineage 2: квесты, предметы, NPC, монстры, локации, классы, скиллы и рейд-боссы. Гайды для хроник Interlude, High Five, Essence и Main.',
   alternates: { canonical: `${SITE}/guides` },
 };
 
@@ -27,7 +27,9 @@ const NAV = [
   { slug: 'skills', label: 'Скиллы', href: '/guides/skills' },
   { slug: 'items', label: 'Предметы', href: '/guides/items' },
   { slug: 'npc', label: 'NPC', href: '/guides/npc' },
+  { slug: 'monsters', label: 'Монстры', href: '/guides/monsters' },
   { slug: 'locations', label: 'Локации', href: '/guides/locations' },
+  { slug: 'raid-bosses', label: 'Рейд-боссы', href: '/guides/raid-bosses' },
 ];
 
 const START_PATH = [
@@ -71,7 +73,7 @@ export default async function GuidesPage() {
           <div className={g.heroContent}>
             <span className={g.heroKicker}>База знаний L2Realm</span>
             <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
-            <p className={g.heroSub}>Квесты, предметы, NPC, локации, классы, скиллы и рейд-боссы — всё в одном справочнике.</p>
+            <p className={g.heroSub}>Квесты, предметы, NPC, монстры, локации, классы, скиллы и рейд-боссы — всё в одном справочнике.</p>
           </div>
         </div>
       </div>

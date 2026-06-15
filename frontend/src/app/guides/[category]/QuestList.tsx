@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides';
@@ -58,6 +58,7 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Предметы не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      pageSize: 40,
     };
   }
   if (category === 'npc') {
@@ -73,6 +74,39 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'NPC не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      pageSize: 40,
+    };
+  }
+  if (category === 'monsters') {
+    return {
+      nav: 'Фильтры монстров',
+      count: ['монстр', 'монстра', 'монстров'] as [string, string, string],
+      search: 'Поиск монстра, локации, дропа…',
+      titleCol: 'Монстр',
+      levelCol: 'Ур.',
+      typeCol: 'Тип',
+      placeCol: 'Локация',
+      rewardCol: 'Дроп / спойл',
+      noResults: 'Монстры не нашлись — измени фильтры или запрос.',
+      showRace: false,
+      showRepeatable: false,
+      pageSize: 40,
+    };
+  }
+  if (category === 'raid-bosses') {
+    return {
+      nav: 'Фильтры рейд-боссов',
+      count: ['рейд-босс', 'рейд-босса', 'рейд-боссов'] as [string, string, string],
+      search: 'Поиск босса, уровня, локации, дропа…',
+      titleCol: 'Рейд-босс',
+      levelCol: 'Ур.',
+      typeCol: 'Тип',
+      placeCol: 'Локация',
+      rewardCol: 'Дроп',
+      noResults: 'Рейд-боссы не нашлись — измени фильтры или запрос.',
+      showRace: false,
+      showRepeatable: false,
+      pageSize: 30,
     };
   }
   if (category === 'locations') {
@@ -88,6 +122,7 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Локации не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      pageSize: 40,
     };
   }
   return {
@@ -102,6 +137,7 @@ function categoryConfig(category: GuideCategorySlug) {
     noResults: 'Ничего не нашлось — измени фильтры или запрос.',
     showRace: true,
     showRepeatable: true,
+    pageSize: 30,
   };
 }
 
@@ -150,6 +186,7 @@ export function QuestList({
   const [typeTag, setTypeTag] = useState(initialType);
   const [sortKey, setSortKey] = useState<SortKey>('level');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [page, setPage] = useState(1);
   const cfg = categoryConfig(category);
 
   const locations = useMemo(
@@ -183,9 +220,11 @@ export function QuestList({
       if (!chronicleMatches(g.chronicle, chr)) return false;
       const okQ = !query
         || g.title.toLowerCase().includes(query)
+        || (g.titleEn ?? '').toLowerCase().includes(query)
         || (g.npc ?? '').toLowerCase().includes(query)
         || (g.location ?? '').toLowerCase().includes(query)
-        || (g.reward ?? '').toLowerCase().includes(query);
+        || (g.reward ?? '').toLowerCase().includes(query)
+        || (g.types ?? []).some(t => t.toLowerCase().includes(query));
       if (!okQ) return false;
       if (br !== 'all') {
         const lvl = g.levelMin ?? g.levelMax ?? -1;
@@ -204,6 +243,18 @@ export function QuestList({
       return r * dir;
     });
   }, [guides, q, chr, br, race, loc, typeTag, sortKey, sortDir, cfg.showRace]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, chr, br, race, loc, typeTag, sortKey, sortDir]);
+
+  const pageSize = cfg.pageSize;
+  const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+  const safePage = Math.min(page, totalPages);
+  const pagedList = useMemo(
+    () => list.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [list, pageSize, safePage],
+  );
 
   const arrow = (k: SortKey) => (sortKey === k ? (sortDir === 'asc' ? '▲' : '▼') : '');
 
@@ -273,8 +324,11 @@ export function QuestList({
             <span>{cfg.rewardCol}</span>
           </div>
           <div className={styles.questRows}>
-            {list.map(g => {
+            {pagedList.map(g => {
               const href = `/guides/${g.category}/${g.slug}`;
+              const subtitle = category === 'quests'
+                ? g.titleEn
+                : (g.titleEn || g.description);
               return (
                 <article key={g.id} className={styles.questRow}>
                   <Link href={href} className={styles.questMain}>
@@ -286,7 +340,7 @@ export function QuestList({
                         {g.title}
                         {cfg.showRepeatable && g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
                       </strong>
-                      {g.description && <em>{g.description}</em>}
+                      {subtitle && <em>{subtitle}</em>}
                       <span className={styles.chronicleMini}>{chronicleName(g.chronicle)}</span>
                     </span>
                   </Link>
@@ -311,6 +365,27 @@ export function QuestList({
               );
             })}
           </div>
+          {totalPages > 1 && (
+            <nav className={styles.pager} aria-label="Страницы раздела">
+              <button type="button" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}>←</button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === totalPages || Math.abs(n - safePage) <= 1)
+                .map((n, i, arr) => (
+                  <span key={n} className={styles.pageSlot}>
+                    {i > 0 && n - arr[i - 1] > 1 && <i aria-hidden="true">…</i>}
+                    <button
+                      type="button"
+                      className={n === safePage ? styles.pageActive : ''}
+                      onClick={() => setPage(n)}
+                      aria-current={n === safePage ? 'page' : undefined}
+                    >
+                      {n}
+                    </button>
+                  </span>
+                ))}
+              <button type="button" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}>→</button>
+            </nav>
+          )}
         </div>
       )}
     </>

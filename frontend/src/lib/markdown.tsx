@@ -25,6 +25,13 @@ const PURIFY_OPTS = {
 
 type RenderMarkdownOptions = {
   getHeadingId?: (headingText: string, level: number) => string | undefined;
+  autoLinks?: MarkdownAutoLink[];
+};
+
+export type MarkdownAutoLink = {
+  label: string;
+  aliases?: string[];
+  href: string;
 };
 
 function escapeHtml(s: string): string {
@@ -43,7 +50,56 @@ function isSafeImageUrl(url: string): boolean {
 }
 
 // inline: **bold**, *italic*, `code`, [link](url) → возвращает HTML-строку
-function renderInline(raw: string): string {
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function autoLinkHtml(html: string, links?: MarkdownAutoLink[]): string {
+  if (!links?.length) return html;
+
+  const candidates = links
+    .flatMap(link => [link.label, ...(link.aliases ?? [])].map(alias => ({
+      alias: alias.trim(),
+      href: link.href,
+    })))
+    .filter(item => item.alias.length >= 3 && item.href.startsWith('/'))
+    .sort((a, b) => b.alias.length - a.alias.length);
+
+  if (!candidates.length) return html;
+
+  const byAlias = new Map<string, string>();
+  for (const item of candidates) {
+    const key = item.alias.toLocaleLowerCase('ru');
+    if (!byAlias.has(key)) byAlias.set(key, item.href);
+  }
+
+  const pattern = candidates.map(item => escapeRegExp(item.alias)).join('|');
+  const word = 'A-Za-zА-Яа-яЁё0-9_';
+  const re = new RegExp(`(^|[^${word}])(${pattern})(?=$|[^${word}])`, 'giu');
+  const protectedBlocks: string[] = [];
+
+  const token = (index: number) => `\u0000L${index}\u0000`;
+  let safe = html.replace(/<a\b[\s\S]*?<\/a>|<code\b[\s\S]*?<\/code>|<span\b[\s\S]*?<\/span>/gi, match => {
+    const index = protectedBlocks.push(match) - 1;
+    return token(index);
+  });
+
+  safe = safe
+    .split(/(<[^>]+>)/g)
+    .map(part => {
+      if (!part || part.startsWith('<')) return part;
+      return part.replace(re, (match, prefix: string, label: string) => {
+        const href = byAlias.get(label.toLocaleLowerCase('ru'));
+        if (!href) return match;
+        return `${prefix}<a href="${href}" class="md-guide-link">${label}</a>`;
+      });
+    })
+    .join('');
+
+  return safe.replace(/\u0000L(\d+)\u0000/g, (_match, index: string) => protectedBlocks[Number(index)] ?? '');
+}
+
+function renderInline(raw: string, options: RenderMarkdownOptions = {}): string {
   let s = escapeHtml(raw);
   const codeFragments: string[] = [];
   const linkUrls: string[] = [];
@@ -104,6 +160,7 @@ function renderInline(raw: string): string {
   // Иконки-шорткоды наград :adena: :exp: :sp: → span с фоновой картинкой (img режется DOMPurify).
   // Применяется в гайдах; в обычных статьях такие токены не встречаются.
   s = s.replace(/:(adena|exp|sp):/gi, (_m, key: string) => `<span class="md-ico md-ico-${key.toLowerCase()}"></span>`);
+  s = autoLinkHtml(s, options.autoLinks);
   // Финальный пропуск через DOMPurify — гарантирует что ни одного <script>
   // или on*-атрибута не дойдёт до dangerouslySetInnerHTML.
   // String() конвертит TrustedHTML → string (тип DOMPurify в новых версиях).
@@ -160,7 +217,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
     out.push(
       <ul key={`ul-${key++}`}>
         {bullets.map((b, i) => (
-          <li key={i} dangerouslySetInnerHTML={{ __html: renderInline(b) }} />
+          <li key={i} dangerouslySetInnerHTML={{ __html: renderInline(b, options) }} />
         ))}
       </ul>,
     );
@@ -172,7 +229,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
     out.push(
       <ol key={`ol-${key++}`}>
         {ordered.map((b, i) => (
-          <li key={i} dangerouslySetInnerHTML={{ __html: renderInline(b) }} />
+          <li key={i} dangerouslySetInnerHTML={{ __html: renderInline(b, options) }} />
         ))}
       </ol>,
     );
@@ -182,7 +239,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
   function flushParagraph() {
     if (!paraBuf.length) return;
     // CommonMark: соседние строки внутри абзаца склеиваются через пробел
-    const html = paraBuf.map(l => renderInline(l)).join(' ');
+    const html = paraBuf.map(l => renderInline(l, options)).join(' ');
     out.push(<p key={`p-${key++}`} dangerouslySetInnerHTML={{ __html: html }} />);
     paraBuf = [];
   }
@@ -251,7 +308,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
           <thead>
             <tr>
               {header.map((h, k) => (
-                <th key={k} dangerouslySetInnerHTML={{ __html: renderInline(h) }} />
+                <th key={k} dangerouslySetInnerHTML={{ __html: renderInline(h, options) }} />
               ))}
             </tr>
           </thead>
@@ -259,7 +316,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
             {rows.map((r, ri) => (
               <tr key={ri}>
                 {r.map((c, ci) => (
-                  <td key={ci} dangerouslySetInnerHTML={{ __html: renderInline(c) }} />
+                  <td key={ci} dangerouslySetInnerHTML={{ __html: renderInline(c, options) }} />
                 ))}
               </tr>
             ))}
@@ -275,7 +332,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
       flushAll();
       const level = h[1].length;
       const headingText = h[2].trim();
-      const html = renderInline(headingText);
+      const html = renderInline(headingText, options);
       const Tag: any = `h${level + 1}`; // h1 в файле = <h2> на странице (h1 — заголовок статьи)
       const headingId = options.getHeadingId?.(headingText, level);
       out.push(<Tag key={`h-${key++}`} id={headingId} dangerouslySetInnerHTML={{ __html: html }} />);
@@ -294,7 +351,7 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
     if (q) {
       flushAll();
       out.push(
-        <blockquote key={`bq-${key++}`} dangerouslySetInnerHTML={{ __html: renderInline(q[1]) }} />,
+        <blockquote key={`bq-${key++}`} dangerouslySetInnerHTML={{ __html: renderInline(q[1], options) }} />,
       );
       continue;
     }

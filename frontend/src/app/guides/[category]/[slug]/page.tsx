@@ -7,6 +7,7 @@ import { findGuideCategory, GUIDE_CATEGORIES } from '../../categories';
 import { GuideIcon } from '../../GuideIcon';
 import { GuidesDisclaimer } from '../../GuidesDisclaimer';
 import { renderMarkdown } from '@/lib/markdown';
+import type { MarkdownAutoLink } from '@/lib/markdown';
 import { parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
 import type { RewardPart } from '../../reward';
 import { QUEST_TYPE_COLOR } from '../../questTypes';
@@ -19,7 +20,7 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 export const revalidate = 300;
 
 type Props = { params: Promise<{ category: string; slug: string }> };
-type RelatedItem = { label: string; meta: string; kind: 'npc' | 'item' | 'location' | 'quest'; href: string };
+type RelatedItem = { label: string; meta: string; kind: 'npc' | 'item' | 'location' | 'quest' | 'monster' | 'raid'; href: string };
 
 function chronicleLabel(slug: string): string {
   if (slug === 'all') return 'Все хроники';
@@ -52,6 +53,111 @@ async function fetchGuide(slug: string): Promise<Guide | null> {
   }
 }
 
+async function fetchGuideLinks(): Promise<Guide[]> {
+  try {
+    const res = await fetch(`${BACKEND}/api/guides`, { next: { revalidate } });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+function entityAliases(guide: Guide): string[] {
+  const aliases = new Set<string>();
+  const title = cleanTerm(guide.title);
+  aliases.add(title);
+  if (guide.titleEn) aliases.add(cleanTerm(guide.titleEn));
+  if (guide.npc) aliases.add(cleanTerm(guide.npc));
+
+  if (guide.category === 'npc' || guide.category === 'monsters' || guide.category === 'raid-bosses') {
+    const short = title
+      .replace(/^(Великий\s+Мастер|Верховный\s+Жрец|Главный\s+Кузнец|Начальник\s+Склада|Рабочий\s+Склада|Мастер\s+Татуировок|Хранитель\s+Портала|Торговец\s+(?:Оружием|Доспехами)|Привратник\s+Обители\s+Клана|Управляющий\s+(?:Аукциона|Олимпиады)|Жрец|Жрица|Магистр|Мастер|Кузнец|Страж|Провидец|Бакалейщик|Ювелир)\s+/i, '')
+      .trim();
+    if (short && short !== title) aliases.add(short);
+  }
+
+  return [...aliases]
+    .flatMap(expandAliasVariants)
+    .filter(alias => alias.length >= 3 && alias !== title);
+}
+
+function addYoVariants(value: string): string[] {
+  const variants = new Set<string>([value]);
+  if (/[еЕ]/.test(value)) variants.add(value.replace(/е/g, 'ё').replace(/Е/g, 'Ё'));
+  if (/[ёЁ]/.test(value)) variants.add(value.replace(/ё/g, 'е').replace(/Ё/g, 'Е'));
+  return [...variants];
+}
+
+function inflectLastWord(word: string): string[] {
+  const variants = new Set<string>();
+  if (/я$/i.test(word)) variants.add(word.replace(/я$/i, 'ю'));
+  if (/а$/i.test(word)) variants.add(word.replace(/а$/i, 'у'));
+  if (/й$/i.test(word)) variants.add(word.replace(/й$/i, 'я'));
+  return [...variants];
+}
+
+function inflectAdjective(word: string): string[] {
+  const variants = new Set<string>();
+  if (/ый$/i.test(word) || /ой$/i.test(word)) variants.add(word.replace(/(ый|ой)$/i, 'ого'));
+  if (/ий$/i.test(word)) variants.add(word.replace(/ий$/i, 'его'));
+  if (/ая$/i.test(word)) variants.add(word.replace(/ая$/i, 'ую'));
+  if (/яя$/i.test(word)) variants.add(word.replace(/яя$/i, 'юю'));
+  return [...variants];
+}
+
+function expandAliasVariants(alias: string): string[] {
+  const clean = cleanTerm(alias);
+  if (!clean) return [];
+
+  const variants = new Set<string>([clean]);
+  const words = clean.split(/\s+/).filter(Boolean);
+  const lastIndex = words.length - 1;
+  const lastWord = words[lastIndex];
+
+  for (const lastVariant of inflectLastWord(lastWord)) {
+    const next = [...words];
+    next[lastIndex] = lastVariant;
+    variants.add(next.join(' '));
+  }
+
+  if (words.length >= 2) {
+    const prevIndex = words.length - 2;
+    const prevWord = words[prevIndex];
+    const prevVariants = inflectAdjective(prevWord);
+    const lastVariants = [lastWord, ...inflectLastWord(lastWord)];
+
+    for (const prevVariant of prevVariants) {
+      for (const lastVariant of lastVariants) {
+        const next = [...words];
+        next[prevIndex] = prevVariant;
+        next[lastIndex] = lastVariant;
+        variants.add(next.join(' '));
+      }
+    }
+  }
+
+  return [...variants].flatMap(addYoVariants);
+}
+
+function buildAutoLinks(guides: Guide[], current: Guide): MarkdownAutoLink[] {
+  const seen = new Set<string>();
+  const links: MarkdownAutoLink[] = [];
+  for (const g of guides) {
+    if (g.id === current.id || !g.slug || !g.title || !g.category) continue;
+    const key = `${g.category}/${g.slug}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    links.push({
+      label: g.title,
+      aliases: entityAliases(g),
+      href: `/guides/${g.category}/${g.slug}`,
+    });
+  }
+  return links;
+}
+
 function levelText(g: Guide): string | null {
   if (g.levelMin != null && g.levelMax != null) return `${g.levelMin}–${g.levelMax}`;
   if (g.levelMin != null) return `${g.levelMin}+`;
@@ -76,6 +182,8 @@ function cleanTerm(value: string): string {
 function classifyTerm(label: string, fallback: RelatedItem['kind'] = 'item'): RelatedItem['kind'] {
   const low = label.toLowerCase();
   if (/(деревн|город|замок|локац|остров|лес|долин|поля|town|village|castle|island|forest|plains)/i.test(low)) return 'location';
+  if (/(рейд|босс|raid|boss|epic)/i.test(low)) return 'raid';
+  if (/(монстр|моб|monster|mob)/i.test(low)) return 'monster';
   if (/(судь|судья|кузнец|мастер|страж|жрец|капитан|blacksmith|judge|master|guard|katari|piotur|casian|joan|pushkin)/i.test(low)) return 'npc';
   if (/(квест|професс|quest)/i.test(low)) return 'quest';
   return fallback;
@@ -83,6 +191,8 @@ function classifyTerm(label: string, fallback: RelatedItem['kind'] = 'item'): Re
 
 function relatedHref(kind: RelatedItem['kind']): string {
   if (kind === 'npc') return '/guides/npc';
+  if (kind === 'monster') return '/guides/monsters';
+  if (kind === 'raid') return '/guides/raid-bosses';
   if (kind === 'location') return '/guides/locations';
   if (kind === 'quest') return '/guides/quests';
   return '/guides/items';
@@ -90,6 +200,8 @@ function relatedHref(kind: RelatedItem['kind']): string {
 
 function relatedMeta(kind: RelatedItem['kind']): string {
   if (kind === 'npc') return 'NPC';
+  if (kind === 'monster') return 'Монстр';
+  if (kind === 'raid') return 'Рейд-босс';
   if (kind === 'location') return 'Локация';
   if (kind === 'quest') return 'Квест';
   return 'Предмет';
@@ -152,7 +264,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function GuideDetailPage({ params }: Props) {
   const { category, slug } = await params;
-  const guide = await fetchGuide(slug);
+  const [guide, guideLinksSource] = await Promise.all([fetchGuide(slug), fetchGuideLinks()]);
   const cat = findGuideCategory(category);
   if (!guide || !cat) notFound();
   const chLabel = chronicleLabel(guide.chronicle);
@@ -161,6 +273,7 @@ export default async function GuideDetailPage({ params }: Props) {
   const heroImage = guide.image || null;
   const accent = findGuideChronicle(guide.chronicle)?.accent ?? '#d2ab52';
   const guideSummaryTitle = summaryTitle(cat.slug);
+  const autoLinks = buildAutoLinks(guideLinksSource, guide);
 
   const lvl = levelText(guide);
   const info: Array<[string, string]> = [['Раздел', cat.label], ['Хроника', chLabel]];
@@ -258,7 +371,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
           <div className={styles.body}>
             {guide.content
-              ? renderMarkdown(guide.content)
+              ? renderMarkdown(guide.content, { autoLinks })
               : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
           </div>
 
@@ -324,6 +437,8 @@ function RelatedIcon({ kind }: { kind: RelatedItem['kind'] }) {
   if (kind === 'location') return <GuideIcon name="locations" size={22} />;
   if (kind === 'quest') return <GuideIcon name="quests" size={22} />;
   if (kind === 'npc') return <GuideIcon name="npc" size={22} />;
+  if (kind === 'monster') return <GuideIcon name="monsters" size={22} />;
+  if (kind === 'raid') return <GuideIcon name="raid-bosses" size={22} />;
   return <GuideIcon name="items" size={22} />;
 }
 

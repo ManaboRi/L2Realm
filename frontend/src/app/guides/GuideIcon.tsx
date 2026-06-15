@@ -5,6 +5,7 @@ const PATHS: Record<string, ReactNode> = {
   quests: (<><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 8h6M9 12h6M9 16h4" /></>),
   items: (<><path d="M6 3h12l3 6-9 12L3 9z" /><path d="M3 9h18" /><path d="M9 3 6 9l6 12 6-12-3-6" /></>),
   npc: (<><circle cx="12" cy="8" r="3.4" /><path d="M5.5 20a6.5 6.5 0 0 1 13 0" /></>),
+  monsters: (<><path d="M5 10.5c0-3.4 2.8-6.2 7-6.2s7 2.8 7 6.2c0 2.3-.9 4-2.2 5.1V19a1.7 1.7 0 0 1-1.7 1.7H8.9A1.7 1.7 0 0 1 7.2 19v-3.4C5.9 14.5 5 12.8 5 10.5z" /><path d="M8 4.6 5.2 2.8M16 4.6l2.8-1.8" /><circle cx="9.2" cy="10.6" r="1" /><circle cx="14.8" cy="10.6" r="1" /><path d="M10 15h4" /></>),
   locations: (<><path d="M12 21s7-6 7-11a7 7 0 1 0-14 0c0 5 7 11 7 11z" /><circle cx="12" cy="10" r="2.4" /></>),
   classes: (<><circle cx="9" cy="8" r="3" /><path d="M3.5 20a5.5 5.5 0 0 1 11 0" /><circle cx="17" cy="9" r="2.3" /><path d="M16 13.6a5 5 0 0 1 4.5 4.4" /></>),
   skills: (<><path d="M13 2 4.5 13H11l-1 9 9.5-12H13z" /></>),

@@ -46,6 +46,22 @@ export const NPC_TYPES: QuestType[] = [
   { label: 'Стража',             color: '#7e96a0' },
 ];
 
+export const MONSTER_TYPES: QuestType[] = [
+  { label: 'Монстр',             color: '#9b8cff' },
+  { label: 'Агрессивный',        color: '#e25c4b' },
+  { label: 'Социальный',         color: '#f0a868' },
+  { label: 'Дроп',               color: '#e0b94f' },
+  { label: 'Спойл',              color: '#67b1ff' },
+  { label: 'Квестовый монстр',   color: '#6fdc8e' },
+];
+
+export const RAID_BOSS_TYPES: QuestType[] = [
+  { label: 'Рейд-босс',          color: '#e25c4b' },
+  { label: 'Эпик-босс',          color: '#d2ab52' },
+  { label: 'Миньоны',            color: '#f0a868' },
+  { label: 'Дроп',               color: '#e0b94f' },
+];
+
 export const LOCATION_TYPES: QuestType[] = [
   { label: 'Город',      color: '#d2ab52' },
   { label: 'Деревня',    color: '#6fdc8e' },
@@ -58,16 +74,19 @@ export const GUIDE_TYPES_BY_CATEGORY: Record<string, QuestType[]> = {
   quests: QUEST_TYPES,
   items: ITEM_TYPES,
   npc: NPC_TYPES,
+  monsters: MONSTER_TYPES,
   locations: LOCATION_TYPES,
   classes: QUEST_TYPES,
   skills: ITEM_TYPES,
-  'raid-bosses': NPC_TYPES,
+  'raid-bosses': RAID_BOSS_TYPES,
 };
 
 export const ALL_GUIDE_TYPES: QuestType[] = [
   ...QUEST_TYPES,
   ...ITEM_TYPES,
   ...NPC_TYPES,
+  ...MONSTER_TYPES,
+  ...RAID_BOSS_TYPES,
   ...LOCATION_TYPES,
 ].filter((item, index, arr) => arr.findIndex(t => t.label === item.label) === index);
 

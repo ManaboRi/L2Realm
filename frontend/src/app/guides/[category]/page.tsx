@@ -24,7 +24,9 @@ const NAV = [
   { slug: 'skills', label: 'Скиллы', href: '/guides/skills' },
   { slug: 'items', label: 'Предметы', href: '/guides/items' },
   { slug: 'npc', label: 'NPC', href: '/guides/npc' },
+  { slug: 'monsters', label: 'Монстры', href: '/guides/monsters' },
   { slug: 'locations', label: 'Локации', href: '/guides/locations' },
+  { slug: 'raid-bosses', label: 'Рейд-боссы', href: '/guides/raid-bosses' },
 ];
 
 // Левый блок «Основные квесты» — частые подборки.
@@ -94,15 +96,52 @@ const SIDE_BY_CATEGORY: Record<string, {
       { n: '4', title: 'Связанные квесты', desc: 'Потом привяжем задания к конкретным NPC.' },
     ],
   },
+  monsters: {
+    linksTitle: 'Типы монстров',
+    links: [
+      { label: 'По локациям', desc: 'монстры внутри зон охоты', href: '/guides/monsters', icon: 'locations' },
+      { label: 'Квестовые монстры', desc: 'нужны для заданий и цепочек', href: '/guides/monsters?type=Квестовый%20монстр', icon: 'quests' },
+      { label: 'Дроп', desc: 'предметы, ресурсы и адена', href: '/guides/monsters?type=Дроп', icon: 'items' },
+      { label: 'Спойл', desc: 'что можно получить гномом', href: '/guides/monsters?type=Спойл', icon: 'items' },
+      { label: 'Агрессивные', desc: 'опасные монстры в локациях', href: '/guides/monsters?type=Агрессивный', icon: 'monsters' },
+    ],
+    popularTitle: 'Популярные монстры',
+    pathTitle: 'Карточка монстра',
+    path: [
+      { n: '1', title: 'Уровень', desc: 'Диапазон уровней и хроника, где монстр встречается.' },
+      { n: '2', title: 'Локация', desc: 'Где искать и с какими NPC/квестами связан.' },
+      { n: '3', title: 'Дроп и спойл', desc: 'Предметы будут связываться с базой знаний.' },
+      { n: '4', title: 'Квесты', desc: 'Если монстр нужен в квесте, появится внутренняя ссылка.' },
+    ],
+  },
+  'raid-bosses': {
+    linksTitle: 'Рейд-боссы',
+    links: [
+      { label: 'Все боссы', desc: 'список по уровню и хронике', href: '/guides/raid-bosses', icon: 'raid-bosses' },
+      { label: 'Эпик-боссы', desc: 'важные боссы и цепочки', href: '/guides/raid-bosses?type=Эпик-босс', icon: 'raid-bosses' },
+      { label: 'Дроп', desc: 'основные награды', href: '/guides/raid-bosses?type=Дроп', icon: 'items' },
+      { label: 'Локации', desc: 'где искать босса', href: '/guides/locations', icon: 'locations' },
+    ],
+    popularTitle: 'Популярные рейд-боссы',
+    pathTitle: 'Карточка босса',
+    path: [
+      { n: '1', title: 'Уровень', desc: 'Подбирай босса под диапазон группы.' },
+      { n: '2', title: 'Респ', desc: 'Позже добавим время и заметки по появлению.' },
+      { n: '3', title: 'Дроп', desc: 'Предметы будут ссылаться на базу предметов.' },
+      { n: '4', title: 'Связи', desc: 'Квесты, локации и монстры свяжутся автоматически.' },
+    ],
+  },
 };
 
 const HERO_IMG: Record<string, string> = {
   quests: '/images/guide-hero-quests.webp',
   items: '/images/guide-hero-items.webp',
   npc: '/images/guide-hero-npc.webp',
+  monsters: '/images/guide-hero-npc.webp',
   locations: '/images/guide-hero-locations.webp',
   classes: '/images/guide-hero-classes.webp',
   skills: '/images/guide-hero-skills.webp',
+  'raid-bosses': '/images/guide-hero-npc.webp',
 };
 
 async function fetchGuides(category: string): Promise<Guide[]> {
