@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { Guide } from '@/lib/types';
-import { GUIDE_CHRONICLES } from '../guides';
+import { formatGuideChronicle, guideChronicleMatches, GUIDE_CHRONICLES, splitGuideChronicles } from '../guides';
 import { GUIDE_RACES } from '../races';
 import { GUIDE_TYPE_COLOR, GUIDE_TYPES_BY_CATEGORY } from '../questTypes';
 import { RewardIconRow } from '../reward';
@@ -32,16 +32,6 @@ function countText(n: number, forms: [string, string, string]): string {
   if (mod10 === 1 && mod100 !== 11) return `${n} ${forms[0]}`;
   if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} ${forms[1]}`;
   return `${n} ${forms[2]}`;
-}
-
-function chronicleName(slug: string): string {
-  if (slug === 'all') return 'Все хроники';
-  return GUIDE_CHRONICLES.find(c => c.slug === slug)?.name ?? slug;
-}
-
-function chronicleMatches(guideChronicle: string, selected: string): boolean {
-  if (!selected) return true;
-  return guideChronicle === selected || guideChronicle === 'all';
 }
 
 function categoryConfig(category: GuideCategorySlug) {
@@ -194,7 +184,7 @@ export function QuestList({
     [guides],
   );
 
-  const hasAllChronicle = useMemo(() => guides.some(g => g.chronicle === 'all'), [guides]);
+  const hasAllChronicle = useMemo(() => guides.some(g => splitGuideChronicles(g.chronicle).includes('all')), [guides]);
 
   // показываем в фильтре только реально встречающиеся типы, но сохраняем кастомные теги
   const usedTypes = useMemo(() => {
@@ -217,7 +207,7 @@ export function QuestList({
     const query = q.trim().toLowerCase();
     const bracket = BRACKETS.find(b => b.id === br) ?? BRACKETS[0];
     const arr = guides.filter(g => {
-      if (!chronicleMatches(g.chronicle, chr)) return false;
+      if (!guideChronicleMatches(g.chronicle, chr)) return false;
       const okQ = !query
         || g.title.toLowerCase().includes(query)
         || (g.titleEn ?? '').toLowerCase().includes(query)
@@ -341,7 +331,7 @@ export function QuestList({
                         {cfg.showRepeatable && g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
                       </strong>
                       {subtitle && <em>{subtitle}</em>}
-                      <span className={styles.chronicleMini}>{chronicleName(g.chronicle)}</span>
+                      <span className={styles.chronicleMini}>{formatGuideChronicle(g.chronicle)}</span>
                     </span>
                   </Link>
                   <div className={styles.questMetric}>

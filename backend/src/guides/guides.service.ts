@@ -51,6 +51,19 @@ function normTypes(v: any): string[] {
   return [...seen];
 }
 
+function chronicleWhere(chronicle?: string) {
+  const value = String(chronicle ?? '').trim();
+  if (!value) return {};
+  if (value === 'all') return { chronicle: 'all' };
+  return {
+    OR: [
+      { chronicle: value },
+      { chronicle: 'all' },
+      { chronicle: { contains: value } },
+    ],
+  };
+}
+
 @Injectable()
 export class GuidesService {
   constructor(private prisma: PrismaService) {}
@@ -60,7 +73,7 @@ export class GuidesService {
     return this.prisma.guide.findMany({
       where: {
         publishedAt: { not: null },
-        ...(chronicle ? { chronicle } : {}),
+        ...chronicleWhere(chronicle),
         ...(category ? { category } : {}),
       },
       select: LIST_SELECT,
@@ -70,13 +83,12 @@ export class GuidesService {
 
   // Счётчики опубликованных гайдов по категориям для одной хроники (для хаба).
   async getCounts(chronicle: string) {
-    const rows = await this.prisma.guide.groupBy({
-      by: ['category'],
-      where: { chronicle, publishedAt: { not: null } },
-      _count: { _all: true },
+    const rows = await this.prisma.guide.findMany({
+      where: { publishedAt: { not: null }, ...chronicleWhere(chronicle) },
+      select: { category: true },
     });
     const counts: Record<string, number> = {};
-    for (const r of rows) counts[r.category] = r._count._all;
+    for (const r of rows) counts[r.category] = (counts[r.category] ?? 0) + 1;
     return counts;
   }
 
@@ -93,10 +105,49 @@ export class GuidesService {
   }
 
   // ── Admin ───────────────────────────────────
-  async listAll() {
-    return this.prisma.guide.findMany({
-      orderBy: [{ chronicle: 'asc' }, { category: 'asc' }, { sort: 'asc' }, { createdAt: 'desc' }],
-    });
+  async listAll(query: any = {}) {
+    const page = Math.max(1, Math.trunc(Number(query.page) || 1));
+    const limit = Math.min(80, Math.max(12, Math.trunc(Number(query.limit) || 36)));
+    const search = String(query.q ?? '').trim();
+    const category = String(query.category ?? '').trim();
+    const chronicle = String(query.chronicle ?? '').trim();
+    const status = String(query.status ?? '').trim();
+    const and: any[] = [];
+    const chronicleFilter = chronicleWhere(chronicle);
+    if (Object.keys(chronicleFilter).length) and.push(chronicleFilter);
+    if (search) {
+      and.push({
+        OR: [
+          { title: { contains: search, mode: 'insensitive' as const } },
+          { titleEn: { contains: search, mode: 'insensitive' as const } },
+          { slug: { contains: search, mode: 'insensitive' as const } },
+          { npc: { contains: search, mode: 'insensitive' as const } },
+          { location: { contains: search, mode: 'insensitive' as const } },
+        ],
+      });
+    }
+    const where = {
+      ...(category ? { category } : {}),
+      ...(status === 'published' ? { publishedAt: { not: null } } : {}),
+      ...(status === 'draft' ? { publishedAt: null } : {}),
+      ...(and.length ? { AND: and } : {}),
+    };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.guide.findMany({
+        where,
+        orderBy: [{ chronicle: 'asc' }, { category: 'asc' }, { sort: 'asc' }, { createdAt: 'desc' }],
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.guide.count({ where }),
+    ]);
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
   }
 
   private async uniqueSlug(base: string, ignoreId?: string): Promise<string> {

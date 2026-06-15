@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { CSSProperties } from 'react';
-import { findGuideChronicle } from '../../guides';
+import { findGuideChronicle, formatGuideChronicle } from '../../guides';
 import { findGuideCategory, GUIDE_CATEGORIES } from '../../categories';
 import { GuideIcon } from '../../GuideIcon';
 import { GuidesDisclaimer } from '../../GuidesDisclaimer';
@@ -23,8 +23,7 @@ type Props = { params: Promise<{ category: string; slug: string }> };
 type RelatedItem = { label: string; meta: string; kind: 'npc' | 'item' | 'location' | 'quest' | 'monster' | 'raid'; href: string };
 
 function chronicleLabel(slug: string): string {
-  if (slug === 'all') return 'Все хроники';
-  return findGuideChronicle(slug)?.name ?? slug;
+  return formatGuideChronicle(slug);
 }
 
 function summaryTitle(category: string): string {
@@ -212,6 +211,7 @@ function addRelated(list: RelatedItem[], seen: Set<string>, value: string | null
   const key = label.toLowerCase();
   if (!label || label.length < 3 || label.length > 42 || seen.has(key)) return;
   if (/^(да|нет|pk|pvp|pve|interlude|high five|essence|main)$/i.test(label)) return;
+  if (/^\d+\+?$|^\d+\s*[–-]\s*\d+$/.test(label)) return;
   if (/(^|\s)(pk|pvp|pve)(\s|$)|сч[её]тчик|репутац|уров|очк/i.test(label)) return;
   const kind = classifyTerm(label, fallback);
   seen.add(key);
@@ -229,10 +229,6 @@ function extractRelatedItems(guide: Guide, rewardParts: RewardPart[]): RelatedIt
     rewardParts.forEach(part => {
       if (part.kind === 'text') addRelated(list, seen, part.text, 'item');
     });
-    for (const match of (guide.content ?? '').matchAll(/\*\*([^*]+)\*\*/g)) {
-      addRelated(list, seen, match[1], 'npc');
-      if (list.length >= 5) break;
-    }
   }
   return list.slice(0, 5);
 }

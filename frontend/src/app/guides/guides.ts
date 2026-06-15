@@ -39,6 +39,30 @@ export const GUIDE_CHRONICLES: GuideChronicle[] = [
   },
 ];
 
+export function splitGuideChronicles(slug: string | null | undefined): string[] {
+  return String(slug ?? '')
+    .split(',')
+    .map(item => item.trim())
+    .filter(Boolean);
+}
+
 export function findGuideChronicle(slug: string): GuideChronicle | undefined {
-  return GUIDE_CHRONICLES.find(c => c.slug === slug);
+  const first = splitGuideChronicles(slug)[0] ?? slug;
+  return GUIDE_CHRONICLES.find(c => c.slug === first);
+}
+
+export function formatGuideChronicle(slug: string | null | undefined): string {
+  const values = splitGuideChronicles(slug);
+  if (values.length === 0) return 'Все хроники';
+  if (values.includes('all')) return 'Все хроники';
+  return values
+    .map(value => GUIDE_CHRONICLES.find(c => c.slug === value)?.name ?? value)
+    .join(' / ');
+}
+
+export function guideChronicleMatches(guideChronicle: string | null | undefined, selected: string): boolean {
+  if (!selected) return true;
+  const values = splitGuideChronicles(guideChronicle);
+  if (selected === 'all') return values.includes('all');
+  return values.includes(selected) || values.includes('all');
 }

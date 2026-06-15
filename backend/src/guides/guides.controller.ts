@@ -23,8 +23,8 @@ export class GuidesController {
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles('ADMIN')
   @Get('admin/all')
-  listAll() {
-    return this.guides.listAll();
+  listAll(@Query() query: any) {
+    return this.guides.listAll(query);
   }
 
   @UseGuards(AuthGuard('jwt'), RolesGuard)

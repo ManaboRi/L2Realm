@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { findGuideChronicle } from '../guides';
+import { formatGuideChronicle } from '../guides';
 import { findGuideCategory } from '../categories';
 import { GuideIcon } from '../GuideIcon';
 import { GuidesDisclaimer } from '../GuidesDisclaimer';
@@ -263,12 +263,11 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
               {popular.length > 0 ? (
                 <div className={g.popList}>
                   {popular.map(pg => {
-                    const ch = findGuideChronicle(pg.chronicle);
                     return (
                       <Link key={pg.id} href={`/guides/${pg.category}/${pg.slug}`} className={g.popRow}>
                         <span className={g.popFire} aria-hidden="true">🔥</span>
                         <span className={g.popName}>{pg.title}</span>
-                        <span className={g.popMeta}>{ch?.name ?? pg.chronicle}</span>
+                        <span className={g.popMeta}>{formatGuideChronicle(pg.chronicle)}</span>
                       </Link>
                     );
                   })}

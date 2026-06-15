@@ -9,7 +9,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import { InstancesEditor } from '@/components/InstancesEditor';
 import type { VipStatus, OpeningClickReport } from '@/lib/types';
 import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
-import { GUIDE_CHRONICLES } from '../guides/guides';
+import { formatGuideChronicle, GUIDE_CHRONICLES } from '../guides/guides';
 import { GUIDE_CATEGORIES } from '../guides/categories';
 import { GUIDE_RACES } from '../guides/races';
 import { GUIDE_TYPES_BY_CATEGORY } from '../guides/questTypes';
@@ -584,6 +584,12 @@ export default function AdminPage() {
     sort: '0', published: true,
   };
   const [guides, setGuides] = useState<any[]>([]);
+  const [guideSearch, setGuideSearch] = useState('');
+  const [guideCategoryFilter, setGuideCategoryFilter] = useState('');
+  const [guideChronicleFilter, setGuideChronicleFilter] = useState('');
+  const [guideStatusFilter, setGuideStatusFilter] = useState('');
+  const [guidePage, setGuidePage] = useState(1);
+  const [guideMeta, setGuideMeta] = useState({ total: 0, page: 1, limit: 36, totalPages: 1 });
   const [guideForm, setGuideForm] = useState<any>(emptyGuide);
   const guideTypeOptions = GUIDE_TYPES_BY_CATEGORY[guideForm.category] ?? GUIDE_TYPES_BY_CATEGORY.quests;
 
@@ -623,7 +629,7 @@ export default function AdminPage() {
   useEffect(() => {
     if (!token || !isAdmin) return;
     loadTab(tab);
-  }, [tab, token, isAdmin, clickReportDays]);
+  }, [tab, token, isAdmin, clickReportDays, guideSearch, guideCategoryFilter, guideChronicleFilter, guideStatusFilter, guidePage]);
 
   async function loadTab(t: AdminTab) {
     if (!token) return;
@@ -631,7 +637,18 @@ export default function AdminPage() {
     try {
       if (t === 'servers')  { const r = await api.servers.list({ limit: '200' }); setServers(r.data); }
       if (t === 'banners')  setBanners(await api.banners.adminList(token));
-      if (t === 'guides')   setGuides(await api.guides.adminList(token));
+      if (t === 'guides') {
+        const res = await api.guides.adminList(token, {
+          page: String(guidePage),
+          limit: '36',
+          ...(guideSearch.trim() ? { q: guideSearch.trim() } : {}),
+          ...(guideCategoryFilter ? { category: guideCategoryFilter } : {}),
+          ...(guideChronicleFilter ? { chronicle: guideChronicleFilter } : {}),
+          ...(guideStatusFilter ? { status: guideStatusFilter } : {}),
+        });
+        setGuides(res.data);
+        setGuideMeta({ total: res.total, page: res.page, limit: res.limit, totalPages: res.totalPages });
+      }
       if (t === 'clicks') setClickReport(await api.openingWaits.clickReport(clickReportDays, token));
       if (t === 'money') {
         const [vs, svs, bs, sl] = await Promise.all([
@@ -1323,6 +1340,7 @@ export default function AdminPage() {
                     <label className={styles.field}><span>Хроника *</span>
                       <select className="input" value={guideForm.chronicle} onChange={e => setGuideForm((p:any)=>({...p,chronicle:e.target.value}))}>
                         <option value="all">Все хроники (для общих NPC/предметов)</option>
+                        <option value="interlude,high-five">Interlude + High Five</option>
                         {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                       </select>
                     </label>
@@ -1416,16 +1434,52 @@ export default function AdminPage() {
                 </div>
 
                 {/* Список гайдов */}
-                {guides.length === 0 ? <p className={styles.empty}>Гайдов пока нет — добавь первый выше</p> : (
+                <div style={{ display:'grid', gap:'.7rem', background:'rgba(11,16,23,.52)', border:'1px solid var(--border)', borderRadius:6, padding:'.85rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))', gap:'.55rem' }}>
+                    <input
+                      className="input"
+                      value={guideSearch}
+                      onChange={e => { setGuideSearch(e.target.value); setGuidePage(1); }}
+                      placeholder="Поиск по названию, slug, NPC, локации..."
+                    />
+                    <select className="input" value={guideCategoryFilter} onChange={e => { setGuideCategoryFilter(e.target.value); setGuidePage(1); }}>
+                      <option value="">Все разделы</option>
+                      {GUIDE_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
+                    </select>
+                    <select className="input" value={guideChronicleFilter} onChange={e => { setGuideChronicleFilter(e.target.value); setGuidePage(1); }}>
+                      <option value="">Все хроники</option>
+                      <option value="all">Все хроники</option>
+                      <option value="interlude">Interlude</option>
+                      <option value="high-five">High Five</option>
+                      <option value="main">Main</option>
+                      <option value="essence">Essence</option>
+                    </select>
+                    <select className="input" value={guideStatusFilter} onChange={e => { setGuideStatusFilter(e.target.value); setGuidePage(1); }}>
+                      <option value="">Все статусы</option>
+                      <option value="published">Опубликованные</option>
+                      <option value="draft">Черновики</option>
+                    </select>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:'.75rem', flexWrap:'wrap', color:'var(--text3)', fontSize:'.76rem' }}>
+                    <span>
+                      Найдено: <b style={{ color:'var(--gold)' }}>{guideMeta.total}</b>. Страница {guideMeta.page} из {guideMeta.totalPages}, по {guideMeta.limit} записей.
+                    </span>
+                    <div style={{ display:'flex', gap:'.4rem', alignItems:'center' }}>
+                      <button className={styles.btnSm} type="button" onClick={() => setGuidePage(p => Math.max(1, p - 1))} disabled={guideMeta.page <= 1}>← Назад</button>
+                      <button className={styles.btnSm} type="button" onClick={() => setGuidePage(p => Math.min(guideMeta.totalPages, p + 1))} disabled={guideMeta.page >= guideMeta.totalPages}>Вперёд →</button>
+                    </div>
+                  </div>
+                </div>
+
+                {guides.length === 0 ? <p className={styles.empty}>Гайдов по этим фильтрам нет</p> : (
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'.7rem' }}>
                     {guides.map((g:any) => {
-                      const chr = g.chronicle === 'all' ? { name: 'Все хроники' } : GUIDE_CHRONICLES.find(c => c.slug === g.chronicle);
                       const cat = GUIDE_CATEGORIES.find(c => c.slug === g.category);
                       const lvl = g.levelMin != null && g.levelMax != null ? `${g.levelMin}–${g.levelMax}` : (g.levelMin != null ? `${g.levelMin}+` : '');
                       return (
                         <div key={g.id} style={{ background:'var(--bg2)', border:`1px solid ${g.publishedAt ? 'var(--gold-d)' : 'var(--border)'}`, borderRadius:6, padding:'.8rem', display:'flex', flexDirection:'column', gap:'.35rem' }}>
                           <div style={{ display:'flex', alignItems:'center', gap:'.5rem', flexWrap:'wrap' }}>
-                            <span style={{ fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.08em' }}>{chr?.name ?? g.chronicle} · {cat?.label ?? g.category}</span>
+                            <span style={{ fontSize:'.6rem', color:'var(--gold-d)', textTransform:'uppercase', letterSpacing:'.08em' }}>{formatGuideChronicle(g.chronicle)} · {cat?.label ?? g.category}</span>
                             {!g.publishedAt && <span style={{ fontSize:'.62rem', color:'#CC6060' }}>черновик</span>}
                             {lvl && <span style={{ marginLeft:'auto', fontSize:'.66rem', color:'var(--text3)' }}>ур. {lvl}</span>}
                           </div>

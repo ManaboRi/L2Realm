@@ -187,8 +187,11 @@ export const api = {
     },
     counts: (chronicle: string) => request<Record<string, number>>(`/guides/counts?chronicle=${encodeURIComponent(chronicle)}`),
     get: (slug: string) => request<Guide>(`/guides/${encodeURIComponent(slug)}`),
-    adminList: (token: string) =>
-      request<Guide[]>('/guides/admin/all', { headers: { Authorization: `Bearer ${token}` } }),
+    adminList: (token: string, params?: Record<string, string>) =>
+      request<{ data: Guide[]; total: number; page: number; limit: number; totalPages: number }>(
+        `/guides/admin/all${params && Object.keys(params).length ? '?' + new URLSearchParams(params).toString() : ''}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
     create: (data: Partial<Guide>, token: string) =>
       request<Guide>('/guides', { method: 'POST', body: JSON.stringify(data), headers: { Authorization: `Bearer ${token}` } }),
     update: (id: string, data: Partial<Guide>, token: string) =>
