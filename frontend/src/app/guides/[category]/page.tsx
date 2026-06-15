@@ -14,7 +14,7 @@ const BACKEND = process.env.BACKEND_URL || 'http://localhost:4000';
 
 export const revalidate = 300;
 
-type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ lvl?: string; chr?: string }> };
+type Props = { params: Promise<{ category: string }>; searchParams: Promise<{ lvl?: string; chr?: string; type?: string }> };
 
 // Кнопки-разделы (как на хабе).
 const NAV = [
@@ -44,6 +44,58 @@ const PLAYER_PATH = [
   { n: '4', title: 'Эндгейм (76+)', desc: 'Пайлака, эпик и боссы.' },
 ];
 
+const SIDE_BY_CATEGORY: Record<string, {
+  linksTitle: string;
+  links: Array<{ label: string; desc: string; href: string; icon: string }>;
+  popularTitle: string;
+  pathTitle: string;
+  path: Array<{ n: string; title: string; desc: string }>;
+}> = {
+  quests: {
+    linksTitle: 'Основные квесты',
+    links: MAIN_QUESTS.map(item => ({ ...item, icon: 'quests' })),
+    popularTitle: 'Популярные квесты',
+    pathTitle: 'Путь игрока',
+    path: PLAYER_PATH,
+  },
+  items: {
+    linksTitle: 'Подборки предметов',
+    links: [
+      { label: 'Оружие', desc: 'мечи, луки, магическое оружие', href: '/guides/items?type=Оружие', icon: 'items' },
+      { label: 'Броня', desc: 'сеты, части брони и грейды', href: '/guides/items?type=Броня', icon: 'items' },
+      { label: 'Ресурсы', desc: 'крафт, спойл и материалы', href: '/guides/items?type=Ресурсы', icon: 'items' },
+      { label: 'Квестовые предметы', desc: 'что нужно для заданий', href: '/guides/items?type=Квестовый%20предмет', icon: 'quests' },
+      { label: 'Рецепты', desc: 'рецепты и куски предметов', href: '/guides/items?type=Рецепты', icon: 'items' },
+    ],
+    popularTitle: 'Популярные предметы',
+    pathTitle: 'Как читать предметы',
+    path: [
+      { n: '1', title: 'Тип', desc: 'Оружие, броня, ресурс или квестовый предмет.' },
+      { n: '2', title: 'Хроника', desc: 'Некоторые предметы есть не во всех версиях Lineage 2.' },
+      { n: '3', title: 'Источник', desc: 'NPC, локация, квест, дроп или крафт.' },
+      { n: '4', title: 'Связи', desc: 'Позже свяжем предметы с квестами и NPC.' },
+    ],
+  },
+  npc: {
+    linksTitle: 'Типы NPC',
+    links: [
+      { label: 'Квестовые NPC', desc: 'персонажи, которые выдают задания', href: '/guides/npc?type=Квестовый%20NPC', icon: 'npc' },
+      { label: 'Торговцы', desc: 'магазины, расходники и книги', href: '/guides/npc?type=Торговец', icon: 'npc' },
+      { label: 'Хранители склада', desc: 'warehouse и freight NPC', href: '/guides/npc?type=Хранитель%20склада', icon: 'npc' },
+      { label: 'Мастера', desc: 'классы, скиллы, профессии', href: '/guides/npc?type=Мастер', icon: 'classes' },
+      { label: 'Рейд-боссы', desc: 'боссы, респ и дроп', href: '/guides/npc?type=Рейд-босс', icon: 'raid-bosses' },
+    ],
+    popularTitle: 'Популярные NPC',
+    pathTitle: 'Карточка NPC',
+    path: [
+      { n: '1', title: 'Где стоит', desc: 'Локация и хроники, где NPC встречается.' },
+      { n: '2', title: 'Что делает', desc: 'Квесты, магазин, склад, телепорт или профессия.' },
+      { n: '3', title: 'Скриншот', desc: 'Когда дашь скрины из игры, добавим портреты.' },
+      { n: '4', title: 'Связанные квесты', desc: 'Потом привяжем задания к конкретным NPC.' },
+    ],
+  },
+};
+
 const HERO_IMG: Record<string, string> = {
   quests: '/images/guide-hero-quests.webp',
   items: '/images/guide-hero-items.webp',
@@ -70,7 +122,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!cat) return { title: 'Гайды не найдены', robots: { index: false, follow: false } };
   return {
     title: `${cat.label} Lineage 2 — гайды и список | L2Realm`,
-    description: `${cat.label} Lineage 2: ${cat.desc} Фильтр по хронике, уровню, расе и локации.`,
+    description: `${cat.label} Lineage 2: ${cat.desc} Фильтры по хронике, типу, уровню и локации.`,
     alternates: { canonical: `${SITE}/guides/${cat.slug}` },
   };
 }
@@ -84,6 +136,22 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
   const guides = await fetchGuides(cat.slug);
   const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
   const heroImg = HERO_IMG[cat.slug] ?? '/images/guides-hero.webp';
+  const side = SIDE_BY_CATEGORY[cat.slug] ?? {
+    linksTitle: `Разделы ${cat.label.toLowerCase()}`,
+    links: NAV.filter(item => item.slug !== 'novichkam').map(item => ({
+      label: item.label,
+      desc: 'перейти к разделу базы знаний',
+      href: item.href,
+      icon: item.slug,
+    })),
+    popularTitle: `Популярное в разделе`,
+    pathTitle: 'Как пользоваться',
+    path: [
+      { n: '1', title: 'Выбери хронику', desc: 'Interlude, High Five, Essence или Main.' },
+      { n: '2', title: 'Уточни фильтр', desc: 'Тип, уровень и локация помогают сузить список.' },
+      { n: '3', title: 'Открой гайд', desc: 'Внутри будут детали, связанные NPC и предметы.' },
+    ],
+  };
 
   const breadcrumbSchema = {
     '@context': 'https://schema.org',
@@ -130,10 +198,10 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
           {/* LEFT: Основные квесты */}
           <aside className={g.leftCol}>
             <div className={g.panel}>
-              <div className={g.panelTitle}>Основные квесты</div>
-              {MAIN_QUESTS.map(m => (
+              <div className={g.panelTitle}>{side.linksTitle}</div>
+              {side.links.map(m => (
                 <Link key={m.label} href={m.href} className={g.nextLink}>
-                  <span className={g.nextIcon}><GuideIcon name="quests" size={16} /></span>
+                  <span className={g.nextIcon}><GuideIcon name={m.icon} size={16} /></span>
                   <span className={g.nextText}>
                     <strong>{m.label}</strong>
                     <small>{m.desc}</small>
@@ -146,20 +214,13 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
 
           {/* CENTER: список квестов */}
           <section className={g.centerCol}>
-            {guides.length === 0 ? (
-              <div className={g.emptyHint}>
-                Гайды в разделе «{cat.label}» скоро появятся — база пополняется.{' '}
-                <Link href="/contacts">Предложить тему</Link>.
-              </div>
-            ) : (
-              <QuestList guides={guides} defaultChronicle={sp.chr ?? ''} initialLevel={sp.lvl ?? 'all'} />
-            )}
+            <QuestList guides={guides} category={cat.slug} defaultChronicle={sp.chr ?? ''} initialLevel={sp.lvl ?? 'all'} initialType={sp.type ?? ''} />
           </section>
 
           {/* RIGHT: популярные + путь игрока */}
           <aside className={g.rightCol}>
             <div className={g.panel}>
-              <div className={g.panelTitle}>Популярные квесты</div>
+              <div className={g.panelTitle}>{side.popularTitle}</div>
               {popular.length > 0 ? (
                 <div className={g.popList}>
                   {popular.map(pg => {
@@ -174,14 +235,14 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
                   })}
                 </div>
               ) : (
-                <p className={g.popEmpty}>Скоро здесь будут самые просматриваемые квесты.</p>
+                <p className={g.popEmpty}>Скоро здесь будут самые просматриваемые материалы раздела.</p>
               )}
             </div>
 
             <div className={g.panel}>
-              <div className={g.panelTitle}>Путь игрока</div>
+              <div className={g.panelTitle}>{side.pathTitle}</div>
               <div className={g.pathSteps}>
-                {PLAYER_PATH.map(p => (
+                {side.path.map(p => (
                   <div key={p.n} className={g.pathStep}>
                     <span className={g.pathNum}>{p.n}</span>
                     <div className={g.pathText}>

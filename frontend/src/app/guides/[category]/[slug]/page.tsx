@@ -21,15 +21,26 @@ export const revalidate = 300;
 type Props = { params: Promise<{ category: string; slug: string }> };
 type RelatedItem = { label: string; meta: string; kind: 'npc' | 'item' | 'location' | 'quest'; href: string };
 
-const HERO_BY_CATEGORY: Record<string, string> = {
-  quests: '/images/guide-hero-quests.webp',
-  items: '/images/guide-hero-items.webp',
-  npc: '/images/guide-hero-npc.webp',
-  locations: '/images/guide-hero-locations.webp',
-  classes: '/images/guide-hero-classes.webp',
-  skills: '/images/guide-hero-skills.webp',
-  'raid-bosses': '/images/guides-hero.webp',
-};
+function chronicleLabel(slug: string): string {
+  if (slug === 'all') return 'Все хроники';
+  return findGuideChronicle(slug)?.name ?? slug;
+}
+
+function summaryTitle(category: string): string {
+  if (category === 'quests') return 'Награда';
+  if (category === 'items') return 'Кратко о предмете';
+  if (category === 'npc') return 'Роль NPC';
+  if (category === 'locations') return 'Кратко о локации';
+  return 'Кратко';
+}
+
+function summaryCardTitle(category: string): string {
+  if (category === 'quests') return 'Награда за квест';
+  if (category === 'items') return 'Сводка по предмету';
+  if (category === 'npc') return 'Роль NPC';
+  if (category === 'locations') return 'Сводка по локации';
+  return 'Сводка';
+}
 
 async function fetchGuide(slug: string): Promise<Guide | null> {
   try {
@@ -98,14 +109,18 @@ function addRelated(list: RelatedItem[], seen: Set<string>, value: string | null
 function extractRelatedItems(guide: Guide, rewardParts: RewardPart[]): RelatedItem[] {
   const list: RelatedItem[] = [];
   const seen = new Set<string>();
-  addRelated(list, seen, guide.npc, 'npc');
+  seen.add(cleanTerm(guide.title).toLowerCase());
+  if (guide.titleEn) seen.add(cleanTerm(guide.titleEn).toLowerCase());
   addRelated(list, seen, guide.location, 'location');
-  rewardParts.forEach(part => {
-    if (part.kind === 'text') addRelated(list, seen, part.text, 'item');
-  });
-  for (const match of (guide.content ?? '').matchAll(/\*\*([^*]+)\*\*/g)) {
-    addRelated(list, seen, match[1], 'npc');
-    if (list.length >= 5) break;
+  if (guide.category !== 'npc') {
+    addRelated(list, seen, guide.npc, 'npc');
+    rewardParts.forEach(part => {
+      if (part.kind === 'text') addRelated(list, seen, part.text, 'item');
+    });
+    for (const match of (guide.content ?? '').matchAll(/\*\*([^*]+)\*\*/g)) {
+      addRelated(list, seen, match[1], 'npc');
+      if (list.length >= 5) break;
+    }
   }
   return list.slice(0, 5);
 }
@@ -115,12 +130,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const guide = await fetchGuide(slug);
   const cat = findGuideCategory(category);
   if (!guide || !cat) return { title: 'Гайд не найден', robots: { index: false, follow: false } };
-  const ch = findGuideChronicle(guide.chronicle);
+  const chLabel = chronicleLabel(guide.chronicle);
   const canonical = `${SITE}/guides/${cat.slug}/${guide.slug}`;
-  const description = (guide.description || `${guide.title} — гайд по Lineage 2${ch ? ' ' + ch.name : ''}.`).slice(0, 160);
+  const description = (guide.description || `${guide.title} — гайд по Lineage 2${guide.chronicle === 'all' ? '' : ' ' + chLabel}.`).slice(0, 160);
   const image = absoluteUrl(guide.image) || `${SITE}/apple-touch-icon.png`;
   return {
-    title: `${guide.title} — гайд Lineage 2${ch ? ' ' + ch.name : ''}`,
+    title: `${guide.title} — гайд Lineage 2${guide.chronicle === 'all' ? '' : ' ' + chLabel}`,
     description,
     alternates: { canonical },
     openGraph: {
@@ -140,13 +155,15 @@ export default async function GuideDetailPage({ params }: Props) {
   const guide = await fetchGuide(slug);
   const cat = findGuideCategory(category);
   if (!guide || !cat) notFound();
-  const ch = findGuideChronicle(guide.chronicle);
+  const chLabel = chronicleLabel(guide.chronicle);
   const rewardParts = parseReward(guide.reward);
   const relatedItems = extractRelatedItems(guide, rewardParts);
-  const heroImage = guide.image || HERO_BY_CATEGORY[cat.slug] || '/images/guides-hero.webp';
+  const heroImage = guide.image || null;
+  const accent = findGuideChronicle(guide.chronicle)?.accent ?? '#d2ab52';
+  const guideSummaryTitle = summaryTitle(cat.slug);
 
   const lvl = levelText(guide);
-  const info: Array<[string, string]> = [['Раздел', cat.label], ['Хроника', ch?.name ?? guide.chronicle]];
+  const info: Array<[string, string]> = [['Раздел', cat.label], ['Хроника', chLabel]];
   if (lvl) info.unshift(['Уровень', lvl]);
   if (guide.npc) info.push(['Стартовый NPC', guide.npc]);
   if (guide.location) info.push(['Локация', guide.location]);
@@ -180,7 +197,7 @@ export default async function GuideDetailPage({ params }: Props) {
   };
 
   return (
-    <div className={styles.page} style={{ ['--accent' as string]: ch?.accent ?? '#d2ab52' }}>
+    <div className={styles.page} style={{ ['--accent' as string]: accent }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
 
@@ -207,11 +224,11 @@ export default async function GuideDetailPage({ params }: Props) {
             <span>{guide.title}</span>
           </div>
 
-          <header className={styles.head}>
+          <header className={`${styles.head}${heroImage ? '' : ' ' + styles.headNoImage}`}>
             <div className={styles.headText}>
               <div className={styles.tagRow}>
                 <span className={styles.metaTag}><GuideIcon name={cat.slug} size={14} />{cat.label}</span>
-                {ch && <span className={styles.metaTag}>{ch.name}</span>}
+                <span className={styles.metaTag}>{chLabel}</span>
                 {lvl && <span className={styles.metaTag}>{lvl}</span>}
                 {guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}
                 {(guide.types ?? []).slice(0, 3).map(type => (
@@ -228,9 +245,11 @@ export default async function GuideDetailPage({ params }: Props) {
               {guide.titleEn && <p className={styles.titleEn}>{guide.titleEn}</p>}
               {guide.description && <p className={styles.lead}>{guide.description}</p>}
             </div>
-            <div className={styles.heroImg}>
-              <img src={heroImage} alt={guide.title} />
-            </div>
+            {heroImage && (
+              <div className={styles.heroImg}>
+                <img src={heroImage} alt={guide.title} />
+              </div>
+            )}
           </header>
 
           <div className={styles.infoMobile}>
@@ -245,7 +264,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
           {rewardParts.length > 0 && (
             <section className={styles.rewardBlock} aria-labelledby="guide-reward-title">
-              <h2 id="guide-reward-title" className={styles.blockTitle}>Награда</h2>
+              <h2 id="guide-reward-title" className={styles.blockTitle}>{guideSummaryTitle}</h2>
               <div className={styles.rewardTiles}>
                 {rewardParts.map((part, index) => <RewardTile key={index} part={part} />)}
               </div>
@@ -263,7 +282,6 @@ export default async function GuideDetailPage({ params }: Props) {
 
           <div className={styles.foot}>
             <Link href={`/guides/${cat.slug}`} className={styles.backBtn}>← Все «{cat.label}»</Link>
-            {ch && <Link href={`/chronicle/${ch.slug}`} className={styles.serversBtn}>Серверы {ch.name} →</Link>}
           </div>
         </article>
 
@@ -339,7 +357,7 @@ function InfoCard({ info, rewardParts, relatedItems, catLabel, catSlug }: { info
 
       {rewardParts.length > 0 && (
         <div className={`${styles.infoCard} ${styles.rewardCard}`}>
-          <div className={styles.cardTitle}><span>Награда за квест</span></div>
+          <div className={styles.cardTitle}><span>{summaryCardTitle(catSlug)}</span></div>
           <ul className={styles.rewardList}>
             {rewardParts.map((p, i) => (
               <li key={i} className={styles.rewardRow}>

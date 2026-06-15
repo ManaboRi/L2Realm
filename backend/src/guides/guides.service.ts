@@ -28,10 +28,16 @@ const LIST_SELECT = {
   types: true, views: true, publishedAt: true,
 } as const;
 
-// Допустимые теги-типы квестов (синхронно с фронтом questTypes.ts).
-const QUEST_TYPES = new Set([
+// Допустимые теги-типы гайдов (синхронно с фронтом questTypes.ts).
+const GUIDE_TYPES = new Set([
   'Сюжетный', 'Профессия', 'Сабкласс', 'Дуал-Класс', 'Ноблес', 'Олимпиада',
   'Клановые', 'Ежедневные', 'Повторяемые', 'Рейд-Босс', 'Питомцы', 'Разовые',
+  'Оружие', 'Броня', 'Бижутерия', 'Расходники', 'Ресурсы', 'Рецепты',
+  'Квестовый предмет', 'Книга / скилл', 'Дроп', 'Крафт', 'Награда',
+  'Квестовый NPC', 'Торговец', 'Кузнец', 'Мастер', 'Хранитель склада',
+  'Телепорт', 'Баффер', 'Аукцион', 'Олимпиада', 'Татуировки',
+  'Рейд-босс', 'Монстр', 'Стража',
+  'Город', 'Деревня', 'Зона охоты', 'Инстанс', 'Эпик-зона',
 ]);
 
 function normTypes(v: any): string[] {
@@ -39,7 +45,7 @@ function normTypes(v: any): string[] {
   const seen = new Set<string>();
   for (const item of raw) {
     const t = String(item).trim();
-    if (QUEST_TYPES.has(t)) seen.add(t);
+    if (GUIDE_TYPES.has(t)) seen.add(t);
   }
   return [...seen];
 }

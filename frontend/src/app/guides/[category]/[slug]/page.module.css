@@ -84,6 +84,19 @@
     radial-gradient(circle at 22% 8%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 34%),
     linear-gradient(90deg, rgba(5, 8, 13, .1), rgba(5, 8, 13, .5) 66%, rgba(5, 8, 13, .9));
 }
+.headNoImage {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 205px;
+  padding-right: 1.35rem;
+}
+.headNoImage::before {
+  background:
+    radial-gradient(circle at 18% 4%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+    linear-gradient(90deg, rgba(5, 8, 13, .06), rgba(5, 8, 13, .42) 72%, rgba(5, 8, 13, .74));
+}
+.headNoImage .lead {
+  max-width: 960px;
+}
 .headText {
   position: relative;
   z-index: 1;
@@ -554,14 +567,13 @@
 .foot {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: .7rem;
   margin-top: 1.8rem;
   padding-top: 1.25rem;
   border-top: 1px solid rgba(118, 141, 151, .14);
 }
-.backBtn,
-.serversBtn {
+.backBtn {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
@@ -578,13 +590,6 @@
   color: rgba(232, 221, 186, .76);
 }
 .backBtn:hover { border-color: rgba(118, 141, 151, .42); color: #f6edd0; }
-.serversBtn {
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  color: var(--accent);
-}
-.serversBtn:hover { background: color-mix(in srgb, var(--accent) 20%, transparent); }
-
 @media (max-width: 1180px) {
   .page { width: min(1180px, calc(100% - 1.4rem)); }
   .layout { grid-template-columns: minmax(0, 1fr) 320px; gap: 1rem; }
@@ -611,6 +616,5 @@
   .relatedGrid { grid-template-columns: 1fr; }
   .rewardTiles { grid-template-columns: 1fr; }
   .foot { flex-direction: column; }
-  .backBtn,
-  .serversBtn { justify-content: center; width: 100%; }
+  .backBtn { justify-content: center; width: 100%; }
 }

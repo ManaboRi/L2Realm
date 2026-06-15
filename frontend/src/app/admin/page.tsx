@@ -12,7 +12,7 @@ import { CHRONICLES, SERVER_TYPES } from '@/lib/types';
 import { GUIDE_CHRONICLES } from '../guides/guides';
 import { GUIDE_CATEGORIES } from '../guides/categories';
 import { GUIDE_RACES } from '../guides/races';
-import { QUEST_TYPES } from '../guides/questTypes';
+import { GUIDE_TYPES_BY_CATEGORY } from '../guides/questTypes';
 import styles from './page.module.css';
 
 type AdminTab = 'servers' | 'money' | 'banners' | 'guides' | 'clicks' | 'add';
@@ -585,6 +585,7 @@ export default function AdminPage() {
   };
   const [guides, setGuides] = useState<any[]>([]);
   const [guideForm, setGuideForm] = useState<any>(emptyGuide);
+  const guideTypeOptions = GUIDE_TYPES_BY_CATEGORY[guideForm.category] ?? GUIDE_TYPES_BY_CATEGORY.quests;
 
   async function saveGuide() {
     if (!token) return;
@@ -1321,11 +1322,12 @@ export default function AdminPage() {
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:'.6rem' }}>
                     <label className={styles.field}><span>Хроника *</span>
                       <select className="input" value={guideForm.chronicle} onChange={e => setGuideForm((p:any)=>({...p,chronicle:e.target.value}))}>
+                        <option value="all">Все хроники (для общих NPC/предметов)</option>
                         {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                       </select>
                     </label>
                     <label className={styles.field}><span>Раздел *</span>
-                      <select className="input" value={guideForm.category} onChange={e => setGuideForm((p:any)=>({...p,category:e.target.value}))}>
+                      <select className="input" value={guideForm.category} onChange={e => setGuideForm((p:any)=>({...p,category:e.target.value,types:[]}))}>
                         {GUIDE_CATEGORIES.map(c => <option key={c.slug} value={c.slug}>{c.label}</option>)}
                       </select>
                     </label>
@@ -1371,9 +1373,9 @@ export default function AdminPage() {
                       <span>Опубликован</span>
                     </label>
                   </div>
-                  <div className={styles.field}><span>Тип квеста (теги — можно несколько)</span>
+                  <div className={styles.field}><span>Типы / теги гайда (можно несколько)</span>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:'.4rem', marginTop:'.25rem' }}>
-                      {QUEST_TYPES.map(t => {
+                      {guideTypeOptions.map(t => {
                         const on = (guideForm.types ?? []).includes(t.label);
                         return (
                           <button
@@ -1417,7 +1419,7 @@ export default function AdminPage() {
                 {guides.length === 0 ? <p className={styles.empty}>Гайдов пока нет — добавь первый выше</p> : (
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:'.7rem' }}>
                     {guides.map((g:any) => {
-                      const chr = GUIDE_CHRONICLES.find(c => c.slug === g.chronicle);
+                      const chr = g.chronicle === 'all' ? { name: 'Все хроники' } : GUIDE_CHRONICLES.find(c => c.slug === g.chronicle);
                       const cat = GUIDE_CATEGORIES.find(c => c.slug === g.category);
                       const lvl = g.levelMin != null && g.levelMax != null ? `${g.levelMin}–${g.levelMax}` : (g.levelMin != null ? `${g.levelMin}+` : '');
                       return (
