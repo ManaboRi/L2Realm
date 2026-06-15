@@ -40,7 +40,60 @@ function roleDescription(type) {
   return map[type] || map['Квестовый NPC'];
 }
 
+const TITLE_EN = {
+  'Бакалейщик Гармония': 'Grocer Harmony',
+  'Варсак': 'Varsak',
+  'Великий Мастер Рэйнс': 'Grand Master Rains',
+  'Великий Мастер Тобиас': 'Grand Master Tobias',
+  'Верховный Жрец Раймонд': 'High Priest Raymond',
+  'Главный Кузнец Мендио': 'Head Blacksmith Mendio',
+  'Жрец Мануэль': 'Priest Manuel',
+  'Жрица Вивиан': 'Priestess Vivyan',
+  'Кузнец Пинтер': 'Blacksmith Pinter',
+  'Магистр Рамониэль': 'Magister Ramoniell',
+  'Магистр Ромер': 'Magister Rohmer',
+  'Магистр Сидра': 'Magister Sidra',
+  'Мастер Аудиберти': 'Master Audiberti',
+  'Мастер Вирджил': 'Master Virgil',
+  'Мастер Леона': 'Master Leona',
+  'Мастер Рейса': 'Master Reisa',
+  'Мастер Сориус': 'Master Sorius',
+  'Мастер Татуировок Келл': 'Symbol Maker Kell',
+  'Начальник Склада Рикадио': 'Warehouse Chief Rikadio',
+  'Начальник Стражи Батис': 'Guard Captain Bathis',
+  'Понтифик Дрикус': 'Pontiff Drikus',
+  'Префект Бука': 'Prefect Buka',
+  'Привратник Временной Обители Кери': 'Gatekeeper Keri',
+  'Привратник Обители Клана Бабак': 'Clan Hall Gatekeeper Babak',
+  'Привратник Обители Клана Латиф': 'Clan Hall Gatekeeper Latif',
+  'Привратник Обители Клана Лоринг': 'Clan Hall Gatekeeper Loring',
+  'Привратник Обители Клана Рени': 'Clan Hall Gatekeeper Reni',
+  'Провидец Ракой': 'Seer Racoy',
+  'Пьяница Борис': 'Drunkard Borys',
+  'Рабочий Склада Хапрок': 'Warehouse Keeper Haprock',
+  'Самед': 'Samed',
+  'Страж Бабен': 'Guard Baben',
+  'Страж Брин': 'Guard Brynn',
+  'Страж Кертис': 'Guard Curtis',
+  'Страж Мельвил': 'Guard Melville',
+  'Страж Моретти': 'Guard Moretti',
+  'Страж Праг': 'Guard Praga',
+  'Страж Тома': 'Guard Toma',
+  'Торговец Доспехами Симплон': 'Armor Trader Simplon',
+  'Торговец Оружием Сидни': 'Weapons Trader Sydnia',
+  'Трискел': 'Triskel',
+  'Управляющий Аукциона': 'Auction Manager',
+  'Управляющий Олимпиады Сейдж': 'Olympiad Manager Sage',
+  'Хранитель Портала Белла': 'Gatekeeper Bella',
+  'Ювелир Варан': 'Jeweler Varan',
+};
+
+const RELATED_QUESTS = {
+  'Рабочий Склада Хапрок': ['Странное родство'],
+};
+
 function buildContent(npc) {
+  const relatedQuests = RELATED_QUESTS[npc.title] ?? [];
   return [
     '## Что это',
     '',
@@ -56,7 +109,9 @@ function buildContent(npc) {
     '',
     '## Связанные квесты',
     '',
-    'Связанные квесты и предметы будут добавлены по мере наполнения базы знаний L2Realm.',
+    relatedQuests.length
+      ? relatedQuests.map(title => `- **${title}**`).join('\n')
+      : 'Связанные квесты и предметы будут добавлены по мере наполнения базы знаний L2Realm.',
   ].join('\n');
 }
 
@@ -109,6 +164,7 @@ const NPCS = [
 ].map(([title, type, image], index) => ({
   title,
   type,
+  titleEn: TITLE_EN[title] ?? null,
   image,
   location: 'Глудио',
   slug: slugify(`${title}-gludio`),
@@ -124,7 +180,7 @@ async function main() {
       chronicle: 'all',
       category: 'npc',
       title: npc.title,
-      titleEn: null,
+      titleEn: npc.titleEn,
       description: `${npc.title} — NPC в городе Глудио. Роль: ${npc.type}. Карточка базы знаний Lineage 2 с местоположением и связями.`,
       content: buildContent(npc),
       image: npc.image,
@@ -147,6 +203,10 @@ async function main() {
         data: {
           chronicle: 'all',
           category: 'npc',
+          title: npc.title,
+          titleEn: npc.titleEn,
+          description: data.description,
+          content: data.content,
           image: npc.image,
           location: npc.location,
           reward: npc.type,

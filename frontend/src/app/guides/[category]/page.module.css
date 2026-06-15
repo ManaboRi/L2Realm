@@ -398,6 +398,9 @@
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+.npcListHead {
+  grid-template-columns: minmax(260px, 1.5fr) minmax(150px, .72fr) minmax(150px, .72fr);
+}
 .questListHead span {
   min-width: 0;
 }
@@ -453,14 +456,17 @@
   grid-template-columns: minmax(230px, 1.55fr) 66px minmax(132px, .95fr) minmax(120px, .82fr) minmax(96px, .58fr);
   gap: .7rem;
   align-items: center;
-  min-height: 82px;
-  padding: .68rem .78rem;
+  min-height: 72px;
+  padding: .56rem .72rem;
   border: 1px solid rgba(118, 141, 151, .14);
   border-radius: 8px;
   background:
     linear-gradient(90deg, rgba(10, 15, 22, .82), rgba(7, 11, 17, .62)),
     radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 40%);
   transition: border-color .16s, background .16s, transform .16s;
+}
+.npcRow {
+  grid-template-columns: minmax(260px, 1.5fr) minmax(150px, .72fr) minmax(150px, .72fr);
 }
 .questRow:hover {
   transform: translateY(-1px);
@@ -477,6 +483,10 @@
   min-width: 0;
   text-decoration: none;
 }
+.questMainNoThumb {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
 /* растягиваем ссылку на всю строку — кликается весь ряд */
 .questMain::after {
   content: '';
@@ -485,8 +495,8 @@
   border-radius: 8px;
 }
 .questThumb {
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -508,7 +518,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: .18rem;
+  gap: .12rem;
 }
 .questTitleBlock strong {
   color: #f3e8c6;
@@ -522,7 +532,7 @@
   font-size: .74rem;
   line-height: 1.35;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -721,9 +731,15 @@
   .questListHead {
     grid-template-columns: minmax(210px, 1.5fr) 60px minmax(118px, .95fr) minmax(92px, .58fr);
   }
+  .npcListHead {
+    grid-template-columns: minmax(210px, 1.4fr) minmax(118px, .74fr) minmax(118px, .74fr);
+  }
   .questListHead span:nth-child(4) { display: none; }
   .questRow {
     grid-template-columns: minmax(210px, 1.5fr) 60px minmax(118px, .95fr) minmax(92px, .58fr);
+  }
+  .npcRow {
+    grid-template-columns: minmax(210px, 1.4fr) minmax(118px, .74fr) minmax(118px, .74fr);
   }
   .questRow .questMetric:nth-of-type(3) { display: none; }
 }

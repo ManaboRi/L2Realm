@@ -218,7 +218,25 @@ function addRelated(list: RelatedItem[], seen: Set<string>, value: string | null
   list.push({ label, kind, href: relatedHref(kind), meta: relatedMeta(kind) });
 }
 
-function extractRelatedItems(guide: Guide, rewardParts: RewardPart[]): RelatedItem[] {
+function textIncludesTerm(text: string, term: string | null | undefined): boolean {
+  const clean = cleanTerm(term ?? '');
+  return clean.length >= 3 && text.toLowerCase().includes(clean.toLowerCase());
+}
+
+function addRelatedGuide(list: RelatedItem[], seen: Set<string>, guide: Guide, kind: RelatedItem['kind']) {
+  const label = cleanTerm(guide.title);
+  const key = `${kind}:${guide.slug}`;
+  if (!label || !guide.slug || seen.has(key)) return;
+  seen.add(key);
+  list.push({
+    label,
+    kind,
+    href: `/guides/${guide.category}/${guide.slug}`,
+    meta: relatedMeta(kind),
+  });
+}
+
+function extractRelatedItems(guide: Guide, rewardParts: RewardPart[], guides: Guide[]): RelatedItem[] {
   const list: RelatedItem[] = [];
   const seen = new Set<string>();
   seen.add(cleanTerm(guide.title).toLowerCase());
@@ -229,6 +247,17 @@ function extractRelatedItems(guide: Guide, rewardParts: RewardPart[]): RelatedIt
     rewardParts.forEach(part => {
       if (part.kind === 'text') addRelated(list, seen, part.text, 'item');
     });
+  } else {
+    const pageText = `${guide.content ?? ''} ${guide.description ?? ''}`;
+    const npcAliases = [guide.title, guide.titleEn, ...entityAliases(guide)].filter(Boolean) as string[];
+
+    for (const item of guides) {
+      if (item.category !== 'quests') continue;
+      const npcMentionedInQuest = npcAliases.some(alias => textIncludesTerm(`${item.npc ?? ''} ${item.description ?? ''}`, alias));
+      const questMentionedHere = textIncludesTerm(pageText, item.title) || textIncludesTerm(pageText, item.titleEn);
+      if (npcMentionedInQuest || questMentionedHere) addRelatedGuide(list, seen, item, 'quest');
+      if (list.length >= 5) break;
+    }
   }
   return list.slice(0, 5);
 }
@@ -263,19 +292,22 @@ export default async function GuideDetailPage({ params }: Props) {
   const [guide, guideLinksSource] = await Promise.all([fetchGuide(slug), fetchGuideLinks()]);
   const cat = findGuideCategory(category);
   if (!guide || !cat) notFound();
+  const isNpc = cat.slug === 'npc';
   const chLabel = chronicleLabel(guide.chronicle);
   const rewardParts = parseReward(guide.reward);
-  const relatedItems = extractRelatedItems(guide, rewardParts);
+  const relatedItems = extractRelatedItems(guide, rewardParts, guideLinksSource);
   const heroImage = guide.image || null;
   const accent = findGuideChronicle(guide.chronicle)?.accent ?? '#d2ab52';
   const guideSummaryTitle = summaryTitle(cat.slug);
+  const relatedBlockTitle = isNpc ? 'Связанные квесты и локации' : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);
 
   const lvl = levelText(guide);
-  const info: Array<[string, string]> = [['Раздел', cat.label], ['Хроника', chLabel]];
-  if (lvl) info.unshift(['Уровень', lvl]);
-  if (guide.npc) info.push(['Стартовый NPC', guide.npc]);
+  const info: Array<[string, string]> = isNpc ? [['Раздел', cat.label]] : [['Раздел', cat.label], ['Хроника', chLabel]];
+  if (!isNpc && lvl) info.unshift(['Уровень', lvl]);
+  if (!isNpc && guide.npc) info.push(['Стартовый NPC', guide.npc]);
   if (guide.location) info.push(['Локация', guide.location]);
+  if (isNpc && guide.reward) info.push(['Роль', guide.reward]);
   if (guide.repeatable) info.push(['Повторяемый', 'Да']);
 
   const guideImage = absoluteUrl(guide.image);
@@ -333,13 +365,13 @@ export default async function GuideDetailPage({ params }: Props) {
             <span>{guide.title}</span>
           </div>
 
-          <header className={`${styles.head}${heroImage ? '' : ' ' + styles.headNoImage}`}>
+          <header className={`${styles.head}${isNpc ? ' ' + styles.headNpc : ''}${heroImage ? '' : ' ' + styles.headNoImage}`}>
             <div className={styles.headText}>
               <div className={styles.tagRow}>
                 <span className={styles.metaTag}><GuideIcon name={cat.slug} size={14} />{cat.label}</span>
-                <span className={styles.metaTag}>{chLabel}</span>
-                {lvl && <span className={styles.metaTag}>{lvl}</span>}
-                {guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}
+                {!isNpc && <span className={styles.metaTag}>{chLabel}</span>}
+                {!isNpc && lvl && <span className={styles.metaTag}>{lvl}</span>}
+                {!isNpc && guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}
                 {(guide.types ?? []).slice(0, 3).map(type => (
                   <span
                     key={type}
@@ -382,7 +414,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
           {relatedItems.length > 0 && (
             <section className={styles.relatedBlock} aria-labelledby="guide-related-title">
-              <h2 id="guide-related-title" className={styles.blockTitle}>Связанные NPC и предметы</h2>
+              <h2 id="guide-related-title" className={styles.blockTitle}>{relatedBlockTitle}</h2>
               <div className={styles.relatedGrid}>
                 {relatedItems.map(item => <RelatedCard key={`${item.kind}-${item.label}`} item={item} />)}
               </div>

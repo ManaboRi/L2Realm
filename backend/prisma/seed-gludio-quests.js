@@ -317,8 +317,6 @@ function buildContent(q, parsed, availabilityInfo) {
     `- Уровень: **${lvl}**`,
     `- ${npcLine}`,
     `- Локация: **${q.location}**`,
-    parsed.added ? `- Добавлен в обновлении: **${parsed.added}**` : null,
-    parsed.removed ? `- Удален в обновлении: **${parsed.removed}**` : null,
     '',
     '## Прохождение',
     '',

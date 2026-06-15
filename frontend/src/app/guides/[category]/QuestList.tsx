@@ -34,6 +34,33 @@ function countText(n: number, forms: [string, string, string]): string {
   return `${n} ${forms[2]}`;
 }
 
+const MAIN_LOCATION_ALIASES: Array<[RegExp, string]> = [
+  [/глудио|gludio/i, 'Глудио'],
+  [/глудин|gludin/i, 'Глудин'],
+  [/дион|dion/i, 'Дион'],
+  [/гиран|giran/i, 'Гиран'],
+  [/орен|oren/i, 'Орен'],
+  [/аден|aden/i, 'Аден'],
+  [/хейн|heine/i, 'Хейн'],
+  [/годдард|goddard/i, 'Годдард'],
+  [/руна|rune/i, 'Руна'],
+  [/шутгарт|schuttgart/i, 'Шутгарт'],
+];
+
+function mainLocation(value?: string | null): string {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  const normalized = raw.toLowerCase();
+  for (const [re, label] of MAIN_LOCATION_ALIASES) {
+    if (re.test(normalized)) return label;
+  }
+  return raw
+    .replace(/\b(?:замок|земли|территория|город|town|castle|territory)\b/gi, '')
+    .replace(/\s*[/,].*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function categoryConfig(category: GuideCategorySlug) {
   if (category === 'items') {
     return {
@@ -48,6 +75,10 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Предметы не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      showChronicle: true,
+      showLevel: true,
+      showReward: true,
+      showThumb: true,
       pageSize: 40,
     };
   }
@@ -64,6 +95,10 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'NPC не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      showChronicle: false,
+      showLevel: false,
+      showReward: false,
+      showThumb: true,
       pageSize: 40,
     };
   }
@@ -80,6 +115,10 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Монстры не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      showChronicle: true,
+      showLevel: true,
+      showReward: true,
+      showThumb: true,
       pageSize: 40,
     };
   }
@@ -96,6 +135,10 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Рейд-боссы не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      showChronicle: true,
+      showLevel: true,
+      showReward: true,
+      showThumb: true,
       pageSize: 30,
     };
   }
@@ -112,6 +155,10 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Локации не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
+      showChronicle: true,
+      showLevel: true,
+      showReward: true,
+      showThumb: true,
       pageSize: 40,
     };
   }
@@ -127,6 +174,10 @@ function categoryConfig(category: GuideCategorySlug) {
     noResults: 'Ничего не нашлось — измени фильтры или запрос.',
     showRace: true,
     showRepeatable: true,
+    showChronicle: false,
+    showLevel: true,
+    showReward: true,
+    showThumb: false,
     pageSize: 30,
   };
 }
@@ -180,7 +231,7 @@ export function QuestList({
   const cfg = categoryConfig(category);
 
   const locations = useMemo(
-    () => [...new Set(guides.map(g => g.location).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'ru')),
+    () => [...new Set(guides.map(g => mainLocation(g.location)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'ru')),
     [guides],
   );
 
@@ -213,6 +264,7 @@ export function QuestList({
         || (g.titleEn ?? '').toLowerCase().includes(query)
         || (g.npc ?? '').toLowerCase().includes(query)
         || (g.location ?? '').toLowerCase().includes(query)
+        || mainLocation(g.location).toLowerCase().includes(query)
         || (g.reward ?? '').toLowerCase().includes(query)
         || (g.types ?? []).some(t => t.toLowerCase().includes(query));
       if (!okQ) return false;
@@ -221,7 +273,7 @@ export function QuestList({
         if (!(lvl >= bracket.min && lvl <= bracket.max)) return false;
       }
       if (cfg.showRace && race && g.race && g.race !== race) return false;
-      if (loc && g.location !== loc) return false;
+      if (loc && mainLocation(g.location) !== loc) return false;
       if (typeTag && !(g.types ?? []).includes(typeTag)) return false;
       return true;
     });
@@ -302,55 +354,64 @@ export function QuestList({
         </div>
       ) : (
         <div className={styles.questList}>
-          <div className={styles.questListHead}>
+          <div className={`${styles.questListHead} ${category === 'npc' ? styles.npcListHead : ''}`}>
             <button type="button" className={`${styles.sortTh} ${sortKey === 'title' ? styles.sortThActive : ''}`} onClick={() => toggleSort('title')}>
               {cfg.titleCol} <i>{arrow('title')}</i>
             </button>
-            <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
-              {cfg.levelCol} <i>{arrow('level')}</i>
-            </button>
+            {cfg.showLevel && (
+              <button type="button" className={`${styles.sortTh} ${sortKey === 'level' ? styles.sortThActive : ''}`} onClick={() => toggleSort('level')}>
+                {cfg.levelCol} <i>{arrow('level')}</i>
+              </button>
+            )}
             <span>{cfg.typeCol}</span>
             <span>{cfg.placeCol}</span>
-            <span>{cfg.rewardCol}</span>
+            {cfg.showReward && <span>{cfg.rewardCol}</span>}
           </div>
           <div className={styles.questRows}>
             {pagedList.map(g => {
               const href = `/guides/${g.category}/${g.slug}`;
               const subtitle = category === 'quests'
                 ? g.titleEn
-                : (g.titleEn || g.description);
+                : (category === 'npc' ? g.titleEn : (g.titleEn || g.description));
+              const displayLocation = mainLocation(g.location);
               return (
-                <article key={g.id} className={styles.questRow}>
-                  <Link href={href} className={styles.questMain}>
-                    <span className={styles.questThumb}>
-                      {g.image ? <img src={g.image} alt="" loading="lazy" decoding="async" /> : <span>{g.title.slice(0, 1)}</span>}
-                    </span>
+                <article key={g.id} className={`${styles.questRow} ${category === 'npc' ? styles.npcRow : ''}`}>
+                  <Link href={href} className={`${styles.questMain} ${cfg.showThumb ? '' : styles.questMainNoThumb}`}>
+                    {cfg.showThumb && (
+                      <span className={styles.questThumb}>
+                        {g.image ? <img src={g.image} alt="" loading="lazy" decoding="async" /> : <span>{g.title.slice(0, 1)}</span>}
+                      </span>
+                    )}
                     <span className={styles.questTitleBlock}>
                       <strong>
                         {g.title}
                         {cfg.showRepeatable && g.repeatable && <span className={styles.repBadge} title="Повторяемый квест">∞</span>}
                       </strong>
                       {subtitle && <em>{subtitle}</em>}
-                      <span className={styles.chronicleMini}>{formatGuideChronicle(g.chronicle)}</span>
+                      {cfg.showChronicle && <span className={styles.chronicleMini}>{formatGuideChronicle(g.chronicle)}</span>}
                     </span>
                   </Link>
-                  <div className={styles.questMetric}>
-                    <small>{cfg.levelCol}</small>
-                    <span className={styles.lvl}>{levelText(g)}</span>
-                  </div>
+                  {cfg.showLevel && (
+                    <div className={styles.questMetric}>
+                      <small>{cfg.levelCol}</small>
+                      <span className={styles.lvl}>{levelText(g)}</span>
+                    </div>
+                  )}
                   <div className={styles.questMetric}>
                     <small>{cfg.typeCol}</small>
                     <TypeCell types={g.types} />
                   </div>
                   <div className={styles.questMetric}>
                     <small>{cfg.placeCol}</small>
-                    {g.location ? <span className={styles.loc}>{g.location}</span> : <span className={styles.dash}>—</span>}
+                    {displayLocation ? <span className={styles.loc}>{displayLocation}</span> : <span className={styles.dash}>—</span>}
                     {g.npc && <span className={styles.npc}>{g.npc}</span>}
                   </div>
-                  <div className={styles.questMetric}>
-                    <small>{cfg.rewardCol}</small>
-                    <RewardCell reward={g.reward} />
-                  </div>
+                  {cfg.showReward && (
+                    <div className={styles.questMetric}>
+                      <small>{cfg.rewardCol}</small>
+                      <RewardCell reward={g.reward} />
+                    </div>
+                  )}
                 </article>
               );
             })}
