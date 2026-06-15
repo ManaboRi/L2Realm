@@ -411,7 +411,10 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
               </div>
             )}
 
-            {loading ? (
+            {/* Скелетоны — только на «холодной» загрузке (данных ещё нет).
+                При рефетче (фильтр/сортировка/смена вида) старые строки остаются
+                видимы и слегка притухают — никакого мигания в пустоту. */}
+            {loading && servers.length === 0 ? (
               <div className={viewMode === 'list' ? styles.serverList : styles.grid}>
                 {Array.from({ length: viewMode === 'list' ? 8 : 6 }).map((_, i) => (
                   <div className={viewMode === 'list' ? styles.listSkeleton : styles.cardSkeleton} key={i} />
@@ -420,7 +423,7 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
             ) : servers.length === 0 ? (
               <div className={styles.empty}>По выбранным фильтрам серверов не найдено</div>
             ) : viewMode === 'list' ? (
-              <div className={styles.serverList}>
+              <div className={styles.serverList} style={loading ? { opacity: 0.5, transition: 'opacity .2s' } : undefined}>
                 {servers.map((s, index) => (
                   <HomeServerRow
                     key={s.id}
@@ -430,7 +433,7 @@ function HomeContent({ initialServers, initialCounts, initialPages, initialOk, i
                 ))}
               </div>
             ) : (
-              <div className={styles.grid}>
+              <div className={styles.grid} style={loading ? { opacity: 0.5, transition: 'opacity .2s' } : undefined}>
                 {servers.map((s, index) => (
                   <HomeServerCard
                     key={s.id}
