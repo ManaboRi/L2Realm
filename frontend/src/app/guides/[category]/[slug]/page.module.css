@@ -227,6 +227,57 @@
   flex-direction: column;
   gap: .85rem;
 }
+.portraitCard {
+  overflow: hidden;
+  border: 1px solid rgba(210, 171, 82, .16);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(11, 16, 23, .92), rgba(6, 10, 15, .98)),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 46%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .025);
+}
+.portraitFrame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 212px;
+  padding: .78rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .025), transparent),
+    rgba(5, 8, 13, .42);
+}
+.portraitFrame img {
+  width: 100%;
+  max-height: 250px;
+  display: block;
+  object-fit: contain;
+  object-position: center;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, .42));
+}
+.portraitMeta {
+  display: flex;
+  flex-direction: column;
+  gap: .16rem;
+  padding: .72rem .9rem .82rem;
+  border-top: 1px solid rgba(210, 171, 82, .12);
+}
+.portraitMeta strong {
+  overflow: hidden;
+  color: #f6edd0;
+  font-family: 'Cinzel', serif;
+  font-size: .92rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.portraitMeta span {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--accent) 80%, rgba(232, 221, 186, .72));
+  font-size: .74rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .infoCard {
   overflow: hidden;
   border: 1px solid rgba(210, 171, 82, .16);
@@ -344,7 +395,10 @@
   border-color: color-mix(in srgb, var(--accent) 62%, transparent);
   background: color-mix(in srgb, var(--accent) 18%, transparent);
 }
-.infoMobile { display: none; margin-bottom: 1.2rem; }
+.infoMobile {
+  display: none;
+  margin-bottom: 1.2rem;
+}
 
 .body {
   color: rgba(232, 221, 186, .86);
@@ -651,7 +705,11 @@
   .categoryNavItem { white-space: nowrap; }
   .layout { grid-template-columns: 1fr; }
   .aside { display: none; }
-  .infoMobile { display: block; }
+  .infoMobile {
+    display: flex;
+    flex-direction: column;
+    gap: .85rem;
+  }
 }
 
 @media (max-width: 640px) {

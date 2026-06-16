@@ -61,7 +61,7 @@ const QUESTS = [
   q('starts', 'https://linedia.ru/wiki/Request_to_Find_Sakum', 23, 40, 'Батис', { exp: '250,000', sp: '100,000', adena: '90,000', other: ['Divided Sakum, Kanilov'] }),
   q('starts', 'https://linedia.ru/wiki/Help_the_Son!', 24, null, 'Ланди', { other: ['Pet Exchange Ticket Kookaburra'] }),
   q('starts', 'https://linedia.ru/wiki/Lizardmen%27s_Conspiracy', 25, 34, 'Праг', { sp: '42,000', other: [] }),
-  q('starts', 'https://linedia.ru/wiki/Grim_Collector', 25, null, 'Кертис', { adena: '', other: ['адена за сданные части скелета'] }),
+  q('starts', 'https://linedia.ru/wiki/Grim_Collector', 25, null, 'Кертис', { adena: '', other: [] }),
   q('starts', 'https://linedia.ru/wiki/Sakum%27s_Influence', 28, 40, 'Член Гильдии Путешественников', { exp: '410,000', sp: '160,000', adena: '103,000', other: ['Divided Sakum, Poslof'] }, { legacyTitleEn: "Sakum's Influence" }),
   q('starts', 'https://linedia.ru/wiki/Sakum%27s_Trace', 34, 40, 'Член Гильдии Путешественников', { exp: '670,000', adena: '108,000', other: [] }),
   q('starts', 'https://linedia.ru/wiki/Certification_of_Fate', 38, null, 'Рэйнс', { exp: '2,700,000', sp: '250,000', adena: '110,000', other: ['Proof of Justice'] }),

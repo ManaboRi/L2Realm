@@ -297,6 +297,8 @@ export default async function GuideDetailPage({ params }: Props) {
   const rewardParts = parseReward(guide.reward);
   const relatedItems = extractRelatedItems(guide, rewardParts, guideLinksSource);
   const heroImage = guide.image || null;
+  const showHeroImage = Boolean(heroImage && !isNpc);
+  const npcPortrait = isNpc ? heroImage : null;
   const accent = findGuideChronicle(guide.chronicle)?.accent ?? '#d2ab52';
   const guideSummaryTitle = summaryTitle(cat.slug);
   const relatedBlockTitle = isNpc ? 'Связанные квесты и локации' : 'Связанные NPC и предметы';
@@ -365,7 +367,7 @@ export default async function GuideDetailPage({ params }: Props) {
             <span>{guide.title}</span>
           </div>
 
-          <header className={`${styles.head}${isNpc ? ' ' + styles.headNpc : ''}${heroImage ? '' : ' ' + styles.headNoImage}`}>
+          <header className={`${styles.head}${showHeroImage ? '' : ' ' + styles.headNoImage}`}>
             <div className={styles.headText}>
               <div className={styles.tagRow}>
                 <span className={styles.metaTag}><GuideIcon name={cat.slug} size={14} />{cat.label}</span>
@@ -386,7 +388,7 @@ export default async function GuideDetailPage({ params }: Props) {
               {guide.titleEn && <p className={styles.titleEn}>{guide.titleEn}</p>}
               {guide.description && <p className={styles.lead}>{guide.description}</p>}
             </div>
-            {heroImage && (
+            {showHeroImage && heroImage && (
               <div className={styles.heroImg}>
                 <img src={heroImage} alt={guide.title} />
               </div>
@@ -394,7 +396,7 @@ export default async function GuideDetailPage({ params }: Props) {
           </header>
 
           <div className={styles.infoMobile}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={npcPortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
           </div>
 
           <div className={styles.body}>
@@ -428,7 +430,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
         <aside className={styles.aside}>
           <div className={styles.asideSticky}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={npcPortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
           </div>
         </aside>
       </div>
@@ -483,9 +485,39 @@ function RelatedCard({ item }: { item: RelatedItem }) {
   );
 }
 
-function InfoCard({ info, rewardParts, relatedItems, catLabel, catSlug }: { info: Array<[string, string]>; rewardParts: RewardPart[]; relatedItems: RelatedItem[]; catLabel: string; catSlug: string }) {
+function InfoCard({
+  info,
+  rewardParts,
+  relatedItems,
+  catLabel,
+  catSlug,
+  portraitImage,
+  portraitTitle,
+  portraitSubtitle,
+}: {
+  info: Array<[string, string]>;
+  rewardParts: RewardPart[];
+  relatedItems: RelatedItem[];
+  catLabel: string;
+  catSlug: string;
+  portraitImage?: string | null;
+  portraitTitle?: string;
+  portraitSubtitle?: string | null;
+}) {
   return (
     <>
+      {portraitImage && (
+        <div className={styles.portraitCard}>
+          <div className={styles.portraitFrame}>
+            <img src={portraitImage} alt={portraitTitle || catLabel} loading="lazy" />
+          </div>
+          <div className={styles.portraitMeta}>
+            <strong>{portraitTitle}</strong>
+            {portraitSubtitle && <span>{portraitSubtitle}</span>}
+          </div>
+        </div>
+      )}
+
       <div className={styles.infoCard}>
         <div className={styles.cardTitle}><span>Краткая информация</span></div>
         <dl className={styles.infoList}>
