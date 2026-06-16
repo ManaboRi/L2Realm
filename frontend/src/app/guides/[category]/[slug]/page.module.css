@@ -98,9 +98,9 @@
   max-width: 960px;
 }
 .headNpc {
-  grid-template-columns: minmax(0, 1fr) clamp(260px, 28%, 360px);
+  grid-template-columns: minmax(0, 1fr) clamp(190px, 22%, 260px);
   align-items: stretch;
-  min-height: 320px;
+  min-height: 235px;
 }
 .headNpc .headText {
   align-self: center;
@@ -109,8 +109,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 300px;
-  padding: .55rem;
+  min-height: 220px;
+  padding: .48rem;
   background:
     radial-gradient(circle at 50% 24%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 44%),
     rgba(5, 8, 13, .74);
@@ -123,8 +123,8 @@
 .headNpc .heroImg img {
   width: 100%;
   height: 100%;
-  min-height: 270px;
-  max-height: 360px;
+  min-height: 190px;
+  max-height: 280px;
   aspect-ratio: auto;
   object-fit: contain;
   object-position: center;
@@ -430,20 +430,18 @@
 }
 .body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .body :global(.md-guide-link) {
-  display: inline-flex;
-  align-items: baseline;
-  gap: .22rem;
-  padding: 0 .28rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 34%, transparent);
-  border-radius: 5px;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  display: inline;
+  padding: 0 .04rem;
   color: color-mix(in srgb, var(--accent) 88%, #fff);
   font-weight: 800;
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 .body :global(.md-guide-link:hover) {
-  border-color: color-mix(in srgb, var(--accent) 56%, transparent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: #f6edd0;
+  text-decoration-color: color-mix(in srgb, var(--accent) 72%, transparent);
 }
 .body :global(strong) { color: #f6e7bd; font-weight: 800; }
 .body :global(em) { color: rgba(232, 221, 186, .92); }
@@ -644,7 +642,7 @@
   .head { grid-template-columns: 1fr; }
   .headNpc { min-height: 0; }
   .heroImg { max-width: 520px; }
-  .headNpc .heroImg { max-width: 380px; }
+  .headNpc .heroImg { max-width: 320px; }
   .relatedGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 

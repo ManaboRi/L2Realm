@@ -61,11 +61,11 @@ const QUESTS = [
   q('starts', 'https://linedia.ru/wiki/Request_to_Find_Sakum', 23, 40, 'Батис', { exp: '250,000', sp: '100,000', adena: '90,000', other: ['Divided Sakum, Kanilov'] }),
   q('starts', 'https://linedia.ru/wiki/Help_the_Son!', 24, null, 'Ланди', { other: ['Pet Exchange Ticket Kookaburra'] }),
   q('starts', 'https://linedia.ru/wiki/Lizardmen%27s_Conspiracy', 25, 34, 'Праг', { sp: '42,000', other: [] }),
-  q('starts', 'https://linedia.ru/wiki/Grim_Collector', 25, null, 'Кертис', { other: ['Adena'] }),
+  q('starts', 'https://linedia.ru/wiki/Grim_Collector', 25, null, 'Кертис', { adena: '', other: ['адена за сданные части скелета'] }),
   q('starts', 'https://linedia.ru/wiki/Sakum%27s_Influence', 28, 40, 'Член Гильдии Путешественников', { exp: '410,000', sp: '160,000', adena: '103,000', other: ['Divided Sakum, Poslof'] }, { legacyTitleEn: "Sakum's Influence" }),
   q('starts', 'https://linedia.ru/wiki/Sakum%27s_Trace', 34, 40, 'Член Гильдии Путешественников', { exp: '670,000', adena: '108,000', other: [] }),
   q('starts', 'https://linedia.ru/wiki/Certification_of_Fate', 38, null, 'Рэйнс', { exp: '2,700,000', sp: '250,000', adena: '110,000', other: ['Proof of Justice'] }),
-  q('starts', 'https://linedia.ru/wiki/For_the_Sake_of_the_Territory_-_Gludio', 40, null, null, { other: ['Gludio Territory Badge'] }),
+  q('starts', 'https://linedia.ru/wiki/For_the_Sake_of_the_Territory_-_Gludio', 40, null, 'Капитан Наемников', { other: ['Gludio Territory Badge'] }),
   q('starts', 'https://linedia.ru/wiki/How_to_Stand_Up_For_Yourself', 40, 49, 'Рэйнс', { exp: '1,020,660', sp: '692,135', adena: '41,038', other: [] }),
   q('starts', 'https://linedia.ru/wiki/Path_of_the_Palus_Knight', 18, null, 'Вирджил', { exp: '228,064', sp: '16,455', adena: '163,800', other: ['Gaze of Abyss', 'Shadow Item Exchange Coupon (D-Grade)'] }, { legacyTitleEn: 'Path of the Palus Knight', legacySlug: 'demoralizaciya-gludio' }),
   q('involved', 'https://linedia.ru/wiki/Dwarven_Kinship', 15, null, 'Карлон', { adena: '20,000', other: [] }),
@@ -80,7 +80,7 @@ const QUESTS = [
   q('involved', 'https://linedia.ru/wiki/Windmill_Hill_Status_Report', 22, 40, 'Шунайн', { exp: '150,000', sp: '60,000', adena: '85,000', other: [] }),
   q('involved', 'https://linedia.ru/wiki/Divided_Sakum,_Kanilov', 27, 40, 'Джена', { exp: '350,000', sp: '150,000', adena: '100,000', other: ['Scroll: Enchant Weapon (D-grade)'] }),
   q('involved', 'https://linedia.ru/wiki/Divided_Sakum,_Poslof', 33, 40, 'Леф', { exp: '550,000', sp: '150,000', adena: '105,000', other: [] }),
-  q('involved', 'https://linedia.ru/wiki/Trial_of_the_Guildsman', 35, null, 'Валькон', { exp: '1,029,478', sp: '66,768', adena: '187,606', other: ['Dimensional Diamond', 'Mark of Guildsman'] }),
+  q('involved', 'https://linedia.ru/wiki/Trial_of_the_Guildsman', 35, null, 'Валькон', { exp: '1,029,478', sp: '66,768', adena: '187,606', other: ['Dimensional Diamond', 'Mark of Guildsman'] }, { location: 'Гиран' }),
   q('involved', 'https://linedia.ru/wiki/Fallen_Angel_-_Request_of_Dawn', 38, null, 'Натулс', { exp: '223,036', sp: '92,676', adena: '92,676', other: [] }),
   q('involved', 'https://linedia.ru/wiki/Fallen_Angel_-_Request_of_Dusk', 38, null, 'Натулс', { exp: '223,036', sp: '13,901', adena: '89,046', other: [] }),
   q('involved', 'https://linedia.ru/wiki/Test_of_the_Healer', 39, null, 'Банделлос', { exp: '1,476,566', sp: '101,324', adena: '266,980', other: ['Dimensional Diamond', 'Mark of Healer'] }),
@@ -110,7 +110,7 @@ function rewardLine(reward) {
   const parts = [];
   if (reward.exp) parts.push(`${reward.exp} :exp:`);
   if (reward.sp) parts.push(`${reward.sp} :sp:`);
-  if (reward.adena) parts.push(`${reward.adena} :adena:`);
+  if (Object.prototype.hasOwnProperty.call(reward, 'adena')) parts.push(`${reward.adena || ''} :adena:`.trim());
   for (const item of reward.other || []) parts.push(item);
   return parts.join(' · ');
 }
@@ -294,7 +294,129 @@ function levelText(q) {
   return 'любой';
 }
 
+function manualContent(q, parsed, availabilityInfo) {
+  const reward = rewardLine(q.reward);
+  const lvl = levelText(q);
+
+  if (q.source === 'https://linedia.ru/wiki/Get_a_Pet') {
+    return [
+      '## Что это',
+      '',
+      '**Заведите питомца** — квест на получение волка. Его берут у **Мартина** в Глудине, а основная часть задания зависит от расы персонажа.',
+      '',
+      '## Требования',
+      '',
+      `- Хроники: **${availabilityInfo.label}**`,
+      `- Уровень: **${lvl}**`,
+      '- Стартовый NPC: **Мартин** в **Глудине**',
+      '- Нужна свободная ячейка в инвентаре для ошейника волка.',
+      '',
+      '## Прохождение',
+      '',
+      '1. Поговорите с **Мартином** в Глудине и возьмите список монстров для своей расы.',
+      '2. Отправляйтесь в стартовую область своей расы и соберите **50 квестовых предметов**: люди охотятся на пауков у Обелиска Победы, эльфы — на пауков возле Эльфийской деревни, темные эльфы — на монстров в Топях, орки — на пауков Кхаши у Замерзшего Водопада, гномы — на тарантулов у северного побережья, камаэли — на Багровых Пауков возле Подземелья Норнил.',
+      '3. Вернитесь к **Мартину** и сдайте собранные предметы. После этого он отправит вас поговорить с любителями животных.',
+      '4. В **Глудио** поговорите с **Хранителем Портала Беллой**.',
+      '5. В **Дионе** найдите **Метти** у южных ворот.',
+      '6. В **Гиране** зайдите в ювелирный магазин и поговорите с **Элли**.',
+      '7. Вернитесь к **Мартину** в Глудин и пройдите экзамен по волкам. Вопросы могут отличаться на разных сборках, поэтому внимательно читайте формулировку; при ошибке квест обычно можно продолжить после повторной попытки.',
+      '8. После успешного экзамена получите **Wolf Collar** — через него вызывается волк.',
+      '',
+      '## Награда',
+      '',
+      reward || 'Wolf Collar',
+      '',
+      '## Связанные NPC и предметы',
+      '',
+      '- **Мартин**',
+      '- **Хранитель Портала Белла**',
+      '- **Метти**',
+      '- **Элли**',
+      '- **Wolf Collar**',
+    ].join('\n');
+  }
+
+  if (q.source === 'https://linedia.ru/wiki/Trial_of_the_Guildsman') {
+    return [
+      '## Что это',
+      '',
+      '**Испытание умения** — квест для гномов на получение **Mark of Guildsman**. В цепочке нужно помочь Альтрану и изготовить семь Колец Мастера.',
+      '',
+      '## Требования',
+      '',
+      `- Хроники: **${availabilityInfo.label}**`,
+      `- Уровень: **${lvl}**`,
+      '- Класс: **Собиратель** или **Ремесленник**',
+      '- Стартовый NPC: **Валькон**',
+      '- Основные города маршрута: **Гиран**, **Говорящий Остров**, **Глудин**, **Глудио**',
+      '',
+      '## Прохождение',
+      '',
+      '1. В **Гиране** поговорите с **Вальконом** и начните испытание.',
+      '2. Отправляйтесь на **Говорящий Остров** к **Кузнецу Альтрану**. Он расскажет о семи Кольцах Мастера, но сначала попросит помочь с болезнью.',
+      '3. Вернитесь к **Валькону** и уточните, чем лечить Альтрана.',
+      '4. Идите на **Цветочную Ферму** и выбивайте **Mandragora Berry** с мандрагор: подойдут Росток Мандрагоры, Корень Мандрагоры и Цветок Мандрагоры.',
+      '5. Отнесите ягоду **Альтрану** на Говорящий Остров.',
+      '6. Соберите материалы для колец: **7 Journeyman Gem** получите через **Нормана** в Глудине, а **7 Journeyman Deco Beads** — через **Пинтера** в Глудио.',
+      '7. Получите рецепт, изготовьте **7 Journeyman Ring** и проверьте, что все кольца лежат в инвентаре.',
+      '8. Вернитесь к **Валькону** в Гиран и сдайте готовые кольца.',
+      '',
+      '## Награда',
+      '',
+      reward || 'Mark of Guildsman',
+      '',
+      '## Связанные NPC и предметы',
+      '',
+      '- **Валькон**',
+      '- **Кузнец Альтран**',
+      '- **Норман**',
+      '- **Кузнец Пинтер**',
+      '- **Mark of Guildsman**',
+      '- **Journeyman Ring**',
+    ].join('\n');
+  }
+
+  if (q.source === 'https://linedia.ru/wiki/For_the_Sake_of_the_Territory_-_Gludio') {
+    return [
+      '## Что это',
+      '',
+      '**Битва за Земли Глудио** — квест Территориальных Войн. Он не похож на обычный маршрут: прогресс идет во время битвы за территорию и зависит от выполненных боевых целей.',
+      '',
+      '## Требования',
+      '',
+      `- Хроники: **${availabilityInfo.label}**`,
+      `- Уровень: **${lvl}**`,
+      '- Стартовый NPC: **Капитан Наемников** в **Глудио**',
+      '- Квест берется перед началом Территориальных Войн.',
+      '',
+      '## Прохождение',
+      '',
+      '1. До старта Территориальных Войн поговорите с **Капитаном Наемников** в Глудио и возьмите квест.',
+      '2. Во время битвы выполняйте цели противника: уничтожайте **катапульты**, ломайте **склады со снаряжением**, убивайте главарей военной, религиозной и экономической ассоциаций.',
+      '3. Если идет борьба за флаги, помогайте отбить или украсть флаг чужой территории — это тоже относится к общему прогрессу войны.',
+      '4. Следите за автообновляющимися задачами Территориальных Войн: этот квест фактически собирает ваш общий вклад в событие.',
+      '5. После окончания битвы вернитесь к **Капитану Наемников** и заберите награду, если была выполнена хотя бы часть целей.',
+      '',
+      '## Награда',
+      '',
+      reward || 'Gludio Territory Badge',
+      '',
+      '## Связанные NPC и предметы',
+      '',
+      '- **Капитан Наемников**',
+      '- **Gludio Territory Badge**',
+      '- **Territory Catapult**',
+      '- **Supplies Safe**',
+    ].join('\n');
+  }
+
+  return null;
+}
+
 function buildContent(q, parsed, availabilityInfo) {
+  const manual = manualContent(q, parsed, availabilityInfo);
+  if (manual) return manual;
+
   const reward = rewardLine(q.reward);
   const lvl = levelText(q);
   const npcLine = q.npc ? `Стартовый или связанный NPC: **${q.npc}**` : 'Стартовый NPC: уточняется по цепочке квеста';
