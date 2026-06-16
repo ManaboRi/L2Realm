@@ -152,9 +152,21 @@ function buildAutoLinks(guides: Guide[], current: Guide): MarkdownAutoLink[] {
       label: g.title,
       aliases: entityAliases(g),
       href: `/guides/${g.category}/${g.slug}`,
+      kind: guideCategoryLinkKind(g.category),
     });
   }
   return links;
+}
+
+function guideCategoryLinkKind(category: string): MarkdownAutoLink['kind'] {
+  if (category === 'quests') return 'quest';
+  if (category === 'npc') return 'npc';
+  if (category === 'monsters') return 'monster';
+  if (category === 'raid-bosses') return 'raid';
+  if (category === 'locations') return 'location';
+  if (category === 'skills') return 'skill';
+  if (category === 'classes') return 'class';
+  return 'item';
 }
 
 function levelText(g: Guide): string | null {

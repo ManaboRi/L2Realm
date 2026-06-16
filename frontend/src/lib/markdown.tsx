@@ -32,7 +32,19 @@ export type MarkdownAutoLink = {
   label: string;
   aliases?: string[];
   href: string;
+  kind?: 'quest' | 'npc' | 'monster' | 'raid' | 'location' | 'item' | 'skill' | 'class';
 };
+
+function guideLinkClass(kind?: MarkdownAutoLink['kind']): string {
+  if (kind === 'quest') return 'md-guide-link--quest';
+  if (kind === 'npc') return 'md-guide-link--npc';
+  if (kind === 'monster') return 'md-guide-link--monster';
+  if (kind === 'raid') return 'md-guide-link--raid';
+  if (kind === 'location') return 'md-guide-link--location';
+  if (kind === 'skill') return 'md-guide-link--skill';
+  if (kind === 'class') return 'md-guide-link--class';
+  return 'md-guide-link--item';
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -61,16 +73,17 @@ function autoLinkHtml(html: string, links?: MarkdownAutoLink[]): string {
     .flatMap(link => [link.label, ...(link.aliases ?? [])].map(alias => ({
       alias: alias.trim(),
       href: link.href,
+      className: `md-guide-link ${guideLinkClass(link.kind)}`,
     })))
     .filter(item => item.alias.length >= 3 && item.href.startsWith('/'))
     .sort((a, b) => b.alias.length - a.alias.length);
 
   if (!candidates.length) return html;
 
-  const byAlias = new Map<string, string>();
+  const byAlias = new Map<string, { href: string; className: string }>();
   for (const item of candidates) {
     const key = item.alias.toLocaleLowerCase('ru');
-    if (!byAlias.has(key)) byAlias.set(key, item.href);
+    if (!byAlias.has(key)) byAlias.set(key, { href: item.href, className: item.className });
   }
 
   const pattern = candidates.map(item => escapeRegExp(item.alias)).join('|');
@@ -89,9 +102,9 @@ function autoLinkHtml(html: string, links?: MarkdownAutoLink[]): string {
     .map(part => {
       if (!part || part.startsWith('<')) return part;
       return part.replace(re, (match, prefix: string, label: string) => {
-        const href = byAlias.get(label.toLocaleLowerCase('ru'));
-        if (!href) return match;
-        return `${prefix}<a href="${href}" class="md-guide-link">${label}</a>`;
+        const link = byAlias.get(label.toLocaleLowerCase('ru'));
+        if (!link) return match;
+        return `${prefix}<a href="${link.href}" class="${link.className}">${label}</a>`;
       });
     })
     .join('');

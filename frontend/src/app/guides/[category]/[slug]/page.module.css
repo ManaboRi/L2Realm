@@ -484,18 +484,27 @@
 }
 .body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .body :global(.md-guide-link) {
+  --guide-link-color: var(--accent);
   display: inline;
   padding: 0 .04rem;
-  color: color-mix(in srgb, var(--accent) 88%, #fff);
+  color: color-mix(in srgb, var(--guide-link-color) 88%, #fff);
   font-weight: 800;
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--guide-link-color) 38%, transparent);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
+.body :global(.md-guide-link--quest) { --guide-link-color: #67b7ff; }
+.body :global(.md-guide-link--npc) { --guide-link-color: #d8b35e; }
+.body :global(.md-guide-link--location) { --guide-link-color: #cda651; }
+.body :global(.md-guide-link--monster) { --guide-link-color: #e25c4b; }
+.body :global(.md-guide-link--raid) { --guide-link-color: #f0a868; }
+.body :global(.md-guide-link--item) { --guide-link-color: #6fdc8e; }
+.body :global(.md-guide-link--skill) { --guide-link-color: #9b8cff; }
+.body :global(.md-guide-link--class) { --guide-link-color: #e0b94f; }
 .body :global(.md-guide-link:hover) {
   color: #f6edd0;
-  text-decoration-color: color-mix(in srgb, var(--accent) 72%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--guide-link-color) 76%, transparent);
 }
 .body :global(strong) { color: #f6e7bd; font-weight: 800; }
 .body :global(em) { color: rgba(232, 221, 186, .92); }
