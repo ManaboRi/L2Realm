@@ -8,7 +8,7 @@ import { GuideIcon } from '../../GuideIcon';
 import { GuidesDisclaimer } from '../../GuidesDisclaimer';
 import { renderMarkdown } from '@/lib/markdown';
 import type { MarkdownAutoLink } from '@/lib/markdown';
-import { parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
+import { findRewardItemIcon, parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
 import type { RewardPart } from '../../reward';
 import { QUEST_TYPE_COLOR } from '../../questTypes';
 import type { Guide } from '@/lib/types';
@@ -315,6 +315,9 @@ export default async function GuideDetailPage({ params }: Props) {
   const guideSummaryTitle = summaryTitle(cat.slug);
   const relatedBlockTitle = isNpc ? 'Связанные квесты и локации' : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);
+  const displayTypes = (guide.types ?? [])
+    .filter(type => !(guide.repeatable && /^Повторяемые$/i.test(type)))
+    .slice(0, 3);
 
   const lvl = levelText(guide);
   const info: Array<[string, string]> = isNpc ? [['Раздел', cat.label]] : [['Раздел', cat.label], ['Хроника', chLabel]];
@@ -386,7 +389,7 @@ export default async function GuideDetailPage({ params }: Props) {
                 {!isNpc && <span className={styles.metaTag}>{chLabel}</span>}
                 {!isNpc && lvl && <span className={styles.metaTag}>{lvl}</span>}
                 {!isNpc && guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}
-                {(guide.types ?? []).slice(0, 3).map(type => (
+                {displayTypes.map(type => (
                   <span
                     key={type}
                     className={styles.typeTag}
@@ -464,12 +467,17 @@ function RewardTile({ part }: { part: RewardPart }) {
       </div>
     );
   }
+  const itemIcon = findRewardItemIcon(part.text);
   return (
     <div className={styles.rewardTile}>
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
+      {itemIcon ? (
+        <img src={itemIcon} alt="" loading="lazy" />
+      ) : (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      )}
       <span><strong>{part.text}</strong></span>
     </div>
   );
@@ -486,7 +494,7 @@ function RelatedIcon({ kind }: { kind: RelatedItem['kind'] }) {
 
 function RelatedCard({ item }: { item: RelatedItem }) {
   return (
-    <Link href={item.href} className={styles.relatedCard}>
+    <Link href={item.href} className={`${styles.relatedCard} ${styles[`relatedCard_${item.kind}`] ?? ''}`}>
       <span className={styles.relatedIcon}><RelatedIcon kind={item.kind} /></span>
       <span className={styles.relatedText}>
         <strong>{item.label}</strong>
@@ -546,26 +554,34 @@ function InfoCard({
         <div className={`${styles.infoCard} ${styles.rewardCard}`}>
           <div className={styles.cardTitle}><span>{summaryCardTitle(catSlug)}</span></div>
           <ul className={styles.rewardList}>
-            {rewardParts.map((p, i) => (
-              <li key={i} className={styles.rewardRow}>
-                {p.kind === 'icon' ? (
-                  <>
-                    <img className={styles.rewardRowIco} src={REWARD_ICONS[p.key]} alt={REWARD_LABEL[p.key]} loading="lazy" />
-                    <span className={styles.rewardRowLabel}>
-                      {REWARD_LABEL[p.key]}{p.amount ? <span className={styles.rewardRowAmt}> ({p.amount})</span> : null}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <svg className={styles.rewardRowIco} viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
-                      <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    </svg>
-                    <span className={styles.rewardRowLabel}>{p.text}</span>
-                  </>
-                )}
-              </li>
-            ))}
+            {rewardParts.map((p, i) => {
+              const itemIcon = p.kind === 'text' ? findRewardItemIcon(p.text) : null;
+              return (
+                <li key={i} className={styles.rewardRow}>
+                  {p.kind === 'icon' ? (
+                    <>
+                      <img className={styles.rewardRowIco} src={REWARD_ICONS[p.key]} alt={REWARD_LABEL[p.key]} loading="lazy" />
+                      <span className={styles.rewardRowLabel}>
+                        {REWARD_LABEL[p.key]}{p.amount ? <span className={styles.rewardRowAmt}> ({p.amount})</span> : null}
+                      </span>
+                    </>
+                  ) : itemIcon ? (
+                    <>
+                      <img className={styles.rewardRowIco} src={itemIcon} alt="" loading="lazy" />
+                      <span className={styles.rewardRowLabel}>{p.text}</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg className={styles.rewardRowIco} viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
+                        <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      </svg>
+                      <span className={styles.rewardRowLabel}>{p.text}</span>
+                    </>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

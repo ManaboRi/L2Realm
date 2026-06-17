@@ -507,6 +507,10 @@
   text-decoration-color: color-mix(in srgb, var(--guide-link-color) 76%, transparent);
 }
 .body :global(strong) { color: #f6e7bd; font-weight: 800; }
+.body :global(strong .md-guide-link),
+.body :global(.md-guide-link strong) {
+  color: color-mix(in srgb, var(--guide-link-color) 88%, #fff);
+}
 .body :global(em) { color: rgba(232, 221, 186, .92); }
 .body :global(hr) {
   height: 1px;
@@ -634,6 +638,43 @@
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--accent) 38%, transparent);
   background: rgba(210, 171, 82, .06);
+}
+.relatedCard_quest {
+  --related-color: #67b7ff;
+  border-color: color-mix(in srgb, var(--related-color) 20%, transparent);
+}
+.relatedCard_monster {
+  --related-color: #e25c4b;
+  border-color: color-mix(in srgb, var(--related-color) 22%, transparent);
+}
+.relatedCard_raid {
+  --related-color: #f0a868;
+  border-color: color-mix(in srgb, var(--related-color) 24%, transparent);
+}
+.relatedCard_location,
+.relatedCard_npc {
+  --related-color: #d8b35e;
+}
+.relatedCard_item {
+  --related-color: #6fdc8e;
+}
+.relatedCard_quest .relatedIcon,
+.relatedCard_monster .relatedIcon,
+.relatedCard_raid .relatedIcon,
+.relatedCard_location .relatedIcon,
+.relatedCard_npc .relatedIcon,
+.relatedCard_item .relatedIcon {
+  border-color: color-mix(in srgb, var(--related-color) 28%, transparent);
+  background: color-mix(in srgb, var(--related-color) 9%, transparent);
+  color: var(--related-color);
+}
+.relatedCard_quest .relatedText em,
+.relatedCard_monster .relatedText em,
+.relatedCard_raid .relatedText em,
+.relatedCard_location .relatedText em,
+.relatedCard_npc .relatedText em,
+.relatedCard_item .relatedText em {
+  color: color-mix(in srgb, var(--related-color) 86%, #fff);
 }
 .relatedIcon {
   width: 46px;
