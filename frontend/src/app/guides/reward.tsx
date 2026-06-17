@@ -14,16 +14,31 @@ export const REWARD_LABEL: Record<string, string> = {
 
 const ITEM_REWARD_ICONS: Record<string, string> = {
   'Aden Territory Badge': '/images/WIKI/ADEN%20ZNACHOK.jpg',
+  'Ancient Porcelain': '/images/WIKI/Ancient%20Porcelain.jpg',
   'Blooded Fabric': '/images/WIKI/Blooded%20Fabric.jpg',
   'Certificate of Dawn': '/images/WIKI/Certificate%20of%20Dawn.jpg',
-  "Dawn's Bracelet": '/images/WIKI/Dawn%27s%20Bracelet.jpg',
+  'Coarse Bone Powder': '/images/WIKI/Coarse%20Bone%20Powder.jpg',
+  "Dawn's Bracelet": '/images/WIKI/Dawns%20Bracelet.jpg',
+  'Dawns Bracelet': '/images/WIKI/Dawns%20Bracelet.jpg',
+  'Drake Leather Boots': '/images/WIKI/Drake%20Leather%20Boots.jpg',
   'Dress Shoe Box': '/images/WIKI/Dress%20Shoe%20Box.jpg',
+  'Einhasad Crucifix': '/images/WIKI/Einhasad%20Crucifix.jpg',
+  'Fire Attribute Stone': '/images/WIKI/Rough%20Fire%20Ore.jpg',
+  'Water Attribute Stone': '/images/WIKI/Rough%20Water%20Ore.jpg',
+  'Earth Attribute Stone': '/images/WIKI/Rough%20Earth%20Ore.jpg',
+  'Wind Attribute Stone': '/images/WIKI/Rough%20Wind%20Ore.jpg',
+  'Dark Attribute Stone': '/images/WIKI/Rough%20Dark%20Ore.jpg',
+  'Holy Attribute Stone': '/images/WIKI/Rough%20Holy%20Ore.jpg',
   'Flaming Bait': '/images/WIKI/Flaming%20Bait.jpg',
   'Formal Wear': '/images/WIKI/Formal%20Wear.jpg',
-  "Lesser Giant's Codex": '/images/WIKI/Lesser%20Giant%27s%20Codex.jpg',
+  'Heavy Doom Hammer': '/images/WIKI/Heavy%20Doom%20Hammer.jpg',
+  "Lesser Giant's Codex": '/images/WIKI/Lesser%20Giants%20Codex.jpg',
+  'Lesser Giants Codex': '/images/WIKI/Lesser%20Giants%20Codex.jpg',
   'Musical Score - Theme of Journey': '/images/WIKI/Musical%20Score%20-%20Theme%20of%20Journey.jpg',
   'Necklace of Protection': '/images/WIKI/Necklace%20of%20Protection.jpg',
   'Noblesse Tiara': '/images/WIKI/noobles%20tiara.jpg',
+  'Old Hilt': '/images/WIKI/Old%20Hilt.jpg',
+  'Old Key': '/images/WIKI/Old%20Key.jpg',
   'Proof of Alliance': '/images/WIKI/Proof%20of%20Alliance.jpg',
   'Raid Sword': '/images/WIKI/Raid%20Sword.jpg',
   'Ring of Ages': '/images/WIKI/Ring%20of%20Ages.jpg',
@@ -37,6 +52,14 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
   'Scroll: Enchant Weapon (C-grade)': '/images/WIKI/scroll_of_enchant_weapon_C.jpg',
   'Scroll: Enchant Weapon (D-grade)': '/images/WIKI/scroll_of_enchant_weapon_D.jpg',
   'Scroll: Enchant Weapon (S-grade)': '/images/WIKI/scroll_of_enchant_weapon_S.jpg',
+  'Камень Огня': '/images/WIKI/Rough%20Fire%20Ore.jpg',
+  'Камень Воды': '/images/WIKI/Rough%20Water%20Ore.jpg',
+  'Камень Земли': '/images/WIKI/Rough%20Earth%20Ore.jpg',
+  'Камень Ветра': '/images/WIKI/Rough%20Wind%20Ore.jpg',
+  'Камень Тьмы': '/images/WIKI/Rough%20Dark%20Ore.jpg',
+  'Камень Святости': '/images/WIKI/Rough%20Holy%20Ore.jpg',
+  'Totem Necklace': '/images/WIKI/Totem%20Necklace.jpg',
+  'Varnish of Purity': '/images/WIKI/Varnish%20of%20Purity.jpg',
   'Unknown Reward': '/images/WIKI/UKNOWN%20REWARD.jpg',
 };
 
@@ -58,17 +81,24 @@ export type RewardPart =
 export function parseReward(reward?: string | null): RewardPart[] {
   if (!reward) return [];
   const parts: RewardPart[] = [];
+  const pushTextParts = (value: string) => {
+    value
+      .split(/\s*[·;|]\s*/g)
+      .map(item => item.replace(/^[,.\s]+|[,.\s]+$/g, '').trim())
+      .filter(Boolean)
+      .forEach(text => parts.push({ kind: 'text', text }));
+  };
   const re = /(\d[\d\s.,]*)?\s*:(adena|exp|sp):/gi;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(reward)) !== null) {
     const before = reward.slice(last, m.index).replace(/[·,;|]\s*$/, '').trim();
-    if (before) parts.push({ kind: 'text', text: before });
+    if (before) pushTextParts(before);
     parts.push({ kind: 'icon', key: m[2].toLowerCase() as 'adena' | 'exp' | 'sp', amount: (m[1] || '').trim() });
     last = re.lastIndex;
   }
   const tail = reward.slice(last).replace(/^[\s·,;|]+/, '').trim();
-  if (tail) parts.push({ kind: 'text', text: tail });
+  if (tail) pushTextParts(tail);
   return parts;
 }
 

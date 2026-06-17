@@ -267,7 +267,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
                       <Link key={pg.id} href={`/guides/${pg.category}/${pg.slug}`} className={g.popRow}>
                         <span className={g.popFire} aria-hidden="true">🔥</span>
                         <span className={g.popName}>{pg.title}</span>
-                        <span className={g.popMeta}>{formatGuideChronicle(pg.chronicle)}</span>
+                        <span className={g.popMeta}>{cat.slug === 'items' ? (pg.reward || 'Предмет') : formatGuideChronicle(pg.chronicle)}</span>
                       </Link>
                     );
                   })}

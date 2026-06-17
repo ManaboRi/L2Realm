@@ -503,7 +503,10 @@ const QUESTS = [
     levelMin: 76,
     npc: 'Учитель Инь',
     types: ['Разовые'],
-    reward: { exp: '10,000,000', sp: '11,200,000', items: ['Attribute Stone', 'Unknown Reward'] },
+    reward: { exp: '10,000,000', sp: '11,200,000', items: ['Камень Огня', 'Камень Воды', 'Камень Земли', 'Камень Ветра', 'Камень Тьмы', 'Камень Святости'] },
+    notes: [
+      'В награде показываем все возможные камни атрибута. В игре итоговый камень зависит от выбранной ветки и версии сервера.',
+    ],
     steps: [
       'В **Адене** поговорите с **Учителем Инь** или **Учителем Ян**. Выберите ветку стихии.',
       'Для ветки Инь ловите **Безумного Духа Воды** в окрестностях Адена или на Равнинах Неистовства.',
@@ -511,7 +514,7 @@ const QUESTS = [
       'Используйте выданное оружие или усиление: обычная атака без квестового эффекта может не засчитать цель.',
       'Вернитесь к выбранному учителю, сдайте пойманных духов и получите награду стихии.',
     ],
-    related: ['Учитель Инь', 'Учитель Ян', 'Attribute Stone', 'Безумный Дух Воды'],
+    related: ['Учитель Инь', 'Учитель Ян', 'Камень Огня', 'Камень Воды', 'Камень Земли', 'Камень Ветра', 'Камень Тьмы', 'Камень Святости', 'Безумный Дух Воды'],
   }),
   q({
     title: 'Сага Храмовника Евы',
@@ -524,19 +527,19 @@ const QUESTS = [
     steps: sagaSteps('Синден', 'Бронвин', 'Донат', 'Pure Ice', "Eva's Templar"),
     related: ['Синден', 'Бронвин', 'Донат', "Lesser Giant's Codex"],
   }),
-  sevenSigns('Семь Печатей, Священное Писание Печати', 'Seven Signs, the Sacred Book of Seal', 'Уд', 'Выполнен квест **Семь Печатей, Печать Императора**.', { exp: '10,000,000', sp: '2,500,000', items: ['Seven Signs, Embryo'] }, [
+  sevenSigns('Семь Печатей, Священное Писание Печати', 'Seven Signs, the Sacred Book of Seal', 'Уд', 'Выполнен квест **Семь Печатей, Печать Императора**.', { exp: '10,000,000', sp: '2,500,000' }, [
     'В храме **Адена** поговорите с **Удом**, затем с **Орвеном**.',
     'Отнесите письмо **Леопарду** в Годдард.',
     'После расшифровки вернитесь по цепочке к **Уду**.',
     'Получите переход к следующей части Seven Signs.',
   ]),
-  sevenSigns('Семь Печатей, Эмбрио', 'Seven Signs, Embryo', 'Уд', 'Выполнен квест **Семь Печатей, Священное Писание Печати**.', { exp: '67,500,000', sp: '15,000,000', adena: '1,500,000', items: ["Dawn's Bracelet", 'Seven Signs, Mysterious Girl'] }, [
+  sevenSigns('Семь Печатей, Эмбрио', 'Seven Signs, Embryo', 'Уд', 'Выполнен квест **Семь Печатей, Священное Писание Печати**.', { exp: '67,500,000', sp: '15,000,000', adena: '1,500,000', items: ["Dawn's Bracelet"] }, [
     'В **Адене** поговорите с **Удом** и согласитесь встретиться с **Францем**.',
     'В инстансе убейте капитана среди трех **Shilen’s Evil Thoughts**.',
     'После боя поговорите с **Францем**, затем с **Джейной**.',
     'Вернитесь к **Уду** и получите **Dawn’s Bracelet**.',
   ]),
-  sevenSigns('Семь Печатей, Тайные Знания Жрецов', 'Seven Signs, Secret Ritual of the Priests', 'Клаудия Атебальт', 'Выполнен квест **Семь Печатей, Договор Маммона**.', { exp: '10,000,000', sp: '2,500,000', items: ['Seven Signs, Seal of the Emperor'] }, [
+  sevenSigns('Семь Печатей, Тайные Знания Жрецов', 'Seven Signs, Secret Ritual of the Priests', 'Клаудия Атебальт', 'Выполнен квест **Семь Печатей, Договор Маммона**.', { exp: '10,000,000', sp: '2,500,000' }, [
     'В **Адене** поговорите с **Клаудией Атебальт**.',
     'В **Глудио** найдите **Джона**, затем **Раймонда** в храме.',
     'Запомните код библиотеки: **72.79.78.71**.',
@@ -561,7 +564,7 @@ const QUESTS = [
     ],
     related: ['Рапидус', 'Sealed Ancient Cloak'],
   }),
-  sevenSigns('Семь Печатей, Таинственная Дева', 'Seven Signs, Mysterious Girl', 'Уд', 'Выполнен квест **Семь Печатей, Эмбрио**.', { exp: '10,000,000', sp: '1,000,000', items: ['Seven Signs, One Who Seeks the Power of the Seal'] }, [
+  sevenSigns('Семь Печатей, Таинственная Дева', 'Seven Signs, Mysterious Girl', 'Уд', 'Выполнен квест **Семь Печатей, Эмбрио**.', { exp: '10,000,000', sp: '1,000,000' }, [
     'В храме **Адена** поговорите с **Удом** и переместитесь к **Францу**.',
     'После разговора через **Джейну** вернитесь наружу.',
     'В **Руне** отправляйтесь на **Ферму Диких Зверей** и найдите **Неприветливого Мужчину**.',
@@ -699,13 +702,13 @@ const QUESTS = [
     steps: sagaSteps('Кекропус', 'Дурога', 'Мист', 'Freezer', 'Doombringer'),
     related: ['Кекропус', 'Дурога', 'Мист', "Lesser Giant's Codex"],
   }),
-  sevenSigns('Семь Печатей, Печать Императора', 'Seven Signs, Seal of the Emperor', 'Ясон Хейн', 'Выполнен квест **Семь Печатей, Тайные Знания Жрецов**.', { exp: '10,000,000', sp: '2,500,000', items: ['Seven Signs, the Sacred Book of Seal'] }, [
+  sevenSigns('Семь Печатей, Печать Императора', 'Seven Signs, Seal of the Emperor', 'Ясон Хейн', 'Выполнен квест **Семь Печатей, Тайные Знания Жрецов**.', { exp: '10,000,000', sp: '2,500,000' }, [
     'В **Хейне** поговорите с **Ясоном Хейном**, затем с **Торговцем Маммона**.',
     'Найдите **Обещание Маммона** у входа в Некрополь Апостолов.',
     'Пройдите инстанс прошлого, помогая армии Шунаймана.',
     'После финальной сцены вернитесь к **Ясону Хейну** и откройте следующую часть цепочки.',
   ]),
-  sevenSigns('Семь Печатей, Договор Маммона', "Seven Signs, Mammon's Contract", 'Сэр Густав Атебальт', 'Выполнен квест **Семь Печатей, Весть о Смерти**.', { exp: '10,000,000', sp: '2,500,000', items: ['Seven Signs, Secret Ritual of the Priests'] }, [
+  sevenSigns('Семь Печатей, Договор Маммона', "Seven Signs, Mammon's Contract", 'Сэр Густав Атебальт', 'Выполнен квест **Семь Печатей, Весть о Смерти**.', { exp: '10,000,000', sp: '2,500,000' }, [
     'В **Орене** поговорите с **Сэром Густавом Атебальтом**.',
     'В **Адене** найдите **Коллина** у южного выхода с площади.',
     'Пройдите три трансформации Коллина: лягушка, ребенок и туземец. В каждой форме добегите до цели и вернитесь за следующим этапом.',
@@ -745,11 +748,11 @@ const ITEMS = [
   item({ title: 'Значок Адена', titleEn: 'Aden Territory Badge', slug: 'aden-territory-badge', type: 'Квестовый предмет', image: '/images/WIKI/ADEN%20ZNACHOK.jpg', source: 'Территориальные Войны Адена', usedIn: ['For the Sake of the Territory - Aden'] }),
   item({ title: 'Окровавленная ткань', titleEn: 'Blooded Fabric', slug: 'blooded-fabric', type: 'Квестовый предмет', image: '/images/WIKI/Blooded%20Fabric.jpg', source: 'An Arrogant Search', usedIn: ['An Arrogant Search', 'Баюм'] }),
   item({ title: 'Знак Рассвета', titleEn: 'Certificate of Dawn', slug: 'certificate-of-dawn', chronicle: 'high-five', type: 'Квестовый предмет', image: '/images/WIKI/Certificate%20of%20Dawn.jpg', source: 'Seven Signs, One Who Seeks the Power of the Seal', usedIn: ['Seven Signs'] }),
-  item({ title: 'Браслет Рассвета', titleEn: "Dawn's Bracelet", slug: 'dawns-bracelet', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Dawn%27s%20Bracelet.jpg', source: 'Seven Signs, Embryo', usedIn: ['Seven Signs'] }),
+  item({ title: 'Браслет Рассвета', titleEn: "Dawn's Bracelet", slug: 'dawns-bracelet', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Dawns%20Bracelet.jpg', source: 'Seven Signs, Embryo', usedIn: ['Seven Signs'] }),
   item({ title: 'Коробка с туфельками', titleEn: 'Dress Shoe Box', slug: 'dress-shoe-box', type: 'Квестовый предмет', image: '/images/WIKI/Dress%20Shoe%20Box.jpg', source: 'Make a Pair of Dress Shoes', usedIn: ['Make Formal Wear'] }),
   item({ title: 'Наживка Огня', titleEn: 'Flaming Bait', slug: 'flaming-bait', type: 'Квестовый предмет', image: '/images/WIKI/Flaming%20Bait.jpg', source: "Linnaeus' Special Bait", usedIn: ['Chest Caught with a Bait of Fire'] }),
   item({ title: 'Свадебный наряд', titleEn: 'Formal Wear', slug: 'formal-wear', type: 'Броня', image: '/images/WIKI/Formal%20Wear.jpg', source: 'Make Formal Wear', usedIn: ['Свадебная цепочка'] }),
-  item({ title: 'Кодекс Гигантов', titleEn: "Lesser Giant's Codex", slug: 'lesser-giants-codex', type: 'Книга / скилл', image: '/images/WIKI/Lesser%20Giant%27s%20Codex.jpg', source: 'Квесты на третью профессию', usedIn: ['Saga quests'] }),
+  item({ title: 'Кодекс Гигантов', titleEn: "Lesser Giant's Codex", slug: 'lesser-giants-codex', type: 'Книга / скилл', image: '/images/WIKI/Lesser%20Giants%20Codex.jpg', source: 'Квесты на третью профессию', usedIn: ['Saga quests'] }),
   item({ title: 'Ноты - Тема: Путешествие', titleEn: 'Musical Score - Theme of Journey', slug: 'musical-score-theme-of-journey', type: 'Квестовый предмет', image: '/images/WIKI/Musical%20Score%20-%20Theme%20of%20Journey.jpg', source: "Bard's Mandolin", usedIn: ['Музыкальные задания'] }),
   item({ title: 'Ожерелье Защиты', titleEn: 'Necklace of Protection', slug: 'necklace-of-protection', type: 'Бижутерия', image: '/images/WIKI/Necklace%20of%20Protection.jpg', source: 'Chest Caught with a Bait of Fire', usedIn: ['Награда за рыбалку'] }),
   item({ title: 'Украшение Дворянина', titleEn: 'Noblesse Tiara', slug: 'noblesse-tiara', type: 'Награда', image: '/images/WIKI/noobles%20tiara.jpg', source: 'Possessor of a Precious Soul - 4', usedIn: ['Noblesse'] }),
@@ -762,6 +765,21 @@ const ITEMS = [
   item({ title: 'Орихаруконовая руда', titleEn: 'Oriharukon Ore', slug: 'oriharukon-ore', type: 'Ресурсы', image: '/images/WIKI/Oriharukon%20Ore.jpg', source: 'Дроп, спойл, крафт', usedIn: ['Make a Sewing Kit'] }),
   item({ title: 'Кокс', titleEn: 'Cokes', slug: 'cokes', type: 'Ресурсы', image: '/images/WIKI/Cokes.jpg', source: 'Крафт и ресурсы', usedIn: ['Крафтовые цепочки'] }),
   item({ title: 'Камень Чистоты', titleEn: 'Stone of Purity', slug: 'stone-of-purity', type: 'Ресурсы', image: '/images/WIKI/Stone%20of%20Purity.jpg', source: 'Дроп, спойл, крафт', usedIn: ['Крафтовые цепочки'] }),
+  item({ title: 'Камень Огня', titleEn: 'Fire Attribute Stone', slug: 'fire-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Fire%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Камень Воды', titleEn: 'Water Attribute Stone', slug: 'water-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Water%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Камень Земли', titleEn: 'Earth Attribute Stone', slug: 'earth-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Earth%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Камень Ветра', titleEn: 'Wind Attribute Stone', slug: 'wind-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Wind%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Камень Тьмы', titleEn: 'Dark Attribute Stone', slug: 'dark-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Dark%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Камень Святости', titleEn: 'Holy Attribute Stone', slug: 'holy-attribute-stone', chronicle: 'high-five', type: 'Награда', image: '/images/WIKI/Rough%20Holy%20Ore.jpg', source: 'Containing the Attribute Power', usedIn: ['Containing the Attribute Power'] }),
+  item({ title: 'Старинный ключ', titleEn: 'Old Key', slug: 'old-key', type: 'Квестовый предмет', image: '/images/WIKI/Old%20Key.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Старинная рукоять', titleEn: 'Old Hilt', slug: 'old-hilt', type: 'Квестовый предмет', image: '/images/WIKI/Old%20Hilt.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Тяжелый Молот Рока', titleEn: 'Heavy Doom Hammer', slug: 'heavy-doom-hammer', type: 'Оружие', image: '/images/WIKI/Heavy%20Doom%20Hammer.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Сапоги из Кожи Дрейка', titleEn: 'Drake Leather Boots', slug: 'drake-leather-boots', type: 'Броня', image: '/images/WIKI/Drake%20Leather%20Boots.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Распятие Эйнхасад', titleEn: 'Einhasad Crucifix', slug: 'einhasad-crucifix', type: 'Квестовый предмет', image: '/images/WIKI/Einhasad%20Crucifix.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Древний фарфор', titleEn: 'Ancient Porcelain', slug: 'ancient-porcelain', type: 'Квестовый предмет', image: '/images/WIKI/Ancient%20Porcelain.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Костная мука', titleEn: 'Coarse Bone Powder', slug: 'coarse-bone-powder', type: 'Ресурсы', image: '/images/WIKI/Coarse%20Bone%20Powder.jpg', source: 'Дроп, спойл, крафт', usedIn: ['Крафтовые цепочки'] }),
+  item({ title: 'Ожерелье Тотема', titleEn: 'Totem Necklace', slug: 'totem-necklace', type: 'Квестовый предмет', image: '/images/WIKI/Totem%20Necklace.jpg', source: 'Квестовые цепочки Адена', usedIn: ['Квесты Адена'] }),
+  item({ title: 'Лак Чистоты', titleEn: 'Varnish of Purity', slug: 'varnish-of-purity', type: 'Ресурсы', image: '/images/WIKI/Varnish%20of%20Purity.jpg', source: 'Дроп, спойл, крафт', usedIn: ['Крафтовые цепочки'] }),
 ];
 
 function itemContent(data) {

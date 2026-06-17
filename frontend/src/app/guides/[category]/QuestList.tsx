@@ -75,7 +75,7 @@ function categoryConfig(category: GuideCategorySlug) {
       noResults: 'Предметы не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
-      showChronicle: true,
+      showChronicle: false,
       showLevel: true,
       showReward: true,
       showThumb: true,
@@ -375,7 +375,10 @@ export function QuestList({
                 : (category === 'npc' ? g.titleEn : (g.titleEn || g.description));
               const displayLocation = mainLocation(g.location);
               return (
-                <article key={g.id} className={`${styles.questRow} ${category === 'npc' ? styles.npcRow : ''}`}>
+                <article
+                  key={g.id}
+                  className={`${styles.questRow} ${category === 'npc' ? styles.npcRow : ''} ${category === 'items' ? styles.itemRow : ''}`}
+                >
                   <Link href={href} className={`${styles.questMain} ${cfg.showThumb ? '' : styles.questMainNoThumb}`}>
                     {cfg.showThumb && (
                       <span className={styles.questThumb}>
