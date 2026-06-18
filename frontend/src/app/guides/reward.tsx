@@ -76,12 +76,14 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
 };
 
 export function findRewardItemIcon(text: string): string | null {
-  const clean = String(text || '')
-    .replace(/^\d[\d\s.,]*\s+/, '')
-    .replace(/\s+\([^)]+\)$/g, '')
-    .trim();
-  if (ITEM_REWARD_ICONS[clean]) return ITEM_REWARD_ICONS[clean];
-  const found = Object.entries(ITEM_REWARD_ICONS).find(([label]) => clean.includes(label));
+  // raw — без ведущего числа, но С скобками: "Scroll: Enchant Weapon (D-grade)"
+  // (для свитков точения грейд в скобках — часть ключа, его нельзя срезать).
+  const raw = String(text || '').replace(/^\d[\d\s.,]*\s+/, '').trim();
+  if (ITEM_REWARD_ICONS[raw]) return ITEM_REWARD_ICONS[raw];
+  // clean — со срезанным хвостом "(No-grade)"/"(×3)" для предметов вроде "Soulshot (No-grade)"
+  const clean = raw.replace(/\s+\([^)]+\)$/g, '').trim();
+  if (clean && ITEM_REWARD_ICONS[clean]) return ITEM_REWARD_ICONS[clean];
+  const found = Object.entries(ITEM_REWARD_ICONS).find(([label]) => raw.includes(label) || clean.includes(label));
   return found?.[1] ?? null;
 }
 
