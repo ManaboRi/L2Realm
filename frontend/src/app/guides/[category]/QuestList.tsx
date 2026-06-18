@@ -69,15 +69,15 @@ function categoryConfig(category: GuideCategorySlug) {
       search: 'Поиск предмета, типа, грейда…',
       titleCol: 'Предмет',
       levelCol: 'Ур.',
-      typeCol: 'Тип предмета',
+      typeCol: 'Тип',
       placeCol: 'Источник',
       rewardCol: 'Кратко',
       noResults: 'Предметы не нашлись — измени фильтры или запрос.',
       showRace: false,
       showRepeatable: false,
       showChronicle: false,
-      showLevel: true,
-      showReward: true,
+      showLevel: false,
+      showReward: false,
       showThumb: true,
       pageSize: 40,
     };
@@ -354,7 +354,7 @@ export function QuestList({
         </div>
       ) : (
         <div className={styles.questList}>
-          <div className={`${styles.questListHead} ${category === 'npc' ? styles.npcListHead : ''}`}>
+          <div className={`${styles.questListHead} ${category === 'npc' ? styles.npcListHead : ''} ${category === 'items' ? styles.itemListHead : ''}`}>
             <button type="button" className={`${styles.sortTh} ${sortKey === 'title' ? styles.sortThActive : ''}`} onClick={() => toggleSort('title')}>
               {cfg.titleCol} <i>{arrow('title')}</i>
             </button>
@@ -363,6 +363,7 @@ export function QuestList({
                 {cfg.levelCol} <i>{arrow('level')}</i>
               </button>
             )}
+            {category === 'items' && <span>Грейд</span>}
             <span>{cfg.typeCol}</span>
             <span>{cfg.placeCol}</span>
             {cfg.showReward && <span>{cfg.rewardCol}</span>}
@@ -398,6 +399,14 @@ export function QuestList({
                     <div className={styles.questMetric}>
                       <small>{cfg.levelCol}</small>
                       <span className={styles.lvl}>{levelText(g)}</span>
+                    </div>
+                  )}
+                  {category === 'items' && (
+                    <div className={styles.questMetric}>
+                      <small>Грейд</small>
+                      {g.grade
+                        ? <span className={styles.gradeBadge}>{g.grade}</span>
+                        : <span className={styles.dash}>—</span>}
                     </div>
                   )}
                   <div className={styles.questMetric}>

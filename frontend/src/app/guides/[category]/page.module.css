@@ -268,7 +268,7 @@
 .sortThActive { color: var(--gold); }
 
 /* Иконки-награды (Адена / Опыт / SP) */
-.rewardCell { display: inline-flex; align-items: center; gap: .3rem; flex-wrap: wrap; }
+.rewardCell { display: inline-flex; align-items: center; gap: .2rem; flex-wrap: nowrap; overflow: hidden; }
 .rIco {
   flex: 0 0 auto;
   width: 18px;
@@ -286,8 +286,8 @@
 .rSp { color: #9b8cff; background: rgba(155, 140, 255, .12); border: 1px solid rgba(155, 140, 255, .28); }
 .rSp svg { fill: currentColor; }
 .rewardText { color: rgba(232, 221, 186, .7); font-size: .8rem; }
-.rewardIco { width: 40px; height: 40px; flex: 0 0 auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
-.rewardFallback { width: 30px; height: 30px; flex: 0 0 auto; color: rgba(232, 221, 186, .38); }
+.rewardIco { width: 32px; height: 32px; flex: 0 0 auto; filter: drop-shadow(0 1px 3px rgba(0,0,0,.5)); }
+.rewardFallback { width: 26px; height: 26px; flex: 0 0 auto; color: rgba(232, 221, 186, .38); }
 
 /* Значок повторяемого квеста ∞ */
 .repBadge {
@@ -388,8 +388,8 @@
 }
 .questListHead {
   display: grid;
-  grid-template-columns: minmax(230px, 1.55fr) 66px minmax(132px, .95fr) minmax(120px, .82fr) minmax(96px, .58fr);
-  gap: .7rem;
+  grid-template-columns: minmax(205px, 1.35fr) 56px minmax(116px, .78fr) minmax(104px, .66fr) minmax(180px, 1.05fr);
+  gap: .6rem;
   align-items: center;
   padding: 0 .78rem .22rem;
   color: rgba(232, 221, 186, .45);
@@ -400,6 +400,9 @@
 }
 .npcListHead {
   grid-template-columns: minmax(260px, 1.5fr) minmax(150px, .72fr) minmax(150px, .72fr);
+}
+.itemListHead {
+  grid-template-columns: minmax(220px, 1.6fr) 76px minmax(150px, 1fr) minmax(150px, 1fr);
 }
 .questListHead span {
   min-width: 0;
@@ -453,8 +456,8 @@
 .questRow {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(230px, 1.55fr) 66px minmax(132px, .95fr) minmax(120px, .82fr) minmax(96px, .58fr);
-  gap: .7rem;
+  grid-template-columns: minmax(205px, 1.35fr) 56px minmax(116px, .78fr) minmax(104px, .66fr) minmax(180px, 1.05fr);
+  gap: .6rem;
   align-items: center;
   min-height: 72px;
   padding: .56rem .72rem;
@@ -467,6 +470,9 @@
 }
 .npcRow {
   grid-template-columns: minmax(260px, 1.5fr) minmax(150px, .72fr) minmax(150px, .72fr);
+}
+.itemRow.questRow {
+  grid-template-columns: minmax(220px, 1.6fr) 76px minmax(150px, 1fr) minmax(150px, 1fr);
 }
 .questRow:hover {
   transform: translateY(-1px);
@@ -650,6 +656,22 @@
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Грейд предмета — пилюля */
+.gradeBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  padding: .12rem .4rem;
+  border: 1px solid rgba(103, 177, 255, .42);
+  border-radius: 6px;
+  background: rgba(103, 177, 255, .13);
+  color: #8fc3ff;
+  font-weight: 800;
+  font-size: .8rem;
+  letter-spacing: .02em;
 }
 
 /* Уровень — просто число, чуть крупнее и золотистее остального текста */

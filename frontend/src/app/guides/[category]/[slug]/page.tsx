@@ -26,6 +26,21 @@ function chronicleLabel(slug: string): string {
   return formatGuideChronicle(slug);
 }
 
+// Акцентный цвет по разделу: квесты — синий, NPC — золото, рейды — оранж, монстры — красный и т.д.
+const CATEGORY_ACCENT: Record<string, string> = {
+  quests: '#67b7ff',
+  npc: '#e0b94f',
+  'raid-bosses': '#f0a868',
+  monsters: '#e25c4b',
+  locations: '#5fcf8a',
+  items: '#caa46a',
+  classes: '#d2ab52',
+  skills: '#9b8cff',
+};
+function categoryAccent(slug: string): string {
+  return CATEGORY_ACCENT[slug] ?? '#d2ab52';
+}
+
 function summaryTitle(category: string): string {
   if (category === 'quests') return 'Награда';
   if (category === 'items') return 'Кратко о предмете';
@@ -311,7 +326,7 @@ export default async function GuideDetailPage({ params }: Props) {
   const heroImage = guide.image || null;
   const showHeroImage = Boolean(heroImage && !isNpc);
   const npcPortrait = isNpc ? heroImage : null;
-  const accent = findGuideChronicle(guide.chronicle)?.accent ?? '#d2ab52';
+  const accent = categoryAccent(cat.slug);
   const guideSummaryTitle = summaryTitle(cat.slug);
   const relatedBlockTitle = isNpc ? 'Связанные квесты и локации' : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);

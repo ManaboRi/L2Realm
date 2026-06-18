@@ -58,6 +58,8 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
   'Камень Ветра': '/images/WIKI/Rough%20Wind%20Ore.jpg',
   'Камень Тьмы': '/images/WIKI/Rough%20Dark%20Ore.jpg',
   'Камень Святости': '/images/WIKI/Rough%20Holy%20Ore.jpg',
+  'Камень атрибута': '/images/WIKI/Rough%20Fire%20Ore.jpg',
+  'Камень Атрибута': '/images/WIKI/Rough%20Fire%20Ore.jpg',
   'Totem Necklace': '/images/WIKI/Totem%20Necklace.jpg',
   'Varnish of Purity': '/images/WIKI/Varnish%20of%20Purity.jpg',
   'Ring of Knowledge': '/images/WIKI/Accessary_ring_of_knowledge.jpg',

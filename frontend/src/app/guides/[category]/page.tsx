@@ -201,8 +201,14 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
     ],
   };
 
+  const CATEGORY_ACCENT: Record<string, string> = {
+    quests: '#67b7ff', npc: '#e0b94f', 'raid-bosses': '#f0a868', monsters: '#e25c4b',
+    locations: '#5fcf8a', items: '#caa46a', classes: '#d2ab52', skills: '#9b8cff',
+  };
+  const accent = CATEGORY_ACCENT[cat.slug] ?? '#d2ab52';
+
   return (
-    <main className={g.guidesMain}>
+    <main className={g.guidesMain} style={{ ['--accent' as string]: accent }}>
       <script
         type="application/ld+json"
         // eslint-disable-next-line react/no-danger
