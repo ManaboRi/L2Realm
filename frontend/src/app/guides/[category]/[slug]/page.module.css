@@ -639,6 +639,18 @@
   background-position: center;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4));
 }
+/* Иконка предмета перед жирным названием в тексте прохождения */
+.body :global(.md-bi) {
+  display: inline-block;
+  width: 1.35em;
+  height: 1.35em;
+  vertical-align: -.32em;
+  margin-right: .22em;
+  border-radius: 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .45));
+}
+
 .body :global(.md-ico-adena) { background-image: url(/images/icon-adena.webp); }
 .body :global(.md-ico-exp) { background-image: url(/images/icon-exp.webp); }
 .body :global(.md-ico-sp) { background-image: url(/images/icon-sp.webp); }

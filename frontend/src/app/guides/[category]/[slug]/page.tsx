@@ -436,7 +436,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
           <div className={styles.body}>
             {guide.content
-              ? renderMarkdown(guide.content, { autoLinks })
+              ? renderMarkdown(guide.content, { autoLinks, itemIcon: findRewardItemIcon })
               : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
           </div>
 

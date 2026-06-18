@@ -18,14 +18,17 @@ import DOMPurify from 'isomorphic-dompurify';
 // Все обычные markdown-конструкции (заголовки, списки, ссылки, форматирование)
 // проходят как есть — отображение существующих статей не меняется.
 const PURIFY_OPTS = {
-  ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'b', 'span'],
-  ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+  ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'b', 'span', 'img'],
+  ALLOWED_ATTR: ['href', 'target', 'rel', 'class', 'src', 'alt', 'loading'],
   ALLOW_DATA_ATTR: false,
 } as const;
 
 type RenderMarkdownOptions = {
   getHeadingId?: (headingText: string, level: number) => string | undefined;
   autoLinks?: MarkdownAutoLink[];
+  // Резолвер иконки предмета по названию (findRewardItemIcon). Если возвращает путь —
+  // перед **жирным** названием предмета подставляется маленькая иконка.
+  itemIcon?: (name: string) => string | null;
 };
 
 export type MarkdownAutoLink = {
@@ -131,8 +134,12 @@ function renderInline(raw: string, options: RenderMarkdownOptions = {}): string 
       return `[${label}](${token('U', index)})`;
     },
   );
-  // bold
-  s = s.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+  // bold (+ иконка предмета перед названием, если есть привязка)
+  s = s.replace(/\*\*([^*]+?)\*\*/g, (_m, inner: string) => {
+    const ic = options.itemIcon?.(inner);
+    if (ic) return `<strong><img class="md-bi" src="${ic}" alt="" loading="lazy" />${inner}</strong>`;
+    return `<strong>${inner}</strong>`;
+  });
   // italic (только парные `*` или `_`, не одиночные)
   s = s.replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
   s = s.replace(/(^|[^_])_([^_\s][^_]*?)_(?!_)/g, '$1<em>$2</em>');
