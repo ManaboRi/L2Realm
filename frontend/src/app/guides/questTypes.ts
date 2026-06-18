@@ -95,3 +95,20 @@ export const GUIDE_TYPE_COLOR: Record<string, string> = Object.fromEntries(
 );
 
 export const QUEST_TYPE_COLOR = GUIDE_TYPE_COLOR;
+
+// Цвета грейдов — по возрастанию (логичная градация от серого к топовым).
+export const GRADE_COLORS: Record<string, string> = {
+  NG: '#9aa4ab',
+  D: '#7d9be0',
+  C: '#5fcf8a',
+  B: '#67b1ff',
+  A: '#e0b94f',
+  S: '#f0a868',
+  R: '#e25c4b',
+  R95: '#e2588f',
+  R99: '#c77dff',
+  R105: '#9b8cff',
+};
+export function gradeColor(grade?: string | null): string {
+  return (grade && GRADE_COLORS[grade.toUpperCase()]) || '#9aa4ab';
+}

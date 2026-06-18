@@ -162,9 +162,27 @@
   color: #6fdc8e;
 }
 .gradeTag {
-  border-color: rgba(103, 177, 255, .4);
-  background: rgba(103, 177, 255, .12);
-  color: #8fc3ff;
+  border-color: color-mix(in srgb, var(--gc, #67b1ff) 55%, transparent);
+  background: color-mix(in srgb, var(--gc, #67b1ff) 14%, transparent);
+  color: color-mix(in srgb, var(--gc, #67b1ff) 88%, #fff);
+}
+/* Грейд рядом с названием предмета */
+.titleGrade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: .5rem;
+  min-width: 1.7em;
+  padding: .05em .35em;
+  border: 1px solid color-mix(in srgb, var(--gc, #9aa4ab) 55%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--gc, #9aa4ab) 16%, transparent);
+  color: color-mix(in srgb, var(--gc, #9aa4ab) 90%, #fff);
+  font-family: var(--font-body, inherit);
+  font-size: .5em;
+  font-weight: 800;
+  letter-spacing: .02em;
 }
 .typeTag {
   border-color: color-mix(in srgb, var(--tag-color) 48%, transparent);

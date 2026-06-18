@@ -10,7 +10,7 @@ import { renderMarkdown } from '@/lib/markdown';
 import type { MarkdownAutoLink } from '@/lib/markdown';
 import { findRewardItemIcon, parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
 import type { RewardPart } from '../../reward';
-import { QUEST_TYPE_COLOR } from '../../questTypes';
+import { QUEST_TYPE_COLOR, gradeColor } from '../../questTypes';
 import type { Guide } from '@/lib/types';
 import styles from './page.module.css';
 
@@ -402,7 +402,7 @@ export default async function GuideDetailPage({ params }: Props) {
             <div className={styles.headText}>
               <div className={styles.tagRow}>
                 <span className={styles.metaTag}><GuideIcon name={cat.slug} size={14} />{cat.label}</span>
-                {guide.grade && <span className={`${styles.metaTag} ${styles.gradeTag}`}>Грейд {guide.grade}</span>}
+                {guide.grade && <span className={`${styles.metaTag} ${styles.gradeTag}`} style={{ ['--gc' as string]: gradeColor(guide.grade) }}>Грейд {guide.grade}</span>}
                 {!isNpc && <span className={styles.metaTag}>{chLabel}</span>}
                 {!isNpc && lvl && <span className={styles.metaTag}>{lvl}</span>}
                 {!isNpc && guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}
@@ -416,7 +416,10 @@ export default async function GuideDetailPage({ params }: Props) {
                   </span>
                 ))}
               </div>
-              <h1 className={styles.title}>{guide.title}</h1>
+              <h1 className={styles.title}>
+                {guide.title}
+                {guide.grade && <span className={styles.titleGrade} style={{ ['--gc' as string]: gradeColor(guide.grade) }}>{guide.grade}</span>}
+              </h1>
               {guide.titleEn && <p className={styles.titleEn}>{guide.titleEn}</p>}
               {guide.description && <p className={styles.lead}>{guide.description}</p>}
             </div>

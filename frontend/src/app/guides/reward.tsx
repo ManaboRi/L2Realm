@@ -117,23 +117,25 @@ export function parseReward(reward?: string | null): RewardPart[] {
 }
 
 // Компактный ряд только из иконок (для таблицы списка). cls — класс <img>.
-export function RewardIconRow({ reward, imgClass, fallbackClass }: { reward?: string | null; imgClass: string; fallbackClass: string }) {
+// Ряд иконок награды для таблицы списка: показываем ВСЕ награды, у которых есть
+// иконка (валюта + предметы по карте), остальные (без иконок) — пропускаем.
+export function RewardIconRow({ reward, imgClass }: { reward?: string | null; imgClass: string; fallbackClass?: string }) {
   const parts = parseReward(reward);
-  const icons = parts.filter(p => p.kind === 'icon') as Extract<RewardPart, { kind: 'icon' }>[];
-  const hasText = parts.some(p => p.kind === 'text');
-  if (icons.length === 0 && !hasText) return null;
+  const icons: Array<{ src: string; title: string }> = [];
+  for (const p of parts) {
+    if (p.kind === 'icon') {
+      icons.push({ src: REWARD_ICONS[p.key], title: `${REWARD_LABEL[p.key]}${p.amount ? ' ' + p.amount : ''}` });
+    } else {
+      const ic = findRewardItemIcon(p.text);
+      if (ic) icons.push({ src: ic, title: p.text });
+    }
+  }
+  if (icons.length === 0) return null;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '.3rem' }}>
-      {icons.map((p, i) => (
-        <img key={i} className={imgClass} src={REWARD_ICONS[p.key]} alt={REWARD_LABEL[p.key]} title={`${REWARD_LABEL[p.key]}${p.amount ? ' ' + p.amount : ''}`} loading="lazy" />
+    <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '.2rem' }}>
+      {icons.map((ic, i) => (
+        <img key={i} className={imgClass} src={ic.src} alt="" title={ic.title} loading="lazy" />
       ))}
-      {/* квест без числовой награды (статус/предмет) — нейтральный значок-свиток */}
-      {icons.length === 0 && hasText && (
-        <svg className={fallbackClass} viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M7 3h10a2 2 0 0 1 2 2v12a4 4 0 0 1-4 4H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" fill="none" stroke="currentColor" strokeWidth="1.6" />
-          <path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-        </svg>
-      )}
     </span>
   );
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { Guide } from '@/lib/types';
 import { formatGuideChronicle, guideChronicleMatches, GUIDE_CHRONICLES, splitGuideChronicles } from '../guides';
 import { GUIDE_RACES } from '../races';
-import { GUIDE_TYPE_COLOR, GUIDE_TYPES_BY_CATEGORY } from '../questTypes';
+import { GUIDE_TYPE_COLOR, GUIDE_TYPES_BY_CATEGORY, gradeColor } from '../questTypes';
 import { RewardIconRow } from '../reward';
 import styles from './page.module.css';
 
@@ -167,7 +167,7 @@ function categoryConfig(category: GuideCategorySlug) {
     count: ['квест', 'квеста', 'квестов'] as [string, string, string],
     search: 'Поиск квеста, NPC, награды…',
     titleCol: 'Квест',
-    levelCol: 'Уровень',
+    levelCol: 'Ур.',
     typeCol: 'Тип',
     placeCol: 'Локация',
     rewardCol: 'Награда',
@@ -405,7 +405,7 @@ export function QuestList({
                     <div className={styles.questMetric}>
                       <small>Грейд</small>
                       {g.grade
-                        ? <span className={styles.gradeBadge}>{g.grade}</span>
+                        ? <span className={styles.gradeBadge} style={{ ['--gc' as string]: gradeColor(g.grade) }}>{g.grade}</span>
                         : <span className={styles.dash}>—</span>}
                     </div>
                   )}
