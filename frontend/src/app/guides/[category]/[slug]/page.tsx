@@ -324,6 +324,7 @@ export default async function GuideDetailPage({ params }: Props) {
   if (!isNpc && lvl) info.unshift(['Уровень', lvl]);
   if (!isNpc && guide.npc) info.push(['Стартовый NPC', guide.npc]);
   if (guide.location) info.push(['Локация', guide.location]);
+  if (guide.grade) info.push(['Грейд', guide.grade]);
   if (isNpc && guide.reward) info.push(['Роль', guide.reward]);
   if (guide.repeatable) info.push(['Повторяемый', 'Да']);
 
@@ -386,6 +387,7 @@ export default async function GuideDetailPage({ params }: Props) {
             <div className={styles.headText}>
               <div className={styles.tagRow}>
                 <span className={styles.metaTag}><GuideIcon name={cat.slug} size={14} />{cat.label}</span>
+                {guide.grade && <span className={`${styles.metaTag} ${styles.gradeTag}`}>Грейд {guide.grade}</span>}
                 {!isNpc && <span className={styles.metaTag}>{chLabel}</span>}
                 {!isNpc && lvl && <span className={styles.metaTag}>{lvl}</span>}
                 {!isNpc && guide.repeatable && <span className={`${styles.metaTag} ${styles.metaTagGreen}`}>Повторяемый</span>}

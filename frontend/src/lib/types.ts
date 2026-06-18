@@ -375,6 +375,7 @@ export interface Guide {
   location?: string | null;
   reward?: string | null;
   race?: string | null;
+  grade?: string | null;
   repeatable?: boolean;
   types?: string[];
   sort?: number;

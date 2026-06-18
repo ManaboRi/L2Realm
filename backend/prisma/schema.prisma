@@ -341,6 +341,7 @@ model Guide {
   location    String?                           // локация (для квестов/локаций)
   reward      String?                           // награда / краткий итог
   race        String?                           // 'human'|'elf'|... | null = для всех рас
+  grade       String?                           // грейд предмета: NG|D|C|B|A|S|R|R95|R99|R105
   repeatable  Boolean   @default(false)         // повторяемый квест (∞) или одноразовый
   types       String[]  @default([])            // теги-типы: Сюжетный, Клановые, Повторяемые, ...
   sort        Int       @default(0)             // ручная сортировка внутри категории

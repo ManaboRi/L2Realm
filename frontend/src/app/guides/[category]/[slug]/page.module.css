@@ -161,6 +161,11 @@
   background: rgba(95, 207, 138, .1);
   color: #6fdc8e;
 }
+.gradeTag {
+  border-color: rgba(103, 177, 255, .4);
+  background: rgba(103, 177, 255, .12);
+  color: #8fc3ff;
+}
 .typeTag {
   border-color: color-mix(in srgb, var(--tag-color) 48%, transparent);
   background: color-mix(in srgb, var(--tag-color) 13%, transparent);

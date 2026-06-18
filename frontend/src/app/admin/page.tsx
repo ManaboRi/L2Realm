@@ -580,7 +580,7 @@ export default function AdminPage() {
     id: '', slug: '', chronicle: 'interlude', category: 'quests',
     title: '', titleEn: '', description: '', content: '', image: '',
     levelMin: '', levelMax: '', npc: '', location: '', reward: '',
-    race: '', repeatable: false, types: [] as string[],
+    race: '', grade: '', repeatable: false, types: [] as string[],
     sort: '0', published: true,
   };
   const [guides, setGuides] = useState<any[]>([]);
@@ -1379,6 +1379,12 @@ export default function AdminPage() {
                         {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
                       </select>
                     </label>
+                    <label className={styles.field}><span>Грейд (для предметов)</span>
+                      <select className="input" value={guideForm.grade} onChange={e => setGuideForm((p:any)=>({...p,grade:e.target.value}))}>
+                        <option value="">—</option>
+                        {['NG','D','C','B','A','S','R','R95','R99','R105'].map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </label>
                     <label className={styles.field}><span>Порядок (сортировка)</span>
                       <input className="input" type="number" value={guideForm.sort} onChange={e => setGuideForm((p:any)=>({...p,sort:e.target.value}))} placeholder="0" />
                     </label>
@@ -1492,7 +1498,7 @@ export default function AdminPage() {
                               id:g.id, slug:g.slug, chronicle:g.chronicle, category:g.category,
                               title:g.title, titleEn:g.titleEn??'', description:g.description??'', content:g.content??'', image:g.image??'',
                               levelMin:g.levelMin??'', levelMax:g.levelMax??'', npc:g.npc??'', location:g.location??'',
-                              reward:g.reward??'', race:g.race??'', repeatable:!!g.repeatable,
+                              reward:g.reward??'', race:g.race??'', grade:g.grade??'', repeatable:!!g.repeatable,
                               types:g.types??[],
                               sort:String(g.sort??0), published:!!g.publishedAt,
                             })}>Править</button>

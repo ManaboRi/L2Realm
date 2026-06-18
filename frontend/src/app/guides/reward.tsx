@@ -60,6 +60,16 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
   'Камень Святости': '/images/WIKI/Rough%20Holy%20Ore.jpg',
   'Totem Necklace': '/images/WIKI/Totem%20Necklace.jpg',
   'Varnish of Purity': '/images/WIKI/Varnish%20of%20Purity.jpg',
+  'Ring of Knowledge': '/images/WIKI/Accessary_ring_of_knowledge.jpg',
+  'Necklace of Knowledge': '/images/WIKI/Accessary_necklace_of_knowledge.jpg',
+  'Clay Pot': '/images/WIKI/clay%20pot.jpg',
+  'Cloth Bundle': '/images/WIKI/cloth%20bundle.jpg',
+  'Heavy Wood Box': '/images/WIKI/heavy%20wood%20box.jpg',
+  'Cokes': '/images/WIKI/Cokes.jpg',
+  'Leather': '/images/WIKI/Leather.jpg',
+  'Oriharukon Ore': '/images/WIKI/Oriharukon%20Ore.jpg',
+  'Stone of Purity': '/images/WIKI/Stone%20of%20Purity.jpg',
+  'Spiritshot': '/images/WIKI/spirit_bullet_white.jpg',
   'Unknown Reward': '/images/WIKI/UKNOWN%20REWARD.jpg',
 };
 

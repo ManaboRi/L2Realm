@@ -24,9 +24,16 @@ function slugify(input: string): string {
 const LIST_SELECT = {
   id: true, slug: true, chronicle: true, category: true, title: true, titleEn: true,
   description: true, image: true, levelMin: true, levelMax: true,
-  npc: true, location: true, reward: true, race: true, repeatable: true,
+  npc: true, location: true, reward: true, race: true, grade: true, repeatable: true,
   types: true, views: true, publishedAt: true,
 } as const;
+
+// Грейды предметов (порядок = от младшего к старшему).
+const ITEM_GRADES = ['NG', 'D', 'C', 'B', 'A', 'S', 'R', 'R95', 'R99', 'R105'];
+function normGrade(v: any): string | null {
+  const g = String(v ?? '').trim().toUpperCase();
+  return ITEM_GRADES.includes(g) ? g : null;
+}
 
 // Допустимые теги-типы гайдов (синхронно с фронтом questTypes.ts).
 const GUIDE_TYPES = new Set([
@@ -187,6 +194,7 @@ export class GuidesService {
         location: data.location ? String(data.location).slice(0, 80) : null,
         reward: data.reward ? String(data.reward).slice(0, 120) : null,
         race: data.race ? String(data.race).slice(0, 40) : null,
+        grade: normGrade(data.grade),
         repeatable: data.repeatable === true || data.repeatable === 'true',
         types: normTypes(data.types),
         sort: this.numOrNull(data.sort) ?? 0,
@@ -219,6 +227,7 @@ export class GuidesService {
         ...(data.location !== undefined && { location: data.location ? String(data.location).slice(0, 80) : null }),
         ...(data.reward !== undefined && { reward: data.reward ? String(data.reward).slice(0, 120) : null }),
         ...(data.race !== undefined && { race: data.race ? String(data.race).slice(0, 40) : null }),
+        ...(data.grade !== undefined && { grade: normGrade(data.grade) }),
         ...(data.repeatable !== undefined && { repeatable: data.repeatable === true || data.repeatable === 'true' }),
         ...(data.types !== undefined && { types: normTypes(data.types) }),
         ...(data.sort !== undefined && { sort: this.numOrNull(data.sort) ?? 0 }),
