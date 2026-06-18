@@ -693,6 +693,19 @@
   align-items: flex-start;
   gap: .25rem;
 }
+/* Не-квестовые разделы: теги переносом в строку (не в столбик) — чтобы не «съезжало». */
+.typeTagsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem;
+}
+.typeMore {
+  align-self: center;
+  font-size: .68rem;
+  font-weight: 700;
+  color: rgba(232, 221, 186, .5);
+}
 .typeTag {
   display: inline-flex;
   align-items: center;

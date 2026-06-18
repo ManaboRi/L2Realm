@@ -188,12 +188,20 @@ function RewardCell({ reward }: { reward?: string | null }) {
   return <span className={styles.rewardCell}>{row ?? <span className={styles.dash}>—</span>}</span>;
 }
 
-function TypeCell({ types }: { types?: string[] }) {
-  const list = (types ?? []).filter(Boolean);
+// В разделе монстров «Дроп»/«Спойл» как тип — это выход, а не тип; дублирует колонку «Дроп».
+const MONSTER_HIDDEN_TYPES = new Set(['Дроп', 'Спойл']);
+
+function TypeCell({ types, category }: { types?: string[]; category: GuideCategorySlug }) {
+  let list = (types ?? []).filter(Boolean);
+  if (category === 'monsters') list = list.filter(t => !MONSTER_HIDDEN_TYPES.has(t));
   if (list.length === 0) return <span className={styles.dash}>—</span>;
+  // Квесты — теги в столбик (по одному в строку); остальные — перенос строкой, не больше 3.
+  const stack = category === 'quests';
+  const shown = stack ? list : list.slice(0, 3);
+  const extra = list.length - shown.length;
   return (
-    <span className={styles.typeTags}>
-      {list.map(t => (
+    <span className={stack ? styles.typeTags : styles.typeTagsWrap}>
+      {shown.map(t => (
         <span
           key={t}
           className={styles.typeTag}
@@ -202,6 +210,7 @@ function TypeCell({ types }: { types?: string[] }) {
           {t}
         </span>
       ))}
+      {extra > 0 && <span className={styles.typeMore}>+{extra}</span>}
     </span>
   );
 }
@@ -411,7 +420,7 @@ export function QuestList({
                   )}
                   <div className={styles.questMetric}>
                     <small>{cfg.typeCol}</small>
-                    <TypeCell types={g.types} />
+                    <TypeCell types={g.types} category={category} />
                   </div>
                   <div className={styles.questMetric}>
                     <small>{cfg.placeCol}</small>

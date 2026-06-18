@@ -131,11 +131,16 @@ export function RewardIconRow({ reward, imgClass }: { reward?: string | null; im
     }
   }
   if (icons.length === 0) return null;
+  // В списке не вываливаем десятки иконок — максимум 8, остальное «+N».
+  const MAX = 8;
+  const shown = icons.slice(0, MAX);
+  const extra = icons.length - shown.length;
   return (
     <span style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '.2rem' }}>
-      {icons.map((ic, i) => (
+      {shown.map((ic, i) => (
         <img key={i} className={imgClass} src={ic.src} alt="" title={ic.title} loading="lazy" />
       ))}
+      {extra > 0 && <span style={{ alignSelf: 'center', fontSize: '.72rem', fontWeight: 700, color: 'rgba(232,221,186,.55)' }}>+{extra}</span>}
     </span>
   );
 }
