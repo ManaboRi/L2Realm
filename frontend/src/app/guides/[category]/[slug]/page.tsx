@@ -45,6 +45,8 @@ function summaryTitle(category: string): string {
   if (category === 'quests') return 'Награда';
   if (category === 'items') return 'Кратко о предмете';
   if (category === 'npc') return 'Роль NPC';
+  if (category === 'monsters') return 'Дроп / спойл';
+  if (category === 'raid-bosses') return 'Дроп';
   if (category === 'locations') return 'Кратко о локации';
   return 'Кратко';
 }
@@ -53,6 +55,8 @@ function summaryCardTitle(category: string): string {
   if (category === 'quests') return 'Награда за квест';
   if (category === 'items') return 'Сводка по предмету';
   if (category === 'npc') return 'Роль NPC';
+  if (category === 'monsters') return 'Ключевой дроп';
+  if (category === 'raid-bosses') return 'Ключевой дроп';
   if (category === 'locations') return 'Сводка по локации';
   return 'Сводка';
 }
@@ -320,15 +324,20 @@ export default async function GuideDetailPage({ params }: Props) {
   const cat = findGuideCategory(category);
   if (!guide || !cat) notFound();
   const isNpc = cat.slug === 'npc';
+  const isPortraitGuide = cat.slug === 'npc' || cat.slug === 'monsters' || cat.slug === 'raid-bosses';
   const chLabel = chronicleLabel(guide.chronicle);
   const rewardParts = parseReward(guide.reward);
   const relatedItems = extractRelatedItems(guide, rewardParts, guideLinksSource);
   const heroImage = guide.image || null;
-  const showHeroImage = Boolean(heroImage && !isNpc);
-  const npcPortrait = isNpc ? heroImage : null;
+  const showHeroImage = Boolean(heroImage && !isPortraitGuide);
+  const sidePortrait = isPortraitGuide ? heroImage : null;
   const accent = categoryAccent(cat.slug);
   const guideSummaryTitle = summaryTitle(cat.slug);
-  const relatedBlockTitle = isNpc ? 'Связанные квесты и локации' : 'Связанные NPC и предметы';
+  const relatedBlockTitle = isNpc
+    ? 'Связанные квесты и локации'
+    : cat.slug === 'monsters'
+      ? 'Связанные квесты, локации и предметы'
+      : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);
   const displayTypes = (guide.types ?? [])
     .filter(type => !(guide.repeatable && /^Повторяемые$/i.test(type)))
@@ -431,7 +440,7 @@ export default async function GuideDetailPage({ params }: Props) {
           </header>
 
           <div className={styles.infoMobile}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={npcPortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
           </div>
 
           <div className={styles.body}>
@@ -465,7 +474,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
         <aside className={styles.aside}>
           <div className={styles.asideSticky}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={npcPortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
           </div>
         </aside>
       </div>
