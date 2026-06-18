@@ -286,6 +286,29 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
       continue;
     }
 
+    // разворачивающийся блок (нативный <details>, без JS):
+    //   ::: details Заголовок
+    //   ...markdown...
+    //   :::
+    const detailsOpen = line.trim().match(/^:::\s*(?:details|спойлер|подробнее)\b\s*(.*)$/i);
+    if (detailsOpen) {
+      flushAll();
+      const summary = detailsOpen[1].trim() || 'Подробнее';
+      const inner: string[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== ':::') {
+        inner.push(lines[i]);
+        i++;
+      }
+      out.push(
+        <details key={`det-${key++}`} className="md-details">
+          <summary dangerouslySetInnerHTML={{ __html: renderInline(summary, options) }} />
+          <div className="md-details-body">{renderMarkdown(inner.join('\n'), options)}</div>
+        </details>,
+      );
+      continue;
+    }
+
     // block image: ![alt](/uploads/file.webp). Держим картинку отдельным блоком,
     // чтобы не ломать абзацы и переносы в существующих статьях.
     const img = line.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)$/);

@@ -481,7 +481,57 @@
   font-family: 'Cinzel', serif;
   font-size: .82rem;
   font-weight: 800;
+  z-index: 1;
 }
+/* связующая линия между шагами (таймлайн) */
+.body :global(ol li)::after {
+  content: '';
+  position: absolute;
+  left: 13.5px;
+  top: 30px;
+  bottom: calc(-.48rem - 2px);
+  width: 1px;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+}
+.body :global(ol li:last-child)::after { display: none; }
+
+/* разворачивающийся блок ::: details … ::: */
+.body :global(.md-details) {
+  margin: 0 0 1.05rem;
+  border: 1px solid rgba(118, 141, 151, .2);
+  border-radius: 9px;
+  background: rgba(10, 15, 22, .45);
+  overflow: hidden;
+}
+.body :global(.md-details summary) {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .65rem .9rem;
+  color: #f3e8c6;
+  font-weight: 700;
+  font-size: .95rem;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  transition: background .14s;
+}
+.body :global(.md-details summary)::-webkit-details-marker { display: none; }
+.body :global(.md-details summary)::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(-45deg);
+  transition: transform .18s;
+  flex: 0 0 auto;
+  margin-left: .1rem;
+}
+.body :global(.md-details[open] summary)::before { transform: rotate(45deg); }
+.body :global(.md-details summary:hover) { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.body :global(.md-details-body) { padding: .8rem .95rem .25rem; }
+.body :global(.md-details-body > *:last-child) { margin-bottom: .6rem; }
 .body :global(a) { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .body :global(.md-guide-link) {
   --guide-link-color: var(--accent);
