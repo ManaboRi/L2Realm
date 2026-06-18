@@ -654,6 +654,32 @@
   background-position: center;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .4));
 }
+/* Карточка параметров (::: stats) — сетка мини-плиток label/value */
+.body :global(.md-stats) {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: .5rem;
+  margin: .2rem 0 1.4rem;
+}
+.body :global(.md-stat) {
+  display: flex;
+  flex-direction: column;
+  gap: .15rem;
+  padding: .5rem .7rem;
+  border: 1px solid rgba(118, 141, 151, .2);
+  border-left: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .02);
+}
+.body :global(.md-stat-k) {
+  font-size: .66rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: rgba(232, 221, 186, .5);
+}
+.body :global(.md-stat-v) { font-size: 1.02rem; font-weight: 800; color: #f3e8c6; }
+
 /* Иконка предмета перед жирным названием в тексте прохождения */
 .body :global(.md-bi) {
   display: inline-block;

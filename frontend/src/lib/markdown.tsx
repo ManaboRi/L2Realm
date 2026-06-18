@@ -297,6 +297,37 @@ export function renderMarkdown(text: string, options: RenderMarkdownOptions = {}
       continue;
     }
 
+    // блок-карточка параметров:
+    //   ::: stats
+    //   HP: 226
+    //   P. Def: 58
+    //   :::
+    const statsOpen = line.trim().match(/^:::\s*(?:stats|статы|параметры)\s*$/i);
+    if (statsOpen) {
+      flushAll();
+      const inner: string[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== ':::') { inner.push(lines[i]); i++; }
+      const pairs = inner
+        .map(l => l.replace(/^\s*[-*]\s*/, '').trim())
+        .filter(Boolean)
+        .map(l => { const m = l.match(/^(.+?)\s*[:：]\s*(.+)$/); return m ? { k: m[1].trim(), v: m[2].trim() } : null; })
+        .filter((p): p is { k: string; v: string } => !!p);
+      if (pairs.length) {
+        out.push(
+          <div key={`stats-${key++}`} className="md-stats">
+            {pairs.map((p, idx) => (
+              <div key={idx} className="md-stat">
+                <span className="md-stat-k">{p.k}</span>
+                <span className="md-stat-v">{p.v}</span>
+              </div>
+            ))}
+          </div>,
+        );
+      }
+      continue;
+    }
+
     // разворачивающийся блок (нативный <details>, без JS):
     //   ::: details Заголовок
     //   ...markdown...

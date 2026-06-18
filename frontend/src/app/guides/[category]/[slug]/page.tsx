@@ -162,14 +162,22 @@ function expandAliasVariants(alias: string): string[] {
 function buildAutoLinks(guides: Guide[], current: Guide): MarkdownAutoLink[] {
   const seen = new Set<string>();
   const links: MarkdownAutoLink[] = [];
+  // Имена самой текущей страницы (рус + англ) — чтобы НЕ линковать чужую сущность,
+  // чьё имя является частью названия текущей (напр. «Бурый Шакал» внутри «Молодой Бурый Шакал»).
+  const ownNames = [current.title, current.titleEn]
+    .map(n => cleanTerm(n ?? '').toLowerCase())
+    .filter(Boolean);
   for (const g of guides) {
     if (g.id === current.id || !g.slug || !g.title || !g.category) continue;
     const key = `${g.category}/${g.slug}`;
     if (seen.has(key)) continue;
     seen.add(key);
+    const candidates = [...new Set([g.title, ...entityAliases(g)].map(a => cleanTerm(a)).filter(Boolean))]
+      .filter(alias => !ownNames.some(own => own.includes(alias.toLowerCase())));
+    if (!candidates.length) continue;
     links.push({
-      label: g.title,
-      aliases: entityAliases(g),
+      label: candidates[0],
+      aliases: candidates.slice(1),
       href: `/guides/${g.category}/${g.slug}`,
       kind: guideCategoryLinkKind(g.category),
     });

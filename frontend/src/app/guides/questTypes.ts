@@ -52,7 +52,6 @@ export const MONSTER_TYPES: QuestType[] = [
   { label: 'Социальный',         color: '#f0a868' },
   { label: 'Дроп',               color: '#e0b94f' },
   { label: 'Спойл',              color: '#67b1ff' },
-  { label: 'Квестовый монстр',   color: '#6fdc8e' },
 ];
 
 export const RAID_BOSS_TYPES: QuestType[] = [
