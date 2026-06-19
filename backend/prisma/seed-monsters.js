@@ -447,7 +447,7 @@ function buildItemContent(item, seenOn) {
 
 async function fetchItem(href, fallbackName, fallbackIcon) {
   const sourceSlug = sourceSlugFromHref(href, fallbackName);
-  if (!href || isRedlink(href)) return {
+  const fallbackItem = {
     title: fallbackName,
     titleEn: fallbackName,
     sourceSlug,
@@ -457,7 +457,13 @@ async function fetchItem(href, fallbackName, fallbackIcon) {
     type: null,
     stats: [],
   };
-  const html = await fetchHtml(href);
+  if (!href || isRedlink(href)) return fallbackItem;
+  let html;
+  try {
+    html = await fetchHtml(href);
+  } catch {
+    return fallbackItem;
+  }
   const parsed = parseItemInfo(html);
   return {
     title: parsed.title || fallbackName,
