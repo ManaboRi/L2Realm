@@ -344,9 +344,11 @@ export default async function GuideDetailPage({ params }: Props) {
   const cat = findGuideCategory(category);
   if (!guide || !cat) notFound();
   const isNpc = cat.slug === 'npc';
-  const isPortraitGuide = cat.slug === 'npc' || cat.slug === 'monsters' || cat.slug === 'raid-bosses';
+  const isMonster = cat.slug === 'monsters' || cat.slug === 'raid-bosses';
+  const isPortraitGuide = cat.slug === 'npc' || isMonster;
   const chLabel = chronicleLabel(guide.chronicle);
   const rewardParts = parseReward(guide.reward);
+  const infoRewardParts = isMonster ? [] : rewardParts;
   const relatedItems = extractRelatedItems(guide, rewardParts, guideLinksSource);
   const heroImage = guide.image || null;
   const showHeroImage = Boolean(heroImage && !isPortraitGuide);
@@ -363,7 +365,6 @@ export default async function GuideDetailPage({ params }: Props) {
   const mdOpts = { autoLinks, itemIcon: (name: string) => findRewardItemIcon(name, itemMap) };
 
   // Монстры/рейды — особый лейаут: полоса параметров + 2 колонки (Обзор | Дроп).
-  const isMonster = cat.slug === 'monsters' || cat.slug === 'raid-bosses';
   let monsterLayout: { statsBody?: string; overviewBody: string; dropBody?: string; belowBody: string } | null = null;
   if (isMonster && guide.content) {
     const secs = splitSections(guide.content);
@@ -481,7 +482,7 @@ export default async function GuideDetailPage({ params }: Props) {
           </header>
 
           <div className={styles.infoMobile}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
+            <InfoCard info={info} rewardParts={infoRewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
           </div>
 
           {monsterLayout ? (
@@ -536,7 +537,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
         <aside className={styles.aside}>
           <div className={styles.asideSticky}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
+            <InfoCard info={info} rewardParts={infoRewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
           </div>
         </aside>
       </div>

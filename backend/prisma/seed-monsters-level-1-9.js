@@ -71,6 +71,16 @@ function slugify(value) {
     .slice(0, 80);
 }
 
+function sourceSlugFromHref(href, fallbackName) {
+  if (!href) return slugify(fallbackName);
+  try {
+    const raw = decodeURIComponent(new URL(href).pathname.split('/').pop() || '').replace(/_/g, ' ');
+    return slugify(raw || fallbackName);
+  } catch {
+    return slugify(fallbackName);
+  }
+}
+
 function normalizeNumber(value) {
   const digits = String(value || '').replace(/[^\d]/g, '');
   return digits ? Number(digits) : null;
@@ -147,7 +157,7 @@ function parseInfoRows(html, start) {
     const cells = [...match[0].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(cell => cleanCell(cell[1]));
     if (cells.length < 2) continue;
     const key = cells[0].replace(/:$/, '').trim();
-    result[key] = cells[1];
+    if (result[key] === undefined) result[key] = cells[1];
   }
   return result;
 }
@@ -209,10 +219,15 @@ function parseDropRows(table) {
       const cells = [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)].map(cell => cell[1]);
       const itemCell = cells[1] || cells[0] || '';
       const link = itemCell.match(/<a\s+[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/i);
-      const icon = cells[0]?.match(/<img\b[^>]*src="([^"]+)"/i)?.[1];
+      const icon = (cells[0] || itemCell).match(/<img\b[^>]*src="([^"]+)"/i)?.[1];
+      const name = cleanCell(link?.[2] || itemCell)
+        .replace(/\s+/g, ' ')
+        .trim();
+      const href = link ? absoluteUrl(link[1]) : null;
       return {
-        name: cleanCell(itemCell),
-        href: link ? absoluteUrl(link[1]) : null,
+        name,
+        href,
+        slug: sourceSlugFromHref(href, name),
         amount: cleanCell(cells[2] || ''),
         chance: cleanCell(cells[3] || ''),
         icon: icon ? absoluteUrl(icon) : null,
@@ -254,13 +269,19 @@ function compactReward(dropRows, spoilRows) {
   return parts.join(' · ').slice(0, 120);
 }
 
+function dropCell(row) {
+  if (/^Adena$/i.test(row.name)) return ':adena: Adena';
+  const slug = row.slug || sourceSlugFromHref(row.href, row.name);
+  return slug ? `[${row.name}](/guides/items/${slug})` : `**${row.name}**`;
+}
+
 function mdTable(rows, limit = 14) {
   const clean = rows.filter(row => row.name && !/\bHerb\b/i.test(row.name)).slice(0, limit);
   if (!clean.length) return 'Нет проверенных данных.';
   return [
     '| Предмет | Кол-во | Шанс |',
     '|---|---:|---:|',
-    ...clean.map(row => `| ${row.name} | ${row.amount || '—'} | ${formatPercent(row.chance) || '—'} |`),
+    ...clean.map(row => `| ${dropCell(row)} | ${row.amount || '—'} | ${formatPercent(row.chance) || '—'} |`),
   ].join('\n');
 }
 
@@ -268,36 +289,36 @@ function buildMonsterContent(monster, parsed) {
   const info = parsed.info;
   const locationLine = info.location || 'локация уточняется';
   return [
+    '## Параметры',
+    '',
+    '::: stats',
+    `Уровень: ${info.level || monster.level}`,
+    info.hp ? `HP: ${formatNumber(info.hp)}` : null,
+    info.pDef || info.mDef ? `P.Def / M.Def: ${formatNumber(info.pDef)} / ${formatNumber(info.mDef)}` : null,
+    info.exp || info.sp ? `EXP / SP: ${formatNumber(info.exp)} / ${formatNumber(info.sp)}` : null,
+    info.race ? `Раса: ${info.race}` : null,
+    `Агрессия: ${info.aggro || 'уточняется'}`,
+    info.id ? `ID: ${info.id}` : null,
+    ':::',
+    '',
     '## Что это',
     '',
-    `**${parsed.title}** (${parsed.titleEn}) — монстр **${info.level || monster.level}+ уровня**. Страница нужна, чтобы быстро посмотреть место спавна, базовые параметры, дроп и спойл.`,
+    `**${parsed.title}** (${parsed.titleEn}) — монстр **${info.level || monster.level}+ уровня** в Lineage 2. Здесь собраны место появления, основные параметры, обычный дроп и спойл, чтобы быстро понять, стоит ли идти на этого моба под фарм или квест.`,
     '',
     '## Где находится',
     '',
     `- Локация: **${locationLine}**`,
     info.locationRaw && info.locationRaw !== locationLine ? `- Точные зоны из источника: ${info.locationRaw}` : null,
-    info.id ? `- ID монстра: **${info.id}**` : null,
-    `- Раса: **${info.race || 'не указана'}**`,
-    `- Агрессия: **${info.aggro || 'уточняется'}**`,
-    `- HP: **${formatNumber(info.hp)}**`,
-    `- P.Def / M.Def: **${formatNumber(info.pDef)} / ${formatNumber(info.mDef)}**`,
-    `- EXP/SP: **${formatNumber(info.exp)} / ${formatNumber(info.sp)}**`,
     '',
-    '## Дроп',
+    '## Дроп и спойл',
+    '',
+    '### Обычный дроп',
     '',
     mdTable(parsed.dropRows),
     '',
-    '## Спойл',
+    '### Спойл',
     '',
     parsed.spoilRows.length ? mdTable(parsed.spoilRows) : 'Нет проверенных данных по спойлу.',
-    '',
-    '## Связанные локации и предметы',
-    '',
-    `- **${locationLine}**`,
-    ...[...parsed.dropRows, ...parsed.spoilRows]
-      .filter(row => row.name && !isNoiseDrop(row.name))
-      .slice(0, 8)
-      .map(row => `- **${row.name}**`),
   ].filter(Boolean).join('\n');
 }
 
@@ -325,7 +346,14 @@ function parseItemInfo(html) {
   const price = rows['Цена'] || null;
   const weight = rows['Вес'] || null;
   const id = rows.ID || null;
-  return { ...title, type, itemType, grade, icon, price, weight, id };
+  const statKeys = [
+    'P. Atk.', 'M. Atk.', 'P. Def.', 'M. Def.', 'Def. Rate', 'Уворот',
+    'Скорость атаки', 'Крит. Атк.', 'Дальность', 'MP', 'Вес', 'Цена', 'ID',
+  ];
+  const stats = statKeys
+    .filter(key => rows[key])
+    .map(key => ({ label: key.replace(/\.$/, ''), value: rows[key] }));
+  return { ...title, type, itemType, grade, icon, price, weight, id, stats };
 }
 
 function parseItemIcon(html) {
@@ -342,22 +370,27 @@ function parseItemIcon(html) {
 
 function buildItemContent(item, seenOn) {
   const sourceLines = [...seenOn.monsters].slice(0, 8).map(name => `- **${name}**`).join('\n');
+  const statsLines = [
+    item.type ? `- Тип: **${item.type}**` : null,
+    item.grade ? `- Грейд: **${item.grade}**` : null,
+    ...(item.stats || []).map(stat => `- ${stat.label}: **${stat.value}**`),
+  ].filter(Boolean);
   return [
     '## Что это',
     '',
-    `**${item.title}** (${item.titleEn}) — предмет Lineage 2. В базе L2Realm он добавлен из дропа монстров 1–9 уровня.`,
-    item.type ? `Тип по источнику: **${item.type}**.` : null,
-    item.grade ? `Грейд: **${item.grade}**.` : null,
+    `**${item.title}** (${item.titleEn}) — предмет Lineage 2. В базе L2Realm он добавлен из дропа монстров 1–9 уровня, чтобы его можно было быстро открыть из таблиц дропа и сверить основные характеристики.`,
+    statsLines.length ? '' : null,
+    statsLines.length ? '## Характеристики' : null,
+    statsLines.length ? '' : null,
+    ...statsLines,
     '',
     '## Где получить',
     '',
     sourceLines || '- Источник будет уточнен по мере наполнения базы.',
     '',
-    '## Кратко',
+    '## Примечание',
     '',
-    item.price ? `- Цена у NPC/в источнике: **${item.price}**` : null,
-    item.weight ? `- Вес: **${item.weight}**` : null,
-    item.id ? `- ID предмета: **${item.id}**` : null,
+    'Шансы и количество могут отличаться на приватных серверах, если администрация меняла дроп-листы. Для классической базы смотри связанного монстра и шанс в его таблице дропа.',
   ].filter(Boolean).join('\n');
 }
 
@@ -372,9 +405,11 @@ async function fetchMonster(row) {
 }
 
 async function fetchItem(href, fallbackName, fallbackIcon) {
+  const sourceSlug = sourceSlugFromHref(href, fallbackName);
   if (!href) return {
     title: fallbackName,
     titleEn: fallbackName,
+    sourceSlug,
     itemType: 'Ресурсы',
     grade: null,
     icon: fallbackIcon,
@@ -382,12 +417,14 @@ async function fetchItem(href, fallbackName, fallbackIcon) {
     price: null,
     weight: null,
     id: null,
+    stats: [],
   };
   const html = await fetchHtml(href);
   const parsed = parseItemInfo(html);
   return {
     title: parsed.title || fallbackName,
     titleEn: parsed.titleEn || fallbackName,
+    sourceSlug,
     itemType: parsed.itemType || 'Ресурсы',
     grade: parsed.grade,
     icon: parsed.icon || fallbackIcon,
@@ -395,6 +432,7 @@ async function fetchItem(href, fallbackName, fallbackIcon) {
     price: parsed.price,
     weight: parsed.weight,
     id: parsed.id,
+    stats: parsed.stats || [],
   };
 }
 
@@ -439,16 +477,22 @@ async function upsertMonster(row, parsed) {
 }
 
 async function upsertItem(item, seenOn) {
-  const slug = slugify(item.titleEn || item.title);
-  const existing = await prisma.guide.findFirst({
-    where: {
-      OR: [
-        { slug },
-        { category: 'items', titleEn: item.titleEn },
-        { category: 'items', title: item.title },
-      ],
-    },
+  const slug = item.sourceSlug || slugify(item.titleEn || item.title);
+  let existing = await prisma.guide.findFirst({
+    where: { slug, category: 'items' },
   });
+  if (!existing) {
+    existing = await prisma.guide.findFirst({
+      where: { title: item.title, category: 'items' },
+    });
+  }
+  if (!existing && item.titleEn) {
+    const candidates = await prisma.guide.findMany({
+      where: { titleEn: item.titleEn, category: 'items' },
+      take: 5,
+    });
+    existing = candidates.find(candidate => !candidate.title || candidate.title === item.title) || null;
+  }
   const data = {
     slug,
     chronicle: CHRONICLE,
@@ -476,9 +520,14 @@ async function upsertItem(item, seenOn) {
     return existing ? 'updated' : 'created';
   }
   if (existing) {
+    const generatedContent = !existing.content || existing.content.includes('дропа монстров 1');
+    const slugTaken = existing.slug === data.slug
+      ? null
+      : await prisma.guide.findUnique({ where: { slug: data.slug } });
     await prisma.guide.update({
       where: { id: existing.id },
       data: {
+        ...(!slugTaken || slugTaken.id === existing.id ? { slug: data.slug } : {}),
         chronicle: existing.chronicle || data.chronicle,
         category: 'items',
         title: existing.title || data.title,
@@ -488,7 +537,7 @@ async function upsertItem(item, seenOn) {
         grade: existing.grade || data.grade,
         types: existing.types?.length ? existing.types : data.types,
         publishedAt: existing.publishedAt ?? data.publishedAt,
-        content: existing.content || data.content,
+        content: generatedContent ? data.content : existing.content,
       },
     });
     return 'updated';

@@ -64,6 +64,10 @@ function isSafeImageUrl(url: string): boolean {
   }
 }
 
+function isInternalMarkdownUrl(url: string): boolean {
+  return /^\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+$/.test(url.trim());
+}
+
 // inline: **bold**, *italic*, `code`, [link](url) → возвращает HTML-строку
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -128,7 +132,7 @@ function renderInline(raw: string, options: RenderMarkdownOptions = {}): string 
     return token('C', index);
   });
   s = s.replace(
-    /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[A-Za-z0-9._~!$&'()*+,;=:@/%-]+)\)/g,
     (_match, label: string, url: string) => {
       const index = linkUrls.push(url) - 1;
       return `[${label}](${token('U', index)})`;
@@ -146,9 +150,14 @@ function renderInline(raw: string, options: RenderMarkdownOptions = {}): string 
   // links: [text](https://url) — только http(s) для безопасности
   s = s.replace(
     /\[([^\]]+)\]\(\u0000U(\d+)\u0000\)/g,
-    (_match, label: string, index: string) => (
-      `<a href="${linkUrls[Number(index)]}" target="_blank" rel="noopener nofollow">${label}</a>`
-    ),
+    (_match, label: string, index: string) => {
+      const url = linkUrls[Number(index)] || '#';
+      const labelText = label.replace(/<[^>]+>/g, '').trim();
+      const icon = options.itemIcon?.(labelText);
+      const iconHtml = icon ? `<img class="md-bi" src="${icon}" alt="" loading="lazy" />` : '';
+      const attrs = isInternalMarkdownUrl(url) ? '' : ' target="_blank" rel="noopener nofollow"';
+      return `<a href="${url}"${attrs}>${iconHtml}${label}</a>`;
+    },
   );
   s = s.replace(/\u0000C(\d+)\u0000/g, (_match, index: string) => codeFragments[Number(index)]);
   // Pill-бейджи: <strong>X:</strong> value → <span class="md-pill">...</span>

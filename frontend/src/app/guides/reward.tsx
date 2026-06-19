@@ -79,12 +79,23 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
 // (titleEn и title → image). Ключи в нижнем регистре. Даёт авто-привязку иконок
 // ко ВСЕМ предметам с картинкой, а не только к хардкод-списку WIKI.
 export type ItemIconMap = Record<string, string>;
+function itemIconAliases(value?: string | null): string[] {
+  const raw = String(value ?? '').trim();
+  if (!raw) return [];
+  const aliases = new Set<string>([raw]);
+  const withoutTrailingParen = raw.replace(/\s+\([^)]*\)$/g, '').trim();
+  if (withoutTrailingParen && withoutTrailingParen !== raw) aliases.add(withoutTrailingParen);
+  const withoutPercent = raw.replace(/\s+\(\d+%\)$/g, '').trim();
+  if (withoutPercent && withoutPercent !== raw) aliases.add(withoutPercent);
+  return [...aliases].filter(Boolean);
+}
+
 export function buildItemIconMap(guides: Array<{ category?: string; title?: string; titleEn?: string | null; image?: string | null }>): ItemIconMap {
   const map: ItemIconMap = {};
   for (const g of guides ?? []) {
     if (g.category !== 'items' || !g.image) continue;
-    if (g.titleEn) map[g.titleEn.trim().toLowerCase()] = g.image;
-    if (g.title) map[g.title.trim().toLowerCase()] = g.image;
+    for (const alias of itemIconAliases(g.titleEn)) map[alias.toLowerCase()] = g.image;
+    for (const alias of itemIconAliases(g.title)) map[alias.toLowerCase()] = g.image;
   }
   return map;
 }
