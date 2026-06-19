@@ -476,7 +476,7 @@ async function upsertMonster(row, parsed) {
   return 'created';
 }
 
-async function upsertItem(item, seenOn) {
+async function upsertItem(item, seenOn, reservedSourceSlugs = new Set()) {
   const slug = item.sourceSlug || slugify(item.titleEn || item.title);
   let existing = await prisma.guide.findFirst({
     where: { slug, category: 'items' },
@@ -485,13 +485,19 @@ async function upsertItem(item, seenOn) {
     existing = await prisma.guide.findFirst({
       where: { title: item.title, category: 'items' },
     });
+    if (existing && reservedSourceSlugs.has(existing.slug) && existing.slug !== slug) {
+      existing = null;
+    }
   }
   if (!existing && item.titleEn) {
     const candidates = await prisma.guide.findMany({
       where: { titleEn: item.titleEn, category: 'items' },
       take: 5,
     });
-    existing = candidates.find(candidate => !candidate.title || candidate.title === item.title) || null;
+    existing = candidates.find(candidate => (
+      (!candidate.title || candidate.title === item.title)
+      && (!reservedSourceSlugs.has(candidate.slug) || candidate.slug === slug)
+    )) || null;
   }
   const data = {
     slug,
@@ -570,10 +576,12 @@ async function main() {
     }
   }
 
+  const sourceItemSlugs = new Set([...itemRefs.values()].map(ref => sourceSlugFromHref(ref.href, ref.name)));
+
   for (const ref of itemRefs.values()) {
     try {
       const item = await fetchItem(ref.href, ref.name, ref.icon);
-      const result = await upsertItem(item, ref);
+      const result = await upsertItem(item, ref, sourceItemSlugs);
       if (result === 'created') stats.itemsCreated += 1;
       if (result === 'updated') stats.itemsUpdated += 1;
     } catch (error) {
