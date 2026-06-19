@@ -71,8 +71,8 @@ export default async function GuidesPage() {
         <div className={g.heroBg} aria-hidden="true"><img src={HERO_BG} alt="" /></div>
         <div className={g.heroInner}>
           <div className={g.heroContent}>
-            <span className={g.heroKicker}>База знаний L2Realm</span>
-            <h1 className={g.heroTitle}>Гайды по <span>Lineage 2</span></h1>
+            <span className={g.heroKicker}>L2Realm · гайды и справочник</span>
+            <h1 className={g.heroTitle}>База знаний по <span>Lineage 2</span></h1>
             <p className={g.heroSub}>Квесты, предметы, NPC, монстры, локации, классы, скиллы и рейд-боссы — всё в одном справочнике.</p>
           </div>
         </div>

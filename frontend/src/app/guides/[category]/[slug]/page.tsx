@@ -197,6 +197,17 @@ function guideCategoryLinkKind(category: string): MarkdownAutoLink['kind'] {
   return 'item';
 }
 
+// Разбивает markdown на секции по «## Заголовок».
+function splitSections(content: string): Array<{ title: string; body: string }> {
+  const out: Array<{ title: string; body: string }> = [];
+  for (const part of String(content ?? '').split(/\n(?=##\s)/)) {
+    const m = part.match(/^##\s+(.+?)\n([\s\S]*)$/);
+    if (m) out.push({ title: m[1].trim(), body: m[2].trim() });
+    else if (part.trim()) out.push({ title: '', body: part.trim() });
+  }
+  return out;
+}
+
 function levelText(g: Guide): string | null {
   if (g.levelMin != null && g.levelMax != null) return `${g.levelMin}–${g.levelMax}`;
   if (g.levelMin != null) return `${g.levelMin}+`;
@@ -349,6 +360,26 @@ export default async function GuideDetailPage({ params }: Props) {
       : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);
   const itemMap = buildItemIconMap(guideLinksSource);
+  const mdOpts = { autoLinks, itemIcon: (name: string) => findRewardItemIcon(name, itemMap) };
+
+  // Монстры/рейды — особый лейаут: полоса параметров + 2 колонки (Обзор | Дроп).
+  const isMonster = cat.slug === 'monsters' || cat.slug === 'raid-bosses';
+  let monsterLayout: { statsBody?: string; overviewBody: string; dropBody?: string; belowBody: string } | null = null;
+  if (isMonster && guide.content) {
+    const secs = splitSections(guide.content);
+    const stats = secs.find(s => /параметр|stats/i.test(s.title));
+    const drop = secs.find(s => /дроп/i.test(s.title));
+    const overviewSecs = secs.filter(s => s.title === '' || /что это|где находит|обзор/i.test(s.title));
+    if (drop || stats) {
+      const belowSecs = secs.filter(s => s !== stats && s !== drop && !overviewSecs.includes(s) && !/связан/i.test(s.title));
+      monsterLayout = {
+        statsBody: stats?.body,
+        overviewBody: overviewSecs.map(s => (s.title ? `## ${s.title}\n${s.body}` : s.body)).join('\n\n'),
+        dropBody: drop?.body,
+        belowBody: belowSecs.map(s => `## ${s.title}\n${s.body}`).join('\n\n'),
+      };
+    }
+  }
   const displayTypes = (guide.types ?? [])
     .filter(type => !(guide.repeatable && /^Повторяемые$/i.test(type)))
     .slice(0, 3);
@@ -383,7 +414,7 @@ export default async function GuideDetailPage({ params }: Props) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Гайды', item: `${SITE}/guides` },
+      { '@type': 'ListItem', position: 1, name: 'База знаний', item: `${SITE}/guides` },
       { '@type': 'ListItem', position: 2, name: cat.label, item: `${SITE}/guides/${cat.slug}` },
       { '@type': 'ListItem', position: 3, name: guide.title, item: `${SITE}/guides/${cat.slug}/${guide.slug}` },
     ],
@@ -410,7 +441,7 @@ export default async function GuideDetailPage({ params }: Props) {
       <div className={styles.layout}>
         <article className={styles.main}>
           <div className={styles.bread}>
-            <Link href="/guides">Гайды</Link>
+            <Link href="/guides">База знаний</Link>
             <span>›</span>
             <Link href={`/guides/${cat.slug}`}>{cat.label}</Link>
             <span>›</span>
@@ -443,7 +474,7 @@ export default async function GuideDetailPage({ params }: Props) {
               {guide.description && <p className={styles.lead}>{guide.description}</p>}
             </div>
             {showHeroImage && heroImage && (
-              <div className={styles.heroImg}>
+              <div className={`${styles.heroImg}${isMonster ? ' ' + styles.heroImgBare : ''}`}>
                 <img src={heroImage} alt={guide.title} />
               </div>
             )}
@@ -453,13 +484,34 @@ export default async function GuideDetailPage({ params }: Props) {
             <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
           </div>
 
-          <div className={styles.body}>
-            {guide.content
-              ? renderMarkdown(guide.content, { autoLinks, itemIcon: (name) => findRewardItemIcon(name, itemMap) })
-              : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
-          </div>
+          {monsterLayout ? (
+            <div className={styles.body}>
+              {monsterLayout.statsBody && (
+                <div className={styles.statsStrip}>{renderMarkdown(monsterLayout.statsBody, mdOpts)}</div>
+              )}
+              <div className={styles.monsterCols}>
+                <div className={styles.monsterCol}>
+                  <h2 className={styles.blockTitle}>Обзор</h2>
+                  {renderMarkdown(monsterLayout.overviewBody, mdOpts)}
+                </div>
+                {monsterLayout.dropBody && (
+                  <div className={styles.monsterCol}>
+                    <h2 className={styles.blockTitle}>Дроп</h2>
+                    {renderMarkdown(monsterLayout.dropBody, mdOpts)}
+                  </div>
+                )}
+              </div>
+              {monsterLayout.belowBody && renderMarkdown(monsterLayout.belowBody, mdOpts)}
+            </div>
+          ) : (
+            <div className={styles.body}>
+              {guide.content
+                ? renderMarkdown(guide.content, mdOpts)
+                : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
+            </div>
+          )}
 
-          {rewardParts.length > 0 && (
+          {!monsterLayout && rewardParts.length > 0 && (
             <section className={styles.rewardBlock} aria-labelledby="guide-reward-title">
               <h2 id="guide-reward-title" className={styles.blockTitle}>{guideSummaryTitle}</h2>
               <div className={styles.rewardTiles}>

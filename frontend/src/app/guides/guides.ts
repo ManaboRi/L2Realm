@@ -23,20 +23,6 @@ export const GUIDE_CHRONICLES: GuideChronicle[] = [
     image: '/images/guide-high-five.webp',
     accent: '#5fa6e8',
   },
-  {
-    slug: 'essence',
-    name: 'Essence',
-    tagline: 'Современный темп: соло-данжи, авто-механики, быстрый прогресс.',
-    image: '/images/guide-essence.webp',
-    accent: '#a679e8',
-  },
-  {
-    slug: 'main',
-    name: 'Main',
-    tagline: 'Актуальные хроники: новый контент, классы и механики.',
-    image: '/images/guide-main.webp',
-    accent: '#5fcf8a',
-  },
 ];
 
 export function splitGuideChronicles(slug: string | null | undefined): string[] {

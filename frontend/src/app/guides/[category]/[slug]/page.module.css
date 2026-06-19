@@ -232,6 +232,36 @@
     linear-gradient(180deg, transparent 54%, rgba(5, 8, 13, .58));
   pointer-events: none;
 }
+/* картинка без рамки (монстры) */
+.heroImgBare {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.heroImgBare::after { display: none; }
+.heroImgBare img { object-fit: contain; aspect-ratio: 4 / 3; background: radial-gradient(circle at 50% 40%, rgba(210,171,82,.06), transparent 60%); }
+
+/* ── Монстры: полоса параметров + 2 колонки (Обзор | Дроп) ── */
+.statsStrip { margin: 0 0 1.3rem; }
+.monsterCols {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: 1.1rem;
+  align-items: start;
+  margin-bottom: 1.2rem;
+}
+.monsterCol {
+  min-width: 0;
+  border: 1px solid rgba(118, 141, 151, .18);
+  border-radius: 10px;
+  background: rgba(10, 15, 22, .42);
+  padding: .9rem 1.1rem 1rem;
+}
+.monsterCol > h2:first-child { margin-top: .1rem; }
+.monsterCol :global(table) { margin-bottom: 0; }
+@media (max-width: 860px) {
+  .monsterCols { grid-template-columns: 1fr; }
+}
 .heroImg img {
   width: 100%;
   height: 100%;

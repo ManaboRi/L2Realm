@@ -65,7 +65,7 @@ export function Header() {
             </span>
           </Link>
           <Link href="/guides" className={navClass('/guides')} onClick={closeMenu}>
-            <span className={styles.navText}>Гайды</span>
+            <span className={styles.navText}>База знаний</span>
           </Link>
           <Link href="/blog" className={navClass('/blog')} onClick={closeMenu}>
             <span className={styles.navText}>Статьи</span>

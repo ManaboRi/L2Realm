@@ -200,7 +200,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Гайды', item: `${SITE}/guides` },
+      { '@type': 'ListItem', position: 1, name: 'База знаний', item: `${SITE}/guides` },
       { '@type': 'ListItem', position: 2, name: cat.label, item: `${SITE}/guides/${cat.slug}` },
     ],
   };
