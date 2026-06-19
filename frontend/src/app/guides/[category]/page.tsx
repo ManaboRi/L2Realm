@@ -6,6 +6,7 @@ import { findGuideCategory } from '../categories';
 import { GuideIcon } from '../GuideIcon';
 import { GuidesDisclaimer } from '../GuidesDisclaimer';
 import { QuestList } from './QuestList';
+import { buildItemIconMap } from '../reward';
 import type { Guide } from '@/lib/types';
 import g from '../page.module.css';
 
@@ -173,6 +174,9 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
   if (!cat) notFound();
 
   const guides = await fetchGuides(cat.slug);
+  // карта иконок предметов (для колонки «Награда»/«Дроп») — из гайдов-предметов
+  const itemGuides = cat.slug === 'items' ? guides : await fetchGuides('items');
+  const itemMap = buildItemIconMap(itemGuides);
   const popular = [...guides].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 6);
   const heroImg = HERO_IMG[cat.slug] ?? '/images/guides-hero.webp';
   const side = SIDE_BY_CATEGORY[cat.slug] ?? {
@@ -259,7 +263,7 @@ export default async function GuideCategoryPage({ params, searchParams }: Props)
 
           {/* CENTER: список квестов */}
           <section className={g.centerCol}>
-            <QuestList guides={guides} category={cat.slug} defaultChronicle={sp.chr ?? ''} initialLevel={sp.lvl ?? 'all'} initialType={sp.type ?? ''} />
+            <QuestList guides={guides} category={cat.slug} defaultChronicle={sp.chr ?? ''} initialLevel={sp.lvl ?? 'all'} initialType={sp.type ?? ''} itemMap={itemMap} />
           </section>
 
           {/* RIGHT: популярные + путь игрока */}

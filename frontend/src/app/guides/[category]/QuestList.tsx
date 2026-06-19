@@ -6,6 +6,7 @@ import { formatGuideChronicle, guideChronicleMatches, GUIDE_CHRONICLES, splitGui
 import { GUIDE_RACES } from '../races';
 import { GUIDE_TYPE_COLOR, GUIDE_TYPES_BY_CATEGORY, gradeColor } from '../questTypes';
 import { RewardIconRow } from '../reward';
+import type { ItemIconMap } from '../reward';
 import styles from './page.module.css';
 
 type SortKey = 'level' | 'title';
@@ -182,9 +183,9 @@ function categoryConfig(category: GuideCategorySlug) {
   };
 }
 
-function RewardCell({ reward }: { reward?: string | null }) {
+function RewardCell({ reward, itemMap }: { reward?: string | null; itemMap?: ItemIconMap }) {
   if (!reward) return <span className={styles.dash}>—</span>;
-  const row = <RewardIconRow reward={reward} imgClass={styles.rewardIco} fallbackClass={styles.rewardFallback} />;
+  const row = <RewardIconRow reward={reward} imgClass={styles.rewardIco} itemMap={itemMap} />;
   return <span className={styles.rewardCell}>{row ?? <span className={styles.dash}>—</span>}</span>;
 }
 
@@ -221,12 +222,14 @@ export function QuestList({
   defaultChronicle,
   initialLevel = 'all',
   initialType = '',
+  itemMap,
 }: {
   guides: Guide[];
   category: GuideCategorySlug;
   defaultChronicle: string;
   initialLevel?: string;
   initialType?: string;
+  itemMap?: ItemIconMap;
 }) {
   const [q, setQ] = useState('');
   const [chr, setChr] = useState(defaultChronicle);
@@ -234,10 +237,19 @@ export function QuestList({
   const [race, setRace] = useState('');
   const [loc, setLoc] = useState('');
   const [typeTag, setTypeTag] = useState(initialType);
+  const [grade, setGrade] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('level');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
   const cfg = categoryConfig(category);
+  const isItems = category === 'items';
+
+  // грейды, реально встречающиеся у предметов (в каноническом порядке)
+  const grades = useMemo(() => {
+    const order = ['NG', 'D', 'C', 'B', 'A', 'S', 'R', 'R95', 'R99', 'R105'];
+    const present = new Set(guides.map(g => g.grade).filter(Boolean) as string[]);
+    return order.filter(g => present.has(g));
+  }, [guides]);
 
   const locations = useMemo(
     () => [...new Set(guides.map(g => mainLocation(g.location)).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'ru')),
@@ -284,6 +296,7 @@ export function QuestList({
       if (cfg.showRace && race && g.race && g.race !== race) return false;
       if (loc && mainLocation(g.location) !== loc) return false;
       if (typeTag && !(g.types ?? []).includes(typeTag)) return false;
+      if (grade && g.grade !== grade) return false;
       return true;
     });
     const dir = sortDir === 'asc' ? 1 : -1;
@@ -293,11 +306,11 @@ export function QuestList({
         : (a.levelMin ?? 999) - (b.levelMin ?? 999);
       return r * dir;
     });
-  }, [guides, q, chr, br, race, loc, typeTag, sortKey, sortDir, cfg.showRace]);
+  }, [guides, q, chr, br, race, loc, typeTag, grade, sortKey, sortDir, cfg.showRace]);
 
   useEffect(() => {
     setPage(1);
-  }, [q, chr, br, race, loc, typeTag, sortKey, sortDir]);
+  }, [q, chr, br, race, loc, typeTag, grade, sortKey, sortDir]);
 
   const pageSize = cfg.pageSize;
   const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
@@ -331,28 +344,40 @@ export function QuestList({
             />
           </div>
           <div className={styles.selRow}>
-            <select className={styles.sel} value={chr} onChange={e => setChr(e.target.value)} aria-label="Хроника">
-              <option value="">Все хроники</option>
-              {hasAllChronicle && <option value="all">Общие для всех</option>}
-              {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            </select>
-            <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
-              {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
-            </select>
+            {!isItems && (
+              <select className={styles.sel} value={chr} onChange={e => setChr(e.target.value)} aria-label="Хроника">
+                <option value="">Все хроники</option>
+                {hasAllChronicle && <option value="all">Общие для всех</option>}
+                {GUIDE_CHRONICLES.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+              </select>
+            )}
+            {!isItems && (
+              <select className={styles.sel} value={br} onChange={e => setBr(e.target.value)} aria-label="Уровень">
+                {BRACKETS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+              </select>
+            )}
             <select className={styles.sel} value={typeTag} onChange={e => setTypeTag(e.target.value)} aria-label={cfg.typeCol}>
               <option value="">Все типы</option>
               {usedTypes.map(t => <option key={t.label} value={t.label}>{t.label}</option>)}
             </select>
+            {isItems && grades.length > 0 && (
+              <select className={styles.sel} value={grade} onChange={e => setGrade(e.target.value)} aria-label="Грейд">
+                <option value="">Все грейды</option>
+                {grades.map(gr => <option key={gr} value={gr}>{gr}</option>)}
+              </select>
+            )}
             {cfg.showRace && (
               <select className={styles.sel} value={race} onChange={e => setRace(e.target.value)} aria-label="Раса">
                 <option value="">Все расы</option>
                 {GUIDE_RACES.map(r => <option key={r.slug} value={r.slug}>{r.label}</option>)}
               </select>
             )}
-            <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
-              <option value="">Все локации</option>
-              {locations.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
+            {!isItems && (
+              <select className={styles.sel} value={loc} onChange={e => setLoc(e.target.value)} aria-label="Локация">
+                <option value="">Все локации</option>
+                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            )}
           </div>
         </div>
       </div>
@@ -430,7 +455,7 @@ export function QuestList({
                   {cfg.showReward && (
                     <div className={styles.questMetric}>
                       <small>{cfg.rewardCol}</small>
-                      <RewardCell reward={g.reward} />
+                      <RewardCell reward={g.reward} itemMap={itemMap} />
                     </div>
                   )}
                 </article>

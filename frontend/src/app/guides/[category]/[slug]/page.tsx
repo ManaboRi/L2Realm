@@ -8,7 +8,8 @@ import { GuideIcon } from '../../GuideIcon';
 import { GuidesDisclaimer } from '../../GuidesDisclaimer';
 import { renderMarkdown } from '@/lib/markdown';
 import type { MarkdownAutoLink } from '@/lib/markdown';
-import { findRewardItemIcon, parseReward, REWARD_ICONS, REWARD_LABEL } from '../../reward';
+import { findRewardItemIcon, parseReward, REWARD_ICONS, REWARD_LABEL, buildItemIconMap } from '../../reward';
+import type { ItemIconMap } from '../../reward';
 import type { RewardPart } from '../../reward';
 import { QUEST_TYPE_COLOR, gradeColor } from '../../questTypes';
 import type { Guide } from '@/lib/types';
@@ -347,6 +348,7 @@ export default async function GuideDetailPage({ params }: Props) {
       ? 'Связанные квесты, локации и предметы'
       : 'Связанные NPC и предметы';
   const autoLinks = buildAutoLinks(guideLinksSource, guide);
+  const itemMap = buildItemIconMap(guideLinksSource);
   const displayTypes = (guide.types ?? [])
     .filter(type => !(guide.repeatable && /^Повторяемые$/i.test(type)))
     .slice(0, 3);
@@ -448,12 +450,12 @@ export default async function GuideDetailPage({ params }: Props) {
           </header>
 
           <div className={styles.infoMobile}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
           </div>
 
           <div className={styles.body}>
             {guide.content
-              ? renderMarkdown(guide.content, { autoLinks, itemIcon: findRewardItemIcon })
+              ? renderMarkdown(guide.content, { autoLinks, itemIcon: (name) => findRewardItemIcon(name, itemMap) })
               : <p className={styles.placeholder}>Текст гайда скоро будет дополнен.</p>}
           </div>
 
@@ -461,7 +463,7 @@ export default async function GuideDetailPage({ params }: Props) {
             <section className={styles.rewardBlock} aria-labelledby="guide-reward-title">
               <h2 id="guide-reward-title" className={styles.blockTitle}>{guideSummaryTitle}</h2>
               <div className={styles.rewardTiles}>
-                {rewardParts.map((part, index) => <RewardTile key={index} part={part} />)}
+                {rewardParts.map((part, index) => <RewardTile key={index} part={part} itemMap={itemMap} />)}
               </div>
             </section>
           )}
@@ -482,7 +484,7 @@ export default async function GuideDetailPage({ params }: Props) {
 
         <aside className={styles.aside}>
           <div className={styles.asideSticky}>
-            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} />
+            <InfoCard info={info} rewardParts={rewardParts} relatedItems={relatedItems} catLabel={cat.label} catSlug={cat.slug} portraitImage={sidePortrait} portraitTitle={guide.title} portraitSubtitle={guide.titleEn || guide.location || cat.label} itemMap={itemMap} />
           </div>
         </aside>
       </div>
@@ -492,7 +494,7 @@ export default async function GuideDetailPage({ params }: Props) {
   );
 }
 
-function RewardTile({ part }: { part: RewardPart }) {
+function RewardTile({ part, itemMap }: { part: RewardPart; itemMap?: ItemIconMap }) {
   if (part.kind === 'icon') {
     return (
       <div className={styles.rewardTile}>
@@ -504,7 +506,7 @@ function RewardTile({ part }: { part: RewardPart }) {
       </div>
     );
   }
-  const itemIcon = findRewardItemIcon(part.text);
+  const itemIcon = findRewardItemIcon(part.text, itemMap);
   return (
     <div className={styles.rewardTile}>
       {itemIcon ? (
@@ -551,6 +553,7 @@ function InfoCard({
   portraitImage,
   portraitTitle,
   portraitSubtitle,
+  itemMap,
 }: {
   info: Array<[string, string]>;
   rewardParts: RewardPart[];
@@ -560,6 +563,7 @@ function InfoCard({
   portraitImage?: string | null;
   portraitTitle?: string;
   portraitSubtitle?: string | null;
+  itemMap?: ItemIconMap;
 }) {
   return (
     <>
@@ -592,7 +596,7 @@ function InfoCard({
           <div className={styles.cardTitle}><span>{summaryCardTitle(catSlug)}</span></div>
           <ul className={styles.rewardList}>
             {rewardParts.map((p, i) => {
-              const itemIcon = p.kind === 'text' ? findRewardItemIcon(p.text) : null;
+              const itemIcon = p.kind === 'text' ? findRewardItemIcon(p.text, itemMap) : null;
               return (
                 <li key={i} className={styles.rewardRow}>
                   {p.kind === 'icon' ? (

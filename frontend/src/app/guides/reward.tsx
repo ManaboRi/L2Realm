@@ -75,13 +75,33 @@ const ITEM_REWARD_ICONS: Record<string, string> = {
   'Unknown Reward': '/images/WIKI/UKNOWN%20REWARD.jpg',
 };
 
-export function findRewardItemIcon(text: string): string | null {
+// Карта «название предмета → иконка», собранная из самих гайдов-предметов
+// (titleEn и title → image). Ключи в нижнем регистре. Даёт авто-привязку иконок
+// ко ВСЕМ предметам с картинкой, а не только к хардкод-списку WIKI.
+export type ItemIconMap = Record<string, string>;
+export function buildItemIconMap(guides: Array<{ category?: string; title?: string; titleEn?: string | null; image?: string | null }>): ItemIconMap {
+  const map: ItemIconMap = {};
+  for (const g of guides ?? []) {
+    if (g.category !== 'items' || !g.image) continue;
+    if (g.titleEn) map[g.titleEn.trim().toLowerCase()] = g.image;
+    if (g.title) map[g.title.trim().toLowerCase()] = g.image;
+  }
+  return map;
+}
+
+export function findRewardItemIcon(text: string, dynamic?: ItemIconMap): string | null {
   // raw — без ведущего числа, но С скобками: "Scroll: Enchant Weapon (D-grade)"
   // (для свитков точения грейд в скобках — часть ключа, его нельзя срезать).
   const raw = String(text || '').replace(/^\d[\d\s.,]*\s+/, '').trim();
-  if (ITEM_REWARD_ICONS[raw]) return ITEM_REWARD_ICONS[raw];
   // clean — со срезанным хвостом "(No-grade)"/"(×3)" для предметов вроде "Soulshot (No-grade)"
   const clean = raw.replace(/\s+\([^)]+\)$/g, '').trim();
+  // 1) динамическая карта из гайдов-предметов (точное совпадение по имени)
+  if (dynamic) {
+    if (dynamic[raw.toLowerCase()]) return dynamic[raw.toLowerCase()];
+    if (clean && dynamic[clean.toLowerCase()]) return dynamic[clean.toLowerCase()];
+  }
+  // 2) хардкод-карта WIKI (валюты/спец-предметы)
+  if (ITEM_REWARD_ICONS[raw]) return ITEM_REWARD_ICONS[raw];
   if (clean && ITEM_REWARD_ICONS[clean]) return ITEM_REWARD_ICONS[clean];
   const found = Object.entries(ITEM_REWARD_ICONS).find(([label]) => raw.includes(label) || clean.includes(label));
   return found?.[1] ?? null;
@@ -119,14 +139,14 @@ export function parseReward(reward?: string | null): RewardPart[] {
 // Компактный ряд только из иконок (для таблицы списка). cls — класс <img>.
 // Ряд иконок награды для таблицы списка: показываем ВСЕ награды, у которых есть
 // иконка (валюта + предметы по карте), остальные (без иконок) — пропускаем.
-export function RewardIconRow({ reward, imgClass }: { reward?: string | null; imgClass: string; fallbackClass?: string }) {
+export function RewardIconRow({ reward, imgClass, itemMap }: { reward?: string | null; imgClass: string; fallbackClass?: string; itemMap?: ItemIconMap }) {
   const parts = parseReward(reward);
   const icons: Array<{ src: string; title: string }> = [];
   for (const p of parts) {
     if (p.kind === 'icon') {
       icons.push({ src: REWARD_ICONS[p.key], title: `${REWARD_LABEL[p.key]}${p.amount ? ' ' + p.amount : ''}` });
     } else {
-      const ic = findRewardItemIcon(p.text);
+      const ic = findRewardItemIcon(p.text, itemMap);
       if (ic) icons.push({ src: ic, title: p.text });
     }
   }
