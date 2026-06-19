@@ -364,28 +364,34 @@ export default async function GuideDetailPage({ params }: Props) {
   const itemMap = buildItemIconMap(guideLinksSource);
   const mdOpts = { autoLinks, itemIcon: (name: string) => findRewardItemIcon(name, itemMap) };
 
-  // Монстры/рейды — особый лейаут: обзор + дроп/спойл. Старые "Параметры"
-  // рендерим внутри обзора, чтобы не появлялась отдельная тяжелая полоса плиток.
-  let monsterLayout: { overviewBody: string; dropBody?: string; belowBody: string } | null = null;
+  // Монстры/рейды — особый лейаут: обзор, характеристики, место и дроп.
+  // Секции берем без markdown-заголовков, чтобы не было дублей "Обзор" / "Дроп".
+  let monsterLayout: { overviewBody: string; characteristicsBody?: string; locationBody?: string; dropBody?: string; belowBody: string } | null = null;
   if (isMonster && guide.content) {
     const secs = splitSections(guide.content);
-    const stats = secs.find(s => /параметр|stats/i.test(s.title));
+    const stats = secs.find(s => /характерист|параметр|stats/i.test(s.title));
     const drop = secs.find(s => /дроп/i.test(s.title));
-    const overviewSecs = secs.filter(s => s.title === '' || /что это|где находит|обзор/i.test(s.title));
+    const location = secs.find(s => /где находит/i.test(s.title));
+    const overviewSecs = secs.filter(s => s.title === '' || /что это|обзор/i.test(s.title));
     if (drop || stats) {
-      const belowSecs = secs.filter(s => s !== stats && s !== drop && !overviewSecs.includes(s) && !/связан/i.test(s.title));
+      const belowSecs = secs.filter(s => s !== stats && s !== drop && s !== location && !overviewSecs.includes(s) && !/связан/i.test(s.title));
       const plainStats = stats?.body
         .split('\n')
         .map(line => line.trim())
         .filter(line => line && !/^:::/i.test(line))
+        .filter(line => !/EXP\s*\/\s*SP|ID монстра|Используется в квестах/i.test(line))
         .map(line => `- ${line.replace(/^\-\s*/, '')}`)
         .join('\n');
+      const locationBody = location?.body
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !/^-\s*В источнике:/i.test(line))
+        .join('\n');
       monsterLayout = {
-        overviewBody: [
-          ...overviewSecs.map(s => (s.title ? `## ${s.title}\n${s.body}` : s.body)),
-          plainStats ? `## Параметры\n${plainStats}` : null,
-        ].filter(Boolean).join('\n\n'),
-        dropBody: drop?.body,
+        overviewBody: overviewSecs.map(s => s.body).filter(Boolean).join('\n\n'),
+        characteristicsBody: plainStats,
+        locationBody,
+        dropBody: drop?.body.replace(/^###\s*Дроп\s*\n+/i, ''),
         belowBody: belowSecs.map(s => `## ${s.title}\n${s.body}`).join('\n\n'),
       };
     }
@@ -500,10 +506,22 @@ export default async function GuideDetailPage({ params }: Props) {
                 <div className={styles.monsterCol}>
                   <h2 className={styles.blockTitle}>Обзор</h2>
                   {renderMarkdown(monsterLayout.overviewBody, mdOpts)}
+                  {monsterLayout.characteristicsBody && (
+                    <>
+                      <h2 className={styles.blockTitle}>Характеристики</h2>
+                      {renderMarkdown(monsterLayout.characteristicsBody, mdOpts)}
+                    </>
+                  )}
+                  {monsterLayout.locationBody && (
+                    <>
+                      <h2 className={styles.blockTitle}>Где находится</h2>
+                      {renderMarkdown(monsterLayout.locationBody, mdOpts)}
+                    </>
+                  )}
                 </div>
                 {monsterLayout.dropBody && (
                   <div className={styles.monsterCol}>
-                    <h2 className={styles.blockTitle}>Дроп</h2>
+                    <h2 className={styles.blockTitle}>Дроп и спойл</h2>
                     {renderMarkdown(monsterLayout.dropBody, mdOpts)}
                   </div>
                 )}

@@ -339,30 +339,23 @@ function buildContent(monster, parsed) {
   const aggroText = info.aggro === 'Да' ? 'агрессивный' : 'неагрессивный';
   const locationRu = info.location || locationLabel(info.locationRaw) || 'локация уточняется';
   const locationEn = locationEnLabel(info.locationRaw);
-  const locationRaw = cleanInfo(info.locationRaw);
-  const questLines = monster.quests.length
-    ? monster.quests.map(q => `- **${q}**`).join('\n')
-    : null;
 
   return [
     '## Обзор',
     '',
-    `**${title}** (${titleEn}) — ${aggroText} монстр **${info.level || '—'} уровня**${info.race ? `, раса **${info.race}**` : ''}. Ниже собраны параметры, место появления, дроп и спойл, чтобы быстро понять, нужен ли этот моб для фарма или квеста.`,
+    `**${title}** (${titleEn}) — ${aggroText} монстр **${info.level || '—'} уровня**${info.race ? `, раса **${info.race}**` : ''}.`,
+    '',
+    '## Характеристики',
     '',
     `- Уровень: **${info.level || '—'}**`,
     info.race ? `- Раса: **${info.race}**` : null,
     `- Агрессия: **${info.aggro || 'уточняется'}**`,
     info.hp ? `- HP: **${formatNumber(info.hp)}**` : null,
-    info.exp || info.sp ? `- EXP / SP: **${formatNumber(info.exp)} / ${formatNumber(info.sp)}**` : null,
-    info.id ? `- ID монстра: **${info.id}**` : null,
-    questLines ? '- Используется в квестах:' : null,
-    questLines,
     '',
     '## Где находится',
     '',
     `- Русское название: **${locationRu}**`,
     locationEn ? `- Английское название: **${locationEn}**` : null,
-    locationRaw && locationRaw !== locationRu && locationRaw !== locationEn ? `- В источнике: ${locationRaw}` : null,
     '',
     '## Дроп и спойл',
     '',

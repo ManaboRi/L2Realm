@@ -307,25 +307,23 @@ function buildMonsterContent(monster, parsed) {
   const info = parsed.info;
   const locationRu = info.location || 'локация уточняется';
   const locationEn = locationEnLabel(info.locationRaw);
-  const locationRaw = String(info.locationRaw || '').trim();
   return [
     '## Обзор',
     '',
-    `**${parsed.title}** (${parsed.titleEn}) — монстр **${info.level || monster.level}+ уровня** в Lineage 2. Здесь собраны место появления, основные параметры, обычный дроп и спойл, чтобы быстро понять, стоит ли идти на этого моба под фарм или квест.`,
+    `**${parsed.title}** (${parsed.titleEn}) — ${info.aggro === 'Да' ? 'агрессивный' : 'неагрессивный'} монстр **${info.level || monster.level} уровня** в Lineage 2.`,
+    '',
+    '## Характеристики',
     '',
     `- Уровень: **${info.level || monster.level}**`,
     info.race ? `- Раса: **${info.race}**` : null,
     `- Агрессия: **${info.aggro || 'уточняется'}**`,
     info.hp ? `- HP: **${formatNumber(info.hp)}**` : null,
     info.pDef || info.mDef ? `- P.Def / M.Def: **${formatNumber(info.pDef)} / ${formatNumber(info.mDef)}**` : null,
-    info.exp || info.sp ? `- EXP / SP: **${formatNumber(info.exp)} / ${formatNumber(info.sp)}**` : null,
-    info.id ? `- ID монстра: **${info.id}**` : null,
     '',
     '## Где находится',
     '',
     `- Русское название: **${locationRu}**`,
     locationEn ? `- Английское название: **${locationEn}**` : null,
-    locationRaw && locationRaw !== locationRu && locationRaw !== locationEn ? `- В источнике: ${locationRaw}` : null,
     '',
     '## Дроп и спойл',
     '',
