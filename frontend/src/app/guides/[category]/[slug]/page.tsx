@@ -364,8 +364,9 @@ export default async function GuideDetailPage({ params }: Props) {
   const itemMap = buildItemIconMap(guideLinksSource);
   const mdOpts = { autoLinks, itemIcon: (name: string) => findRewardItemIcon(name, itemMap) };
 
-  // Монстры/рейды — особый лейаут: полоса параметров + 2 колонки (Обзор | Дроп).
-  let monsterLayout: { statsBody?: string; overviewBody: string; dropBody?: string; belowBody: string } | null = null;
+  // Монстры/рейды — особый лейаут: обзор + дроп/спойл. Старые "Параметры"
+  // рендерим внутри обзора, чтобы не появлялась отдельная тяжелая полоса плиток.
+  let monsterLayout: { overviewBody: string; dropBody?: string; belowBody: string } | null = null;
   if (isMonster && guide.content) {
     const secs = splitSections(guide.content);
     const stats = secs.find(s => /параметр|stats/i.test(s.title));
@@ -373,9 +374,17 @@ export default async function GuideDetailPage({ params }: Props) {
     const overviewSecs = secs.filter(s => s.title === '' || /что это|где находит|обзор/i.test(s.title));
     if (drop || stats) {
       const belowSecs = secs.filter(s => s !== stats && s !== drop && !overviewSecs.includes(s) && !/связан/i.test(s.title));
+      const plainStats = stats?.body
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line && !/^:::/i.test(line))
+        .map(line => `- ${line.replace(/^\-\s*/, '')}`)
+        .join('\n');
       monsterLayout = {
-        statsBody: stats?.body,
-        overviewBody: overviewSecs.map(s => (s.title ? `## ${s.title}\n${s.body}` : s.body)).join('\n\n'),
+        overviewBody: [
+          ...overviewSecs.map(s => (s.title ? `## ${s.title}\n${s.body}` : s.body)),
+          plainStats ? `## Параметры\n${plainStats}` : null,
+        ].filter(Boolean).join('\n\n'),
         dropBody: drop?.body,
         belowBody: belowSecs.map(s => `## ${s.title}\n${s.body}`).join('\n\n'),
       };
@@ -487,9 +496,6 @@ export default async function GuideDetailPage({ params }: Props) {
 
           {monsterLayout ? (
             <div className={styles.body}>
-              {monsterLayout.statsBody && (
-                <div className={styles.statsStrip}>{renderMarkdown(monsterLayout.statsBody, mdOpts)}</div>
-              )}
               <div className={styles.monsterCols}>
                 <div className={styles.monsterCol}>
                   <h2 className={styles.blockTitle}>Обзор</h2>

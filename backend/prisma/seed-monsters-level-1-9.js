@@ -58,8 +58,9 @@ function cleanCell(value) {
 
 function absoluteUrl(url) {
   if (!url) return null;
-  if (/^https?:\/\//i.test(url)) return url;
-  return `${SOURCE_HOST}${url.startsWith('/') ? '' : '/'}${url}`;
+  const value = decodeHtml(url);
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${SOURCE_HOST}${value.startsWith('/') ? '' : '/'}${value}`;
 }
 
 function slugify(value) {
@@ -74,11 +75,17 @@ function slugify(value) {
 function sourceSlugFromHref(href, fallbackName) {
   if (!href) return slugify(fallbackName);
   try {
-    const raw = decodeURIComponent(new URL(href).pathname.split('/').pop() || '').replace(/_/g, ' ');
+    const url = new URL(decodeHtml(href), SOURCE_HOST);
+    const title = url.searchParams.get('title');
+    const raw = decodeURIComponent(title || url.pathname.split('/').pop() || '').replace(/_/g, ' ');
     return slugify(raw || fallbackName);
   } catch {
     return slugify(fallbackName);
   }
+}
+
+function isRedlink(href) {
+  return /(?:\?|&)redlink=1\b/i.test(decodeHtml(href || ''));
 }
 
 function normalizeNumber(value) {
@@ -173,6 +180,17 @@ function locationLabel(raw) {
       .trim();
   }).filter(Boolean);
   return [...new Set(parts)].slice(0, 4).join(', ');
+}
+
+function locationEnLabel(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const parts = text
+    .split(/\s*,\s*/)
+    .map(part => part.replace(/\s*\([^()]*\)/g, '').trim())
+    .filter(Boolean);
+  const en = [...new Set(parts)].slice(0, 4).join(', ');
+  return en && en !== locationLabel(raw) ? en : null;
 }
 
 function parseMonsterInfo(html, titleEn, listRow) {
@@ -287,32 +305,31 @@ function mdTable(rows, limit = 14) {
 
 function buildMonsterContent(monster, parsed) {
   const info = parsed.info;
-  const locationLine = info.location || 'локация уточняется';
+  const locationRu = info.location || 'локация уточняется';
+  const locationEn = locationEnLabel(info.locationRaw);
+  const locationRaw = String(info.locationRaw || '').trim();
   return [
-    '## Параметры',
-    '',
-    '::: stats',
-    `Уровень: ${info.level || monster.level}`,
-    info.hp ? `HP: ${formatNumber(info.hp)}` : null,
-    info.pDef || info.mDef ? `P.Def / M.Def: ${formatNumber(info.pDef)} / ${formatNumber(info.mDef)}` : null,
-    info.exp || info.sp ? `EXP / SP: ${formatNumber(info.exp)} / ${formatNumber(info.sp)}` : null,
-    info.race ? `Раса: ${info.race}` : null,
-    `Агрессия: ${info.aggro || 'уточняется'}`,
-    info.id ? `ID: ${info.id}` : null,
-    ':::',
-    '',
-    '## Что это',
+    '## Обзор',
     '',
     `**${parsed.title}** (${parsed.titleEn}) — монстр **${info.level || monster.level}+ уровня** в Lineage 2. Здесь собраны место появления, основные параметры, обычный дроп и спойл, чтобы быстро понять, стоит ли идти на этого моба под фарм или квест.`,
     '',
+    `- Уровень: **${info.level || monster.level}**`,
+    info.race ? `- Раса: **${info.race}**` : null,
+    `- Агрессия: **${info.aggro || 'уточняется'}**`,
+    info.hp ? `- HP: **${formatNumber(info.hp)}**` : null,
+    info.pDef || info.mDef ? `- P.Def / M.Def: **${formatNumber(info.pDef)} / ${formatNumber(info.mDef)}**` : null,
+    info.exp || info.sp ? `- EXP / SP: **${formatNumber(info.exp)} / ${formatNumber(info.sp)}**` : null,
+    info.id ? `- ID монстра: **${info.id}**` : null,
+    '',
     '## Где находится',
     '',
-    `- Локация: **${locationLine}**`,
-    info.locationRaw && info.locationRaw !== locationLine ? `- Точные зоны из источника: ${info.locationRaw}` : null,
+    `- Русское название: **${locationRu}**`,
+    locationEn ? `- Английское название: **${locationEn}**` : null,
+    locationRaw && locationRaw !== locationRu && locationRaw !== locationEn ? `- В источнике: ${locationRaw}` : null,
     '',
     '## Дроп и спойл',
     '',
-    '### Обычный дроп',
+    '### Дроп',
     '',
     mdTable(parsed.dropRows),
     '',
@@ -325,8 +342,8 @@ function buildMonsterContent(monster, parsed) {
 function itemTypeFromInfo(typeText, titleEn) {
   const text = `${typeText || ''} ${titleEn || ''}`;
   if (/Recipe|Рецепт/i.test(text)) return 'Рецепты';
-  if (/Resource|Ресурс|Material|Piece|Часть|Кусок|Blade|Head|Shaft/i.test(text)) return 'Ресурсы';
-  if (/Potion|Scroll|Arrow|Shot|Зелье|Свиток|Стрела|Soulshot|Spiritshot/i.test(text)) return 'Расходники';
+  if (/Resource|Ресурс|Material|Piece|Часть|Кусок|Blade|Head|Shaft|Gemstone|Ore|Asofe|Mold|Varnish|Coal|Stem|Suede|Thread/i.test(text)) return 'Ресурсы';
+  if (/Potion|Scroll|Arrow|Shot|Зелье|Свиток|Стрела|Soulshot|Spiritshot|Dye|Life Stone/i.test(text)) return 'Расходники';
   if (/Sword|Dagger|Blunt|Bow|Pole|Fist|Dual|Weapon|Staff|Rod|Mace|Club|Knife|Chisel|Меч|Кинжал|Лук|Оруж|Посох|Жезл|Булава|Дубина/i.test(text)) return 'Оружие';
   if (/Armor|Shield|Helmet|Gloves|Boots|Tunic|Pants|Robe|Leather|Stockings|Shirt|Shoes|Sandals|Cap|Брон|Щит|Шлем|Перчат|Ботин|Штаны|Рубаха|Туника|Сандалии|Шляпа/i.test(text)) return 'Броня';
   if (/Ring|Earring|Necklace|Accessory|Кольцо|Серьг|Ожерель/i.test(text)) return 'Бижутерия';
@@ -369,7 +386,7 @@ function parseItemIcon(html) {
 }
 
 function buildItemContent(item, seenOn) {
-  const sourceLines = [...seenOn.monsters].slice(0, 8).map(name => `- **${name}**`).join('\n');
+  const sourceLines = [...seenOn.monsters].slice(0, 10).map(name => `- **${name}**`).join('\n');
   const statsLines = [
     item.type ? `- Тип: **${item.type}**` : null,
     item.grade ? `- Грейд: **${item.grade}**` : null,
@@ -378,7 +395,7 @@ function buildItemContent(item, seenOn) {
   return [
     '## Что это',
     '',
-    `**${item.title}** (${item.titleEn}) — предмет Lineage 2. В базе L2Realm он добавлен из дропа монстров 1–9 уровня, чтобы его можно было быстро открыть из таблиц дропа и сверить основные характеристики.`,
+    `**${item.title}** (${item.titleEn}) — предмет Lineage 2 из базы L2Realm. Карточка нужна, чтобы открывать предмет прямо из таблиц дропа и быстро сверять тип, грейд и основные характеристики.`,
     statsLines.length ? '' : null,
     statsLines.length ? '## Характеристики' : null,
     statsLines.length ? '' : null,
@@ -406,11 +423,11 @@ async function fetchMonster(row) {
 
 async function fetchItem(href, fallbackName, fallbackIcon) {
   const sourceSlug = sourceSlugFromHref(href, fallbackName);
-  if (!href) return {
+  if (!href || isRedlink(href)) return {
     title: fallbackName,
     titleEn: fallbackName,
     sourceSlug,
-    itemType: 'Ресурсы',
+    itemType: itemTypeFromInfo('', fallbackName),
     grade: null,
     icon: fallbackIcon,
     type: null,
@@ -526,7 +543,7 @@ async function upsertItem(item, seenOn, reservedSourceSlugs = new Set()) {
     return existing ? 'updated' : 'created';
   }
   if (existing) {
-    const generatedContent = !existing.content || existing.content.includes('дропа монстров 1');
+    const generatedContent = !existing.content || (existing.content.includes('базе L2Realm') && existing.content.includes('дропа'));
     const slugTaken = existing.slug === data.slug
       ? null
       : await prisma.guide.findUnique({ where: { slug: data.slug } });
